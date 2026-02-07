@@ -125,6 +125,17 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               }} />
             )}
           </p>
+
+          {/* Duration · Rating */}
+          <p style={{ margin: '8px 0 0 0', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>
+              {destination.flightDuration}
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 8px' }}>·</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+              {destination.rating}★
+            </span>
+          </p>
         </div>
       </div>
     );
@@ -166,6 +177,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>{destination.country}</Text>
           <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 15 }}>·</Text>
           <Text style={{ color: '#FF8F65', fontSize: 15, fontWeight: '600' }}>{formatFlightPrice(destination.flightPrice, destination.currency)}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>{destination.flightDuration}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>·</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '500' }}>{destination.rating}★</Text>
         </View>
       </View>
     </Pressable>

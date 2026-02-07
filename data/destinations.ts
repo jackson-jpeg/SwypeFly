@@ -380,7 +380,7 @@ export const mockDestinations: Destination[] = [
     tagline: 'City of superlatives',
     description:
       'The world\'s tallest building, artificial islands, luxury shopping, and desert adventures.',
-    imageUrl: 'https://images.pexels.com/photos/2044434/pexels-photo-2044434.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://images.pexels.com/photos/3787839/pexels-photo-3787839.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
     imageUrls: [
       'https://images.pexels.com/photos/3787839/pexels-photo-3787839.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2115367/pexels-photo-2115367.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -603,7 +603,7 @@ export const mockDestinations: Destination[] = [
     tagline: 'One happy island',
     description:
       'Constant trade winds, pristine beaches, and dramatic desert landscape.',
-    imageUrl: 'https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://images.pexels.com/photos/1710795/pexels-photo-1710795.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
     imageUrls: [
       'https://images.pexels.com/photos/1450372/pexels-photo-1450372.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1710795/pexels-photo-1710795.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1179,7 +1179,7 @@ export const mockDestinations: Destination[] = [
     tagline: 'The Big Easy',
     description:
       'Jazz on every corner, Creole cuisine, and Mardi Gras magic year-round.',
-    imageUrl: 'https://images.pexels.com/photos/3264723/pexels-photo-3264723.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://images.pexels.com/photos/1382149/pexels-photo-1382149.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
     imageUrls: [
       'https://images.pexels.com/photos/3566187/pexels-photo-3566187.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2901212/pexels-photo-2901212.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',

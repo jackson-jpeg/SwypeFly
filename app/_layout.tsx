@@ -1,10 +1,11 @@
 import '../global.css';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { Platform, View, ActivityIndicator } from 'react-native';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider, useAuthContext } from '../hooks/AuthContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,29 +102,77 @@ function useWebStyles() {
   }, []);
 }
 
+/** Redirects based on auth state */
+function useAuthGuard() {
+  const { session, isLoading, isGuest, hasCompletedOnboarding } = useAuthContext();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const segs = segments as string[];
+    const inAuthGroup = segs[0] === 'auth';
+    const onOnboarding = segs[0] === 'auth' && segs[1] === 'onboarding';
+    const hasAccess = session !== null || isGuest;
+
+    if (!hasAccess && !inAuthGroup) {
+      // Not signed in & not guest → send to login
+      router.replace('/auth/login');
+    } else if (session && !hasCompletedOnboarding && !onOnboarding) {
+      // Signed in but hasn't done onboarding → send to onboarding
+      router.replace('/auth/onboarding');
+    } else if (session && hasCompletedOnboarding && inAuthGroup) {
+      // Signed in + onboarded but still on auth screen → send to feed
+      router.replace('/(tabs)');
+    }
+  }, [session, isLoading, isGuest, hasCompletedOnboarding, segments]);
+}
+
+function AuthGatedLayout() {
+  useAuthGuard();
+  const { isLoading } = useAuthContext();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#FF6B35" />
+      </View>
+    );
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#0A0A0A' },
+      }}
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="auth/login" />
+      <Stack.Screen name="auth/onboarding" />
+      <Stack.Screen
+        name="destination/[id]"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   useWebStyles();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: '#0A0A0A' },
-          }}
-        >
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="destination/[id]"
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-        </Stack>
-      </GestureHandlerRootView>
+      <AuthProvider>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+          <StatusBar style="light" />
+          <AuthGatedLayout />
+        </GestureHandlerRootView>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

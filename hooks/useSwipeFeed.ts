@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { mockDestinations } from '../data/destinations';
 import { FEED_PAGE_SIZE } from '../constants/layout';
 import { useUIStore } from '../stores/uiStore';
+import { scoreFeed } from '../utils/scoreFeed';
 import type { Destination, DestinationFeedPage } from '../types/destination';
 
 const PRICE_PROXY = process.env.EXPO_PUBLIC_PRICE_API_URL || 'http://localhost:3001';
@@ -63,10 +64,10 @@ async function loadDestinations(origin: string): Promise<Destination[]> {
       return { ...dest, livePrice: null };
     });
 
-    // Sort: cheapest first
-    destinations.sort((a, b) => a.flightPrice - b.flightPrice);
+    // Diversity-aware sort instead of cheapest-first
+    destinations = scoreFeed(destinations);
   } else {
-    destinations = mockDestinations.map((d) => ({ ...d, livePrice: null }));
+    destinations = scoreFeed(mockDestinations.map((d) => ({ ...d, livePrice: null })));
   }
 
   destinationCache.set(origin, destinations);
