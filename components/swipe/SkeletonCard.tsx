@@ -1,0 +1,55 @@
+import { View, Platform, useWindowDimensions } from 'react-native';
+import { useEffect } from 'react';
+
+export function SkeletonCard() {
+  const { width, height } = useWindowDimensions();
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const id = 'sf-skeleton-css';
+    if (document.getElementById(id)) return;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = `
+      @keyframes sf-shimmer {
+        0% { opacity: 0.15; }
+        50% { opacity: 0.35; }
+        100% { opacity: 0.15; }
+      }
+      .sf-shimmer { animation: sf-shimmer 2s ease-in-out infinite; }
+    `;
+    document.head.appendChild(style);
+    return () => { document.getElementById(id)?.remove(); };
+  }, []);
+
+  if (Platform.OS === 'web') {
+    return (
+      <div style={{ width: '100%', height: '100vh', backgroundColor: '#0A0A0A', position: 'relative' }}>
+        <div style={{ position: 'absolute', bottom: 84, left: 28, right: 28 }}>
+          {/* Tags: two small pill placeholders */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+            <div className="sf-shimmer" style={{ width: 60, height: 14, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+            <div className="sf-shimmer" style={{ width: 72, height: 14, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+          </div>
+          {/* City name */}
+          <div className="sf-shimmer" style={{ width: 220, height: 40, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 10 }} />
+          {/* Country · Price line */}
+          <div className="sf-shimmer" style={{ width: 180, height: 16, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <View style={{ width, height, backgroundColor: '#0A0A0A', position: 'relative' }}>
+      <View style={{ position: 'absolute', bottom: 100, left: 28, right: 28 }}>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+          <View style={{ width: 60, height: 14, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+          <View style={{ width: 72, height: 14, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+        </View>
+        <View style={{ width: 220, height: 40, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 10 }} />
+        <View style={{ width: 180, height: 16, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+      </View>
+    </View>
+  );
+}
