@@ -99,6 +99,14 @@ function useWebStyles() {
       style.setAttribute('content', 'black-translucent');
       document.head.appendChild(style);
     }
+
+    // Travelpayouts ownership verification
+    if (!document.querySelector('script[src*="emrldtp.cc"]')) {
+      const tpScript = document.createElement('script');
+      tpScript.async = true;
+      tpScript.src = 'https://emrldtp.cc/NDk2OTgy.js?t=496982';
+      document.head.appendChild(tpScript);
+    }
   }, []);
 }
 
