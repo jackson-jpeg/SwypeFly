@@ -198,9 +198,9 @@ export default function DestinationDetail() {
                 <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Flights</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>
-                    {formatFlightPrice(destination.flightPrice, destination.currency)}
+                    {formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}
                   </span>
-                  {destination.livePrice != null && (
+                  {(destination.priceSource === 'travelpayouts' || destination.priceSource === 'amadeus') && (
                     <span style={{
                       fontSize: 10, fontWeight: 700, color: '#4ADE80',
                       backgroundColor: 'rgba(74,222,128,0.1)', borderRadius: 4,
@@ -211,12 +211,33 @@ export default function DestinationDetail() {
                   )}
                 </div>
               </div>
+              {destination.priceFetchedAt && (
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>
+                    Updated {(() => {
+                      const hrs = Math.round((Date.now() - new Date(destination.priceFetchedAt).getTime()) / 3600000);
+                      return hrs < 1 ? 'just now' : `${hrs}h ago`;
+                    })()}
+                  </span>
+                </div>
+              )}
               <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.04)' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Hotels</span>
-                <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>
-                  {formatHotelPrice(destination.hotelPricePerNight, destination.currency)}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>
+                    {formatHotelPrice(destination.hotelPricePerNight, destination.currency, destination.hotelPriceSource)}
+                  </span>
+                  {destination.hotelPriceSource === 'liteapi' && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: '#4ADE80',
+                      backgroundColor: 'rgba(74,222,128,0.1)', borderRadius: 4,
+                      padding: '2px 6px', letterSpacing: 0.5,
+                    }}>
+                      LIVE
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.04)' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

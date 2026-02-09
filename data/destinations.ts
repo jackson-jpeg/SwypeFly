@@ -1,6 +1,6 @@
 import type { Destination } from '../types/destination';
 
-export const mockDestinations: Destination[] = [
+export const destinations: Destination[] = [
   {
     id: '1',
     iataCode: 'DPS',

@@ -29,13 +29,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Destination not found' });
     }
 
-    // Fetch cached price for this origin
-    const { data: price } = await supabase
-      .from('cached_prices')
-      .select('*')
-      .eq('origin', origin)
-      .eq('destination_iata', dest.iata_code)
-      .single();
+    // Fetch cached prices for this origin + hotel prices
+    const [{ data: price }, { data: hotelPrice }] = await Promise.all([
+      supabase
+        .from('cached_prices')
+        .select('*')
+        .eq('origin', origin)
+        .eq('destination_iata', dest.iata_code)
+        .single(),
+      supabase
+        .from('cached_hotel_prices')
+        .select('*')
+        .eq('destination_iata', dest.iata_code)
+        .single(),
+    ]);
 
     // Transform to frontend shape
     const result = {
@@ -48,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       imageUrl: dest.image_url,
       imageUrls: dest.image_urls,
       flightPrice: price?.price ?? dest.flight_price,
-      hotelPricePerNight: dest.hotel_price_per_night,
+      hotelPricePerNight: hotelPrice?.price_per_night ?? dest.hotel_price_per_night,
       currency: dest.currency,
       vibeTags: dest.vibe_tags,
       rating: dest.rating,
@@ -57,6 +64,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       averageTemp: dest.average_temp,
       flightDuration: price?.duration || dest.flight_duration,
       livePrice: price?.price ?? null,
+      priceSource: price ? (price.source || 'estimate') : 'estimate',
+      priceFetchedAt: price?.fetched_at || undefined,
+      liveHotelPrice: hotelPrice?.price_per_night ?? null,
+      hotelPriceSource: hotelPrice ? (hotelPrice.source || 'estimate') : 'estimate',
     };
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');

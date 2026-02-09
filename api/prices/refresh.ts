@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { fetchCityDirections, fetchCheapPrices } from '../../services/travelpayouts';
 
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
@@ -12,7 +13,7 @@ const AMADEUS_KEY = process.env.AMADEUS_API_KEY || '';
 const AMADEUS_SECRET = process.env.AMADEUS_API_SECRET || '';
 const AMADEUS_BASE = 'https://test.api.amadeus.com';
 
-// ─── Auth ────────────────────────────────────────────────────────────
+// ─── Amadeus Auth ─────────────────────────────────────────────────────
 
 let tokenCache: { token: string; expiresAt: number } | null = null;
 
@@ -31,66 +32,17 @@ async function getAmadeusToken(): Promise<string> {
   return tokenCache.token;
 }
 
-// ─── Price Fetching ──────────────────────────────────────────────────
+// ─── Amadeus Fallback ─────────────────────────────────────────────────
 
 interface PriceResult {
   destination: string;
   price: number;
   currency: string;
   airline: string;
-  duration: string;
+  source: 'travelpayouts' | 'amadeus' | 'estimate';
 }
 
-function formatDuration(iso: string): string {
-  const m = iso.match(/PT(\d+H)?(\d+M)?/);
-  if (!m) return '';
-  return `${m[1]?.replace('H', 'h') || ''}${m[2] ? ` ${m[2].replace('M', 'm')}` : ''}`.trim();
-}
-
-/**
- * Try Flight Inspiration Search first — returns many destinations in one call.
- * Falls back to individual flight-offers for any destinations not covered.
- */
-async function fetchInspirationPrices(
-  token: string,
-  origin: string,
-): Promise<Map<string, PriceResult>> {
-  const results = new Map<string, PriceResult>();
-
-  try {
-    const res = await fetch(
-      `${AMADEUS_BASE}/v1/shopping/flight-destinations?origin=${origin}&oneWay=false&nonStop=false`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (res.ok) {
-      const data = (await res.json()) as {
-        data?: Array<{
-          destination: string;
-          price: { total: string };
-          departureDate: string;
-          returnDate: string;
-        }>;
-      };
-      if (data.data) {
-        for (const item of data.data) {
-          results.set(item.destination, {
-            destination: item.destination,
-            price: Math.round(parseFloat(item.price.total)),
-            currency: 'USD',
-            airline: '',
-            duration: '',
-          });
-        }
-      }
-    }
-  } catch {
-    // Inspiration endpoint may not work on test sandbox — that's fine
-  }
-
-  return results;
-}
-
-async function fetchIndividualPrice(
+async function fetchAmadeusPrice(
   token: string,
   origin: string,
   dest: string,
@@ -108,17 +60,12 @@ async function fetchIndividualPrice(
     if (!offer) return null;
 
     const priceObj = offer.price as Record<string, string>;
-    const itin = (offer.itineraries as Array<Record<string, unknown>>)?.[0];
-    const seg = (itin?.segments as Array<Record<string, unknown>>)?.[0];
-    const dicts = data.dictionaries as Record<string, Record<string, string>> | undefined;
-    const carrier = seg?.carrierCode as string;
-
     return {
       destination: dest,
       price: Math.round(parseFloat(priceObj.grandTotal)),
       currency: priceObj.currency || 'USD',
-      airline: dicts?.carriers?.[carrier] || carrier || '',
-      duration: formatDuration((itin?.duration as string) || ''),
+      airline: '',
+      source: 'amadeus',
     };
   } catch {
     return null;
@@ -129,72 +76,143 @@ async function fetchIndividualPrice(
 
 const DEFAULT_ORIGINS = ['TPA', 'LAX', 'JFK', 'ORD', 'ATL', 'SFO', 'MIA', 'DFW', 'SEA', 'BOS'];
 
-/**
- * Collect all origins that need refreshing:
- * - DISTINCT departure_code values from user_preferences
- * - Merged with the hardcoded top-10 fallback list
- */
 async function getActiveOrigins(): Promise<string[]> {
   const origins = new Set(DEFAULT_ORIGINS);
-
   try {
     const { data } = await supabase
       .from('user_preferences')
       .select('departure_code');
-
     if (data) {
       for (const row of data) {
         if (row.departure_code) origins.add(row.departure_code);
       }
     }
   } catch {
-    // If user_preferences table doesn't exist yet, just use defaults
+    // user_preferences table may not exist yet
   }
-
   return Array.from(origins);
 }
 
-/**
- * Refresh prices for a single origin. Extracted from the old handler
- * so it can be called in a loop for multi-origin refresh.
- */
-async function refreshOrigin(
-  token: string,
-  origin: string,
-  allIatas: string[],
-): Promise<{ origin: string; fetched: number; total: number }> {
-  // Step 1: Try inspiration search
-  const inspirationPrices = await fetchInspirationPrices(token, origin);
-  console.log(`[refresh] Inspiration returned ${inspirationPrices.size} prices for ${origin}`);
+// ─── Round-robin: pick the origin refreshed longest ago ──────────────
 
-  // Step 2: Fill gaps with individual flight-offers (batched, 3 concurrent)
-  const missing = allIatas.filter((iata) => !inspirationPrices.has(iata));
-  const date = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+async function pickNextOrigin(): Promise<string> {
+  const origins = await getActiveOrigins();
 
-  console.log(`[refresh] Fetching ${missing.length} individual prices for ${origin}...`);
+  // Check which origin was refreshed longest ago
+  const { data: statusRows } = await supabase
+    .from('cached_prices')
+    .select('origin, fetched_at')
+    .order('fetched_at', { ascending: true });
 
-  const allResults = new Map(inspirationPrices);
-
-  for (let i = 0; i < missing.length; i += 3) {
-    const batch = missing.slice(i, i + 3);
-    const promises = batch.map((dest) => fetchIndividualPrice(token, origin, dest, date));
-    const results = await Promise.all(promises);
-    for (const r of results) {
-      if (r) allResults.set(r.destination, r);
+  const lastRefreshed = new Map<string, string>();
+  if (statusRows) {
+    for (const row of statusRows) {
+      // Track the most recent fetch per origin
+      if (!lastRefreshed.has(row.origin) || row.fetched_at > lastRefreshed.get(row.origin)!) {
+        lastRefreshed.set(row.origin, row.fetched_at);
+      }
     }
-    if (i + 3 < missing.length) await new Promise((r) => setTimeout(r, 250));
   }
 
-  console.log(`[refresh] Total prices for ${origin}: ${allResults.size}/${allIatas.length}`);
+  // Find origin that was refreshed longest ago (or never refreshed)
+  let oldest: string = origins[0];
+  let oldestTime = Infinity;
+  for (const org of origins) {
+    const ts = lastRefreshed.get(org);
+    if (!ts) return org; // never refreshed — do this one
+    const t = new Date(ts).getTime();
+    if (t < oldestTime) {
+      oldestTime = t;
+      oldest = org;
+    }
+  }
+  return oldest;
+}
 
-  // Step 3: Upsert into cached_prices
+// ─── Refresh prices for a single origin ──────────────────────────────
+
+async function refreshOrigin(
+  origin: string,
+  allIatas: string[],
+): Promise<{ origin: string; fetched: number; total: number; sources: Record<string, number> }> {
+  const sourceCounts: Record<string, number> = { travelpayouts: 0, amadeus: 0 };
+
+  // Step 1: Primary — Travelpayouts city-directions (bulk prices in one call)
+  const tpPrices = await fetchCityDirections(origin);
+  console.log(`[refresh] Travelpayouts city-directions returned ${tpPrices.size} prices for ${origin}`);
+
+  const allResults = new Map<string, PriceResult>();
+  for (const iata of allIatas) {
+    const tp = tpPrices.get(iata);
+    if (tp) {
+      allResults.set(iata, {
+        destination: iata,
+        price: tp.price,
+        currency: 'USD',
+        airline: tp.airline,
+        source: 'travelpayouts',
+      });
+      sourceCounts.travelpayouts++;
+    }
+  }
+
+  // Step 2: Fill gaps — Travelpayouts cheap-prices for individual routes
+  const missingAfterTP = allIatas.filter((iata) => !allResults.has(iata));
+  if (missingAfterTP.length > 0) {
+    console.log(`[refresh] Fetching ${missingAfterTP.length} individual Travelpayouts prices for ${origin}...`);
+    for (let i = 0; i < missingAfterTP.length; i += 5) {
+      const batch = missingAfterTP.slice(i, i + 5);
+      const promises = batch.map((dest) => fetchCheapPrices(origin, dest));
+      const results = await Promise.all(promises);
+      for (const r of results) {
+        if (r) {
+          allResults.set(r.destination, {
+            destination: r.destination,
+            price: r.price,
+            currency: 'USD',
+            airline: r.airline,
+            source: 'travelpayouts',
+          });
+          sourceCounts.travelpayouts++;
+        }
+      }
+    }
+  }
+
+  // Step 3: Final fallback — Amadeus for any still-missing destinations
+  const missingAfterAll = allIatas.filter((iata) => !allResults.has(iata));
+  if (missingAfterAll.length > 0 && AMADEUS_KEY && AMADEUS_SECRET) {
+    console.log(`[refresh] Fetching ${missingAfterAll.length} Amadeus fallback prices for ${origin}...`);
+    try {
+      const amadeusToken = await getAmadeusToken();
+      const date = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+      for (let i = 0; i < missingAfterAll.length; i += 3) {
+        const batch = missingAfterAll.slice(i, i + 3);
+        const promises = batch.map((dest) => fetchAmadeusPrice(amadeusToken, origin, dest, date));
+        const results = await Promise.all(promises);
+        for (const r of results) {
+          if (r) {
+            allResults.set(r.destination, r);
+            sourceCounts.amadeus++;
+          }
+        }
+        if (i + 3 < missingAfterAll.length) await new Promise((r) => setTimeout(r, 250));
+      }
+    } catch (err) {
+      console.warn('[refresh] Amadeus fallback failed:', err);
+    }
+  }
+
+  console.log(`[refresh] Total prices for ${origin}: ${allResults.size}/${allIatas.length} (TP: ${sourceCounts.travelpayouts}, Amadeus: ${sourceCounts.amadeus})`);
+
+  // Step 4: Upsert into cached_prices
   const rows = Array.from(allResults.values()).map((p) => ({
     origin,
     destination_iata: p.destination,
     price: p.price,
     currency: p.currency,
     airline: p.airline,
-    duration: p.duration,
+    source: p.source,
     fetched_at: new Date().toISOString(),
   }));
 
@@ -208,7 +226,7 @@ async function refreshOrigin(
     }
   }
 
-  return { origin, fetched: allResults.size, total: allIatas.length };
+  return { origin, fetched: allResults.size, total: allIatas.length, sources: sourceCounts };
 }
 
 // ─── Handler ─────────────────────────────────────────────────────────
@@ -228,8 +246,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const originParam = (req.query.origin as string) || '';
 
   try {
-    const token = await getAmadeusToken();
-
     // Get all active destination IATA codes from Supabase
     const { data: destinations, error: dbErr } = await supabase
       .from('destinations')
@@ -242,28 +258,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const allIatas = destinations.map((d) => d.iata_code as string);
 
-    // Determine which origins to refresh
+    // Determine which origin(s) to refresh
     let origins: string[];
-    if (!originParam || originParam === 'ALL') {
-      origins = await getActiveOrigins();
-    } else {
+    if (originParam && originParam !== 'ALL') {
+      // Specific origin requested — refresh just that one
       origins = [originParam];
+    } else {
+      // No param or ALL: round-robin — refresh ONE origin (the stalest)
+      const next = await pickNextOrigin();
+      origins = [next];
+      console.log(`[refresh] Round-robin selected origin: ${next}`);
     }
 
     console.log(`[refresh] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`);
 
-    const results: Array<{ origin: string; fetched: number; total: number }> = [];
-
-    for (let i = 0; i < origins.length; i++) {
-      const org = origins[i];
-      console.log(`[refresh] Processing origin ${i + 1}/${origins.length}: ${org}`);
-      const result = await refreshOrigin(token, org, allIatas);
+    const results = [];
+    for (const org of origins) {
+      const result = await refreshOrigin(org, allIatas);
       results.push(result);
-
-      // 500ms delay between origins to respect Amadeus sandbox rate limits
-      if (i < origins.length - 1) {
-        await new Promise((r) => setTimeout(r, 500));
-      }
     }
 
     return res.status(200).json({

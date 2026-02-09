@@ -83,6 +83,11 @@ interface ScoredDest {
   live_price?: number | null;
   live_airline?: string;
   live_duration?: string;
+  price_source?: string;
+  price_fetched_at?: string;
+  // Merged from cached_hotel_prices
+  live_hotel_price?: number | null;
+  hotel_price_source?: string;
 }
 
 interface UserPrefs {
@@ -389,25 +394,46 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
 
   if (error || !destinations) throw new Error(error?.message || 'Failed to fetch destinations');
 
-  const { data: prices } = await supabase
-    .from('cached_prices')
-    .select('*')
-    .eq('origin', origin);
+  const [{ data: prices }, { data: hotelPrices }] = await Promise.all([
+    supabase.from('cached_prices').select('*').eq('origin', origin),
+    supabase.from('cached_hotel_prices').select('*'),
+  ]);
 
-  const priceMap = new Map<string, { price: number; airline: string; duration: string }>();
+  const priceMap = new Map<string, { price: number; airline: string; duration: string; source: string; fetched_at: string }>();
   if (prices) {
     for (const p of prices) {
-      priceMap.set(p.destination_iata, { price: p.price, airline: p.airline, duration: p.duration });
+      priceMap.set(p.destination_iata, {
+        price: p.price,
+        airline: p.airline || '',
+        duration: p.duration || '',
+        source: p.source || 'estimate',
+        fetched_at: p.fetched_at || '',
+      });
+    }
+  }
+
+  const hotelPriceMap = new Map<string, { price: number; source: string }>();
+  if (hotelPrices) {
+    for (const h of hotelPrices) {
+      hotelPriceMap.set(h.destination_iata, {
+        price: h.price_per_night,
+        source: h.source || 'estimate',
+      });
     }
   }
 
   const merged: ScoredDest[] = destinations.map((d) => {
     const lp = priceMap.get(d.iata_code);
+    const hp = hotelPriceMap.get(d.iata_code);
     return {
       ...d,
       live_price: lp?.price ?? null,
       live_airline: lp?.airline ?? '',
       live_duration: lp?.duration ?? '',
+      price_source: lp?.source ?? undefined,
+      price_fetched_at: lp?.fetched_at ?? undefined,
+      live_hotel_price: hp?.price ?? null,
+      hotel_price_source: hp?.source ?? undefined,
     };
   });
 
@@ -462,7 +488,7 @@ function toFrontend(d: ScoredDest) {
     imageUrl: d.image_url,
     imageUrls: d.image_urls,
     flightPrice: d.live_price ?? d.flight_price,
-    hotelPricePerNight: d.hotel_price_per_night,
+    hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
     currency: d.currency,
     vibeTags: d.vibe_tags,
     rating: d.rating,
@@ -471,6 +497,10 @@ function toFrontend(d: ScoredDest) {
     averageTemp: d.average_temp,
     flightDuration: d.live_duration || d.flight_duration,
     livePrice: d.live_price,
+    priceSource: d.live_price != null ? (d.price_source as 'travelpayouts' | 'amadeus' | 'estimate') : 'estimate',
+    priceFetchedAt: d.price_fetched_at || undefined,
+    liveHotelPrice: d.live_hotel_price ?? null,
+    hotelPriceSource: d.live_hotel_price != null ? (d.hotel_price_source as 'liteapi' | 'estimate') : 'estimate',
   };
 }
 

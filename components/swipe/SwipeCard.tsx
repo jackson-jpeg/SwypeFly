@@ -113,9 +113,9 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             </span>
             <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 10px' }}>·</span>
             <span style={{ color: '#FF8F65', fontWeight: 600 }}>
-              {formatFlightPrice(destination.flightPrice, destination.currency)}
+              {formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}
             </span>
-            {destination.livePrice != null && (
+            {(destination.priceSource === 'travelpayouts' || destination.priceSource === 'amadeus') && (
               <span style={{
                 marginLeft: 8,
                 width: 6, height: 6, borderRadius: 3,
@@ -176,7 +176,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 }}>
           <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>{destination.country}</Text>
           <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 15 }}>·</Text>
-          <Text style={{ color: '#FF8F65', fontSize: 15, fontWeight: '600' }}>{formatFlightPrice(destination.flightPrice, destination.currency)}</Text>
+          <Text style={{ color: '#FF8F65', fontSize: 15, fontWeight: '600' }}>{formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 }}>
           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>{destination.flightDuration}</Text>

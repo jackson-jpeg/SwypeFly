@@ -1,0 +1,105 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+import { fetchHotelRates } from '../../services/liteapi';
+
+export const maxDuration = 60;
+
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.authorization;
+
+  if (cronSecret) {
+    const provided = authHeader?.replace('Bearer ', '') || '';
+    if (provided !== cronSecret) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
+  const destParam = (req.query.destination as string) || '';
+
+  try {
+    // Get destinations to refresh
+    let destinations: Array<{ iata_code: string; city: string }>;
+    if (destParam) {
+      const { data, error } = await supabase
+        .from('destinations')
+        .select('iata_code, city')
+        .eq('iata_code', destParam)
+        .eq('is_active', true);
+      if (error || !data) {
+        return res.status(404).json({ error: 'Destination not found' });
+      }
+      destinations = data;
+    } else {
+      const { data, error } = await supabase
+        .from('destinations')
+        .select('iata_code, city')
+        .eq('is_active', true);
+      if (error || !data) {
+        return res.status(500).json({ error: 'Failed to fetch destinations' });
+      }
+      destinations = data;
+    }
+
+    // Dates: check-in 30 days from now, 3-night stay
+    const checkin = new Date(Date.now() + 30 * 86400000);
+    const checkout = new Date(Date.now() + 33 * 86400000);
+    const checkinStr = checkin.toISOString().split('T')[0];
+    const checkoutStr = checkout.toISOString().split('T')[0];
+
+    const results: Array<{ destination: string; price: number | null }> = [];
+
+    // Process in batches of 5 to avoid rate limits
+    for (let i = 0; i < destinations.length; i += 5) {
+      const batch = destinations.slice(i, i + 5);
+      const promises = batch.map((d) => fetchHotelRates(d.iata_code, checkinStr, checkoutStr));
+      const batchResults = await Promise.all(promises);
+
+      for (let j = 0; j < batch.length; j++) {
+        const dest = batch[j];
+        const rate = batchResults[j];
+        results.push({ destination: dest.iata_code, price: rate?.minPrice ?? null });
+
+        if (rate) {
+          const { error: upsertErr } = await supabase
+            .from('cached_hotel_prices')
+            .upsert(
+              {
+                destination_iata: dest.iata_code,
+                price_per_night: rate.minPrice,
+                currency: rate.currency,
+                hotel_count: rate.hotelCount,
+                source: 'liteapi',
+                fetched_at: new Date().toISOString(),
+              },
+              { onConflict: 'destination_iata' },
+            );
+          if (upsertErr) {
+            console.error(`[refresh-hotels] Upsert error for ${dest.iata_code}:`, upsertErr.message);
+          }
+        }
+      }
+
+      if (i + 5 < destinations.length) {
+        await new Promise((r) => setTimeout(r, 200));
+      }
+    }
+
+    const fetched = results.filter((r) => r.price !== null).length;
+    console.log(`[refresh-hotels] Fetched ${fetched}/${destinations.length} hotel prices`);
+
+    return res.status(200).json({
+      fetched,
+      total: destinations.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[refresh-hotels]', message);
+    return res.status(500).json({ error: 'Hotel price refresh failed', detail: message });
+  }
+}

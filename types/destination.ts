@@ -34,6 +34,10 @@ export interface Destination {
   flightDuration: string;
   livePrice?: number | null;
   imageUrls?: string[];
+  priceSource?: 'travelpayouts' | 'amadeus' | 'estimate';
+  priceFetchedAt?: string;
+  liveHotelPrice?: number | null;
+  hotelPriceSource?: 'liteapi' | 'estimate';
 }
 
 export interface DestinationFeedPage {

@@ -1,5 +1,5 @@
 /**
- * Seed destinations into Supabase from the local mock data.
+ * Seed destinations into Supabase from the local destination catalog.
  * Run: npx tsx scripts/seed-destinations.ts
  */
 import fs from 'node:fs';
@@ -31,11 +31,11 @@ const supabase = createClient(supabaseUrl, serviceRoleKey);
 // Instead, inline-require the compiled module
 async function main() {
   // Dynamic import of the destinations file
-  const { mockDestinations } = await import('../data/destinations');
+  const { destinations } = await import('../data/destinations');
 
-  console.log(`Seeding ${mockDestinations.length} destinations...`);
+  console.log(`Seeding ${destinations.length} destinations...`);
 
-  const rows = mockDestinations.map((d) => ({
+  const rows = destinations.map((d) => ({
     id: d.id,
     iata_code: d.iataCode,
     city: d.city,
