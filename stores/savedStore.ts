@@ -45,7 +45,7 @@ export const useSavedStore = create<SavedState>()(
         set(() => ({ savedIds: new Set(ids) })),
     }),
     {
-      name: 'swypefly-saved',
+      name: 'sogojet-saved',
       storage: webStorage,
       partialize: (state) => ({ savedIds: state.savedIds }),
     },

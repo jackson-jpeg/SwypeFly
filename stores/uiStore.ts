@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Platform } from 'react-native';
 import { useFeedStore } from './feedStore';
+import { supabase } from '../services/supabase';
 
 interface UIState {
   hapticsEnabled: boolean;
@@ -32,11 +33,21 @@ export const useUIStore = create<UIState>()(
       setDeparture: (city, code) => {
         set({ departureCity: city, departureCode: code });
         useFeedStore.getState().reset();
+        // Fire-and-forget sync to Supabase
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            supabase.from('user_preferences').upsert({
+              user_id: session.user.id,
+              departure_city: city,
+              departure_code: code,
+            }).then(() => {});
+          }
+        });
       },
       setCurrency: (currency) => set({ currency }),
     }),
     {
-      name: 'swypefly-prefs',
+      name: 'sogojet-prefs',
       storage: webStorage,
       partialize: (state) => ({
         hapticsEnabled: state.hapticsEnabled,

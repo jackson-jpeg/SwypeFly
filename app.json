@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "SwypeFly",
-    "slug": "SwypeFly",
+    "name": "SoGoJet",
+    "slug": "SoGoJet",
     "version": "1.0.0",
-    "scheme": "swypefly",
+    "scheme": "sogojet",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.swypefly.app"
+      "bundleIdentifier": "com.sogojet.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.swypefly.app"
+      "package": "com.sogojet.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",

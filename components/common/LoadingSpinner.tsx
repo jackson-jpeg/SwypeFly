@@ -1,7 +1,7 @@
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { useEffect } from 'react';
 
-const SPIN_CSS_ID = 'sf-spin-css';
+const SPIN_CSS_ID = 'sg-spin-css';
 
 export function LoadingSpinner() {
   useEffect(() => {

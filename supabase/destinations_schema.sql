@@ -1,4 +1,4 @@
--- SwypeFly Phase 2: Add destinations table
+-- SoGoJet Phase 2: Add destinations table
 -- Run this in the Supabase SQL Editor AFTER schema.sql
 -- (cached_prices and saved_trips already exist in schema.sql)
 

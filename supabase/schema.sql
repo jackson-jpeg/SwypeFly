@@ -1,5 +1,5 @@
 -- ============================================================
--- SwypeFly — Supabase Schema
+-- SoGoJet — Supabase Schema
 -- Run this in the Supabase SQL Editor (supabase.com → your project → SQL Editor)
 -- ============================================================
 

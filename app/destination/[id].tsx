@@ -52,7 +52,7 @@ export default function DestinationDetail() {
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   const handleShare = async () => {
-    const text = `Check out ${destination.city}, ${destination.country} on SwypeFly! ${destination.tagline}`;
+    const text = `Check out ${destination.city}, ${destination.country} on SoGoJet! ${destination.tagline}`;
     if (Platform.OS === 'web') {
       if (navigator.share) {
         try { await navigator.share({ title: destination.city, text }); } catch {}
@@ -76,12 +76,12 @@ export default function DestinationDetail() {
     return (
       <div style={{ backgroundColor: '#0A0A0A', minHeight: '100vh', position: 'relative' }}>
         <style>{`
-          .sf-cta-btn { transition: filter 0.15s, transform 0.15s; }
-          .sf-cta-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
-          .sf-cta-btn:active { transform: scale(0.98); }
-          .sf-carousel { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-          .sf-carousel::-webkit-scrollbar { display: none; }
-          .sf-carousel-img { scroll-snap-align: start; scroll-snap-stop: always; }
+          .sg-cta-btn { transition: filter 0.15s, transform 0.15s; }
+          .sg-cta-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
+          .sg-cta-btn:active { transform: scale(0.98); }
+          .sg-carousel { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+          .sg-carousel::-webkit-scrollbar { display: none; }
+          .sg-carousel-img { scroll-snap-align: start; scroll-snap-stop: always; }
         `}</style>
         {/* Close button */}
         <button
@@ -103,7 +103,7 @@ export default function DestinationDetail() {
           {/* Photo Carousel */}
           <div style={{ width: '100%', position: 'relative' }}>
             <div
-              className="sf-carousel"
+              className="sg-carousel"
               style={{
                 display: 'flex', overflowX: 'auto', scrollbarWidth: 'none',
               }}
@@ -116,7 +116,7 @@ export default function DestinationDetail() {
               {images.map((url, i) => (
                 <div
                   key={i}
-                  className="sf-carousel-img"
+                  className="sg-carousel-img"
                   style={{ minWidth: '100%', aspectRatio: '4/3', position: 'relative', flexShrink: 0 }}
                 >
                   <img
@@ -233,7 +233,7 @@ export default function DestinationDetail() {
             {/* CTAs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button
-                className="sf-cta-btn"
+                className="sg-cta-btn"
                 onClick={() => {
                   const url = flightLink(departureCode, destination.iataCode, marker);
                   window.open(url, '_blank');
@@ -247,7 +247,7 @@ export default function DestinationDetail() {
                 Check Flights
               </button>
               <button
-                className="sf-cta-btn"
+                className="sg-cta-btn"
                 onClick={() => {
                   const url = hotelLink(destination.city, destination.country, marker);
                   window.open(url, '_blank');
@@ -261,7 +261,7 @@ export default function DestinationDetail() {
                 Find Hotels
               </button>
               <button
-                className="sf-cta-btn"
+                className="sg-cta-btn"
                 onClick={() => {
                   const url = activitiesLink(destination.city, destination.country, marker);
                   window.open(url, '_blank');
@@ -277,7 +277,7 @@ export default function DestinationDetail() {
 
               {/* Save */}
               <button
-                className="sf-cta-btn"
+                className="sg-cta-btn"
                 onClick={() => toggle(destination.id)}
                 style={{
                   background: saved ? 'rgba(255,107,53,0.15)' : '#1A1A1A',
@@ -292,7 +292,7 @@ export default function DestinationDetail() {
 
               {/* Share */}
               <button
-                className="sf-cta-btn"
+                className="sg-cta-btn"
                 onClick={handleShare}
                 style={{
                   background: '#1A1A1A', color: '#fff', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16,

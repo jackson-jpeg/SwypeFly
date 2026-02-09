@@ -1,10 +1,10 @@
-# SwypeFly — Supabase & OAuth Setup Guide
+# SoGoJet — Supabase & OAuth Setup Guide
 
 ## Step 1: Create Supabase Project
 
 1. Go to [supabase.com](https://supabase.com) and sign in (or create an account)
 2. Click **New Project**
-3. Choose an organization, name it `swypefly`, pick a region close to you, set a database password
+3. Choose an organization, name it `sogojet`, pick a region close to you, set a database password
 4. Wait for the project to finish provisioning (~2 min)
 5. Go to **Settings → API**
 6. Copy **Project URL** and **anon/public key**
@@ -39,22 +39,22 @@ Supabase enables email/password auth by default. No action needed unless you wan
 2. Create a new project (or select an existing one)
 3. Go to **APIs & Services → OAuth consent screen**
    - Choose **External** user type
-   - Fill in app name: `SwypeFly`
+   - Fill in app name: `SoGoJet`
    - Add your email as support email and developer contact
    - Click **Save and Continue** through scopes (no extra scopes needed)
    - Add test users (your email) if in testing mode
 4. Go to **APIs & Services → Credentials**
 5. Click **Create Credentials → OAuth client ID**
 6. For **Web application**:
-   - Name: `SwypeFly Web`
+   - Name: `SoGoJet Web`
    - Authorized redirect URIs: add `https://<your-supabase-project>.supabase.co/auth/v1/callback`
    - Copy the **Client ID** and **Client Secret**
 7. (Optional) For **iOS**:
-   - Name: `SwypeFly iOS`
-   - Bundle ID: `com.swypefly.app`
+   - Name: `SoGoJet iOS`
+   - Bundle ID: `com.sogojet.app`
 8. (Optional) For **Android**:
-   - Name: `SwypeFly Android`
-   - Package name: `com.swypefly.app`
+   - Name: `SoGoJet Android`
+   - Package name: `com.sogojet.app`
 
 ### 4b: Supabase Dashboard
 
@@ -83,8 +83,8 @@ Supabase enables email/password auth by default. No action needed unless you wan
 - Supabase handles the OAuth callback automatically via its `/auth/v1/callback` endpoint
 
 ### For native (Expo):
-- The app uses the `swypefly://` deep link scheme (already configured in `app.json`)
-- The auth hook redirects to `swypefly://auth/callback` on native
+- The app uses the `sogojet://` deep link scheme (already configured in `app.json`)
+- The auth hook redirects to `sogojet://auth/callback` on native
 - You may need to set up Expo AuthSession for production builds
 
 ## Verification

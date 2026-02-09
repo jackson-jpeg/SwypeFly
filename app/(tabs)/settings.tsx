@@ -1,7 +1,9 @@
-import { View, Text, Switch, ScrollView, Platform } from 'react-native';
+import { View, Text, Switch, ScrollView, Platform, Pressable, Modal, FlatList } from 'react-native';
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { useUIStore } from '../../stores/uiStore';
 import { useSavedStore } from '../../stores/savedStore';
+import { useAuthContext } from '../../hooks/AuthContext';
 
 const DEPARTURE_OPTIONS = [
   { city: 'Tampa', code: 'TPA' },
@@ -66,13 +68,14 @@ function WebSettingsRow({ label, value, onPress }: { label: string; value: strin
     >
       <span style={{ color: '#fff', fontSize: 15, fontWeight: 500 }}>{label}</span>
       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
-        {value}{onPress ? ' ›' : ''}
+        {value}{onPress ? ' \u203A' : ''}
       </span>
     </div>
   );
 }
 
 export default function SettingsTab() {
+  const { user, signOut, isGuest } = useAuthContext();
   const hapticsEnabled = useUIStore((s) => s.hapticsEnabled);
   const toggleHaptics = useUIStore((s) => s.toggleHaptics);
   const departureCity = useUIStore((s) => s.departureCity);
@@ -82,11 +85,18 @@ export default function SettingsTab() {
   const setCurrency = useUIStore((s) => s.setCurrency);
   const savedIds = useSavedStore((s) => s.savedIds);
   const [showCleared, setShowCleared] = useState(false);
+  const [showDepartureModal, setShowDepartureModal] = useState(false);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
 
   const handleClearSaved = () => {
     savedIds.forEach((id) => useSavedStore.getState().toggleSaved(id));
     setShowCleared(true);
     setTimeout(() => setShowCleared(false), 2000);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/auth/login');
   };
 
   if (Platform.OS === 'web') {
@@ -103,8 +113,51 @@ export default function SettingsTab() {
           </div>
 
           <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Preferences */}
+            {/* Account */}
             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 8, marginBottom: 4 }}>
+              Account
+            </span>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: '#1A1A1A', borderRadius: 14, padding: '16px 18px',
+            }}>
+              <div>
+                <span style={{ color: '#fff', fontSize: 15, fontWeight: 500, display: 'block' }}>
+                  {user ? user.email : 'Guest'}
+                </span>
+                {isGuest && (
+                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2, display: 'block' }}>
+                    Browsing without account
+                  </span>
+                )}
+              </div>
+              {user ? (
+                <button
+                  onClick={handleSignOut}
+                  style={{
+                    background: 'none', border: '1px solid rgba(255,80,80,0.3)',
+                    borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600,
+                    color: '#ff5050', cursor: 'pointer',
+                  }}
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.replace('/auth/login')}
+                  style={{
+                    background: 'none', border: '1px solid rgba(255,107,53,0.3)',
+                    borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600,
+                    color: '#FF6B35', cursor: 'pointer',
+                  }}
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+
+            {/* Preferences */}
+            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
               Preferences
             </span>
             <WebSelect
@@ -196,7 +249,7 @@ export default function SettingsTab() {
     );
   }
 
-  // Native fallback
+  // Native
   return (
     <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -204,15 +257,52 @@ export default function SettingsTab() {
           <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>Settings</Text>
         </View>
         <View style={{ paddingHorizontal: 20, gap: 10 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 8 }}>Preferences</Text>
+          {/* Account */}
+          <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 8 }}>Account</Text>
           <View style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }} numberOfLines={1}>
+                {user ? user.email : 'Guest'}
+              </Text>
+              {isGuest && (
+                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2 }}>
+                  Browsing without account
+                </Text>
+              )}
+            </View>
+            {user ? (
+              <Pressable onPress={handleSignOut} style={{ borderWidth: 1, borderColor: 'rgba(255,80,80,0.3)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 }}>
+                <Text style={{ color: '#ff5050', fontSize: 13, fontWeight: '600' }}>Sign Out</Text>
+              </Pressable>
+            ) : (
+              <Pressable onPress={() => router.replace('/auth/login')} style={{ borderWidth: 1, borderColor: 'rgba(255,107,53,0.3)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 }}>
+                <Text style={{ color: '#FF6B35', fontSize: 13, fontWeight: '600' }}>Sign In</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Preferences */}
+          <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 16 }}>Preferences</Text>
+
+          {/* Departure City Picker */}
+          <Pressable
+            onPress={() => setShowDepartureModal(true)}
+            style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }}>Departure City</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{departureCity} ({departureCode})</Text>
-          </View>
-          <View style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{departureCity} ({departureCode}) ›</Text>
+          </Pressable>
+
+          {/* Currency Picker */}
+          <Pressable
+            onPress={() => setShowCurrencyModal(true)}
+            style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }}>Currency</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{currency}</Text>
-          </View>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{currency} ›</Text>
+          </Pressable>
+
+          {/* Haptics */}
           <View style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
               <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }}>Haptic Feedback</Text>
@@ -223,6 +313,82 @@ export default function SettingsTab() {
           <View style={{ height: 120 }} />
         </View>
       </ScrollView>
+
+      {/* Departure City Modal */}
+      <Modal visible={showDepartureModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Departure City</Text>
+              <Pressable onPress={() => setShowDepartureModal(false)}>
+                <Text style={{ color: '#FF6B35', fontSize: 15, fontWeight: '600' }}>Done</Text>
+              </Pressable>
+            </View>
+            <FlatList
+              data={DEPARTURE_OPTIONS}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    setDeparture(item.city, item.code);
+                    setShowDepartureModal(false);
+                  }}
+                  style={{
+                    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                    paddingVertical: 14, paddingHorizontal: 20,
+                    backgroundColor: item.code === departureCode ? 'rgba(255,107,53,0.1)' : 'transparent',
+                  }}
+                >
+                  <Text style={{ color: item.code === departureCode ? '#FF6B35' : '#fff', fontSize: 15, fontWeight: item.code === departureCode ? '600' : '400' }}>
+                    {item.city} ({item.code})
+                  </Text>
+                  {item.code === departureCode && (
+                    <Text style={{ color: '#FF6B35', fontSize: 16 }}>✓</Text>
+                  )}
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Currency Modal */}
+      <Modal visible={showCurrencyModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '50%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Currency</Text>
+              <Pressable onPress={() => setShowCurrencyModal(false)}>
+                <Text style={{ color: '#FF6B35', fontSize: 15, fontWeight: '600' }}>Done</Text>
+              </Pressable>
+            </View>
+            <FlatList
+              data={CURRENCY_OPTIONS}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    setCurrency(item);
+                    setShowCurrencyModal(false);
+                  }}
+                  style={{
+                    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                    paddingVertical: 14, paddingHorizontal: 20,
+                    backgroundColor: item === currency ? 'rgba(255,107,53,0.1)' : 'transparent',
+                  }}
+                >
+                  <Text style={{ color: item === currency ? '#FF6B35' : '#fff', fontSize: 15, fontWeight: item === currency ? '600' : '400' }}>
+                    {item}
+                  </Text>
+                  {item === currency && (
+                    <Text style={{ color: '#FF6B35', fontSize: 16 }}>✓</Text>
+                  )}
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

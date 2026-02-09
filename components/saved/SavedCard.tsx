@@ -15,22 +15,22 @@ export function SavedCard({ destination }: SavedCardProps) {
     return (
       <>
         <style>{`
-          .sf-saved-card {
+          .sg-saved-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
           }
-          .sf-saved-card:hover {
+          .sg-saved-card:hover {
             transform: scale(1.02);
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
           }
-          .sf-saved-card:hover .sf-saved-img {
+          .sg-saved-card:hover .sg-saved-img {
             filter: brightness(1.08);
           }
-          .sf-saved-card:active {
+          .sg-saved-card:active {
             transform: scale(0.98);
           }
         `}</style>
         <div
-          className="sf-saved-card"
+          className="sg-saved-card"
           onClick={handlePress}
           style={{
             position: 'relative',
@@ -42,7 +42,7 @@ export function SavedCard({ destination }: SavedCardProps) {
           }}
         >
           <img
-            className="sf-saved-img"
+            className="sg-saved-img"
             src={destination.imageUrl}
             alt={destination.city}
             style={{

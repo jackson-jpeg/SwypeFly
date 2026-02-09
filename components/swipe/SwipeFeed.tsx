@@ -42,35 +42,35 @@ export function SwipeFeed() {
 
   const [showHint, setShowHint] = useState(() => {
     if (Platform.OS !== 'web') return false;
-    try { return !localStorage.getItem('sf-swiped'); } catch { return true; }
+    try { return !localStorage.getItem('sg-swiped'); } catch { return true; }
   });
 
   // Inject scroll-snap CSS for web
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    const id = 'swypefly-snap-css';
+    const id = 'sogojet-snap-css';
     if (document.getElementById(id)) return;
     const style = document.createElement('style');
     style.id = id;
     style.textContent = `
-      .sf-feed {
+      .sg-feed {
         scroll-snap-type: y mandatory;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-y: contain;
       }
-      .sf-feed::-webkit-scrollbar { display: none; }
-      .sf-card-snap {
+      .sg-feed::-webkit-scrollbar { display: none; }
+      .sg-card-snap {
         scroll-snap-align: start;
         scroll-snap-stop: always;
       }
-      @keyframes sf-bounce {
+      @keyframes sg-bounce {
         0%, 100% { transform: translateY(0); opacity: 0.6; }
         50% { transform: translateY(-12px); opacity: 1; }
       }
-      .sf-swipe-hint {
+      .sg-swipe-hint {
         position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
         display: flex; flex-direction: column; align-items: center; gap: 6px;
-        animation: sf-bounce 1.8s ease-in-out infinite;
+        animation: sg-bounce 1.8s ease-in-out infinite;
         pointer-events: none; z-index: 20;
         transition: opacity 0.4s;
       }
@@ -142,7 +142,7 @@ export function SwipeFeed() {
 
         if (showHint && index > 0) {
           setShowHint(false);
-          try { localStorage.setItem('sf-swiped', '1'); } catch {}
+          try { localStorage.setItem('sg-swiped', '1'); } catch {}
         }
 
         if (index >= destinations.length - 3 && hasNextPage && !isFetchingNextPage) {
@@ -214,7 +214,7 @@ export function SwipeFeed() {
     return (
       <div
         ref={webScrollRef}
-        className="sf-feed"
+        className="sg-feed"
         style={{
           height: '100vh',
           width: '100%',
@@ -227,7 +227,7 @@ export function SwipeFeed() {
         {destinations.map((destination, index) => (
           <div
             key={destination.id}
-            className="sf-card-snap"
+            className="sg-card-snap"
             style={{ height: '100vh', width: '100%', position: 'relative' }}
           >
             <SwipeCard
@@ -241,7 +241,7 @@ export function SwipeFeed() {
               onToggleSave={() => handleToggleSave(destination.id)}
             />
             {index === 0 && showHint && (
-              <div className="sf-swipe-hint">
+              <div className="sg-swipe-hint">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                   <path d="M12 5l0 14M5 12l7-7 7 7" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -255,7 +255,7 @@ export function SwipeFeed() {
         {/* End-of-feed card */}
         {!hasNextPage && destinations.length > 0 && (
           <div
-            className="sf-card-snap"
+            className="sg-card-snap"
             style={{
               height: '100vh', width: '100%', position: 'relative',
               display: 'flex', alignItems: 'center', justifyContent: 'center',

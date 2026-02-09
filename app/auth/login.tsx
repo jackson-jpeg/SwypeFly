@@ -86,7 +86,7 @@ function WebLogin() {
             letterSpacing: -1,
           }}
         >
-          Swype<span style={{ color: '#FF6B35' }}>Fly</span>
+          SoGo<span style={{ color: '#FF6B35' }}>Jet</span>
         </h1>
         <p
           style={{
@@ -96,7 +96,7 @@ function WebLogin() {
             fontWeight: 400,
           }}
         >
-          Swipe to discover your next adventure
+          So many places to go — So Go Jet.
         </p>
 
         {/* Auth buttons */}
@@ -326,10 +326,10 @@ function NativeLogin() {
     >
       {/* Logo */}
       <Text style={{ fontSize: 42, fontWeight: '800', color: '#fff', textAlign: 'center', letterSpacing: -1 }}>
-        Swype<Text style={{ color: '#FF6B35' }}>Fly</Text>
+        SoGo<Text style={{ color: '#FF6B35' }}>Jet</Text>
       </Text>
       <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8, marginBottom: 40 }}>
-        Swipe to discover your next adventure
+        So many places to go — So Go Jet.
       </Text>
 
       {/* Google */}

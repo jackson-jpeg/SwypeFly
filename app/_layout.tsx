@@ -20,7 +20,7 @@ function useWebStyles() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const style = document.createElement('style');
-    style.id = 'swypefly-global';
+    style.id = 'sogojet-global';
     style.textContent = `
       * { box-sizing: border-box; }
       html, body, #root, #main {
@@ -61,7 +61,7 @@ function useWebStyles() {
     }
     themeColor.setAttribute('content', '#0A0A0A');
 
-    document.title = 'SwypeFly — Swipe to Discover Your Next Adventure';
+    document.title = 'SoGoJet — So many places to go — So Go Jet.';
 
     // PWA: add manifest link
     if (!document.querySelector('link[rel="manifest"]')) {

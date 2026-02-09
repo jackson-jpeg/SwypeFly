@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { supabase } from '../services/supabase';
+import { useUIStore } from '../stores/uiStore';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface AuthState {
@@ -38,10 +39,17 @@ export function useAuth(): Auth {
     try {
       const { data } = await supabase
         .from('user_preferences')
-        .select('has_completed_onboarding')
+        .select('has_completed_onboarding, departure_city, departure_code')
         .eq('user_id', userId)
         .single();
       setHasCompletedOnboarding(data?.has_completed_onboarding ?? false);
+      // Hydrate departure city from Supabase if set
+      if (data?.departure_city && data?.departure_code) {
+        const store = useUIStore.getState();
+        if (store.departureCity !== data.departure_city || store.departureCode !== data.departure_code) {
+          useUIStore.setState({ departureCity: data.departure_city, departureCode: data.departure_code });
+        }
+      }
     } catch {
       // Table may not exist yet if Supabase isn't set up — default to true to skip onboarding
       setHasCompletedOnboarding(true);
@@ -85,7 +93,7 @@ export function useAuth(): Auth {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'swypefly://auth/callback',
+          redirectTo: 'sogojet://auth/callback',
         },
       });
     }
@@ -103,7 +111,7 @@ export function useAuth(): Auth {
       await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: 'swypefly://auth/callback',
+          redirectTo: 'sogojet://auth/callback',
         },
       });
     }

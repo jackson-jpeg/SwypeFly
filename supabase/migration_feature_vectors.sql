@@ -1,5 +1,5 @@
 -- ============================================================
--- SwypeFly — Feature Vectors Migration
+-- SoGoJet — Feature Vectors Migration
 -- Run this in the Supabase SQL Editor
 -- Adds feature vector columns to destinations, preference
 -- vectors to user_preferences, and tracking columns to swipe_history.

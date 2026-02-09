@@ -7,6 +7,14 @@ import { supabase } from '../../services/supabase';
 type TravelerType = 'beach' | 'city' | 'adventure' | 'culture';
 type BudgetLevel = 'budget' | 'comfortable' | 'luxury';
 
+const TYPE_TO_PREFS: Record<TravelerType, Record<string, number>> = {
+  beach: { pref_beach: 0.9, pref_nature: 0.6, pref_city: 0.3, pref_adventure: 0.4, pref_culture: 0.3, pref_nightlife: 0.4, pref_food: 0.5 },
+  city: { pref_city: 0.9, pref_nightlife: 0.7, pref_food: 0.6, pref_culture: 0.5, pref_beach: 0.3, pref_adventure: 0.3, pref_nature: 0.2 },
+  adventure: { pref_adventure: 0.9, pref_nature: 0.7, pref_beach: 0.4, pref_culture: 0.4, pref_city: 0.2, pref_nightlife: 0.2, pref_food: 0.4 },
+  culture: { pref_culture: 0.9, pref_food: 0.7, pref_city: 0.5, pref_adventure: 0.4, pref_nature: 0.3, pref_beach: 0.3, pref_nightlife: 0.3 },
+};
+const BUDGET_TO_NUMERIC: Record<BudgetLevel, number> = { budget: 1, comfortable: 2, luxury: 3 };
+
 const TRAVELER_OPTIONS: { type: TravelerType; label: string; emoji: string; desc: string }[] = [
   { type: 'beach', label: 'Beach', emoji: '\u{1F3D6}', desc: 'Sun, sand & waves' },
   { type: 'city', label: 'City', emoji: '\u{1F3D9}', desc: 'Urban explorer' },
@@ -34,7 +42,10 @@ function WebOnboarding() {
       user_id: user.id,
       traveler_type: travelerType,
       budget_level: budgetLevel,
+      budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
+      travel_style: travelerType,
       has_completed_onboarding: true,
+      ...(TYPE_TO_PREFS[travelerType] || {}),
     });
     setSaving(false);
     router.replace('/(tabs)');
@@ -260,7 +271,10 @@ function NativeOnboarding() {
       user_id: user.id,
       traveler_type: travelerType,
       budget_level: budgetLevel,
+      budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
+      travel_style: travelerType,
       has_completed_onboarding: true,
+      ...(TYPE_TO_PREFS[travelerType] || {}),
     });
     setSaving(false);
     router.replace('/(tabs)');

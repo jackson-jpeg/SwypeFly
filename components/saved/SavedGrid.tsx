@@ -40,20 +40,20 @@ export function SavedGrid() {
     return (
       <>
         <style>{`
-          .sf-saved-grid {
+          .sg-saved-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             padding: 0 16px 16px 16px;
           }
           @media (min-width: 768px) {
-            .sf-saved-grid { grid-template-columns: repeat(3, 1fr); }
+            .sg-saved-grid { grid-template-columns: repeat(3, 1fr); }
           }
           @media (min-width: 1200px) {
-            .sf-saved-grid { grid-template-columns: repeat(4, 1fr); max-width: 1200px; margin: 0 auto; }
+            .sg-saved-grid { grid-template-columns: repeat(4, 1fr); max-width: 1200px; margin: 0 auto; }
           }
         `}</style>
-        <div className="sf-saved-grid">
+        <div className="sg-saved-grid">
           {savedDestinations.map((d) => (
             <SavedCard key={d.id} destination={d} />
           ))}
