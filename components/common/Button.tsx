@@ -10,9 +10,9 @@ interface ButtonProps {
 }
 
 const variantStyles: Record<ButtonVariant, { bg: string; color: string; border?: string }> = {
-  primary: { bg: '#FF6B35', color: '#fff' },
-  secondary: { bg: '#1A1A1A', color: '#fff' },
-  ghost: { bg: 'transparent', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.3)' },
+  primary: { bg: '#38BDF8', color: '#fff' },
+  secondary: { bg: '#F1F5F9', color: '#1E293B' },
+  ghost: { bg: 'transparent', color: '#38BDF8', border: '1px solid rgba(56,189,248,0.3)' },
 };
 
 export function Button({ label, onPress, variant = 'primary', disabled = false }: ButtonProps) {

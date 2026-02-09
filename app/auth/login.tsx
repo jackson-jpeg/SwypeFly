@@ -86,7 +86,7 @@ function WebLogin() {
             letterSpacing: -1,
           }}
         >
-          SoGo<span style={{ color: '#FF6B35' }}>Jet</span>
+          SoGo<span style={{ color: '#38BDF8' }}>Jet</span>
         </h1>
         <p
           style={{
@@ -242,7 +242,7 @@ function WebLogin() {
                   padding: '12px 20px',
                   borderRadius: 8,
                   border: 'none',
-                  backgroundColor: '#FF6B35',
+                  backgroundColor: '#38BDF8',
                   color: '#fff',
                   fontSize: 15,
                   fontWeight: 600,
@@ -326,7 +326,7 @@ function NativeLogin() {
     >
       {/* Logo */}
       <Text style={{ fontSize: 42, fontWeight: '800', color: '#fff', textAlign: 'center', letterSpacing: -1 }}>
-        SoGo<Text style={{ color: '#FF6B35' }}>Jet</Text>
+        SoGo<Text style={{ color: '#38BDF8' }}>Jet</Text>
       </Text>
       <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8, marginBottom: 40 }}>
         So many places to go — So Go Jet.
@@ -432,7 +432,7 @@ function NativeLogin() {
             onPress={handleEmailAuth}
             disabled={loading}
             style={{
-              backgroundColor: '#FF6B35',
+              backgroundColor: '#38BDF8',
               borderRadius: 8,
               paddingVertical: 12,
               alignItems: 'center',

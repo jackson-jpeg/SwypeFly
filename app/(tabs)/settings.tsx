@@ -29,17 +29,18 @@ function WebSelect({ label, value, options, onChange }: {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      backgroundColor: '#1A1A1A', borderRadius: 14, padding: '16px 18px',
+      backgroundColor: '#FFFFFF', borderRadius: 14, padding: '16px 18px',
+      border: '1px solid #E2E8F0',
     }}>
-      <span style={{ color: '#fff', fontSize: 15, fontWeight: 500 }}>{label}</span>
+      <span style={{ color: '#1E293B', fontSize: 15, fontWeight: 500 }}>{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
-          background: '#2A2A2A', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.08)',
+          background: '#F1F5F9', color: '#1E293B', border: '1px solid #E2E8F0',
           borderRadius: 8, padding: '6px 12px', fontSize: 14, cursor: 'pointer',
           appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none' as unknown as undefined,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'right 8px center',
           paddingRight: 28,
@@ -59,15 +60,16 @@ function WebSettingsRow({ label, value, onPress }: { label: string; value: strin
       onClick={onPress}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: '#1A1A1A', borderRadius: 14, padding: '16px 18px',
+        backgroundColor: '#FFFFFF', borderRadius: 14, padding: '16px 18px',
+        border: '1px solid #E2E8F0',
         cursor: onPress ? 'pointer' : 'default',
         transition: 'background-color 0.15s',
       }}
-      onMouseEnter={(e) => { if (onPress) (e.currentTarget as HTMLElement).style.backgroundColor = '#222'; }}
-      onMouseLeave={(e) => { if (onPress) (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A1A'; }}
+      onMouseEnter={(e) => { if (onPress) (e.currentTarget as HTMLElement).style.backgroundColor = '#F8FAFC'; }}
+      onMouseLeave={(e) => { if (onPress) (e.currentTarget as HTMLElement).style.backgroundColor = '#FFFFFF'; }}
     >
-      <span style={{ color: '#fff', fontSize: 15, fontWeight: 500 }}>{label}</span>
-      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+      <span style={{ color: '#1E293B', fontSize: 15, fontWeight: 500 }}>{label}</span>
+      <span style={{ color: '#94A3B8', fontSize: 14 }}>
         {value}{onPress ? ' \u203A' : ''}
       </span>
     </div>
@@ -102,31 +104,32 @@ export default function SettingsTab() {
   if (Platform.OS === 'web') {
     return (
       <div style={{
-        backgroundColor: '#0A0A0A', minHeight: '100vh',
+        backgroundColor: '#F8FAFC', minHeight: '100vh',
         overflowY: 'auto', paddingBottom: 100,
       }}>
         <div style={{ maxWidth: 600, margin: '0 auto', width: '100%' }}>
           <div style={{ padding: '56px 20px 12px 20px' }}>
-            <h1 style={{ margin: 0, color: '#fff', fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
+            <h1 style={{ margin: 0, color: '#1E293B', fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
               Settings
             </h1>
           </div>
 
           <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {/* Account */}
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 8, marginBottom: 4 }}>
+            <span style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 8, marginBottom: 4 }}>
               Account
             </span>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              backgroundColor: '#1A1A1A', borderRadius: 14, padding: '16px 18px',
+              backgroundColor: '#FFFFFF', borderRadius: 14, padding: '16px 18px',
+              border: '1px solid #E2E8F0',
             }}>
               <div>
-                <span style={{ color: '#fff', fontSize: 15, fontWeight: 500, display: 'block' }}>
+                <span style={{ color: '#1E293B', fontSize: 15, fontWeight: 500, display: 'block' }}>
                   {user ? user.email : 'Guest'}
                 </span>
                 {isGuest && (
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2, display: 'block' }}>
+                  <span style={{ color: '#94A3B8', fontSize: 12, marginTop: 2, display: 'block' }}>
                     Browsing without account
                   </span>
                 )}
@@ -135,9 +138,9 @@ export default function SettingsTab() {
                 <button
                   onClick={handleSignOut}
                   style={{
-                    background: 'none', border: '1px solid rgba(255,80,80,0.3)',
+                    background: 'none', border: '1px solid rgba(239,68,68,0.3)',
                     borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600,
-                    color: '#ff5050', cursor: 'pointer',
+                    color: '#EF4444', cursor: 'pointer',
                   }}
                 >
                   Sign Out
@@ -146,9 +149,9 @@ export default function SettingsTab() {
                 <button
                   onClick={() => router.replace('/auth/login')}
                   style={{
-                    background: 'none', border: '1px solid rgba(255,107,53,0.3)',
+                    background: 'none', border: '1px solid rgba(56,189,248,0.3)',
                     borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600,
-                    color: '#FF6B35', cursor: 'pointer',
+                    color: '#38BDF8', cursor: 'pointer',
                   }}
                 >
                   Sign In
@@ -157,7 +160,7 @@ export default function SettingsTab() {
             </div>
 
             {/* Preferences */}
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
+            <span style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
               Preferences
             </span>
             <WebSelect
@@ -179,11 +182,12 @@ export default function SettingsTab() {
             {/* Haptics */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              backgroundColor: '#1A1A1A', borderRadius: 14, padding: '16px 18px',
+              backgroundColor: '#FFFFFF', borderRadius: 14, padding: '16px 18px',
+              border: '1px solid #E2E8F0',
             }}>
               <div>
-                <span style={{ color: '#fff', fontSize: 15, fontWeight: 500, display: 'block' }}>Haptic Feedback</span>
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2, display: 'block' }}>Vibrate on swipe & save</span>
+                <span style={{ color: '#1E293B', fontSize: 15, fontWeight: 500, display: 'block' }}>Haptic Feedback</span>
+                <span style={{ color: '#94A3B8', fontSize: 12, marginTop: 2, display: 'block' }}>Vibrate on swipe & save</span>
               </div>
               <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 28, cursor: 'pointer' }}>
                 <input
@@ -194,31 +198,33 @@ export default function SettingsTab() {
                 />
                 <span style={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                  backgroundColor: hapticsEnabled ? '#FF6B35' : '#333',
+                  backgroundColor: hapticsEnabled ? '#38BDF8' : '#CBD5E1',
                   borderRadius: 14, transition: 'background-color 0.2s',
                 }}>
                   <span style={{
                     position: 'absolute', top: 2, left: hapticsEnabled ? 22 : 2,
                     width: 24, height: 24, backgroundColor: '#fff', borderRadius: 12,
                     transition: 'left 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                   }} />
                 </span>
               </label>
             </div>
 
             {/* Data */}
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
+            <span style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
               Data
             </span>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              backgroundColor: '#1A1A1A', borderRadius: 14, padding: '16px 18px',
+              backgroundColor: '#FFFFFF', borderRadius: 14, padding: '16px 18px',
+              border: '1px solid #E2E8F0',
             }}>
               <div>
-                <span style={{ color: '#fff', fontSize: 15, fontWeight: 500, display: 'block' }}>
+                <span style={{ color: '#1E293B', fontSize: 15, fontWeight: 500, display: 'block' }}>
                   Saved Destinations
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2, display: 'block' }}>
+                <span style={{ color: '#94A3B8', fontSize: 12, marginTop: 2, display: 'block' }}>
                   {savedIds.size} destination{savedIds.size !== 1 ? 's' : ''} saved
                 </span>
               </div>
@@ -226,9 +232,9 @@ export default function SettingsTab() {
                 onClick={handleClearSaved}
                 disabled={savedIds.size === 0}
                 style={{
-                  background: 'none', border: '1px solid rgba(255,80,80,0.3)',
+                  background: 'none', border: '1px solid rgba(239,68,68,0.3)',
                   borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 600,
-                  color: savedIds.size === 0 ? 'rgba(255,255,255,0.2)' : '#ff5050',
+                  color: savedIds.size === 0 ? '#CBD5E1' : '#EF4444',
                   cursor: savedIds.size === 0 ? 'default' : 'pointer',
                   transition: 'opacity 0.15s',
                 }}
@@ -238,7 +244,7 @@ export default function SettingsTab() {
             </div>
 
             {/* About */}
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
+            <span style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
               About
             </span>
             <WebSettingsRow label="Version" value="1.0.0" />
@@ -251,64 +257,64 @@ export default function SettingsTab() {
 
   // Native
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ paddingHorizontal: 20, paddingTop: 56, paddingBottom: 12 }}>
-          <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>Settings</Text>
+          <Text style={{ color: '#1E293B', fontSize: 28, fontWeight: '800' }}>Settings</Text>
         </View>
         <View style={{ paddingHorizontal: 20, gap: 10 }}>
           {/* Account */}
-          <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 8 }}>Account</Text>
-          <View style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={{ color: '#94A3B8', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 8 }}>Account</Text>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
             <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }} numberOfLines={1}>
+              <Text style={{ color: '#1E293B', fontSize: 15, fontWeight: '500' }} numberOfLines={1}>
                 {user ? user.email : 'Guest'}
               </Text>
               {isGuest && (
-                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2 }}>
+                <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 2 }}>
                   Browsing without account
                 </Text>
               )}
             </View>
             {user ? (
-              <Pressable onPress={handleSignOut} style={{ borderWidth: 1, borderColor: 'rgba(255,80,80,0.3)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 }}>
-                <Text style={{ color: '#ff5050', fontSize: 13, fontWeight: '600' }}>Sign Out</Text>
+              <Pressable onPress={handleSignOut} style={{ borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 }}>
+                <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '600' }}>Sign Out</Text>
               </Pressable>
             ) : (
-              <Pressable onPress={() => router.replace('/auth/login')} style={{ borderWidth: 1, borderColor: 'rgba(255,107,53,0.3)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 }}>
-                <Text style={{ color: '#FF6B35', fontSize: 13, fontWeight: '600' }}>Sign In</Text>
+              <Pressable onPress={() => router.replace('/auth/login')} style={{ borderWidth: 1, borderColor: 'rgba(56,189,248,0.3)', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 }}>
+                <Text style={{ color: '#38BDF8', fontSize: 13, fontWeight: '600' }}>Sign In</Text>
               </Pressable>
             )}
           </View>
 
           {/* Preferences */}
-          <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 16 }}>Preferences</Text>
+          <Text style={{ color: '#94A3B8', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 16 }}>Preferences</Text>
 
           {/* Departure City Picker */}
           <Pressable
             onPress={() => setShowDepartureModal(true)}
-            style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}
           >
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }}>Departure City</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{departureCity} ({departureCode}) ›</Text>
+            <Text style={{ color: '#1E293B', fontSize: 15, fontWeight: '500' }}>Departure City</Text>
+            <Text style={{ color: '#64748B', fontSize: 14 }}>{departureCity} ({departureCode}) ›</Text>
           </Pressable>
 
           {/* Currency Picker */}
           <Pressable
             onPress={() => setShowCurrencyModal(true)}
-            style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}
           >
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }}>Currency</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>{currency} ›</Text>
+            <Text style={{ color: '#1E293B', fontSize: 15, fontWeight: '500' }}>Currency</Text>
+            <Text style={{ color: '#64748B', fontSize: 14 }}>{currency} ›</Text>
           </Pressable>
 
           {/* Haptics */}
-          <View style={{ backgroundColor: '#1A1A1A', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
             <View>
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '500' }}>Haptic Feedback</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2 }}>Vibrate on swipe & save</Text>
+              <Text style={{ color: '#1E293B', fontSize: 15, fontWeight: '500' }}>Haptic Feedback</Text>
+              <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 2 }}>Vibrate on swipe & save</Text>
             </View>
-            <Switch value={hapticsEnabled} onValueChange={toggleHaptics} trackColor={{ false: '#333', true: '#FF6B35' }} thumbColor="#fff" />
+            <Switch value={hapticsEnabled} onValueChange={toggleHaptics} trackColor={{ false: '#CBD5E1', true: '#38BDF8' }} thumbColor="#fff" />
           </View>
           <View style={{ height: 120 }} />
         </View>
@@ -316,12 +322,12 @@ export default function SettingsTab() {
 
       {/* Departure City Modal */}
       <Modal visible={showDepartureModal} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
-              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Departure City</Text>
+        <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.4)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}>
+              <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '700' }}>Departure City</Text>
               <Pressable onPress={() => setShowDepartureModal(false)}>
-                <Text style={{ color: '#FF6B35', fontSize: 15, fontWeight: '600' }}>Done</Text>
+                <Text style={{ color: '#38BDF8', fontSize: 15, fontWeight: '600' }}>Done</Text>
               </Pressable>
             </View>
             <FlatList
@@ -336,14 +342,14 @@ export default function SettingsTab() {
                   style={{
                     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                     paddingVertical: 14, paddingHorizontal: 20,
-                    backgroundColor: item.code === departureCode ? 'rgba(255,107,53,0.1)' : 'transparent',
+                    backgroundColor: item.code === departureCode ? 'rgba(56,189,248,0.08)' : 'transparent',
                   }}
                 >
-                  <Text style={{ color: item.code === departureCode ? '#FF6B35' : '#fff', fontSize: 15, fontWeight: item.code === departureCode ? '600' : '400' }}>
+                  <Text style={{ color: item.code === departureCode ? '#0284C7' : '#1E293B', fontSize: 15, fontWeight: item.code === departureCode ? '600' : '400' }}>
                     {item.city} ({item.code})
                   </Text>
                   {item.code === departureCode && (
-                    <Text style={{ color: '#FF6B35', fontSize: 16 }}>✓</Text>
+                    <Text style={{ color: '#0284C7', fontSize: 16 }}>✓</Text>
                   )}
                 </Pressable>
               )}
@@ -354,12 +360,12 @@ export default function SettingsTab() {
 
       {/* Currency Modal */}
       <Modal visible={showCurrencyModal} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '50%' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
-              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Currency</Text>
+        <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.4)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '50%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}>
+              <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '700' }}>Currency</Text>
               <Pressable onPress={() => setShowCurrencyModal(false)}>
-                <Text style={{ color: '#FF6B35', fontSize: 15, fontWeight: '600' }}>Done</Text>
+                <Text style={{ color: '#38BDF8', fontSize: 15, fontWeight: '600' }}>Done</Text>
               </Pressable>
             </View>
             <FlatList
@@ -374,14 +380,14 @@ export default function SettingsTab() {
                   style={{
                     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                     paddingVertical: 14, paddingHorizontal: 20,
-                    backgroundColor: item === currency ? 'rgba(255,107,53,0.1)' : 'transparent',
+                    backgroundColor: item === currency ? 'rgba(56,189,248,0.08)' : 'transparent',
                   }}
                 >
-                  <Text style={{ color: item === currency ? '#FF6B35' : '#fff', fontSize: 15, fontWeight: item === currency ? '600' : '400' }}>
+                  <Text style={{ color: item === currency ? '#0284C7' : '#1E293B', fontSize: 15, fontWeight: item === currency ? '600' : '400' }}>
                     {item}
                   </Text>
                   {item === currency && (
-                    <Text style={{ color: '#FF6B35', fontSize: 16 }}>✓</Text>
+                    <Text style={{ color: '#0284C7', fontSize: 16 }}>✓</Text>
                   )}
                 </Pressable>
               )}

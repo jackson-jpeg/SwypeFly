@@ -20,7 +20,7 @@ export function SavedCard({ destination }: SavedCardProps) {
           }
           .sg-saved-card:hover {
             transform: scale(1.02);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
           }
           .sg-saved-card:hover .sg-saved-img {
             filter: brightness(1.08);
@@ -38,7 +38,9 @@ export function SavedCard({ destination }: SavedCardProps) {
             overflow: 'hidden',
             cursor: 'pointer',
             aspectRatio: '3/4',
-            backgroundColor: '#1A1A1A',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+            border: '1px solid #E2E8F0',
           }}
         >
           <img
@@ -59,7 +61,7 @@ export function SavedCard({ destination }: SavedCardProps) {
           }}>
             <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{destination.city}</div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>{destination.country}</div>
-            <div style={{ color: '#FF8F65', fontSize: 12, fontWeight: 600, marginTop: 4 }}>
+            <div style={{ color: '#7DD3FC', fontSize: 12, fontWeight: 600, marginTop: 4 }}>
               {formatFlightPrice(destination.flightPrice, destination.currency)}
             </div>
           </div>
@@ -69,7 +71,7 @@ export function SavedCard({ destination }: SavedCardProps) {
   }
 
   return (
-    <Pressable onPress={handlePress} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: 0.75, backgroundColor: '#1A1A1A' }}>
+    <Pressable onPress={handlePress} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: 0.75, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0' }}>
       <Image source={{ uri: destination.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
       <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12, backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>{destination.city}</Text>

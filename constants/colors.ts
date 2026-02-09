@@ -1,31 +1,44 @@
 export const colors = {
-  primary: {
-    DEFAULT: '#FF6B35',
-    light: '#FF8F65',
-    dark: '#E55A2B',
-  },
-  secondary: {
-    DEFAULT: '#2196F3',
-    light: '#64B5F6',
-    dark: '#1976D2',
-  },
-  accent: '#FFD700',
-  background: '#0A0A0A',
-  surface: '#1A1A1A',
+  primary: '#38BDF8',         // sky-400
+  primaryLight: '#7DD3FC',    // sky-300
+  primaryDark: '#0284C7',     // sky-600
+  secondary: '#0F172A',       // navy
+  background: '#F8FAFC',      // slate-50
+  surface: '#FFFFFF',
+  surfaceElevated: '#F1F5F9', // slate-100
+  navy: '#0F172A',            // slate-900
+
   text: {
-    primary: '#FFFFFF',
-    secondary: '#B0B0B0',
-    muted: '#707070',
+    primary: '#1E293B',       // slate-800
+    secondary: '#64748B',     // slate-500
+    muted: '#94A3B8',         // slate-400
   },
-  overlay: {
-    light: 'rgba(0, 0, 0, 0.3)',
-    medium: 'rgba(0, 0, 0, 0.5)',
-    heavy: 'rgba(0, 0, 0, 0.7)',
+
+  card: {
+    background: '#0F172A',
+    textPrimary: '#FFFFFF',
+    textSecondary: 'rgba(255,255,255,0.6)',
+    textMuted: 'rgba(255,255,255,0.4)',
+    priceTint: '#7DD3FC',     // sky-300
   },
+
+  border: '#E2E8F0',         // slate-200
+  borderLight: 'rgba(0,0,0,0.06)',
+
   tabBar: {
-    active: '#FF6B35',
-    inactive: '#707070',
-    background: '#0A0A0A',
-    border: '#1A1A1A',
+    active: '#38BDF8',
+    inactive: '#94A3B8',
+    background: '#FFFFFF',
+    border: '#E2E8F0',
   },
+
+  overlay: {
+    light: 'rgba(15,23,42,0.3)',
+    medium: 'rgba(15,23,42,0.5)',
+    heavy: 'rgba(15,23,42,0.7)',
+  },
+
+  success: '#4ADE80',
+  error: '#EF4444',
+  warning: '#F59E0B',
 } as const;

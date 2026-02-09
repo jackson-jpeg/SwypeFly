@@ -57,7 +57,7 @@ function getVibeBucket(dest: Destination): string {
  * Not ML — just weighted scoring with a penalty for consecutive
  * same-region or same-vibe destinations.
  */
-export function scoreFeed(destinations: Destination[]): Destination[] {
+export function scoreFeed(destinations: Destination[], savedVibeTags?: string[]): Destination[] {
   if (destinations.length <= 1) return destinations;
 
   const remaining = [...destinations];
@@ -110,11 +110,19 @@ export function scoreFeed(destinations: Destination[]): Destination[] {
 
       const ratingScore = (d.rating - 4.0) / 1.0;
 
+      // Preference boost: overlap between destination vibes and user's saved vibes
+      let preferenceBoost = 0;
+      if (savedVibeTags && savedVibeTags.length > 0) {
+        const overlap = d.vibeTags.filter((v) => savedVibeTags.includes(v)).length;
+        preferenceBoost = Math.min(overlap / savedVibeTags.length, 1);
+      }
+
       const score =
-        priceScore * 0.3 +
-        ratingScore * 0.2 +
-        -regionPenalty * 0.35 +
-        -vibePenalty * 0.15;
+        priceScore * 0.25 +
+        ratingScore * 0.15 +
+        -regionPenalty * 0.30 +
+        -vibePenalty * 0.10 +
+        preferenceBoost * 0.20;
 
       if (score > bestScore) {
         bestScore = score;

@@ -1,5 +1,5 @@
 import '../global.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -29,7 +29,7 @@ function useWebStyles() {
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: #0A0A0A;
+        background-color: #F8FAFC;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
@@ -59,7 +59,7 @@ function useWebStyles() {
       themeColor.setAttribute('name', 'theme-color');
       document.head.appendChild(themeColor);
     }
-    themeColor.setAttribute('content', '#0A0A0A');
+    themeColor.setAttribute('content', '#F8FAFC');
 
     document.title = 'SoGoJet — So many places to go — So Go Jet.';
 
@@ -96,7 +96,7 @@ function useWebStyles() {
     if (!document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')) {
       const style = document.createElement('meta');
       style.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
-      style.setAttribute('content', 'black-translucent');
+      style.setAttribute('content', 'default');
       document.head.appendChild(style);
     }
 
@@ -143,8 +143,8 @@ function AuthGatedLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF6B35" />
+      <View style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#38BDF8" />
       </View>
     );
   }
@@ -153,7 +153,7 @@ function AuthGatedLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0A0A0A' },
+        contentStyle: { backgroundColor: '#F8FAFC' },
       }}
     >
       <Stack.Screen name="(tabs)" />
@@ -172,12 +172,25 @@ function AuthGatedLayout() {
 
 export default function RootLayout() {
   useWebStyles();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted && Platform.OS === 'web') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#38BDF8" />
+      </View>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
-          <StatusBar style="light" />
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+          <StatusBar style="dark" />
           <AuthGatedLayout />
         </GestureHandlerRootView>
       </AuthProvider>

@@ -9,10 +9,10 @@ function TabBarBackground() {
         style={{
           position: 'absolute',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(10, 10, 10, 0.82)',
+          backgroundColor: 'rgba(255, 255, 255, 0.88)',
           backdropFilter: 'blur(24px) saturate(1.8)',
           WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-          borderTop: '1px solid rgba(255,255,255,0.04)',
+          borderTop: '1px solid #E2E8F0',
         }}
       />
     );
@@ -20,9 +20,9 @@ function TabBarBackground() {
   return (
     <View style={{
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(10, 10, 10, 0.85)',
+      backgroundColor: 'rgba(255, 255, 255, 0.92)',
       borderTopWidth: 1,
-      borderTopColor: 'rgba(255,255,255,0.04)',
+      borderTopColor: '#E2E8F0',
     }} />
   );
 }
@@ -31,12 +31,12 @@ function SavedTabIcon({ focused }: { focused: boolean }) {
   const savedCount = useSavedStore((s) => s.savedIds.size);
 
   const heartSvg = focused ? (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF6B35" xmlns="http://www.w3.org/2000/svg">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#38BDF8" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   ) : (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.8" />
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="#94A3B8" strokeWidth="1.8" />
     </svg>
   );
 
@@ -47,7 +47,7 @@ function SavedTabIcon({ focused }: { focused: boolean }) {
         {savedCount > 0 && (
           <div style={{
             position: 'absolute', top: -5, right: -10,
-            backgroundColor: '#FF6B35', borderRadius: 8,
+            backgroundColor: '#38BDF8', borderRadius: 8,
             minWidth: 16, height: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: '0 4px',
@@ -67,7 +67,7 @@ function SavedTabIcon({ focused }: { focused: boolean }) {
       {savedCount > 0 && (
         <View style={{
           position: 'absolute', top: -5, right: -10,
-          backgroundColor: '#FF6B35', borderRadius: 8,
+          backgroundColor: '#38BDF8', borderRadius: 8,
           minWidth: 16, height: 16,
           justifyContent: 'center', alignItems: 'center',
           paddingHorizontal: 4,
@@ -82,7 +82,7 @@ function SavedTabIcon({ focused }: { focused: boolean }) {
 }
 
 function TabIconSvg({ name, focused }: { name: string; focused: boolean }) {
-  const color = focused ? '#FF6B35' : 'rgba(255,255,255,0.4)';
+  const color = focused ? '#38BDF8' : '#94A3B8';
 
   let icon = null;
   if (name === 'explore') {
@@ -110,7 +110,7 @@ function TabIconSvg({ name, focused }: { name: string; focused: boolean }) {
         {focused && (
           <div style={{
             width: 4, height: 4, borderRadius: 2,
-            backgroundColor: '#FF6B35',
+            backgroundColor: '#38BDF8',
           }} />
         )}
       </div>
@@ -121,7 +121,7 @@ function TabIconSvg({ name, focused }: { name: string; focused: boolean }) {
     <View style={{ alignItems: 'center', gap: 4 }}>
       {icon}
       {focused && (
-        <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: '#FF6B35' }} />
+        <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: '#38BDF8' }} />
       )}
     </View>
   );
@@ -146,8 +146,8 @@ export default function TabLayout() {
           zIndex: 100,
           elevation: 0,
         },
-        tabBarActiveTintColor: '#FF6B35',
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.4)',
+        tabBarActiveTintColor: '#38BDF8',
+        tabBarInactiveTintColor: '#94A3B8',
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',

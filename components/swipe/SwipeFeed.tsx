@@ -6,7 +6,7 @@ import { SkeletonCard } from './SkeletonCard';
 import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
-import { lightHaptic } from '../../utils/haptics';
+import { selectionHaptic } from '../../utils/haptics';
 import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
 
 export function SwipeFeed() {
@@ -40,10 +40,13 @@ export function SwipeFeed() {
     [destinations, isSaved, toggle],
   );
 
-  const [showHint, setShowHint] = useState(() => {
-    if (Platform.OS !== 'web') return false;
-    try { return !localStorage.getItem('sg-swiped'); } catch { return true; }
-  });
+  const [showHint, setShowHint] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    try {
+      if (!localStorage.getItem('sg-swiped')) setShowHint(true);
+    } catch {}
+  }, []);
 
   // Inject scroll-snap CSS for web
   useEffect(() => {
@@ -81,6 +84,16 @@ export function SwipeFeed() {
       if (el) el.remove();
     };
   }, []);
+
+  // Image preloading for web — preload next 3 cards
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (!destinations.length) return;
+    for (let i = activeIndex + 1; i <= activeIndex + 3 && i < destinations.length; i++) {
+      const img = new Image();
+      img.src = destinations[i].imageUrl;
+    }
+  }, [activeIndex, destinations]);
 
   // Keyboard navigation for web
   useEffect(() => {
@@ -138,7 +151,7 @@ export function SwipeFeed() {
         if (index < destinations.length) {
           markViewed(destinations[index].id);
         }
-        lightHaptic();
+        selectionHaptic();
 
         if (showHint && index > 0) {
           setShowHint(false);
@@ -172,7 +185,7 @@ export function SwipeFeed() {
         setActiveIndex(index);
         setCurrentIndex(index);
         markViewed(destinations[index].id);
-        lightHaptic();
+        selectionHaptic();
 
         if (index >= destinations.length - 3 && hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
@@ -191,14 +204,14 @@ export function SwipeFeed() {
       return (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          height: '100vh', backgroundColor: '#0A0A0A', flexDirection: 'column', gap: 16,
+          height: '100vh', backgroundColor: '#0F172A', flexDirection: 'column', gap: 16,
         }}>
           <span style={{ fontSize: 48 }}>😵</span>
           <span style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>Failed to load destinations</span>
           <button
             onClick={() => refetch()}
             style={{
-              background: '#FF6B35', color: '#fff', border: 'none', borderRadius: 12,
+              background: '#38BDF8', color: '#fff', border: 'none', borderRadius: 12,
               padding: '12px 32px', fontSize: 16, fontWeight: '700', cursor: 'pointer',
             }}
           >
@@ -259,7 +272,7 @@ export function SwipeFeed() {
             style={{
               height: '100vh', width: '100%', position: 'relative',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: '#0A0A0A',
+              backgroundColor: '#0F172A',
             }}
           >
             <div style={{
@@ -280,7 +293,7 @@ export function SwipeFeed() {
                 <button
                   onClick={() => router.push('/settings')}
                   style={{
-                    background: '#FF6B35', color: '#fff', border: 'none', borderRadius: 14,
+                    background: '#38BDF8', color: '#fff', border: 'none', borderRadius: 14,
                     padding: '14px 24px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
@@ -289,7 +302,7 @@ export function SwipeFeed() {
                 <button
                   onClick={() => router.push('/saved')}
                   style={{
-                    background: '#1A1A1A', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 14, padding: '14px 24px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
                   }}
                 >

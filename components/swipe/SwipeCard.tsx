@@ -31,7 +31,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           top: 0, left: 0, right: 0, bottom: 0,
           cursor: 'pointer',
           overflow: 'hidden',
-          backgroundColor: '#0A0A0A',
+          backgroundColor: '#0F172A',
         }}
       >
         {/* Background Image */}
@@ -69,7 +69,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             padding: '0 28px 84px 28px',
           }}
         >
-          {/* Tags — tiny, text-only, near-invisible */}
+          {/* Tags — tiny, text-only */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             {destination.vibeTags.slice(0, 2).map((tag, i) => (
               <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -78,7 +78,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
                 )}
                 <span
                   style={{
-                    color: 'rgba(255,255,255,0.45)',
+                    color: 'rgba(255,255,255,0.6)',
                     fontSize: 11,
                     fontWeight: 600,
                     textTransform: 'uppercase' as const,
@@ -100,7 +100,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               fontWeight: 800,
               letterSpacing: -0.5,
               lineHeight: 1,
-              textShadow: '0 1px 20px rgba(0,0,0,0.3)',
+              textShadow: '0 2px 12px rgba(0,0,0,0.5)',
             }}
           >
             {destination.city}
@@ -108,11 +108,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
 
           {/* Country · Price */}
           <p style={{ margin: '10px 0 0 0', fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>
+            <span style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 400 }}>
               {destination.country}
             </span>
             <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 10px' }}>·</span>
-            <span style={{ color: '#FF8F65', fontWeight: 600 }}>
+            <span style={{ color: '#7DD3FC', fontWeight: 600 }}>
               {formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}
             </span>
             {(destination.priceSource === 'travelpayouts' || destination.priceSource === 'amadeus') && (
@@ -145,7 +145,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   return (
     <Pressable
       onPress={handleCardTap}
-      style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0A0A0A' }}
+      style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0F172A' }}
     >
       {shouldLoadImage && (
         <Image
@@ -168,15 +168,15 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           {destination.vibeTags.slice(0, 2).map((tag, i) => (
             <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {i > 0 && <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9 }}>·</Text>}
-              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 2 }}>{tag}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 2 }}>{tag}</Text>
             </View>
           ))}
         </View>
         <Text style={{ color: '#fff', fontSize: 36, fontWeight: '800', letterSpacing: -0.5 }}>{destination.city}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>{destination.country}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 15 }}>{destination.country}</Text>
           <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 15 }}>·</Text>
-          <Text style={{ color: '#FF8F65', fontSize: 15, fontWeight: '600' }}>{formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}</Text>
+          <Text style={{ color: '#7DD3FC', fontSize: 15, fontWeight: '600' }}>{formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 }}>
           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>{destination.flightDuration}</Text>

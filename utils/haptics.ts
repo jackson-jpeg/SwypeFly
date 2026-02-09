@@ -20,3 +20,23 @@ export async function mediumHaptic(): Promise<void> {
     // Haptics not available
   }
 }
+
+export async function selectionHaptic(): Promise<void> {
+  try {
+    if (useUIStore.getState().hapticsEnabled) {
+      await Haptics.selectionAsync();
+    }
+  } catch {
+    // Haptics not available
+  }
+}
+
+export async function successHaptic(): Promise<void> {
+  try {
+    if (useUIStore.getState().hapticsEnabled) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  } catch {
+    // Haptics not available
+  }
+}

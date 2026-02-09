@@ -53,6 +53,9 @@ async function main() {
     best_months: d.bestMonths,
     average_temp: d.averageTemp,
     flight_duration: d.flightDuration,
+    available_flight_days: d.available_flight_days || [],
+    itinerary: d.itinerary || [],
+    restaurants: d.restaurants || [],
     is_active: true,
   }));
 

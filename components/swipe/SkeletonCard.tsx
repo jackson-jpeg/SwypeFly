@@ -24,7 +24,7 @@ export function SkeletonCard() {
 
   if (Platform.OS === 'web') {
     return (
-      <div style={{ width: '100%', height: '100vh', backgroundColor: '#0A0A0A', position: 'relative' }}>
+      <div style={{ width: '100%', height: '100vh', backgroundColor: '#0F172A', position: 'relative' }}>
         <div style={{ position: 'absolute', bottom: 84, left: 28, right: 28 }}>
           {/* Tags: two small pill placeholders */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -41,7 +41,7 @@ export function SkeletonCard() {
   }
 
   return (
-    <View style={{ width, height, backgroundColor: '#0A0A0A', position: 'relative' }}>
+    <View style={{ width, height, backgroundColor: '#0F172A', position: 'relative' }}>
       <View style={{ position: 'absolute', bottom: 100, left: 28, right: 28 }}>
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
           <View style={{ width: 60, height: 14, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.06)' }} />

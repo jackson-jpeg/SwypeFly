@@ -89,11 +89,11 @@ function WebOnboarding() {
         <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
           <div style={{
             width: 8, height: 8, borderRadius: 4,
-            backgroundColor: '#FF6B35',
+            backgroundColor: '#38BDF8',
           }} />
           <div style={{
             width: 8, height: 8, borderRadius: 4,
-            backgroundColor: step === 2 ? '#FF6B35' : 'rgba(255,255,255,0.2)',
+            backgroundColor: step === 2 ? '#38BDF8' : 'rgba(255,255,255,0.2)',
             transition: 'background-color 0.3s',
           }} />
         </div>
@@ -117,10 +117,10 @@ function WebOnboarding() {
                     padding: 20,
                     borderRadius: 16,
                     border: travelerType === opt.type
-                      ? '2px solid #FF6B35'
+                      ? '2px solid #38BDF8'
                       : '1px solid rgba(255,255,255,0.1)',
                     backgroundColor: travelerType === opt.type
-                      ? 'rgba(255,107,53,0.12)'
+                      ? 'rgba(56,189,248,0.12)'
                       : 'rgba(255,255,255,0.04)',
                     cursor: 'pointer',
                     display: 'flex',
@@ -146,7 +146,7 @@ function WebOnboarding() {
                 padding: '14px 20px',
                 borderRadius: 12,
                 border: 'none',
-                backgroundColor: travelerType ? '#FF6B35' : 'rgba(255,255,255,0.1)',
+                backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                 color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)',
                 fontSize: 15,
                 fontWeight: 600,
@@ -175,10 +175,10 @@ function WebOnboarding() {
                     padding: '16px 20px',
                     borderRadius: 14,
                     border: budgetLevel === opt.level
-                      ? '2px solid #FF6B35'
+                      ? '2px solid #38BDF8'
                       : '1px solid rgba(255,255,255,0.1)',
                     backgroundColor: budgetLevel === opt.level
-                      ? 'rgba(255,107,53,0.12)'
+                      ? 'rgba(56,189,248,0.12)'
                       : 'rgba(255,255,255,0.04)',
                     cursor: 'pointer',
                     display: 'flex',
@@ -223,7 +223,7 @@ function WebOnboarding() {
                   padding: '14px 20px',
                   borderRadius: 12,
                   border: 'none',
-                  backgroundColor: budgetLevel ? '#FF6B35' : 'rgba(255,255,255,0.1)',
+                  backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                   color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)',
                   fontSize: 15,
                   fontWeight: 600,
@@ -284,10 +284,10 @@ function NativeOnboarding() {
     <View style={{ flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', paddingHorizontal: 28 }}>
       {/* Progress dots */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 32 }}>
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF6B35' }} />
+        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#38BDF8' }} />
         <View style={{
           width: 8, height: 8, borderRadius: 4,
-          backgroundColor: step === 2 ? '#FF6B35' : 'rgba(255,255,255,0.2)',
+          backgroundColor: step === 2 ? '#38BDF8' : 'rgba(255,255,255,0.2)',
         }} />
       </View>
 
@@ -311,8 +311,8 @@ function NativeOnboarding() {
                   padding: 20,
                   borderRadius: 16,
                   borderWidth: travelerType === opt.type ? 2 : 1,
-                  borderColor: travelerType === opt.type ? '#FF6B35' : 'rgba(255,255,255,0.1)',
-                  backgroundColor: travelerType === opt.type ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.04)',
+                  borderColor: travelerType === opt.type ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                  backgroundColor: travelerType === opt.type ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
                   alignItems: 'center',
                   gap: 6,
                 }}
@@ -331,7 +331,7 @@ function NativeOnboarding() {
               marginTop: 24,
               paddingVertical: 14,
               borderRadius: 12,
-              backgroundColor: travelerType ? '#FF6B35' : 'rgba(255,255,255,0.1)',
+              backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
               alignItems: 'center',
             }}
           >
@@ -358,8 +358,8 @@ function NativeOnboarding() {
                   padding: 16,
                   borderRadius: 14,
                   borderWidth: budgetLevel === opt.level ? 2 : 1,
-                  borderColor: budgetLevel === opt.level ? '#FF6B35' : 'rgba(255,255,255,0.1)',
-                  backgroundColor: budgetLevel === opt.level ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.04)',
+                  borderColor: budgetLevel === opt.level ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                  backgroundColor: budgetLevel === opt.level ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -397,7 +397,7 @@ function NativeOnboarding() {
                 flex: 2,
                 paddingVertical: 14,
                 borderRadius: 12,
-                backgroundColor: budgetLevel ? '#FF6B35' : 'rgba(255,255,255,0.1)',
+                backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                 alignItems: 'center',
                 opacity: saving ? 0.7 : 1,
               }}

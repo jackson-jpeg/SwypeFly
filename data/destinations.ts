@@ -25,6 +25,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 28,
     flightDuration: '18h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Visit Uluwatu Temple', 'Surf at Padang Padang Beach', 'Sunset dinner at Jimbaran Bay'] },
+      { day: 2, activities: ['Morning yoga in Ubud', 'Explore Tegallalang Rice Terraces', 'Visit Sacred Monkey Forest', 'Dinner at Locavore'] },
+      { day: 3, activities: ['Snorkeling at Nusa Penida', 'Visit Kelingking Beach', 'Traditional Balinese spa'] },
+    ],
+    restaurants: [
+      { name: 'Locavore', type: 'Modern Indonesian', rating: 4.8 },
+      { name: 'La Lucciola', type: 'Italian-Balinese', rating: 4.5 },
+      { name: 'Warung Babi Guling Ibu Oka', type: 'Traditional Balinese', rating: 4.7 },
+      { name: 'Mozaic', type: 'Fine Dining', rating: 4.9 },
+      { name: 'Naughty Nuri\'s', type: 'BBQ & Ribs', rating: 4.4 },
+    ],
   },
   {
     id: '2',
@@ -50,6 +63,18 @@ export const destinations: Destination[] = [
     bestMonths: ['May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 25,
     flightDuration: '12h 15m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Explore Oia village', 'Watch sunset at Oia Castle', 'Dinner overlooking the caldera'] },
+      { day: 2, activities: ['Visit Red Beach', 'Tour Akrotiri archaeological site', 'Wine tasting at Santo Wines', 'Evening stroll in Fira'] },
+      { day: 3, activities: ['Catamaran cruise around the island', 'Swim at hot springs', 'Visit Amoudi Bay'] },
+    ],
+    restaurants: [
+      { name: 'Ammoudi Fish Tavern', type: 'Seafood', rating: 4.7 },
+      { name: 'Metaxy Mas', type: 'Greek Taverna', rating: 4.8 },
+      { name: 'Selene', type: 'Fine Dining Greek', rating: 4.6 },
+      { name: 'To Psaraki', type: 'Seafood', rating: 4.5 },
+    ],
   },
   {
     id: '3',
@@ -76,6 +101,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Mar', 'Apr', 'Oct', 'Nov'],
     averageTemp: 16,
     flightDuration: '14h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Visit Senso-ji Temple in Asakusa', 'Explore Akihabara', 'Sushi at Tsukiji Outer Market', 'Night views from Tokyo Skytree'] },
+      { day: 2, activities: ['Morning at Meiji Shrine', 'Shop in Harajuku & Shibuya', 'Cross the Shibuya Scramble', 'Ramen in Shinjuku'] },
+      { day: 3, activities: ['Day trip to teamLab Borderless', 'Explore Odaiba', 'Izakaya hopping in Yurakucho'] },
+    ],
+    restaurants: [
+      { name: 'Sukiyabashi Jiro', type: 'Sushi', rating: 4.9 },
+      { name: 'Ichiran Shibuya', type: 'Ramen', rating: 4.6 },
+      { name: 'Gonpachi Nishi-Azabu', type: 'Izakaya', rating: 4.5 },
+      { name: 'Narisawa', type: 'Innovative French-Japanese', rating: 4.8 },
+      { name: 'Afuri', type: 'Yuzu Ramen', rating: 4.7 },
+    ],
   },
   {
     id: '4',
@@ -100,6 +138,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Sep', 'Oct'],
     averageTemp: 14,
     flightDuration: '10h 45m',
+    available_flight_days: ['Tue', 'Thu', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Arrive in Cusco, acclimate to altitude', 'Explore Plaza de Armas', 'Visit San Pedro Market', 'Pisco sour tasting'] },
+      { day: 2, activities: ['Early train to Aguas Calientes', 'Guided tour of Machu Picchu', 'Hike to Sun Gate', 'Hot springs in town'] },
+      { day: 3, activities: ['Visit Sacred Valley', 'Explore Ollantaytambo ruins', 'Textile market shopping'] },
+    ],
+    restaurants: [
+      { name: 'Cicciolina', type: 'Peruvian-Mediterranean', rating: 4.7 },
+      { name: 'MAP Caf\u00e9', type: 'Contemporary Peruvian', rating: 4.6 },
+      { name: 'Chicha', type: 'Andean Cuisine', rating: 4.8 },
+      { name: 'Jack\'s Caf\u00e9', type: 'International', rating: 4.4 },
+    ],
   },
   {
     id: '5',
@@ -125,6 +175,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Mar', 'Apr', 'Oct', 'Nov'],
     averageTemp: 22,
     flightDuration: '9h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Get lost in the Medina souks', 'Visit Bahia Palace', 'Evening at Jemaa el-Fnaa square', 'Traditional tagine dinner'] },
+      { day: 2, activities: ['Jardin Majorelle gardens', 'Explore Saadian Tombs', 'Hammam spa experience', 'Rooftop dinner in the Medina'] },
+      { day: 3, activities: ['Day trip to Atlas Mountains', 'Visit Berber village', 'Camel ride at sunset'] },
+    ],
+    restaurants: [
+      { name: 'Le Jardin', type: 'Moroccan-French', rating: 4.6 },
+      { name: 'Nomad', type: 'Modern Moroccan', rating: 4.7 },
+      { name: 'Al Fassia', type: 'Traditional Moroccan', rating: 4.8 },
+      { name: 'Caf\u00e9 des \u00c9pices', type: 'Caf\u00e9 & Light Bites', rating: 4.5 },
+      { name: 'Dar Yacout', type: 'Fine Dining Moroccan', rating: 4.7 },
+    ],
   },
   {
     id: '6',
@@ -149,6 +212,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Jun', 'Jul', 'Aug', 'Sep'],
     averageTemp: 5,
     flightDuration: '6h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Blue Lagoon geothermal spa', 'Explore Reykjavik city center', 'Visit Hallgr\u00edmskirkja church', 'Dinner on Laugavegur'] },
+      { day: 2, activities: ['Golden Circle tour: \u00deingvellir, Geysir, Gullfoss', 'Snorkeling in Silfra fissure', 'Northern lights hunt (winter)'] },
+    ],
+    restaurants: [
+      { name: 'Grilli\u00f0', type: 'Nordic Fine Dining', rating: 4.7 },
+      { name: 'B\u00e6jarins Beztu Pylsur', type: 'Hot Dogs', rating: 4.5 },
+      { name: 'Dill', type: 'New Nordic', rating: 4.9 },
+      { name: 'S\u00e6greifinn', type: 'Seafood', rating: 4.6 },
+    ],
   },
   {
     id: '7',
@@ -174,6 +248,18 @@ export const destinations: Destination[] = [
     bestMonths: ['May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 22,
     flightDuration: '10h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Explore Positano village', 'Beach time at Spiaggia Grande', 'Limoncello tasting', 'Sunset dinner overlooking the coast'] },
+      { day: 2, activities: ['Hike the Path of the Gods', 'Visit Ravello and Villa Rufolo', 'Lunch in Amalfi town', 'Visit the Cathedral'] },
+      { day: 3, activities: ['Boat tour to Capri', 'Visit Blue Grotto', 'Shopping in Capri town'] },
+    ],
+    restaurants: [
+      { name: 'Da Vincenzo', type: 'Italian Seafood', rating: 4.8 },
+      { name: 'Il Ritrovo', type: 'Traditional Italian', rating: 4.7 },
+      { name: 'Lo Guarracino', type: 'Coastal Italian', rating: 4.6 },
+      { name: 'Ristorante Max', type: 'Fine Dining', rating: 4.5 },
+    ],
   },
   {
     id: '8',
@@ -198,6 +284,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
     averageTemp: 20,
     flightDuration: '17h 00m',
+    available_flight_days: ['Tue', 'Thu', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Cable car up Table Mountain', 'Explore V&A Waterfront', 'Sunset at Signal Hill', 'Dinner in Bo-Kaap'] },
+      { day: 2, activities: ['Drive to Cape Point', 'Visit Boulder\'s Beach penguins', 'Wine tasting in Constantia', 'Sundowners at Camps Bay'] },
+      { day: 3, activities: ['Robben Island tour', 'Explore Woodstock street art', 'Old Biscuit Mill market'] },
+    ],
+    restaurants: [
+      { name: 'The Test Kitchen', type: 'Contemporary Fine Dining', rating: 4.9 },
+      { name: 'La Colombe', type: 'French-Asian', rating: 4.8 },
+      { name: 'Harbour House', type: 'Seafood', rating: 4.6 },
+      { name: 'The Pot Luck Club', type: 'Tapas', rating: 4.7 },
+    ],
   },
   {
     id: '9',
@@ -223,6 +321,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Mar', 'Apr', 'Oct', 'Nov'],
     averageTemp: 15,
     flightDuration: '14h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Visit Fushimi Inari Shrine', 'Explore Gion district', 'Tea ceremony experience', 'Kaiseki dinner'] },
+      { day: 2, activities: ['Arashiyama Bamboo Grove', 'Visit Tenryu-ji Temple', 'Monkey Park Iwatayama', 'Stroll along Philosopher\'s Path'] },
+      { day: 3, activities: ['Kinkaku-ji Golden Pavilion', 'Nijo Castle tour', 'Nishiki Market food tour'] },
+    ],
+    restaurants: [
+      { name: 'Kikunoi', type: 'Kaiseki', rating: 4.9 },
+      { name: 'Omen Kodai-ji', type: 'Udon', rating: 4.6 },
+      { name: 'Gion Nanba', type: 'Tempura', rating: 4.7 },
+      { name: 'Musubi', type: 'Obanzai Cuisine', rating: 4.5 },
+    ],
   },
   {
     id: '10',
@@ -247,6 +357,17 @@ export const destinations: Destination[] = [
     bestMonths: ['May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 19,
     flightDuration: '11h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Walk the city walls', 'Explore Old Town Stradun', 'Visit Rector\'s Palace', 'Dinner at the harbour'] },
+      { day: 2, activities: ['Kayak around Lokrum Island', 'Cable car to Mount Sr\u0111', 'Beach time at Banje', 'Sunset drinks at Bu\u017ea Bar'] },
+    ],
+    restaurants: [
+      { name: 'Nautika', type: 'Fine Dining Seafood', rating: 4.7 },
+      { name: 'Pantarul', type: 'Modern Croatian', rating: 4.8 },
+      { name: 'Proto', type: 'Seafood', rating: 4.6 },
+      { name: 'Barba', type: 'Street Seafood', rating: 4.5 },
+    ],
   },
   {
     id: '11',
@@ -272,6 +393,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 30,
     flightDuration: '16h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Arrive at overwater villa', 'Snorkeling at house reef', 'Sunset dolphin cruise', 'Underwater restaurant dinner'] },
+      { day: 2, activities: ['Scuba diving at Banana Reef', 'Spa overwater treatment', 'Sandbank picnic lunch', 'Stargazing from deck'] },
+      { day: 3, activities: ['Fishing trip with locals', 'Visit local island village', 'Bioluminescent beach walk'] },
+    ],
+    restaurants: [
+      { name: 'Ithaa Undersea Restaurant', type: 'Fine Dining', rating: 4.8 },
+      { name: 'Sea.Fire.Salt', type: 'Grill & Seafood', rating: 4.7 },
+      { name: 'Muraka', type: 'Japanese-Peruvian', rating: 4.6 },
+      { name: 'The Lighthouse', type: 'International', rating: 4.5 },
+    ],
   },
   {
     id: '12',
@@ -298,6 +431,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 18,
     flightDuration: '9h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Visit Sagrada Familia', 'Stroll down La Rambla', 'Explore La Boqueria market', 'Tapas crawl in El Born'] },
+      { day: 2, activities: ['Park G\u00fcell morning visit', 'Beach time at Barceloneta', 'Gothic Quarter exploration', 'Flamenco show'] },
+      { day: 3, activities: ['Casa Batll\u00f3 & Casa Mil\u00e0 tour', 'Montju\u00efc castle & gardens', 'Sunset at Bunkers del Carmel'] },
+    ],
+    restaurants: [
+      { name: 'Tickets', type: 'Tapas Molecular', rating: 4.8 },
+      { name: 'Can Culleretes', type: 'Traditional Catalan', rating: 4.5 },
+      { name: 'Cal Pep', type: 'Tapas Bar', rating: 4.7 },
+      { name: 'Disfrutar', type: 'Avant-Garde', rating: 4.9 },
+      { name: 'La Paradeta', type: 'Seafood Market', rating: 4.4 },
+    ],
   },
   {
     id: '13',
@@ -323,6 +469,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Jun', 'Jul', 'Aug', 'Sep', 'Jan', 'Feb'],
     averageTemp: 8,
     flightDuration: '5h 00m',
+    available_flight_days: ['Tue', 'Thu', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Hike Johnston Canyon', 'Visit Lake Louise', 'Canoe on turquoise waters', 'Dinner in Banff town'] },
+      { day: 2, activities: ['Drive Icefields Parkway', 'Visit Peyto Lake viewpoint', 'Columbia Icefield Skywalk', 'Wildlife spotting'] },
+      { day: 3, activities: ['Banff Gondola ride', 'Hike Sulphur Mountain', 'Banff Upper Hot Springs', 'Elk spotting in town'] },
+    ],
+    restaurants: [
+      { name: 'The Bison', type: 'Canadian Rocky Mountain', rating: 4.7 },
+      { name: 'Park Distillery', type: 'Canadian Comfort', rating: 4.5 },
+      { name: 'Juniper Bistro', type: 'Modern Canadian', rating: 4.6 },
+      { name: 'Block Kitchen + Bar', type: 'Farm-to-Table', rating: 4.4 },
+    ],
   },
   {
     id: '14',
@@ -347,6 +505,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 17,
     flightDuration: '8h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Ride Tram 28 through Alfama', 'Visit S\u00e3o Jorge Castle', 'Pastel de nata at Past\u00e9is de Bel\u00e9m', 'Fado show in Alfama'] },
+      { day: 2, activities: ['Explore Bel\u00e9m Tower & Jer\u00f3nimos Monastery', 'Time Out Market lunch', 'Walk across Ponte 25 de Abril viewpoint', 'Sunset in Bairro Alto'] },
+      { day: 3, activities: ['Day trip to Sintra', 'Visit Pena Palace', 'Explore Quinta da Regaleira'] },
+    ],
+    restaurants: [
+      { name: 'Belcanto', type: 'Fine Dining Portuguese', rating: 4.9 },
+      { name: 'Cervejaria Ramiro', type: 'Seafood', rating: 4.7 },
+      { name: 'Time Out Market', type: 'Food Hall', rating: 4.5 },
+      { name: 'Taberna da Rua das Flores', type: 'Petiscos', rating: 4.8 },
+      { name: 'Past\u00e9is de Bel\u00e9m', type: 'Pastry Shop', rating: 4.6 },
+    ],
   },
   {
     id: '15',
@@ -371,6 +542,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar'],
     averageTemp: 12,
     flightDuration: '20h 00m',
+    available_flight_days: ['Tue', 'Thu', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Bungee jump at Kawarau Bridge', 'Lunch in town center', 'Skyline Gondola & luge', 'Fergburger dinner'] },
+      { day: 2, activities: ['Milford Sound day cruise', 'Spot dolphins and seals', 'Homer Tunnel drive'] },
+      { day: 3, activities: ['Jet boat on Shotover River', 'Skydive over Remarkables', 'Wine tasting in Gibbston Valley'] },
+    ],
+    restaurants: [
+      { name: 'Fergburger', type: 'Gourmet Burgers', rating: 4.6 },
+      { name: 'Botswana Butchery', type: 'Steakhouse', rating: 4.7 },
+      { name: 'Rata', type: 'Modern New Zealand', rating: 4.8 },
+      { name: 'Flame Bar & Grill', type: 'BBQ', rating: 4.5 },
+    ],
   },
   {
     id: '16',
@@ -396,6 +579,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
     averageTemp: 28,
     flightDuration: '14h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Visit Burj Khalifa observation deck', 'Dubai Mall & aquarium', 'Gold Souk in Deira', 'Dinner at Pierchic'] },
+      { day: 2, activities: ['Desert safari with dune bashing', 'Camel ride at sunset', 'BBQ dinner under the stars', 'Traditional belly dance show'] },
+      { day: 3, activities: ['Palm Jumeirah beach day', 'Visit Atlantis Aquaventure', 'Dubai Marina walk', 'Dhow cruise dinner'] },
+    ],
+    restaurants: [
+      { name: 'Al Mahara', type: 'Underwater Fine Dining', rating: 4.8 },
+      { name: 'Ravi Restaurant', type: 'Pakistani', rating: 4.5 },
+      { name: 'Pierchic', type: 'Seafood', rating: 4.7 },
+      { name: 'Zuma', type: 'Japanese', rating: 4.6 },
+      { name: 'Arabian Tea House', type: 'Emirati', rating: 4.4 },
+    ],
   },
   {
     id: '17',
@@ -420,6 +616,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
     averageTemp: 10,
     flightDuration: '13h 00m',
+    available_flight_days: ['Tue', 'Thu', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Arrive in El Calafate', 'Visit Perito Moreno Glacier', 'Ice trekking excursion', 'Patagonian lamb dinner'] },
+      { day: 2, activities: ['Hike in Los Glaciares National Park', 'Boat cruise on Lago Argentino', 'Spot condors soaring'] },
+      { day: 3, activities: ['Drive to El Chalt\u00e9n', 'Hike to Laguna de los Tres', 'Views of Mount Fitz Roy'] },
+    ],
+    restaurants: [
+      { name: 'La Tablita', type: 'Patagonian Grill', rating: 4.7 },
+      { name: 'Pura Vida', type: 'Vegetarian & Brew Pub', rating: 4.5 },
+      { name: 'Isabel', type: 'Cocina Casera', rating: 4.6 },
+      { name: 'Mi Rancho', type: 'Argentine BBQ', rating: 4.4 },
+    ],
   },
   {
     id: '18',
@@ -445,6 +653,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb'],
     averageTemp: 26,
     flightDuration: '19h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Visit Doi Suthep Temple', 'Explore Old City temples', 'Thai cooking class', 'Night Bazaar shopping'] },
+      { day: 2, activities: ['Elephant Nature Park visit', 'Lunch at local Karen village', 'Afternoon massage', 'Riverside dining'] },
+      { day: 3, activities: ['White Temple day trip', 'Sticky waterfall hike', 'Sunday Walking Street market'] },
+    ],
+    restaurants: [
+      { name: 'David\'s Kitchen', type: 'French-Thai', rating: 4.8 },
+      { name: 'Khao Soi Khun Yai', type: 'Northern Thai', rating: 4.7 },
+      { name: 'SP Chicken', type: 'Thai Street Food', rating: 4.6 },
+      { name: 'Dash! Teak House', type: 'Traditional Thai', rating: 4.5 },
+    ],
   },
   {
     id: '19',
@@ -470,6 +690,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Jun', 'Jul', 'Aug'],
     averageTemp: 8,
     flightDuration: '9h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Arrive in Interlaken', 'Paragliding over the Alps', 'Explore Lauterbrunnen Valley', 'Swiss fondue dinner'] },
+      { day: 2, activities: ['Train to Jungfraujoch (Top of Europe)', 'Snow activities at Sphinx Terrace', 'Visit Grindelwald First Cliff Walk'] },
+      { day: 3, activities: ['Scenic train to Zermatt', 'See the Matterhorn', 'Hike Five Lakes Trail', 'Chocolate tasting'] },
+    ],
+    restaurants: [
+      { name: 'Chez Vrony', type: 'Swiss Mountain', rating: 4.8 },
+      { name: 'Restaurant Schuh', type: 'Swiss Traditional', rating: 4.5 },
+      { name: 'Whymper Stube', type: 'Fondue & Raclette', rating: 4.6 },
+      { name: 'Memory', type: 'Fine Dining', rating: 4.7 },
+    ],
   },
   {
     id: '20',
@@ -494,6 +726,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 25,
     flightDuration: '4h 00m',
+    available_flight_days: ['Tue', 'Thu', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Classic car tour of Old Havana', 'Visit Plaza de la Catedral', 'Mojito at La Bodeguita del Medio', 'Walk the Malec\u00f3n at sunset'] },
+      { day: 2, activities: ['Explore Fusterlandia art district', 'Visit Revolution Museum', 'Cigar factory tour', 'Salsa dancing lesson'] },
+    ],
+    restaurants: [
+      { name: 'La Guarida', type: 'Cuban Fine Dining', rating: 4.8 },
+      { name: 'El Del Frente', type: 'Modern Cuban', rating: 4.6 },
+      { name: 'Do\u00f1a Eutimia', type: 'Traditional Cuban', rating: 4.7 },
+      { name: 'O\'Reilly 304', type: 'Cocktail Bar & Bites', rating: 4.5 },
+    ],
   },
   // ─── Caribbean & Mexico (21–28) ──────────────────────────────────────
   {
@@ -520,6 +763,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 28,
     flightDuration: '3h 30m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Beach day at Hotel Zone', 'Snorkeling at Isla Mujeres', 'Dinner in Puerto Morelos'] },
+      { day: 2, activities: ['Visit Chich\u00e9n Itz\u00e1 ruins', 'Swim in Cenote Ik Kil', 'Explore Valladolid town'] },
+      { day: 3, activities: ['Xcaret eco-park', 'Underground river swim', 'Mexican folklore show'] },
+    ],
+    restaurants: [
+      { name: 'Puerto Madero', type: 'Seafood & Steak', rating: 4.6 },
+      { name: 'Tacos Rigo', type: 'Street Tacos', rating: 4.5 },
+      { name: 'Lorenzillo\'s', type: 'Lobster House', rating: 4.7 },
+      { name: 'La Habichuela Sunset', type: 'Yucatecan', rating: 4.8 },
+    ],
   },
   {
     id: '22',
@@ -544,6 +799,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 27,
     flightDuration: '3h 45m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Relax at B\u00e1varo Beach', 'Catamaran cruise', 'Snorkeling coral reef', 'Resort dinner'] },
+      { day: 2, activities: ['Saona Island day trip', 'Natural pool swimming', 'Starfish beach', 'Beach BBQ'] },
+    ],
+    restaurants: [
+      { name: 'La Yola', type: 'Mediterranean Seafood', rating: 4.7 },
+      { name: 'Jellyfish Restaurant', type: 'Beachfront Fusion', rating: 4.6 },
+      { name: 'Peperoni Ristorante', type: 'Italian', rating: 4.5 },
+      { name: 'Captain Cook', type: 'Seafood Grill', rating: 4.4 },
+    ],
   },
   {
     id: '23',
@@ -569,6 +835,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 28,
     flightDuration: '3h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Doctor\'s Cave Beach day', 'Hip Strip shopping & jerk chicken', 'Sunset catamaran cruise'] },
+      { day: 2, activities: ['Dunn\'s River Falls climb', 'Blue Hole swimming', 'Reggae night out'] },
+    ],
+    restaurants: [
+      { name: 'Scotchies', type: 'Jamaican Jerk', rating: 4.7 },
+      { name: 'The Houseboat Grill', type: 'Seafood', rating: 4.6 },
+      { name: 'Pier 1', type: 'Caribbean Seafood', rating: 4.5 },
+      { name: 'Pelican Grill', type: 'International', rating: 4.4 },
+    ],
   },
   {
     id: '24',
@@ -594,6 +871,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 27,
     flightDuration: '3h 15m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Walk Old San Juan cobblestones', 'Visit El Morro fortress', 'Pi\u00f1a colada at Barrachina', 'Dinner on Fortaleza Street'] },
+      { day: 2, activities: ['Bioluminescent bay kayak tour', 'El Yunque Rainforest hike', 'Luquillo Beach kioskos'] },
+    ],
+    restaurants: [
+      { name: 'Marmalade', type: 'Fine Dining Fusion', rating: 4.8 },
+      { name: 'La Placita', type: 'Puerto Rican Street Food', rating: 4.5 },
+      { name: 'Santaella', type: 'Modern Puerto Rican', rating: 4.7 },
+      { name: 'Barrachina', type: 'Classic Puerto Rican', rating: 4.4 },
+    ],
   },
   {
     id: '25',
@@ -618,6 +906,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     averageTemp: 28,
     flightDuration: '4h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Eagle Beach morning', 'Explore Oranjestad', 'Sunset at California Lighthouse'] },
+      { day: 2, activities: ['UTV tour of Arikok National Park', 'Natural Pool swim', 'Baby Beach snorkeling', 'Seafood dinner on the pier'] },
+    ],
+    restaurants: [
+      { name: 'Barefoot', type: 'Beachfront Seafood', rating: 4.7 },
+      { name: 'Papiamento', type: 'Caribbean Fine Dining', rating: 4.8 },
+      { name: 'Zeerovers', type: 'Casual Seafood', rating: 4.6 },
+      { name: 'The Old Man & The Sea', type: 'Waterfront Grill', rating: 4.5 },
+    ],
   },
   {
     id: '26',
@@ -643,6 +942,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 26,
     flightDuration: '2h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Atlantis Aquaventure water park', 'Paradise Island beach', 'Fish Fry at Arawak Cay', 'Junkanoo Beach sunset'] },
+      { day: 2, activities: ['Swimming pigs excursion at Exuma', 'Thunderball Grotto snorkeling', 'Iguana island visit'] },
+    ],
+    restaurants: [
+      { name: 'Graycliff Restaurant', type: 'Fine Dining', rating: 4.7 },
+      { name: 'Fish Fry at Arawak Cay', type: 'Bahamian Seafood', rating: 4.6 },
+      { name: 'Dune', type: 'French-Asian', rating: 4.5 },
+      { name: 'Caf\u00e9 Matisse', type: 'Italian-Bahamian', rating: 4.4 },
+    ],
   },
   {
     id: '27',
@@ -667,6 +977,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 27,
     flightDuration: '3h 45m',
+    available_flight_days: ['Tue', 'Thu', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Scuba dive at Palancar Reef', 'Explore San Miguel town', 'Sunset at west shore', 'Fresh ceviche dinner'] },
+      { day: 2, activities: ['Chankanaab Adventure Park', 'Snorkel with sea turtles', 'Punta Sur Eco Beach Park'] },
+    ],
+    restaurants: [
+      { name: 'Buccanos at Night', type: 'Beach Club Dining', rating: 4.7 },
+      { name: 'La Cocay', type: 'Mediterranean', rating: 4.6 },
+      { name: 'Kinta', type: 'Modern Mexican', rating: 4.5 },
+      { name: 'Coconuts Bar & Grill', type: 'Beachfront Casual', rating: 4.4 },
+    ],
   },
   {
     id: '28',
@@ -692,6 +1013,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 27,
     flightDuration: '4h 30m',
+    available_flight_days: ['Tue', 'Thu', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Climb Gros Piton', 'Sulphur Springs mud bath', 'Chocolate tasting at Hotel Chocolat', 'Dinner overlooking the Pitons'] },
+      { day: 2, activities: ['Catamaran cruise along the coast', 'Snorkeling at Anse Chastanet', 'Visit Marigot Bay', 'Rum tasting'] },
+    ],
+    restaurants: [
+      { name: 'Dasheene', type: 'Caribbean Fine Dining', rating: 4.8 },
+      { name: 'The Coal Pot', type: 'French-Creole', rating: 4.7 },
+      { name: 'Orlando\'s', type: 'Authentic St. Lucian', rating: 4.5 },
+      { name: 'Boucan', type: 'Cacao Cuisine', rating: 4.6 },
+    ],
   },
   // ─── Central & South America (29–34) ─────────────────────────────────
   {
@@ -718,6 +1050,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 24,
     flightDuration: '4h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Arenal Volcano hike', 'Tabac\u00f3n hot springs', 'Hanging bridges walk', 'Casado dinner'] },
+      { day: 2, activities: ['Zip-lining through Monteverde Cloud Forest', 'Coffee plantation tour', 'Night wildlife walk'] },
+      { day: 3, activities: ['White water rafting on Pacuare River', 'Sloth sanctuary visit', 'Beach sunset in Manuel Antonio'] },
+    ],
+    restaurants: [
+      { name: 'Silvestre', type: 'Farm-to-Table Costa Rican', rating: 4.8 },
+      { name: 'Soda Tapia', type: 'Traditional Tico', rating: 4.5 },
+      { name: 'Al Mercat', type: 'Mediterranean', rating: 4.6 },
+      { name: 'Caf\u00e9 de los Deseos', type: 'Bohemian Caf\u00e9', rating: 4.4 },
+    ],
   },
   {
     id: '30',
@@ -742,6 +1086,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Jul', 'Aug'],
     averageTemp: 14,
     flightDuration: '4h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Monserrate mountain cable car', 'Explore La Candelaria', 'Visit Gold Museum', 'Colombian coffee tasting'] },
+      { day: 2, activities: ['Graffiti tour in downtown', 'Paloquemao market visit', 'Andr\u00e9s Carne de Res nightlife'] },
+    ],
+    restaurants: [
+      { name: 'Leo', type: 'Colombian Tasting Menu', rating: 4.9 },
+      { name: 'Andr\u00e9s Carne de Res', type: 'Colombian Party Restaurant', rating: 4.6 },
+      { name: 'Mini-Mal', type: 'Modern Colombian', rating: 4.7 },
+      { name: 'La Puerta Falsa', type: 'Traditional Bogotano', rating: 4.5 },
+    ],
   },
   {
     id: '31',
@@ -767,6 +1122,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar'],
     averageTemp: 22,
     flightDuration: '4h 45m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Comuna 13 street art tour', 'Ride outdoor escalators', 'Plaza Botero sculptures', 'Dinner in Poblado'] },
+      { day: 2, activities: ['Guatap\u00e9 day trip', 'Climb El Pe\u00f1ol rock', 'Lake boat tour', 'Finca coffee experience'] },
+    ],
+    restaurants: [
+      { name: 'El Cielo', type: 'Avant-Garde Colombian', rating: 4.8 },
+      { name: 'Mondongo\'s', type: 'Traditional Antioquian', rating: 4.5 },
+      { name: 'Carmen', type: 'Modern Latin', rating: 4.7 },
+      { name: 'Hacienda Junin', type: 'Colombian Comfort', rating: 4.4 },
+    ],
   },
   {
     id: '32',
@@ -791,6 +1157,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar'],
     averageTemp: 22,
     flightDuration: '7h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Ceviche tasting in Miraflores', 'Walk the Malec\u00f3n coastal path', 'Visit Huaca Pucllana ruins', 'Pisco sour lesson'] },
+      { day: 2, activities: ['Explore historic Lima Centro', 'Visit catacombs at San Francisco', 'Barranco bohemian district', 'Sunset at Puente de los Suspiros'] },
+    ],
+    restaurants: [
+      { name: 'Central', type: 'Peruvian Tasting Menu', rating: 4.9 },
+      { name: 'Maido', type: 'Nikkei (Japanese-Peruvian)', rating: 4.8 },
+      { name: 'La Mar', type: 'Cevicher\u00eda', rating: 4.7 },
+      { name: 'Isolina', type: 'Peruvian Comfort Food', rating: 4.6 },
+      { name: 'Tanta', type: 'Casual Peruvian', rating: 4.5 },
+    ],
   },
   {
     id: '33',
@@ -816,6 +1194,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 28,
     flightDuration: '4h 15m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Walk the walled Old City', 'Visit Castillo San Felipe', 'Shopping in Las B\u00f3vedas', 'Dinner at Plaza Santo Domingo'] },
+      { day: 2, activities: ['Day trip to Rosario Islands', 'Snorkeling in crystal waters', 'Playa Blanca beach', 'Evening salsa dancing'] },
+    ],
+    restaurants: [
+      { name: 'Carmen', type: 'Contemporary Colombian', rating: 4.8 },
+      { name: 'La Cevicher\u00eda', type: 'Seafood', rating: 4.7 },
+      { name: 'Alma', type: 'Colombian Fine Dining', rating: 4.6 },
+      { name: 'La Paletter\u00eda', type: 'Ice Cream & Paletas', rating: 4.5 },
+    ],
   },
   {
     id: '34',
@@ -840,6 +1229,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
     averageTemp: 27,
     flightDuration: '3h 45m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Visit Panama Canal Miraflores Locks', 'Explore Casco Viejo old town', 'Walk the Amador Causeway', 'Rooftop dinner'] },
+      { day: 2, activities: ['Embera indigenous village tour', 'Hike Soberan\u00eda National Park', 'Visit BioMuseo by Frank Gehry'] },
+    ],
+    restaurants: [
+      { name: 'Maito', type: 'Panamanian Fine Dining', rating: 4.8 },
+      { name: 'Donde Jos\u00e9', type: 'Tasting Menu', rating: 4.7 },
+      { name: 'Mercado de Mariscos', type: 'Seafood Market', rating: 4.5 },
+      { name: 'Fonda Lo Que Hay', type: 'Modern Panamanian', rating: 4.6 },
+    ],
   },
   // ─── Europe (35–42) ──────────────────────────────────────────────────
   {
@@ -867,6 +1267,19 @@ export const destinations: Destination[] = [
     bestMonths: ['May', 'Jun', 'Jul', 'Aug', 'Sep'],
     averageTemp: 14,
     flightDuration: '9h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Tower of London', 'Walk across Tower Bridge', 'Borough Market lunch', 'West End theatre show'] },
+      { day: 2, activities: ['British Museum morning', 'Buckingham Palace & St James Park', 'Afternoon tea', 'Pub crawl in Soho'] },
+      { day: 3, activities: ['Camden Market exploration', 'Regent\'s Park walk', 'Notting Hill stroll', 'Sky Garden sunset'] },
+    ],
+    restaurants: [
+      { name: 'Dishoom', type: 'Bombay Caf\u00e9', rating: 4.7 },
+      { name: 'The Ledbury', type: 'Fine Dining', rating: 4.8 },
+      { name: 'Padella', type: 'Fresh Pasta', rating: 4.6 },
+      { name: 'Borough Market', type: 'Food Market', rating: 4.5 },
+      { name: 'Flat Iron', type: 'Steak', rating: 4.4 },
+    ],
   },
   {
     id: '36',
@@ -892,6 +1305,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 12,
     flightDuration: '9h 30m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Eiffel Tower visit', 'Seine river cruise', 'Explore Le Marais district', 'Dinner on \u00cele Saint-Louis'] },
+      { day: 2, activities: ['Louvre Museum morning', 'Tuileries Garden walk', 'Montmartre & Sacr\u00e9-C\u0153ur', 'Moulin Rouge cabaret'] },
+      { day: 3, activities: ['Versailles day trip', 'Hall of Mirrors', 'Palace gardens stroll', 'Champagne tasting'] },
+    ],
+    restaurants: [
+      { name: 'Le Comptoir du Panth\u00e9on', type: 'Classic Bistro', rating: 4.6 },
+      { name: 'L\'Ambroisie', type: 'Fine Dining', rating: 4.9 },
+      { name: 'Breizh Caf\u00e9', type: 'Cr\u00eaperie', rating: 4.5 },
+      { name: 'Le Bouillon Chartier', type: 'Traditional French', rating: 4.4 },
+      { name: 'Pierre Herm\u00e9', type: 'Pastry & Macaron', rating: 4.8 },
+    ],
   },
   {
     id: '37',
@@ -917,6 +1343,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
     averageTemp: 10,
     flightDuration: '9h 15m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Anne Frank House visit', 'Canal cruise', 'Explore Jordaan neighborhood', 'Indonesian rijsttafel dinner'] },
+      { day: 2, activities: ['Van Gogh Museum', 'Vondelpark stroll', 'Albert Cuyp Market', 'Brown caf\u00e9 evening'] },
+      { day: 3, activities: ['Bike ride to countryside windmills', 'Visit Zaanse Schans', 'Cheese tasting at Henri Willig'] },
+    ],
+    restaurants: [
+      { name: 'Rijks', type: 'Modern Dutch', rating: 4.7 },
+      { name: 'The Pancake Bakery', type: 'Dutch Pancakes', rating: 4.5 },
+      { name: 'Blauw', type: 'Indonesian', rating: 4.6 },
+      { name: 'De Kas', type: 'Farm-to-Table', rating: 4.8 },
+    ],
   },
   {
     id: '38',
@@ -943,6 +1381,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 16,
     flightDuration: '10h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Colosseum & Roman Forum tour', 'Toss a coin in Trevi Fountain', 'Spanish Steps', 'Pasta dinner in Trastevere'] },
+      { day: 2, activities: ['Vatican Museums & Sistine Chapel', 'St. Peter\'s Basilica', 'Castel Sant\'Angelo', 'Gelato crawl'] },
+      { day: 3, activities: ['Borghese Gallery', 'Explore Testaccio food scene', 'Appian Way bike ride', 'Sunset at Pincio terrace'] },
+    ],
+    restaurants: [
+      { name: 'Da Enzo al 29', type: 'Roman Trattoria', rating: 4.8 },
+      { name: 'Roscioli', type: 'Deli & Restaurant', rating: 4.7 },
+      { name: 'Pizzarium', type: 'Roman Pizza', rating: 4.6 },
+      { name: 'Armando al Pantheon', type: 'Classic Roman', rating: 4.5 },
+      { name: 'Gelateria del Teatro', type: 'Gelato', rating: 4.7 },
+    ],
   },
   {
     id: '39',
@@ -967,6 +1418,17 @@ export const destinations: Destination[] = [
     bestMonths: ['May', 'Jun', 'Jul', 'Aug', 'Sep'],
     averageTemp: 10,
     flightDuration: '8h 00m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Trinity College & Book of Kells', 'Guinness Storehouse tour', 'Temple Bar pub crawl', 'Traditional Irish music session'] },
+      { day: 2, activities: ['Cliffs of Moher day trip', 'Drive the Wild Atlantic Way', 'Visit Doolin village', 'Seafood chowder lunch'] },
+    ],
+    restaurants: [
+      { name: 'Chapter One', type: 'Fine Dining Irish', rating: 4.8 },
+      { name: 'The Woollen Mills', type: 'Modern Irish', rating: 4.5 },
+      { name: 'Fish Shop', type: 'Fish & Chips', rating: 4.6 },
+      { name: 'Gallagher\'s Boxty House', type: 'Traditional Irish', rating: 4.4 },
+    ],
   },
   {
     id: '40',
@@ -992,6 +1454,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 9,
     flightDuration: '10h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Walk across Charles Bridge', 'Explore Prague Castle', 'Wander Old Town Square', 'Trdeln\u00edk & beer tasting'] },
+      { day: 2, activities: ['Jewish Quarter museum', 'Lennon Wall visit', 'Pet\u0159\u00edn Tower views', 'Craft beer pub crawl'] },
+    ],
+    restaurants: [
+      { name: 'La Degustation', type: 'Czech Tasting Menu', rating: 4.8 },
+      { name: 'Lok\u00e1l Dlouh\u00e1\u00e1\u00e1\u00e1', type: 'Czech Pub Food', rating: 4.5 },
+      { name: 'Eska', type: 'Modern Czech', rating: 4.7 },
+      { name: 'Caf\u00e9 Savoy', type: 'Grand Caf\u00e9', rating: 4.6 },
+    ],
   },
   {
     id: '41',
@@ -1016,6 +1489,17 @@ export const destinations: Destination[] = [
     bestMonths: ['May', 'Jun', 'Jul', 'Aug', 'Sep'],
     averageTemp: 8,
     flightDuration: '9h 45m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Nyhavn harbor walk', 'Visit The Little Mermaid', 'Tivoli Gardens rides', 'New Nordic dinner'] },
+      { day: 2, activities: ['Explore Christiania freetown', 'Rosenborg Castle & Crown Jewels', 'Torvehallerne food market', 'Canal tour'] },
+    ],
+    restaurants: [
+      { name: 'Noma', type: 'New Nordic', rating: 4.9 },
+      { name: 'Torvehallerne', type: 'Food Market', rating: 4.6 },
+      { name: 'Gasoline Grill', type: 'Burgers', rating: 4.5 },
+      { name: 'Geranium', type: 'Fine Dining', rating: 4.9 },
+    ],
   },
   {
     id: '42',
@@ -1041,6 +1525,17 @@ export const destinations: Destination[] = [
     bestMonths: ['May', 'Jun', 'Jul', 'Aug', 'Sep'],
     averageTemp: 10,
     flightDuration: '10h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Brandenburg Gate & Reichstag', 'Berlin Wall Memorial', 'Checkpoint Charlie museum', 'Street food at Markthalle Neun'] },
+      { day: 2, activities: ['Museum Island art tour', 'East Side Gallery', 'Kreuzberg neighborhood walk', 'Legendary Berlin nightlife'] },
+    ],
+    restaurants: [
+      { name: 'Nobelhart & Schmutzig', type: 'Brutally Local', rating: 4.8 },
+      { name: 'Mustafa\'s Gem\u00fcse Kebap', type: 'D\u00f6ner Kebab', rating: 4.6 },
+      { name: 'Curry 36', type: 'Currywurst', rating: 4.4 },
+      { name: 'CODA', type: 'Dessert Bar', rating: 4.7 },
+    ],
   },
   // ─── Asia (43–46) ────────────────────────────────────────────────────
   {
@@ -1068,6 +1563,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Nov', 'Dec', 'Jan', 'Feb'],
     averageTemp: 30,
     flightDuration: '18h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Grand Palace & Wat Phra Kaew', 'Wat Pho reclining Buddha', 'Chao Phraya river boat', 'Chinatown street food feast'] },
+      { day: 2, activities: ['Chatuchak Weekend Market', 'Jim Thompson House', 'Rooftop drinks at Sky Bar', 'Khao San Road nightlife'] },
+      { day: 3, activities: ['Floating market at Damnoen Saduak', 'Thai massage experience', 'ICONSIAM mall', 'Pad Thai at Thip Samai'] },
+    ],
+    restaurants: [
+      { name: 'Gaggan Anand', type: 'Progressive Indian', rating: 4.9 },
+      { name: 'Jay Fai', type: 'Thai Street Food', rating: 4.8 },
+      { name: 'Thip Samai', type: 'Pad Thai', rating: 4.7 },
+      { name: 'Nahm', type: 'Royal Thai', rating: 4.6 },
+      { name: 'Som Tam Nua', type: 'Isaan Thai', rating: 4.5 },
+    ],
   },
   {
     id: '44',
@@ -1093,6 +1601,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     averageTemp: 28,
     flightDuration: '19h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Gardens by the Bay & Cloud Forest', 'Marina Bay Sands SkyPark', 'Merlion Park photos', 'Hawker centre dinner at Lau Pa Sat'] },
+      { day: 2, activities: ['Sentosa Island beach day', 'Singapore Zoo river safari', 'Clarke Quay evening', 'Chili crab feast'] },
+      { day: 3, activities: ['Little India & Kampong Glam', 'Orchard Road shopping', 'Night Safari experience'] },
+    ],
+    restaurants: [
+      { name: 'Hawker Chan', type: 'Soya Sauce Chicken', rating: 4.6 },
+      { name: 'Burnt Ends', type: 'Australian BBQ', rating: 4.8 },
+      { name: 'Jumbo Seafood', type: 'Chili Crab', rating: 4.7 },
+      { name: 'Odette', type: 'French Fine Dining', rating: 4.9 },
+      { name: 'Tian Tian', type: 'Hainanese Chicken Rice', rating: 4.5 },
+    ],
   },
   {
     id: '45',
@@ -1118,6 +1639,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Mar', 'Apr', 'May', 'Sep', 'Oct', 'Nov'],
     averageTemp: 12,
     flightDuration: '15h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Gyeongbokgung Palace hanbok rental', 'Bukchon Hanok Village walk', 'Insadong tea house', 'Korean BBQ dinner in Gangnam'] },
+      { day: 2, activities: ['Namsan Tower views', 'Myeongdong shopping & street food', 'K-pop merchandise in Hongdae', 'Soju & fried chicken night'] },
+      { day: 3, activities: ['DMZ border tour', 'War Memorial museum', 'Jjimjilbang spa experience'] },
+    ],
+    restaurants: [
+      { name: 'Jungsik', type: 'Modern Korean', rating: 4.8 },
+      { name: 'Maple Tree House', type: 'Korean BBQ', rating: 4.7 },
+      { name: 'Gwangjang Market', type: 'Street Food Market', rating: 4.6 },
+      { name: 'Mingles', type: 'Korean Fine Dining', rating: 4.9 },
+      { name: 'Tosokchon', type: 'Samgyetang', rating: 4.5 },
+    ],
   },
   {
     id: '46',
@@ -1144,6 +1678,19 @@ export const destinations: Destination[] = [
     bestMonths: ['Oct', 'Nov', 'Dec', 'Mar', 'Apr'],
     averageTemp: 24,
     flightDuration: '18h 30m',
+    available_flight_days: ['Mon', 'Wed', 'Fri', 'Sat'],
+    itinerary: [
+      { day: 1, activities: ['Walk around Hoan Kiem Lake', 'Explore Old Quarter 36 streets', 'Vietnamese coffee at egg caf\u00e9', 'Water puppet show'] },
+      { day: 2, activities: ['Ha Long Bay overnight cruise', 'Kayak through limestone caves', 'Sunset on the bay', 'Fresh seafood on deck'] },
+      { day: 3, activities: ['Temple of Literature visit', 'Street food walking tour', 'Train Street photography', 'Bia hoi corner drinks'] },
+    ],
+    restaurants: [
+      { name: 'Cha Ca La Vong', type: 'Traditional Fish', rating: 4.7 },
+      { name: 'Bun Cha Huong Lien', type: 'B\u00fan Ch\u1ea3', rating: 4.6 },
+      { name: 'Pho Gia Truyen', type: 'Pho', rating: 4.8 },
+      { name: 'La Badiane', type: 'French-Vietnamese', rating: 4.5 },
+      { name: 'B\u00fan B\u00f2 Nam B\u1ed9', type: 'Noodle House', rating: 4.4 },
+    ],
   },
   // ─── Domestic US (47–50) ─────────────────────────────────────────────
   {
@@ -1170,6 +1717,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
     averageTemp: 26,
     flightDuration: '9h 30m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Waikiki Beach morning surf lesson', 'Diamond Head crater hike', 'Ala Moana Beach Park', 'Poke bowl dinner'] },
+      { day: 2, activities: ['Pearl Harbor memorial visit', 'North Shore drive', 'Watch surfers at Pipeline', 'Shrimp truck lunch at Giovanni\'s'] },
+      { day: 3, activities: ['Snorkel at Hanauma Bay', 'Kailua Beach chill day', 'Sunset at Lanikai Pillbox hike'] },
+    ],
+    restaurants: [
+      { name: 'Helena\'s Hawaiian Food', type: 'Traditional Hawaiian', rating: 4.7 },
+      { name: 'Marukame Udon', type: 'Japanese Udon', rating: 4.6 },
+      { name: 'Giovanni\'s Shrimp Truck', type: 'Garlic Shrimp', rating: 4.5 },
+      { name: 'Senia', type: 'Hawaii Regional', rating: 4.8 },
+    ],
   },
   {
     id: '48',
@@ -1194,6 +1753,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'],
     averageTemp: 22,
     flightDuration: '2h 30m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['French Quarter walking tour', 'Beignets at Caf\u00e9 du Monde', 'Live jazz on Frenchmen Street', 'Po\'boy crawl'] },
+      { day: 2, activities: ['Garden District mansion walk', 'Streetcar ride on St. Charles', 'Swamp tour', 'Cocktail history tour'] },
+    ],
+    restaurants: [
+      { name: 'Commander\'s Palace', type: 'Creole Fine Dining', rating: 4.8 },
+      { name: 'Caf\u00e9 du Monde', type: 'Beignets & Caf\u00e9 au Lait', rating: 4.6 },
+      { name: 'Cochon', type: 'Cajun', rating: 4.7 },
+      { name: 'Dooky Chase', type: 'Soul & Creole', rating: 4.5 },
+      { name: 'Parkway Bakery', type: 'Po\'boys', rating: 4.4 },
+    ],
   },
   {
     id: '49',
@@ -1218,6 +1789,17 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct'],
     averageTemp: 16,
     flightDuration: '2h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Broadway honky-tonk crawl', 'Country Music Hall of Fame', 'Hot chicken at Hattie B\'s', 'Grand Ole Opry show'] },
+      { day: 2, activities: ['The Parthenon in Centennial Park', 'Germantown brunch', '12 South shopping district', 'Live music at Bluebird Cafe'] },
+    ],
+    restaurants: [
+      { name: 'Hattie B\'s', type: 'Hot Chicken', rating: 4.7 },
+      { name: 'Prince\'s Hot Chicken', type: 'Original Hot Chicken', rating: 4.6 },
+      { name: 'The Catbird Seat', type: 'Tasting Menu', rating: 4.8 },
+      { name: 'Biscuit Love', type: 'Southern Brunch', rating: 4.5 },
+    ],
   },
   {
     id: '50',
@@ -1244,5 +1826,18 @@ export const destinations: Destination[] = [
     bestMonths: ['Apr', 'May', 'Jun', 'Sep', 'Oct', 'Nov'],
     averageTemp: 13,
     flightDuration: '3h 00m',
+    available_flight_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    itinerary: [
+      { day: 1, activities: ['Central Park morning walk', 'Met Museum highlights', 'Walk the High Line', 'Times Square at night'] },
+      { day: 2, activities: ['Statue of Liberty ferry', 'Brooklyn Bridge walk', 'DUMBO photo ops', 'Pizza in Brooklyn'] },
+      { day: 3, activities: ['Broadway matinee show', 'Chelsea Market lunch', 'Top of the Rock sunset', 'Speakeasy cocktails in the Village'] },
+    ],
+    restaurants: [
+      { name: 'Peter Luger', type: 'Steakhouse', rating: 4.7 },
+      { name: 'Joe\'s Pizza', type: 'New York Pizza', rating: 4.6 },
+      { name: 'Le Bernardin', type: 'French Seafood', rating: 4.9 },
+      { name: 'Xi\'an Famous Foods', type: 'Chinese Noodles', rating: 4.5 },
+      { name: 'Los Tacos No. 1', type: 'Mexican Tacos', rating: 4.4 },
+    ],
   },
 ];

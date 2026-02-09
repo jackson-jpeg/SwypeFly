@@ -88,6 +88,10 @@ interface ScoredDest {
   // Merged from cached_hotel_prices
   live_hotel_price?: number | null;
   hotel_price_source?: string;
+  // New content fields
+  available_flight_days?: string[];
+  itinerary?: { day: number; activities: string[] }[];
+  restaurants?: { name: string; type: string; rating: number }[];
 }
 
 interface UserPrefs {
@@ -501,6 +505,9 @@ function toFrontend(d: ScoredDest) {
     priceFetchedAt: d.price_fetched_at || undefined,
     liveHotelPrice: d.live_hotel_price ?? null,
     hotelPriceSource: d.live_hotel_price != null ? (d.hotel_price_source as 'liteapi' | 'estimate') : 'estimate',
+    available_flight_days: d.available_flight_days || undefined,
+    itinerary: d.itinerary || undefined,
+    restaurants: d.restaurants || undefined,
   };
 }
 
@@ -519,6 +526,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Check for auth -> personalized vs generic scoring
     const userPrefs = await getUserPrefs(req.headers.authorization);
+
+    // Extract saved vibe tags for preference boost in generic scorer
+    let savedVibeTags: string[] = [];
+    if (userPrefs) {
+      try {
+        const token = (req.headers.authorization || '').replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) {
+          const { data: savedTrips } = await supabase
+            .from('saved_trips')
+            .select('destination_id')
+            .eq('user_id', user.id);
+          if (savedTrips && savedTrips.length > 0) {
+            const savedDestIds = new Set(savedTrips.map((s) => s.destination_id));
+            const savedDests = destinations.filter((d) => savedDestIds.has(d.id));
+            savedVibeTags = [...new Set(savedDests.flatMap((d) => d.vibe_tags))];
+          }
+        }
+      } catch {
+        // Ignore — preference boost is optional
+      }
+    }
 
     let scored: ScoredDest[];
     if (userPrefs) {

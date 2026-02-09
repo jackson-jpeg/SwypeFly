@@ -17,11 +17,11 @@ export function LoadingSpinner() {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flex: 1, backgroundColor: '#0A0A0A', minHeight: '100vh',
+        flex: 1, backgroundColor: '#F8FAFC', minHeight: '100vh',
       }}>
         <div style={{
-          width: 40, height: 40, border: '3px solid rgba(255,255,255,0.1)',
-          borderTopColor: '#FF6B35', borderRadius: '50%',
+          width: 40, height: 40, border: '3px solid #E2E8F0',
+          borderTopColor: '#38BDF8', borderRadius: '50%',
           animation: 'spin 0.8s linear infinite',
         }} />
       </div>
@@ -29,8 +29,8 @@ export function LoadingSpinner() {
   }
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0A0A' }}>
-      <ActivityIndicator size="large" color="#FF6B35" />
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
+      <ActivityIndicator size="large" color="#38BDF8" />
     </View>
   );
 }

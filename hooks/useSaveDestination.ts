@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useSavedStore } from '../stores/savedStore';
-import { mediumHaptic } from '../utils/haptics';
+import { mediumHaptic, successHaptic } from '../utils/haptics';
 import { supabase } from '../services/supabase';
 import { useAuthContext } from './AuthContext';
 
@@ -34,11 +34,14 @@ export function useSaveDestination() {
 
   const toggle = useCallback(
     async (id: string) => {
-      mediumHaptic();
       const wasSaved = savedIds.has(id);
+      mediumHaptic();
 
       // Optimistic update
       toggleSaved(id);
+
+      // Success haptic on save (not unsave)
+      if (!wasSaved) successHaptic();
 
       // Sync to Supabase if authenticated
       if (user) {
