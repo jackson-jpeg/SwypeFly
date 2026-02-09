@@ -1,17 +1,64 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSavedStore } from '../stores/savedStore';
 import { mediumHaptic } from '../utils/haptics';
+import { supabase } from '../services/supabase';
+import { useAuthContext } from './AuthContext';
 
 export function useSaveDestination() {
   const toggleSaved = useSavedStore((s) => s.toggleSaved);
   const savedIds = useSavedStore((s) => s.savedIds);
+  const hydrate = useSavedStore((s) => s.hydrate);
+  const { user } = useAuthContext();
+  const hydratedRef = useRef(false);
+
+  // Hydrate saved IDs from Supabase on login
+  useEffect(() => {
+    if (!user || hydratedRef.current) return;
+    hydratedRef.current = true;
+
+    supabase
+      .from('saved_trips')
+      .select('destination_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          hydrate(data.map((row) => row.destination_id));
+        }
+      });
+  }, [user, hydrate]);
+
+  // Reset hydration flag on logout
+  useEffect(() => {
+    if (!user) hydratedRef.current = false;
+  }, [user]);
 
   const toggle = useCallback(
-    (id: string) => {
+    async (id: string) => {
       mediumHaptic();
+      const wasSaved = savedIds.has(id);
+
+      // Optimistic update
       toggleSaved(id);
+
+      // Sync to Supabase if authenticated
+      if (user) {
+        if (wasSaved) {
+          await supabase
+            .from('saved_trips')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('destination_id', id);
+        } else {
+          await supabase
+            .from('saved_trips')
+            .upsert(
+              { user_id: user.id, destination_id: id },
+              { onConflict: 'user_id,destination_id' },
+            );
+        }
+      }
     },
-    [toggleSaved],
+    [toggleSaved, savedIds, user],
   );
 
   const isSaved = useCallback((id: string) => savedIds.has(id), [savedIds]);

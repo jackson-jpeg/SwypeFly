@@ -3,7 +3,7 @@ import { View, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { SwipeCard } from './SwipeCard';
 import { SkeletonCard } from './SkeletonCard';
-import { useSwipeFeed } from '../../hooks/useSwipeFeed';
+import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
 import { lightHaptic } from '../../utils/haptics';
@@ -20,10 +20,24 @@ export function SwipeFeed() {
   const scrollRef = useRef<ScrollView>(null);
   const webScrollRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(0);
+  const cardEnterTimeRef = useRef<number>(Date.now());
 
   const destinations = useMemo(
     () => data?.pages.flatMap((page) => page.destinations) ?? [],
     [data],
+  );
+
+  const handleToggleSave = useCallback(
+    (destId: string) => {
+      const dest = destinations.find((d) => d.id === destId);
+      if (dest && !isSaved(destId)) {
+        // Record save action when saving (not when un-saving)
+        const timeSpent = Date.now() - cardEnterTimeRef.current;
+        recordSwipe(destId, 'saved', timeSpent, dest.livePrice ?? dest.flightPrice);
+      }
+      toggle(destId);
+    },
+    [destinations, isSaved, toggle],
   );
 
   const [showHint, setShowHint] = useState(() => {
@@ -93,13 +107,13 @@ export function SwipeFeed() {
         container.scrollTo({ top: prev * h, behavior: 'smooth' });
       } else if (e.key === 's' || e.key === 'S') {
         const current = destinations[activeIndexRef.current];
-        if (current) toggle(current.id);
+        if (current) handleToggleSave(current.id);
       }
     };
 
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [destinations, hasNextPage, toggle]);
+  }, [destinations, hasNextPage, handleToggleSave]);
 
   const handleWebScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
@@ -108,6 +122,16 @@ export function SwipeFeed() {
       const h = window.innerHeight;
       const index = Math.round(offsetY / h);
       if (index !== activeIndexRef.current && index >= 0) {
+        // Track time on previous card and record swipe
+        const prevIndex = activeIndexRef.current;
+        if (prevIndex < destinations.length) {
+          const timeSpent = Date.now() - cardEnterTimeRef.current;
+          const prevDest = destinations[prevIndex];
+          const action = timeSpent < 1500 ? 'skipped' : 'viewed';
+          recordSwipe(prevDest.id, action, timeSpent, prevDest.livePrice ?? prevDest.flightPrice);
+        }
+        cardEnterTimeRef.current = Date.now();
+
         activeIndexRef.current = index;
         setActiveIndex(index);
         setCurrentIndex(index);
@@ -134,6 +158,16 @@ export function SwipeFeed() {
       const offsetY = event.nativeEvent.contentOffset.y;
       const index = Math.round(offsetY / screenHeight);
       if (index !== activeIndexRef.current && index >= 0 && index < destinations.length) {
+        // Track time on previous card and record swipe
+        const prevIndex = activeIndexRef.current;
+        if (prevIndex < destinations.length) {
+          const timeSpent = Date.now() - cardEnterTimeRef.current;
+          const prevDest = destinations[prevIndex];
+          const action = timeSpent < 1500 ? 'skipped' : 'viewed';
+          recordSwipe(prevDest.id, action, timeSpent, prevDest.livePrice ?? prevDest.flightPrice);
+        }
+        cardEnterTimeRef.current = Date.now();
+
         activeIndexRef.current = index;
         setActiveIndex(index);
         setCurrentIndex(index);
@@ -204,7 +238,7 @@ export function SwipeFeed() {
                 index <= activeIndex + PRELOAD_AHEAD
               }
               isSaved={isSaved(destination.id)}
-              onToggleSave={() => toggle(destination.id)}
+              onToggleSave={() => handleToggleSave(destination.id)}
             />
             {index === 0 && showHint && (
               <div className="sf-swipe-hint">
@@ -290,7 +324,7 @@ export function SwipeFeed() {
               index <= activeIndex + PRELOAD_AHEAD
             }
             isSaved={isSaved(destination.id)}
-            onToggleSave={() => toggle(destination.id)}
+            onToggleSave={() => handleToggleSave(destination.id)}
           />
         </View>
       ))}

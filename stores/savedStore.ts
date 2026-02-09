@@ -6,6 +6,7 @@ interface SavedState {
   savedIds: Set<string>;
   toggleSaved: (id: string) => void;
   isSaved: (id: string) => boolean;
+  hydrate: (ids: string[]) => void;
 }
 
 const webStorage = Platform.OS === 'web'
@@ -40,6 +41,8 @@ export const useSavedStore = create<SavedState>()(
           return { savedIds: next };
         }),
       isSaved: (id) => get().savedIds.has(id),
+      hydrate: (ids) =>
+        set(() => ({ savedIds: new Set(ids) })),
     }),
     {
       name: 'swypefly-saved',

@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, Pressable, Share, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Share, Platform, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Image } from 'expo-image';
-import { getDestinationById } from '../../hooks/useSwipeFeed';
+import { useDestination } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { formatFlightPrice, formatHotelPrice } from '../../utils/formatPrice';
 import { flightLink, hotelLink, activitiesLink } from '../../utils/affiliateLinks';
@@ -11,10 +11,26 @@ import { useUIStore } from '../../stores/uiStore';
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { toggle, isSaved } = useSaveDestination();
-  const destination = id ? getDestinationById(id) : undefined;
+  const { data: destination, isLoading, error } = useDestination(id);
   const departureCode = useUIStore((s) => s.departureCode);
 
-  if (!destination) {
+  if (isLoading) {
+    if (Platform.OS === 'web') {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#0A0A0A' }}>
+          <div style={{ width: 24, height: 24, border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#FF6B35', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      );
+    }
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0A0A' }}>
+        <ActivityIndicator color="#FF6B35" />
+      </View>
+    );
+  }
+
+  if (!destination || error) {
     if (Platform.OS === 'web') {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#0A0A0A' }}>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Platform } from 'react-native';
+import { useFeedStore } from './feedStore';
 
 interface UIState {
   hapticsEnabled: boolean;
@@ -28,7 +29,10 @@ export const useUIStore = create<UIState>()(
       currency: 'USD',
       toggleHaptics: () => set((state) => ({ hapticsEnabled: !state.hapticsEnabled })),
       setTheme: (theme) => set({ theme }),
-      setDeparture: (city, code) => set({ departureCity: city, departureCode: code }),
+      setDeparture: (city, code) => {
+        set({ departureCity: city, departureCode: code });
+        useFeedStore.getState().reset();
+      },
       setCurrency: (currency) => set({ currency }),
     }),
     {

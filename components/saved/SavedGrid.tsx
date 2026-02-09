@@ -4,29 +4,24 @@ import { router } from 'expo-router';
 import { SavedCard } from './SavedCard';
 import { EmptyState } from '../common/EmptyState';
 import { useSavedStore } from '../../stores/savedStore';
-import { mockDestinations } from '../../data/destinations';
-import { getDestinationById } from '../../hooks/useSwipeFeed';
+import { useSwipeFeed, getDestinationById } from '../../hooks/useSwipeFeed';
 import type { Destination } from '../../types/destination';
 
 export function SavedGrid() {
   const savedIds = useSavedStore((s) => s.savedIds);
+  const { data } = useSwipeFeed();
+  const pages = data?.pages;
 
   const savedDestinations = useMemo(
     () => {
       const results: Destination[] = [];
       savedIds.forEach((id) => {
-        // Prefer live-price-merged data from feed cache
-        const merged = getDestinationById(id);
-        if (merged) {
-          results.push(merged);
-        } else {
-          const mock = mockDestinations.find((d) => d.id === id);
-          if (mock) results.push(mock);
-        }
+        const found = getDestinationById(id, pages);
+        if (found) results.push(found);
       });
       return results;
     },
-    [savedIds],
+    [savedIds, pages],
   );
 
   if (savedDestinations.length === 0) {

@@ -1,91 +1,52 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { mockDestinations } from '../data/destinations';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { FEED_PAGE_SIZE } from '../constants/layout';
 import { useUIStore } from '../stores/uiStore';
-import { scoreFeed } from '../utils/scoreFeed';
+import { supabase } from '../services/supabase';
 import type { Destination, DestinationFeedPage } from '../types/destination';
 
-const PRICE_PROXY = process.env.EXPO_PUBLIC_PRICE_API_URL || 'http://localhost:3001';
-
-interface PriceData {
-  price: number;
-  currency: string;
-  airline: string;
-  duration: string;
+/**
+ * Resolves the API base URL.
+ * - On Vercel (production): same origin, so '' works (relative paths).
+ * - In local dev: Expo dev server doesn't serve /api, so we need the
+ *   Vercel dev server URL or fallback gracefully.
+ */
+function getApiBase(): string {
+  // In production (web) the API is same-origin
+  if (typeof window !== 'undefined' && window.location?.hostname !== 'localhost') {
+    return '';
+  }
+  // Local dev: try Vercel dev server or fall back to empty string
+  return '';
 }
 
-// Fetch live prices from the proxy server
-async function fetchLivePrices(origin: string): Promise<Map<string, PriceData> | null> {
+const API_BASE = getApiBase();
+
+// ─── Auth token helper ──────────────────────────────────────────────
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
   try {
-    const res = await fetch(`${PRICE_PROXY}/api/flights?origin=${origin}`, {
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return new Map(Object.entries(data.prices || {})) as Map<string, PriceData>;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` };
+    }
   } catch {
-    return null;
+    // No auth available — that's fine
   }
+  return {};
 }
 
-// Cache per origin — exported for use in detail page
-const destinationCache = new Map<string, Destination[]>();
-
-/** Look up a destination by ID, preferring live-price-merged data */
-export function getDestinationById(id: string): Destination | undefined {
-  // Check all cached origins for this ID
-  for (const destinations of destinationCache.values()) {
-    const found = destinations.find((d) => d.id === id);
-    if (found) return found;
-  }
-  // Fallback to mock catalog
-  return mockDestinations.find((d) => d.id === id);
-}
-
-async function loadDestinations(origin: string): Promise<Destination[]> {
-  const cached = destinationCache.get(origin);
-  if (cached) return cached;
-
-  // Try to get live prices
-  const prices = await fetchLivePrices(origin);
-
-  let destinations: Destination[];
-  if (prices && prices.size > 0) {
-    destinations = mockDestinations.map((dest) => {
-      const live = prices.get(dest.iataCode);
-      if (live) {
-        return {
-          ...dest,
-          flightPrice: live.price,
-          flightDuration: live.duration || dest.flightDuration,
-          livePrice: live.price,
-        };
-      }
-      return { ...dest, livePrice: null };
-    });
-
-    // Diversity-aware sort instead of cheapest-first
-    destinations = scoreFeed(destinations);
-  } else {
-    destinations = scoreFeed(mockDestinations.map((d) => ({ ...d, livePrice: null })));
-  }
-
-  destinationCache.set(origin, destinations);
-  return destinations;
-}
+// ─── Feed ────────────────────────────────────────────────────────────
 
 async function fetchPage(origin: string, cursor: string | null): Promise<DestinationFeedPage> {
-  if (!cursor && !destinationCache.has(origin)) {
-    await new Promise((r) => setTimeout(r, 300));
-  }
+  const params = new URLSearchParams({ origin });
+  if (cursor) params.set('cursor', cursor);
 
-  const all = await loadDestinations(origin);
-  const start = cursor ? parseInt(cursor, 10) : 0;
-  const destinations = all.slice(start, start + FEED_PAGE_SIZE);
-  const nextIndex = start + FEED_PAGE_SIZE;
-  const nextCursor = nextIndex < all.length ? String(nextIndex) : null;
-
-  return { destinations, nextCursor };
+  const authHeaders = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/feed?${params}`, {
+    headers: authHeaders,
+  });
+  if (!res.ok) throw new Error(`Feed request failed: ${res.status}`);
+  return res.json();
 }
 
 export function useSwipeFeed() {
@@ -97,4 +58,71 @@ export function useSwipeFeed() {
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
+}
+
+// ─── Swipe tracking (fire-and-forget) ───────────────────────────────
+
+export async function recordSwipe(
+  destinationId: string,
+  action: 'viewed' | 'skipped' | 'saved',
+  timeSpentMs?: number,
+  priceShown?: number,
+): Promise<void> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    if (!authHeaders.Authorization) return; // No auth = anonymous, skip tracking
+
+    fetch(`${API_BASE}/api/swipe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+      body: JSON.stringify({
+        destination_id: destinationId,
+        action,
+        time_spent_ms: timeSpentMs,
+        price_shown: priceShown,
+      }),
+    }).catch(() => {
+      // Fire-and-forget — don't block UI
+    });
+  } catch {
+    // Silently fail
+  }
+}
+
+// ─── Single Destination ──────────────────────────────────────────────
+
+async function fetchDestination(id: string, origin: string): Promise<Destination> {
+  const res = await fetch(`${API_BASE}/api/destination?id=${id}&origin=${origin}`);
+  if (!res.ok) throw new Error(`Destination request failed: ${res.status}`);
+  return res.json();
+}
+
+export function useDestination(id: string | undefined) {
+  const departureCode = useUIStore((s) => s.departureCode);
+
+  return useQuery({
+    queryKey: ['destination', id, departureCode],
+    queryFn: () => fetchDestination(id!, departureCode),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Legacy helper — looks up a destination from the feed cache.
+ * Used by components that already have the feed data loaded.
+ */
+export function getDestinationById(
+  id: string,
+  pages?: DestinationFeedPage[],
+): Destination | undefined {
+  if (!pages) return undefined;
+  for (const page of pages) {
+    const found = page.destinations.find((d) => d.id === id);
+    if (found) return found;
+  }
+  return undefined;
 }

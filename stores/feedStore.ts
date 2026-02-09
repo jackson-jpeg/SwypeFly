@@ -5,6 +5,7 @@ interface FeedState {
   viewedIds: Set<string>;
   setCurrentIndex: (index: number) => void;
   markViewed: (id: string) => void;
+  reset: () => void;
 }
 
 export const useFeedStore = create<FeedState>((set) => ({
@@ -17,4 +18,5 @@ export const useFeedStore = create<FeedState>((set) => ({
       next.add(id);
       return { viewedIds: next };
     }),
+  reset: () => set({ currentIndex: 0, viewedIds: new Set() }),
 }));
