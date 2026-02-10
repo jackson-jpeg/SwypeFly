@@ -100,11 +100,11 @@ async function fetchDestination(id: string, origin: string): Promise<Destination
   return res.json();
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_ID_RE = /^[0-9a-f-]+$/i;
 
 export function useDestination(id: string | undefined) {
   const departureCode = useUIStore((s) => s.departureCode);
-  const isValidId = !!id && UUID_RE.test(id);
+  const isValidId = !!id && VALID_ID_RE.test(id);
 
   return useQuery({
     queryKey: ['destination', id, departureCode],

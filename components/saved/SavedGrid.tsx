@@ -9,7 +9,7 @@ import { useSwipeFeed, getDestinationById } from '../../hooks/useSwipeFeed';
 import { useUIStore } from '../../stores/uiStore';
 import type { Destination } from '../../types/destination';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_ID_RE = /^[0-9a-f-]+$/i;
 
 async function fetchDestination(id: string, origin: string): Promise<Destination> {
   const res = await fetch(`/api/destination?id=${id}&origin=${origin}`);
@@ -31,7 +31,7 @@ export function SavedGrid() {
       const found = getDestinationById(id, pages);
       if (found) {
         cachedMap.set(id, found);
-      } else if (UUID_RE.test(id)) {
+      } else if (VALID_ID_RE.test(id)) {
         missing.push(id);
       }
     });

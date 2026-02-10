@@ -32,7 +32,7 @@ export const swipeBodySchema = z.object({
 // ─── Destination endpoint ────────────────────────────────────────────
 
 export const destinationQuerySchema = z.object({
-  id: uuid,
+  id: z.string().min(1),
   origin: iataCode.default('TPA'),
 });
 
