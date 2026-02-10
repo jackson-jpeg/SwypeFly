@@ -12,11 +12,11 @@ export function CardGradient() {
           background: `linear-gradient(
             to bottom,
             transparent 0%,
-            transparent 45%,
-            rgba(15,23,42,0.05) 55%,
-            rgba(15,23,42,0.25) 65%,
-            rgba(15,23,42,0.60) 80%,
-            rgba(15,23,42,0.85) 95%,
+            transparent 40%,
+            rgba(15,23,42,0.05) 50%,
+            rgba(15,23,42,0.25) 60%,
+            rgba(15,23,42,0.60) 75%,
+            rgba(15,23,42,0.85) 90%,
             rgba(15,23,42,0.92) 100%
           )`,
           pointerEvents: 'none',
@@ -36,7 +36,7 @@ export function CardGradient() {
         'rgba(15,23,42,0.85)',
         'rgba(15,23,42,0.92)',
       ]}
-      locations={[0, 0.45, 0.55, 0.65, 0.80, 0.95, 1]}
+      locations={[0, 0.40, 0.50, 0.60, 0.75, 0.90, 1]}
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
     />

@@ -22,7 +22,6 @@ export interface Destination {
   tagline: string;
   description: string;
   imageUrl: string;
-  blurhash?: string;
   flightPrice: number;
   hotelPricePerNight: number;
   currency: string;
@@ -41,6 +40,14 @@ export interface Destination {
   available_flight_days?: string[];
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number; mapsUrl?: string }[];
+  departureDate?: string;
+  returnDate?: string;
+  tripDurationDays?: number;
+  airline?: string;
+  blurHash?: string;
+  priceDirection?: 'up' | 'down' | 'stable';
+  previousPrice?: number;
+  photographerAttribution?: { name: string; url: string };
 }
 
 export interface DestinationFeedPage {

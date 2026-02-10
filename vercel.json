@@ -31,6 +31,10 @@
     {
       "path": "/api/prices/hotel-refresh",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/images/refresh",
+      "schedule": "0 12 * * *"
     }
   ]
 }

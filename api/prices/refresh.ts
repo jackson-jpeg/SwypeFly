@@ -42,6 +42,8 @@ interface PriceResult {
   currency: string;
   airline: string;
   source: 'travelpayouts' | 'amadeus' | 'estimate';
+  departureDate?: string;
+  returnDate?: string;
 }
 
 async function fetchAmadeusPrice(
@@ -151,6 +153,8 @@ async function refreshOrigin(
         currency: 'USD',
         airline: tp.airline,
         source: 'travelpayouts',
+        departureDate: tp.departureAt || undefined,
+        returnDate: tp.returnAt || undefined,
       });
       sourceCounts.travelpayouts++;
     }
@@ -172,6 +176,8 @@ async function refreshOrigin(
             currency: 'USD',
             airline: r.airline,
             source: 'travelpayouts',
+            departureDate: r.departureAt || undefined,
+            returnDate: r.returnAt || undefined,
           });
           sourceCounts.travelpayouts++;
         }
@@ -205,16 +211,54 @@ async function refreshOrigin(
 
   console.log(`[refresh] Total prices for ${origin}: ${allResults.size}/${allIatas.length} (TP: ${sourceCounts.travelpayouts}, Amadeus: ${sourceCounts.amadeus})`);
 
-  // Step 4: Upsert into cached_prices
-  const rows = Array.from(allResults.values()).map((p) => ({
-    origin,
-    destination_iata: p.destination,
-    price: p.price,
-    currency: p.currency,
-    airline: p.airline,
-    source: p.source,
-    fetched_at: new Date().toISOString(),
-  }));
+  // Step 4: Query current prices for price history tracking
+  const currentPriceMap = new Map<string, number>();
+  const { data: currentPrices } = await supabase
+    .from('cached_prices')
+    .select('destination_iata, price')
+    .eq('origin', origin);
+  if (currentPrices) {
+    for (const cp of currentPrices) {
+      currentPriceMap.set(cp.destination_iata, cp.price);
+    }
+  }
+
+  // Step 5: Upsert into cached_prices with dates + price history
+  const PRICE_CHANGE_THRESHOLD = 0.05; // 5% threshold for up/down
+  const rows = Array.from(allResults.values()).map((p) => {
+    const prevPrice = currentPriceMap.get(p.destination);
+    let priceDirection: 'up' | 'down' | 'stable' = 'stable';
+    if (prevPrice != null && prevPrice > 0) {
+      const pctChange = (p.price - prevPrice) / prevPrice;
+      if (pctChange > PRICE_CHANGE_THRESHOLD) priceDirection = 'up';
+      else if (pctChange < -PRICE_CHANGE_THRESHOLD) priceDirection = 'down';
+    }
+
+    // Compute trip duration from dates
+    let tripDurationDays: number | null = null;
+    if (p.departureDate && p.returnDate) {
+      const dep = new Date(p.departureDate);
+      const ret = new Date(p.returnDate);
+      if (!isNaN(dep.getTime()) && !isNaN(ret.getTime())) {
+        tripDurationDays = Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24));
+      }
+    }
+
+    return {
+      origin,
+      destination_iata: p.destination,
+      price: p.price,
+      currency: p.currency,
+      airline: p.airline,
+      source: p.source,
+      fetched_at: new Date().toISOString(),
+      departure_date: p.departureDate ? p.departureDate.split('T')[0] : null,
+      return_date: p.returnDate ? p.returnDate.split('T')[0] : null,
+      trip_duration_days: tripDurationDays,
+      previous_price: prevPrice ?? null,
+      price_direction: priceDirection,
+    };
+  });
 
   if (rows.length > 0) {
     const { error: upsertErr } = await supabase

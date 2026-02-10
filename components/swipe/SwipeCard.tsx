@@ -13,7 +13,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { CardGradient } from './CardGradient';
 import { CardActions } from './CardActions';
-import { formatFlightPrice } from '../../utils/formatPrice';
+import { CardDealBadge } from './CardDealBadge';
+import { CardFreshnessPill } from './CardFreshnessPill';
 import { shareDestination } from '../../utils/share';
 import { successHaptic } from '../../utils/haptics';
 import type { Destination } from '../../types/destination';
@@ -96,6 +97,8 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
     shareDestination(destination.city, destination.country, destination.tagline);
   };
 
+  const attribution = destination.photographerAttribution;
+
   // ── Web ──
   if (Platform.OS === 'web') {
     return (
@@ -164,7 +167,13 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </div>
         )}
 
-        {/* Sidebar — top right */}
+        {/* Top row: Freshness pill (left) + Actions (right) */}
+        <div
+          style={{ position: 'absolute', top: 56, left: 20, zIndex: 10 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <CardFreshnessPill destination={destination} />
+        </div>
         <div
           style={{ position: 'absolute', top: 56, right: 20, zIndex: 10 }}
           onClick={(e) => e.stopPropagation()}
@@ -185,6 +194,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             padding: '0 28px 84px 28px',
           }}
         >
+          {/* Deal Badge */}
+          <div style={{ marginBottom: 16 }}>
+            <CardDealBadge destination={destination} />
+          </div>
+
           {/* Tags — tiny, text-only */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             {destination.vibeTags.slice(0, 2).map((tag, i) => (
@@ -222,36 +236,27 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             {destination.city}
           </h1>
 
-          {/* Country · Price */}
+          {/* Country · Duration · Rating */}
           <p style={{ margin: '10px 0 0 0', fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
             <span style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 400 }}>
               {destination.country}
             </span>
             <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 10px' }}>·</span>
-            <span style={{ color: '#7DD3FC', fontWeight: 600 }}>
-              {formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}
-            </span>
-            {(destination.priceSource === 'travelpayouts' || destination.priceSource === 'amadeus') && (
-              <span style={{
-                marginLeft: 8,
-                width: 6, height: 6, borderRadius: 3,
-                backgroundColor: '#4ADE80',
-                display: 'inline-block',
-                boxShadow: '0 0 6px rgba(74,222,128,0.5)',
-              }} />
-            )}
-          </p>
-
-          {/* Duration · Rating */}
-          <p style={{ margin: '8px 0 0 0', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
             <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>
               {destination.flightDuration}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 8px' }}>·</span>
+            <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 10px' }}>·</span>
             <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
               {destination.rating}★
             </span>
           </p>
+
+          {/* Photographer attribution */}
+          {attribution && (
+            <p style={{ margin: '10px 0 0 0', fontSize: 9, color: 'rgba(255,255,255,0.3)', textAlign: 'right' as const }}>
+              📷 by {attribution.name}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -289,6 +294,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             contentFit="cover"
             transition={isActive ? 300 : 0}
             priority={isActive ? 'high' : 'low'}
+            placeholder={destination.blurHash || undefined}
           />
         )}
 
@@ -321,7 +327,10 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </View>
         </Animated.View>
 
-        {/* Sidebar — top right */}
+        {/* Top row: Freshness pill (left) + Actions (right) */}
+        <View style={{ position: 'absolute', top: 56, left: 20, zIndex: 10 }}>
+          <CardFreshnessPill destination={destination} />
+        </View>
         <View style={{ position: 'absolute', top: 56, right: 20, zIndex: 10 }}>
           <CardActions
             isSaved={isSaved}
@@ -332,6 +341,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
         </View>
 
         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 28, paddingBottom: 100 }}>
+          {/* Deal Badge */}
+          <View style={{ marginBottom: 16 }}>
+            <CardDealBadge destination={destination} />
+          </View>
+
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             {destination.vibeTags.slice(0, 2).map((tag, i) => (
               <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -344,13 +358,15 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 }}>
             <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 15 }}>{destination.country}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 15 }}>·</Text>
-            <Text style={{ color: '#7DD3FC', fontSize: 15, fontWeight: '600' }}>{formatFlightPrice(destination.flightPrice, destination.currency, destination.priceSource)}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 }}>
             <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>{destination.flightDuration}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>·</Text>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '500' }}>{destination.rating}★</Text>
           </View>
+          {attribution && (
+            <Text style={{ marginTop: 10, fontSize: 9, color: 'rgba(255,255,255,0.3)', textAlign: 'right' }}>
+              📷 by {attribution.name}
+            </Text>
+          )}
         </View>
       </Pressable>
     </Animated.View>

@@ -30,8 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Destination not found' });
     }
 
-    // Fetch cached prices for this origin + hotel prices
-    let [{ data: price }, { data: hotelPrice }] = await Promise.all([
+    // Fetch cached prices, hotel prices, and Unsplash images
+    let [{ data: price }, { data: hotelPrice }, { data: destImage }] = await Promise.all([
       supabase
         .from('cached_prices')
         .select('*')
@@ -43,6 +43,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('*')
         .eq('destination_iata', dest.iata_code)
         .single(),
+      supabase
+        .from('destination_images')
+        .select('*')
+        .eq('destination_id', id)
+        .eq('is_primary', true)
+        .maybeSingle(),
     ]);
 
     // On-demand refresh: if cached prices are stale (>24h) or missing, fetch fresh inline
@@ -64,6 +70,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Upsert fresh flight price
         if (freshFlight.status === 'fulfilled' && freshFlight.value) {
           const fp = freshFlight.value;
+          const depDate = fp.departureAt ? fp.departureAt.split('T')[0] : null;
+          const retDate = fp.returnAt ? fp.returnAt.split('T')[0] : null;
+          let tripDays: number | null = null;
+          if (depDate && retDate) {
+            const d = new Date(depDate);
+            const r = new Date(retDate);
+            if (!isNaN(d.getTime()) && !isNaN(r.getTime())) {
+              tripDays = Math.round((r.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+            }
+          }
           const row = {
             origin,
             destination_iata: fp.destination,
@@ -72,6 +88,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             airline: fp.airline,
             source: 'travelpayouts' as const,
             fetched_at: new Date().toISOString(),
+            departure_date: depDate,
+            return_date: retDate,
+            trip_duration_days: tripDays,
           };
           await supabase.from('cached_prices').upsert(row, { onConflict: 'origin,destination_iata' });
           price = { ...price, ...row };
@@ -97,6 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Transform to frontend shape
+    const imageUrl = destImage?.url_regular || dest.image_url;
     const result = {
       id: dest.id,
       iataCode: dest.iata_code,
@@ -104,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       country: dest.country,
       tagline: dest.tagline,
       description: dest.description,
-      imageUrl: dest.image_url,
+      imageUrl,
       imageUrls: dest.image_urls,
       flightPrice: price?.price ?? dest.flight_price,
       hotelPricePerNight: hotelPrice?.price_per_night ?? dest.hotel_price_per_night,
@@ -120,6 +140,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       priceFetchedAt: price?.fetched_at || undefined,
       liveHotelPrice: hotelPrice?.price_per_night ?? null,
       hotelPriceSource: hotelPrice ? (hotelPrice.source || 'estimate') : 'estimate',
+      departureDate: price?.departure_date || undefined,
+      returnDate: price?.return_date || undefined,
+      tripDurationDays: price?.trip_duration_days ?? undefined,
+      airline: price?.airline || undefined,
+      blurHash: destImage?.blur_hash || undefined,
+      priceDirection: price?.price_direction || undefined,
+      previousPrice: price?.previous_price ?? undefined,
+      photographerAttribution: destImage?.photographer
+        ? { name: destImage.photographer, url: destImage.photographer_url || '' }
+        : undefined,
     };
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');

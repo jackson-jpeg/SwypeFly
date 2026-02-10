@@ -9,6 +9,29 @@ const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 const PAGE_SIZE = 15;
 
+// ─── Seeded PRNG (consistent within a day, fresh next day) ──────────
+
+function seededRandom(seed: string): () => number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+    h = Math.imul(h ^ (h >>> 13), 0x45d9f3b);
+    h = h ^ (h >>> 16);
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+// ─── Freshness score helper ─────────────────────────────────────────
+
+function freshnessScore(priceFetchedAt?: string): number {
+  if (!priceFetchedAt) return 0;
+  const hoursOld = (Date.now() - new Date(priceFetchedAt).getTime()) / (1000 * 60 * 60);
+  return Math.max(0, 1 - hoursOld / 168); // decays to 0 over 7 days
+}
+
 // ─── Region / Vibe helpers ──────────────────────────────────────────
 
 function getRegion(d: ScoredDest): string {
@@ -87,6 +110,11 @@ interface ScoredDest {
   live_duration?: string;
   price_source?: string;
   price_fetched_at?: string;
+  departure_date?: string;
+  return_date?: string;
+  trip_duration_days?: number;
+  previous_price?: number;
+  price_direction?: string;
   // Merged from cached_hotel_prices
   live_hotel_price?: number | null;
   hotel_price_source?: string;
@@ -94,6 +122,12 @@ interface ScoredDest {
   available_flight_days?: string[];
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number }[];
+  // Unsplash image data
+  unsplash_image_url?: string;
+  unsplash_blur_hash?: string;
+  unsplash_photographer?: string;
+  unsplash_photographer_url?: string;
+  unsplash_images?: Array<{ url_regular: string; blur_hash: string; photographer: string; photographer_url: string }>;
 }
 
 interface UserPrefs {
@@ -219,7 +253,7 @@ function seasonalityScore(bestMonths: string[]): number {
   return bestMonths.includes(currentMonth) ? 1.0 : 0.3;
 }
 
-function scorePersonalizedFeed(destinations: ScoredDest[], prefs: UserPrefs): ScoredDest[] {
+function scorePersonalizedFeed(destinations: ScoredDest[], prefs: UserPrefs, rand: () => number = Math.random): ScoredDest[] {
   if (destinations.length <= 1) return destinations;
 
   const userVec = [
@@ -236,7 +270,7 @@ function scorePersonalizedFeed(destinations: ScoredDest[], prefs: UserPrefs): Sc
       d.culture_score ?? 0, d.nightlife_score ?? 0, d.nature_score ?? 0, d.food_score ?? 0,
     ];
 
-    // Price Fit (40%)
+    // Price Fit (35%)
     const priceFit = priceFitScore(effectivePrice, prefs.budget_numeric);
     // Preference Match (25%)
     const prefMatch = cosineSimilarity(userVec, destVec);
@@ -244,15 +278,18 @@ function scorePersonalizedFeed(destinations: ScoredDest[], prefs: UserPrefs): Sc
     const seasonal = seasonalityScore(d.best_months || []);
     // Popularity (10%)
     const popularity = Math.min((d.popularity_score ?? 0) / 100, 1);
-    // Exploration Bonus (10%)
-    const exploration = Math.random() * 0.5 + 0.5; // 0.5 to 1.0
+    // Freshness (10%)
+    const freshness = freshnessScore(d.price_fetched_at);
+    // Exploration Bonus (5%)
+    const exploration = rand() * 0.5 + 0.5; // 0.5 to 1.0
 
     const rawScore =
-      priceFit * 0.40 +
+      priceFit * 0.35 +
       prefMatch * 0.25 +
       seasonal * 0.15 +
       popularity * 0.10 +
-      exploration * 0.10;
+      freshness * 0.10 +
+      exploration * 0.05;
 
     return { dest: d, rawScore };
   });
@@ -327,6 +364,7 @@ function applyDiversityRerank(sorted: ScoredDest[]): ScoredDest[] {
 function composeFeed(
   personalized: ScoredDest[],
   allDestinations: ScoredDest[],
+  rand: () => number = Math.random,
 ): ScoredDest[] {
   // For each batch of 15: 10 personalized, 3 popular, 2 random
   const result: ScoredDest[] = [];
@@ -367,7 +405,7 @@ function composeFeed(
     added = 0;
     let attempts = 0;
     while (added < 2 && attempts < 20) {
-      const randIdx = Math.floor(Math.random() * allDestinations.length);
+      const randIdx = Math.floor(rand() * allDestinations.length);
       const d = allDestinations[randIdx];
       if (!usedIds.has(d.id)) {
         result.push(d);
@@ -400,12 +438,17 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
 
   if (error || !destinations) throw new Error(error?.message || 'Failed to fetch destinations');
 
-  const [{ data: prices }, { data: hotelPrices }] = await Promise.all([
+  const [{ data: prices }, { data: hotelPrices }, { data: images }] = await Promise.all([
     supabase.from('cached_prices').select('*').eq('origin', origin),
     supabase.from('cached_hotel_prices').select('*'),
+    supabase.from('destination_images').select('*').order('is_primary', { ascending: false }),
   ]);
 
-  const priceMap = new Map<string, { price: number; airline: string; duration: string; source: string; fetched_at: string }>();
+  const priceMap = new Map<string, {
+    price: number; airline: string; duration: string; source: string; fetched_at: string;
+    departure_date?: string; return_date?: string; trip_duration_days?: number;
+    previous_price?: number; price_direction?: string;
+  }>();
   if (prices) {
     for (const p of prices) {
       priceMap.set(p.destination_iata, {
@@ -414,6 +457,11 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
         duration: p.duration || '',
         source: p.source || 'estimate',
         fetched_at: p.fetched_at || '',
+        departure_date: p.departure_date || undefined,
+        return_date: p.return_date || undefined,
+        trip_duration_days: p.trip_duration_days ?? undefined,
+        previous_price: p.previous_price ?? undefined,
+        price_direction: p.price_direction || 'stable',
       });
     }
   }
@@ -428,9 +476,34 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     }
   }
 
+  // Build image map: all images grouped by destination_id
+  const imageMap = new Map<string, Array<{ url_regular: string; blur_hash: string; photographer: string; photographer_url: string }>>();
+  if (images) {
+    for (const img of images) {
+      const list = imageMap.get(img.destination_id) || [];
+      list.push({
+        url_regular: img.url_regular,
+        blur_hash: img.blur_hash || '',
+        photographer: img.photographer || '',
+        photographer_url: img.photographer_url || '',
+      });
+      imageMap.set(img.destination_id, list);
+    }
+  }
+
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+
   const merged: ScoredDest[] = destinations.map((d) => {
     const lp = priceMap.get(d.iata_code);
     const hp = hotelPriceMap.get(d.iata_code);
+    const destImages = imageMap.get(d.id) || [];
+
+    // Image rotation: pick by dayOfYear % count
+    let primaryImage: typeof destImages[0] | undefined;
+    if (destImages.length > 0) {
+      primaryImage = destImages[dayOfYear % destImages.length];
+    }
+
     return {
       ...d,
       live_price: lp?.price ?? null,
@@ -438,8 +511,18 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       live_duration: lp?.duration ?? '',
       price_source: lp?.source ?? undefined,
       price_fetched_at: lp?.fetched_at ?? undefined,
+      departure_date: lp?.departure_date,
+      return_date: lp?.return_date,
+      trip_duration_days: lp?.trip_duration_days,
+      previous_price: lp?.previous_price,
+      price_direction: lp?.price_direction,
       live_hotel_price: hp?.price ?? null,
       hotel_price_source: hp?.source ?? undefined,
+      unsplash_image_url: primaryImage?.url_regular,
+      unsplash_blur_hash: primaryImage?.blur_hash,
+      unsplash_photographer: primaryImage?.photographer,
+      unsplash_photographer_url: primaryImage?.photographer_url,
+      unsplash_images: destImages.length > 0 ? destImages : undefined,
     };
   });
 
@@ -484,6 +567,9 @@ async function getUserPrefs(authHeader: string | undefined): Promise<UserPrefs |
 // ─── Transform DB row → frontend Destination shape ───────────────────
 
 function toFrontend(d: ScoredDest) {
+  // Use Unsplash URL with Pexels fallback
+  const imageUrl = d.unsplash_image_url || d.image_url;
+
   return {
     id: d.id,
     iataCode: d.iata_code,
@@ -491,7 +577,7 @@ function toFrontend(d: ScoredDest) {
     country: d.country,
     tagline: d.tagline,
     description: d.description,
-    imageUrl: d.image_url,
+    imageUrl,
     imageUrls: d.image_urls,
     flightPrice: d.live_price ?? d.flight_price,
     hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
@@ -510,6 +596,16 @@ function toFrontend(d: ScoredDest) {
     available_flight_days: d.available_flight_days || undefined,
     itinerary: d.itinerary || undefined,
     restaurants: d.restaurants || undefined,
+    departureDate: d.departure_date || undefined,
+    returnDate: d.return_date || undefined,
+    tripDurationDays: d.trip_duration_days ?? undefined,
+    airline: d.live_airline || undefined,
+    blurHash: d.unsplash_blur_hash || undefined,
+    priceDirection: (d.price_direction as 'up' | 'down' | 'stable') || undefined,
+    previousPrice: d.previous_price ?? undefined,
+    photographerAttribution: d.unsplash_photographer
+      ? { name: d.unsplash_photographer, url: d.unsplash_photographer_url || '' }
+      : undefined,
   };
 }
 
@@ -528,13 +624,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const destinations = await getDestinationsWithPrices(origin);
 
+    // Seeded PRNG: consistent order within a day, fresh next day
+    const dateStr = new Date().toISOString().split('T')[0];
+    const rand = seededRandom(`${origin}:${dateStr}`);
+
     // Check for auth -> personalized vs generic scoring
     const userPrefs = await getUserPrefs(req.headers.authorization);
 
     let scored: ScoredDest[];
     if (userPrefs) {
-      const personalized = scorePersonalizedFeed(destinations, userPrefs);
-      scored = composeFeed(personalized, destinations);
+      const personalized = scorePersonalizedFeed(destinations, userPrefs, rand);
+      scored = composeFeed(personalized, destinations, rand);
     } else {
       scored = scoreFeedGeneric(destinations);
     }
