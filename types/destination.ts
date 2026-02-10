@@ -40,7 +40,7 @@ export interface Destination {
   hotelPriceSource?: 'liteapi' | 'estimate';
   available_flight_days?: string[];
   itinerary?: { day: number; activities: string[] }[];
-  restaurants?: { name: string; type: string; rating: number }[];
+  restaurants?: { name: string; type: string; rating: number; mapsUrl?: string }[];
 }
 
 export interface DestinationFeedPage {

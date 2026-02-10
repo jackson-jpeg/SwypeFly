@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useDestination } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
-import { usePriceCheck } from '../../hooks/useAI';
+import { usePriceCheck, useDestinationGuide } from '../../hooks/useAI';
 import { formatFlightPrice, formatHotelPrice } from '../../utils/formatPrice';
 import { flightLink, hotelLink, activitiesLink } from '../../utils/affiliateLinks';
 import { useUIStore } from '../../stores/uiStore';
@@ -27,6 +27,9 @@ export default function DestinationDetail() {
     departureCode,
     destination?.iataCode || '',
   );
+
+  // AI destination guide (itinerary + restaurants)
+  const { data: guide } = useDestinationGuide(destination?.city, destination?.country);
 
   if (isLoading) {
     if (Platform.OS === 'web') {
@@ -326,10 +329,10 @@ export default function DestinationDetail() {
             <LivePulse city={destination.city} country={destination.country} />
 
             {/* Itinerary (conditional) */}
-            <ItineraryTimeline itinerary={destination.itinerary} />
+            <ItineraryTimeline itinerary={guide?.itinerary ?? destination.itinerary} isAI={!!guide?.itinerary} />
 
             {/* Local Bites restaurants (conditional) */}
-            <RestaurantCards restaurants={destination.restaurants} />
+            <RestaurantCards restaurants={guide?.restaurants ?? destination.restaurants} isAI={!!guide?.restaurants} />
 
             {/* Hidden Gems — AI nearby places */}
             <NearbyGems city={destination.city} country={destination.country} />
@@ -614,10 +617,10 @@ export default function DestinationDetail() {
           <LivePulse city={destination.city} country={destination.country} />
 
           {/* Itinerary (conditional) */}
-          <ItineraryTimeline itinerary={destination.itinerary} />
+          <ItineraryTimeline itinerary={guide?.itinerary ?? destination.itinerary} isAI={!!guide?.itinerary} />
 
           {/* Local Bites restaurants (conditional) */}
-          <RestaurantCards restaurants={destination.restaurants} />
+          <RestaurantCards restaurants={guide?.restaurants ?? destination.restaurants} isAI={!!guide?.restaurants} />
 
           {/* Hidden Gems — AI nearby places */}
           <NearbyGems city={destination.city} country={destination.country} />

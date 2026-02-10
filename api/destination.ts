@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { destinationQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
+import { fetchCheapPrices } from '../services/travelpayouts';
+import { fetchHotelRates } from '../services/liteapi';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -29,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Fetch cached prices for this origin + hotel prices
-    const [{ data: price }, { data: hotelPrice }] = await Promise.all([
+    let [{ data: price }, { data: hotelPrice }] = await Promise.all([
       supabase
         .from('cached_prices')
         .select('*')
@@ -42,6 +44,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('destination_iata', dest.iata_code)
         .single(),
     ]);
+
+    // On-demand refresh: if cached prices are stale (>24h) or missing, fetch fresh inline
+    const STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
+    const flightStale = !price || !price.fetched_at || (Date.now() - new Date(price.fetched_at).getTime() > STALE_MS);
+    const hotelStale = !hotelPrice || !hotelPrice.fetched_at || (Date.now() - new Date(hotelPrice.fetched_at).getTime() > STALE_MS);
+
+    if (flightStale || hotelStale) {
+      try {
+        const now = new Date();
+        const checkin = new Date(now.getTime() + 30 * 86400000).toISOString().split('T')[0];
+        const checkout = new Date(now.getTime() + 33 * 86400000).toISOString().split('T')[0];
+
+        const [freshFlight, freshHotel] = await Promise.allSettled([
+          flightStale ? fetchCheapPrices(origin, dest.iata_code) : Promise.resolve(null),
+          hotelStale ? fetchHotelRates(dest.iata_code, checkin, checkout) : Promise.resolve(null),
+        ]);
+
+        // Upsert fresh flight price
+        if (freshFlight.status === 'fulfilled' && freshFlight.value) {
+          const fp = freshFlight.value;
+          const row = {
+            origin,
+            destination_iata: fp.destination,
+            price: fp.price,
+            currency: 'USD',
+            airline: fp.airline,
+            source: 'travelpayouts' as const,
+            fetched_at: new Date().toISOString(),
+          };
+          await supabase.from('cached_prices').upsert(row, { onConflict: 'origin,destination_iata' });
+          price = { ...price, ...row };
+        }
+
+        // Upsert fresh hotel price
+        if (freshHotel.status === 'fulfilled' && freshHotel.value) {
+          const hp = freshHotel.value;
+          const row = {
+            destination_iata: dest.iata_code,
+            price_per_night: hp.minPrice,
+            currency: hp.currency,
+            source: 'liteapi' as const,
+            hotel_count: hp.hotelCount,
+            fetched_at: new Date().toISOString(),
+          };
+          await supabase.from('cached_hotel_prices').upsert(row, { onConflict: 'destination_iata' });
+          hotelPrice = { ...hotelPrice, ...row };
+        }
+      } catch {
+        // Failures silently fall back to cached/hardcoded data
+      }
+    }
 
     // Transform to frontend shape
     const result = {

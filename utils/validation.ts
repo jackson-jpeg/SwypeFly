@@ -61,6 +61,11 @@ export const liveUpdatesQuerySchema = z.object({
   country: z.string().min(1).max(100),
 });
 
+export const destinationGuideQuerySchema = z.object({
+  city: z.string().min(1).max(100),
+  country: z.string().min(1).max(100),
+});
+
 export const nearbyGemsQuerySchema = z.object({
   city: z.string().min(1).max(100),
   country: z.string().min(1).max(100),

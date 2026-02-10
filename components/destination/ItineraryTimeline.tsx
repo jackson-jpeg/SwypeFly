@@ -8,9 +8,10 @@ interface ItineraryItem {
 
 interface ItineraryTimelineProps {
   itinerary: ItineraryItem[] | undefined;
+  isAI?: boolean;
 }
 
-export default function ItineraryTimeline({ itinerary }: ItineraryTimelineProps) {
+export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimelineProps) {
   const [activeDay, setActiveDay] = useState(0);
 
   if (!itinerary || itinerary.length === 0) return null;
@@ -20,16 +21,27 @@ export default function ItineraryTimeline({ itinerary }: ItineraryTimelineProps)
   if (Platform.OS === 'web') {
     return (
       <div style={{ marginTop: 24 }}>
-        <h3
-          style={{
-            margin: 0,
-            color: '#1E293B',
-            fontSize: 18,
-            fontWeight: 700,
-          }}
-        >
-          Suggested Itinerary
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h3
+            style={{
+              margin: 0,
+              color: '#1E293B',
+              fontSize: 18,
+              fontWeight: 700,
+            }}
+          >
+            Suggested Itinerary
+          </h3>
+          {isAI && (
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: '#22C55E',
+              backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 4,
+              padding: '2px 6px', letterSpacing: 0.5,
+            }}>
+              AI GENERATED
+            </span>
+          )}
+        </div>
 
         {/* Day tabs */}
         <div
@@ -131,9 +143,16 @@ export default function ItineraryTimeline({ itinerary }: ItineraryTimelineProps)
   // Native
   return (
     <View style={{ marginTop: 24 }}>
-      <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '700' }}>
-        Suggested Itinerary
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '700' }}>
+          Suggested Itinerary
+        </Text>
+        {isAI && (
+          <View style={{ backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#22C55E', letterSpacing: 0.5 }}>AI GENERATED</Text>
+          </View>
+        )}
+      </View>
 
       {/* Day tabs */}
       <ScrollView

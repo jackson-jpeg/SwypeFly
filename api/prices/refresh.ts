@@ -95,9 +95,9 @@ async function getActiveOrigins(): Promise<string[]> {
   return Array.from(origins);
 }
 
-// ─── Round-robin: pick the origin refreshed longest ago ──────────────
+// ─── Round-robin: pick the N origins refreshed longest ago ───────────
 
-async function pickNextOrigin(): Promise<string> {
+async function pickNextOrigins(count: number): Promise<string[]> {
   const origins = await getActiveOrigins();
 
   // Check which origin was refreshed longest ago
@@ -116,19 +116,17 @@ async function pickNextOrigin(): Promise<string> {
     }
   }
 
-  // Find origin that was refreshed longest ago (or never refreshed)
-  let oldest: string = origins[0];
-  let oldestTime = Infinity;
-  for (const org of origins) {
-    const ts = lastRefreshed.get(org);
-    if (!ts) return org; // never refreshed — do this one
-    const t = new Date(ts).getTime();
-    if (t < oldestTime) {
-      oldestTime = t;
-      oldest = org;
-    }
-  }
-  return oldest;
+  // Sort origins by staleness (never refreshed first, then oldest)
+  const sorted = [...origins].sort((a, b) => {
+    const tsA = lastRefreshed.get(a);
+    const tsB = lastRefreshed.get(b);
+    if (!tsA && !tsB) return 0;
+    if (!tsA) return -1;
+    if (!tsB) return 1;
+    return new Date(tsA).getTime() - new Date(tsB).getTime();
+  });
+
+  return sorted.slice(0, count);
 }
 
 // ─── Refresh prices for a single origin ──────────────────────────────
@@ -268,16 +266,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Specific origin requested — refresh just that one
       origins = [originParam];
     } else {
-      // No param or ALL: round-robin — refresh ONE origin (the stalest)
-      const next = await pickNextOrigin();
-      origins = [next];
-      console.log(`[refresh] Round-robin selected origin: ${next}`);
+      // No param or ALL: round-robin — refresh 3 stalest origins
+      origins = await pickNextOrigins(3);
+      console.log(`[refresh] Round-robin selected origins: ${origins.join(', ')}`);
     }
 
     console.log(`[refresh] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`);
 
+    const startTime = Date.now();
+    const TIME_BUDGET_MS = 45_000; // Stop if >45s used (stay under 60s Vercel limit)
     const results = [];
     for (const org of origins) {
+      if (results.length > 0 && Date.now() - startTime > TIME_BUDGET_MS) {
+        console.log(`[refresh] Time budget exceeded (${Date.now() - startTime}ms), stopping after ${results.length} origin(s)`);
+        break;
+      }
       const result = await refreshOrigin(org, allIatas);
       results.push(result);
     }

@@ -73,6 +73,42 @@ export function useNearbyGems(city: string | undefined, country: string | undefi
   });
 }
 
+// ─── Destination Guide (AI itinerary + restaurants) ─────────────────
+
+interface ItineraryDay {
+  day: number;
+  activities: string[];
+}
+
+interface GuideRestaurant {
+  name: string;
+  type: string;
+  rating: number;
+  mapsUrl?: string;
+}
+
+interface DestinationGuideData {
+  itinerary: ItineraryDay[];
+  restaurants: GuideRestaurant[];
+}
+
+async function fetchDestinationGuide(city: string, country: string): Promise<DestinationGuideData> {
+  const params = new URLSearchParams({ city, country });
+  const res = await fetch(`${API_BASE}/api/ai/destination-guide?${params}`);
+  if (!res.ok) throw new Error(`Destination guide failed: ${res.status}`);
+  return res.json();
+}
+
+export function useDestinationGuide(city: string | undefined, country: string | undefined) {
+  return useQuery({
+    queryKey: ['ai', 'destination-guide', city, country],
+    queryFn: () => fetchDestinationGuide(city!, country!),
+    enabled: !!city && !!country,
+    staleTime: 7 * 24 * 60 * 60 * 1000, // 7 days
+    retry: 1,
+  });
+}
+
 // ─── Price Check ────────────────────────────────────────────────────
 
 interface PriceCheckData {
