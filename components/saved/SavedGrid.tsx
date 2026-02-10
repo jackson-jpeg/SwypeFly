@@ -7,6 +7,7 @@ import { EmptyState } from '../common/EmptyState';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSwipeFeed, getDestinationById } from '../../hooks/useSwipeFeed';
 import { useUIStore } from '../../stores/uiStore';
+import { spacing, layout } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 const VALID_ID_RE = /^[0-9a-f-]+$/i;
@@ -23,7 +24,6 @@ export function SavedGrid() {
   const pages = data?.pages;
   const departureCode = useUIStore((s) => s.departureCode);
 
-  // Step 1: resolve what we can from feed cache
   const { cached, missingIds } = useMemo(() => {
     const cachedMap = new Map<string, Destination>();
     const missing: string[] = [];
@@ -38,7 +38,6 @@ export function SavedGrid() {
     return { cached: cachedMap, missingIds: missing };
   }, [savedIds, pages]);
 
-  // Step 2: fetch missing destinations from API
   const missingQueries = useQueries({
     queries: missingIds.map((id) => ({
       queryKey: ['destination', id, departureCode],
@@ -47,7 +46,6 @@ export function SavedGrid() {
     })),
   });
 
-  // Step 3: combine cached + fetched, preserving savedIds order
   const savedDestinations = useMemo(() => {
     const fetchedMap = new Map<string, Destination>();
     missingIds.forEach((id, i) => {
@@ -82,14 +80,14 @@ export function SavedGrid() {
           .sg-saved-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            padding: 0 16px 16px 16px;
+            gap: ${layout.savedGridGap}px;
+            padding: 0 ${spacing['4']}px ${spacing['4']}px ${spacing['4']}px;
           }
           @media (min-width: 768px) {
             .sg-saved-grid { grid-template-columns: repeat(3, 1fr); }
           }
           @media (min-width: 1200px) {
-            .sg-saved-grid { grid-template-columns: repeat(4, 1fr); max-width: 1200px; margin: 0 auto; }
+            .sg-saved-grid { grid-template-columns: repeat(4, 1fr); max-width: ${layout.maxGridWidth}px; margin: 0 auto; }
           }
         `}</style>
         <div className="sg-saved-grid">
@@ -111,9 +109,9 @@ export function SavedGrid() {
       data={savedDestinations}
       renderItem={renderItem}
       keyExtractor={(item) => item.id}
-      numColumns={2}
-      contentContainerStyle={{ padding: 12 }}
-      columnWrapperStyle={{ gap: 12 }}
+      numColumns={layout.savedGridColumns}
+      contentContainerStyle={{ padding: spacing['3'] }}
+      columnWrapperStyle={{ gap: layout.savedGridGap }}
       showsVerticalScrollIndicator={false}
     />
   );

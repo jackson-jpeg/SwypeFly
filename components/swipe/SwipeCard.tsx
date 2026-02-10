@@ -17,6 +17,7 @@ import { CardDealBadge } from './CardDealBadge';
 import { CardFreshnessPill } from './CardFreshnessPill';
 import { shareDestination } from '../../utils/share';
 import { successHaptic } from '../../utils/haptics';
+import { colors, layout } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 interface SwipeCardProps {
@@ -113,7 +114,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           top: 0, left: 0, right: 0, bottom: 0,
           cursor: 'pointer',
           overflow: 'hidden',
-          backgroundColor: '#0F172A',
+          backgroundColor: colors.navy,
           transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           transform: isActive ? 'scale(1)' : 'scale(0.97)',
         }}
@@ -159,8 +160,8 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                fill="#38BDF8"
-                stroke="#38BDF8"
+                fill={colors.primary}
+                stroke={colors.primary}
                 strokeWidth="1.2"
               />
             </svg>
@@ -191,7 +192,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           style={{
             position: 'absolute',
             bottom: 0, left: 0, right: 0,
-            padding: '0 28px 84px 28px',
+            padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom}px ${layout.cardPaddingHorizontal}px`,
           }}
         >
           {/* Deal Badge */}
@@ -282,7 +283,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   };
 
   return (
-    <Animated.View style={[{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0F172A' }, cardAnimStyle]}>
+    <Animated.View style={[{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: colors.navy }, cardAnimStyle]}>
       <Pressable
         onPress={handleNativeTap}
         style={{ flex: 1, position: 'relative' }}
@@ -319,8 +320,8 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
               <path
                 d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                fill="#38BDF8"
-                stroke="#38BDF8"
+                fill={colors.primary}
+                stroke={colors.primary}
                 strokeWidth="1.2"
               />
             </svg>
@@ -340,7 +341,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           />
         </View>
 
-        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 28, paddingBottom: 100 }}>
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: layout.cardPaddingHorizontal, paddingBottom: layout.cardPaddingBottomNative }}>
           {/* Deal Badge */}
           <View style={{ marginBottom: 16 }}>
             <CardDealBadge destination={destination} />

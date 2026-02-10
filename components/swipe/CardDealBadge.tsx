@@ -2,6 +2,7 @@ import { View, Text, Platform } from 'react-native';
 import { formatFlightPrice } from '../../utils/formatPrice';
 import { formatTripDates } from '../../utils/formatDate';
 import { getAirlineName } from '../../utils/airlines';
+import { colors, radii, spacing, fontSize, fontWeight } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 interface CardDealBadgeProps {
@@ -14,20 +15,16 @@ export function CardDealBadge({ destination }: CardDealBadgeProps) {
   const priceText = formatFlightPrice(flightPrice, currency, priceSource);
   const isLive = priceSource === 'travelpayouts' || priceSource === 'amadeus';
 
-  // Resolve airline code to name
   const airlineName = getAirlineName(airline || '');
 
-  // Build date line: "Southwest · May 15–22 (7 nights)"
   const dateStr = departureDate && returnDate ? formatTripDates(departureDate, returnDate) : '';
   const nightsStr = tripDurationDays ? `(${tripDurationDays} night${tripDurationDays !== 1 ? 's' : ''})` : '';
 
-  // Only show date row if we have actual dates (not just a bare airline name)
   const hasDateInfo = dateStr || nightsStr;
   const dateParts = hasDateInfo
     ? [airlineName, dateStr, nightsStr].filter(Boolean).join(' · ')
     : '';
 
-  // Price drop
   const priceDrop = priceDirection === 'down' && previousPrice != null
     ? Math.round(previousPrice - flightPrice)
     : 0;
@@ -37,38 +34,35 @@ export function CardDealBadge({ destination }: CardDealBadgeProps) {
       <div
         style={{
           display: 'inline-block',
-          backgroundColor: 'rgba(0,0,0,0.45)',
+          backgroundColor: colors.overlay.cardStrong,
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
-          borderRadius: 14,
-          padding: '12px 16px',
-          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: radii.xl,
+          padding: `${spacing['3']}px ${spacing['4']}px`,
+          border: `1px solid ${colors.overlay.whiteMedium}`,
         }}
       >
-        {/* Row 1: Price */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>✈</span>
-          <span style={{ fontSize: 17, fontWeight: 700, color: '#7DD3FC', letterSpacing: -0.3 }}>
+          <span style={{ fontSize: fontSize.sm, color: colors.card.textMuted }}>✈</span>
+          <span style={{ fontSize: 17, fontWeight: fontWeight.bold, color: colors.card.priceTint, letterSpacing: -0.3 }}>
             {priceText}
           </span>
           {isLive && (
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>roundtrip</span>
+            <span style={{ fontSize: fontSize.sm, color: colors.card.textMuted, fontWeight: fontWeight.medium }}>roundtrip</span>
           )}
         </div>
 
-        {/* Row 2: Airline + Dates (only if we have dates) */}
         {dateParts && (
           <div style={{ marginTop: 5 }}>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 400 }}>
+            <span style={{ fontSize: fontSize.md, color: 'rgba(255,255,255,0.55)', fontWeight: fontWeight.normal }}>
               {dateParts}
             </span>
           </div>
         )}
 
-        {/* Row 3: Price drop */}
         {priceDrop > 0 && (
-          <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 12, color: '#4ADE80', fontWeight: 600 }}>
+          <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: spacing['1'] }}>
+            <span style={{ fontSize: fontSize.md, color: colors.success, fontWeight: fontWeight.semibold }}>
               ↓ Price dropped ${priceDrop}
             </span>
           </div>
@@ -77,43 +71,39 @@ export function CardDealBadge({ destination }: CardDealBadgeProps) {
     );
   }
 
-  // ── Native ──
   return (
     <View
       style={{
         alignSelf: 'flex-start',
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        borderRadius: 14,
-        padding: 12,
-        paddingHorizontal: 16,
+        backgroundColor: colors.overlay.cardStrong,
+        borderRadius: radii.xl,
+        padding: spacing['3'],
+        paddingHorizontal: spacing['4'],
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: colors.overlay.whiteMedium,
       }}
     >
-      {/* Row 1: Price */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>✈</Text>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: '#7DD3FC', letterSpacing: -0.3 }}>
+        <Text style={{ fontSize: fontSize.sm, color: colors.card.textMuted }}>✈</Text>
+        <Text style={{ fontSize: 17, fontWeight: fontWeight.bold, color: colors.card.priceTint, letterSpacing: -0.3 }}>
           {priceText}
         </Text>
         {isLive && (
-          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>roundtrip</Text>
+          <Text style={{ fontSize: fontSize.sm, color: colors.card.textMuted, fontWeight: fontWeight.medium }}>roundtrip</Text>
         )}
       </View>
 
-      {/* Row 2: Airline + Dates (only if we have dates) */}
       {dateParts ? (
         <View style={{ marginTop: 5 }}>
-          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: '400' }}>
+          <Text style={{ fontSize: fontSize.md, color: 'rgba(255,255,255,0.55)', fontWeight: fontWeight.normal }}>
             {dateParts}
           </Text>
         </View>
       ) : null}
 
-      {/* Row 3: Price drop */}
       {priceDrop > 0 && (
-        <View style={{ marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Text style={{ fontSize: 12, color: '#4ADE80', fontWeight: '600' }}>
+        <View style={{ marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: spacing['1'] }}>
+          <Text style={{ fontSize: fontSize.md, color: colors.success, fontWeight: fontWeight.semibold }}>
             ↓ Price dropped ${priceDrop}
           </Text>
         </View>

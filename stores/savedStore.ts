@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { Platform } from 'react-native';
+import { persist } from 'zustand/middleware';
+import { createPersistStorage } from '../utils/storage';
 
 interface SavedState {
   savedIds: Set<string>;
@@ -9,22 +9,20 @@ interface SavedState {
   hydrate: (ids: string[]) => void;
 }
 
-const webStorage = Platform.OS === 'web'
-  ? createJSONStorage(() => localStorage, {
-      reviver: (_key: string, value: unknown) => {
-        if (typeof value === 'object' && value !== null && (value as Record<string, unknown>).__set === true) {
-          return new Set((value as { items: string[] }).items);
-        }
-        return value;
-      },
-      replacer: (_key: string, value: unknown) => {
-        if (value instanceof Set) {
-          return { __set: true, items: [...value] };
-        }
-        return value;
-      },
-    })
-  : undefined;
+const storage = createPersistStorage({
+  reviver: (_key: string, value: unknown) => {
+    if (typeof value === 'object' && value !== null && (value as Record<string, unknown>).__set === true) {
+      return new Set((value as { items: string[] }).items);
+    }
+    return value;
+  },
+  replacer: (_key: string, value: unknown) => {
+    if (value instanceof Set) {
+      return { __set: true, items: [...value] };
+    }
+    return value;
+  },
+});
 
 export const useSavedStore = create<SavedState>()(
   persist(
@@ -46,7 +44,7 @@ export const useSavedStore = create<SavedState>()(
     }),
     {
       name: 'sogojet-saved',
-      storage: webStorage,
+      storage,
       partialize: (state) => ({ savedIds: state.savedIds }),
     },
   ),

@@ -1,4 +1,5 @@
 import { View, Text, Pressable, Platform } from 'react-native';
+import { colors, radii, spacing, fontSize, fontWeight } from '../../constants/theme';
 
 interface ErrorStateProps {
   message?: string;
@@ -10,16 +11,19 @@ export function ErrorState({ message = 'Something went wrong', onRetry }: ErrorS
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        flex: 1, padding: '60px 32px', backgroundColor: '#F8FAFC', minHeight: '100vh',
+        flex: 1, padding: `${spacing['15']}px ${spacing['8']}px`, backgroundColor: colors.background, minHeight: '100vh',
       }}>
         <span style={{ fontSize: 48 }}>😵</span>
-        <span style={{ color: '#1E293B', fontSize: 18, fontWeight: 600, marginTop: 16, textAlign: 'center' }}>{message}</span>
+        <span style={{ color: colors.text.primary, fontSize: fontSize['3xl'], fontWeight: fontWeight.semibold, marginTop: spacing['4'], textAlign: 'center' }}>
+          {message}
+        </span>
         {onRetry && (
           <button
             onClick={onRetry}
             style={{
-              marginTop: 20, background: '#38BDF8', color: '#fff', border: 'none',
-              borderRadius: 12, padding: '12px 32px', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+              marginTop: spacing['5'], background: colors.primary, color: '#fff', border: 'none',
+              borderRadius: radii.lg, padding: `${spacing['3']}px ${spacing['8']}px`,
+              fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, cursor: 'pointer',
             }}
           >
             Try Again
@@ -30,12 +34,14 @@ export function ErrorState({ message = 'Something went wrong', onRetry }: ErrorS
   }
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', paddingHorizontal: 32 }}>
-      <Text style={{ fontSize: 48 }}>⚠️</Text>
-      <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '600', textAlign: 'center', marginTop: 16 }}>{message}</Text>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, paddingHorizontal: spacing['8'] }}>
+      <Text style={{ fontSize: 48 }}>😵</Text>
+      <Text style={{ color: colors.text.primary, fontSize: fontSize['3xl'], fontWeight: fontWeight.semibold, textAlign: 'center', marginTop: spacing['4'] }}>
+        {message}
+      </Text>
       {onRetry && (
-        <Pressable onPress={onRetry} style={{ marginTop: 20, backgroundColor: '#38BDF8', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}>
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Try Again</Text>
+        <Pressable onPress={onRetry} style={{ marginTop: spacing['5'], backgroundColor: colors.primary, borderRadius: radii.lg, paddingHorizontal: spacing['6'], paddingVertical: spacing['3'] }}>
+          <Text style={{ color: '#fff', fontSize: fontSize['2xl'], fontWeight: fontWeight.bold }}>Try Again</Text>
         </Pressable>
       )}
     </View>

@@ -8,6 +8,8 @@ import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
 import { selectionHaptic } from '../../utils/haptics';
 import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
+import { ErrorState } from '../common/ErrorState';
+import { colors } from '../../constants/theme';
 
 export function SwipeFeed() {
   const { height: screenHeight } = useWindowDimensions();
@@ -204,14 +206,14 @@ export function SwipeFeed() {
       return (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          height: '100vh', backgroundColor: '#0F172A', flexDirection: 'column', gap: 16,
+          height: '100vh', backgroundColor: colors.navy, flexDirection: 'column', gap: 16,
         }}>
           <span style={{ fontSize: 48 }}>😵</span>
           <span style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>Failed to load destinations</span>
           <button
             onClick={() => refetch()}
             style={{
-              background: '#38BDF8', color: '#fff', border: 'none', borderRadius: 12,
+              background: colors.primary, color: '#fff', border: 'none', borderRadius: 12,
               padding: '12px 32px', fontSize: 16, fontWeight: '700', cursor: 'pointer',
             }}
           >
@@ -220,7 +222,12 @@ export function SwipeFeed() {
         </div>
       );
     }
-    return null;
+    return (
+      <ErrorState
+        message="Failed to load destinations"
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   if (Platform.OS === 'web') {

@@ -1,5 +1,6 @@
 import { Pressable, Platform, View } from 'react-native';
 import { useState } from 'react';
+import { colors, layout } from '../../constants/theme';
 
 interface CardActionsProps {
   isSaved: boolean;
@@ -24,8 +25,8 @@ const HEART_FILLED = (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
       d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      fill="#38BDF8"
-      stroke="#38BDF8"
+      fill={colors.primary}
+      stroke={colors.primary}
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -46,22 +47,18 @@ const SHARE_ICON = (
   </svg>
 );
 
-const BTN_SIZE = 44;
+const BTN_SIZE = layout.actionBtnSize;
 const BTN_RADIUS = BTN_SIZE / 2;
-const BTN_GAP = 14;
+const BTN_GAP = layout.actionBtnGap;
 
 function ActionButton({
   children,
   onPress,
   isActive,
-  activeColor,
-  activeBorder,
 }: {
   children: React.ReactNode;
   onPress: () => void;
   isActive?: boolean;
-  activeColor?: string;
-  activeBorder?: string;
 }) {
   const [pressed, setPressed] = useState(false);
   const scale = pressed ? 0.78 : 1;
@@ -71,6 +68,11 @@ function ActionButton({
     onPress();
     setTimeout(() => setPressed(false), 250);
   };
+
+  const activeBg = colors.primaryActiveBorder;
+  const activeBorder = colors.primaryBorderStrong;
+  const inactiveBg = colors.overlay.glass;
+  const inactiveBorder = colors.overlay.white;
 
   if (Platform.OS === 'web') {
     return (
@@ -83,7 +85,7 @@ function ActionButton({
           width: BTN_SIZE,
           height: BTN_SIZE,
           borderRadius: BTN_RADIUS,
-          backgroundColor: isActive ? (activeColor || 'rgba(56,189,248,0.18)') : 'rgba(0,0,0,0.25)',
+          backgroundColor: isActive ? activeBg : inactiveBg,
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           display: 'flex',
@@ -92,7 +94,7 @@ function ActionButton({
           cursor: 'pointer',
           transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
           transform: `scale(${scale})`,
-          border: `1px solid ${isActive ? (activeBorder || 'rgba(56,189,248,0.35)') : 'rgba(255,255,255,0.08)'}`,
+          border: `1px solid ${isActive ? activeBorder : inactiveBorder}`,
         }}
       >
         {children}
@@ -107,11 +109,11 @@ function ActionButton({
         width: BTN_SIZE,
         height: BTN_SIZE,
         borderRadius: BTN_RADIUS,
-        backgroundColor: isActive ? (activeColor || 'rgba(56,189,248,0.18)') : 'rgba(0,0,0,0.25)',
+        backgroundColor: isActive ? activeBg : inactiveBg,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: isActive ? (activeBorder || 'rgba(56,189,248,0.35)') : 'rgba(255,255,255,0.08)',
+        borderColor: isActive ? activeBorder : inactiveBorder,
         transform: [{ scale }],
       }}
       hitSlop={12}

@@ -1,4 +1,5 @@
 import { View, Text, Platform } from 'react-native';
+import { colors, radii, spacing, fontSize, fontWeight } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 interface CardFreshnessPillProps {
@@ -21,16 +22,14 @@ export function CardFreshnessPill({ destination }: CardFreshnessPillProps) {
   const { priceSource, priceFetchedAt, departureDate } = destination;
   const isLive = priceSource === 'travelpayouts' || priceSource === 'amadeus';
 
-  // Don't show for estimate prices
   if (!isLive) return null;
 
   const hoursAgo = getHoursAgo(priceFetchedAt);
   const daysUntilDep = getDaysUntil(departureDate);
 
-  // Departure <14 days takes priority
   const isDepartingSoon = daysUntilDep != null && daysUntilDep < 14 && daysUntilDep > 0;
 
-  const dotColor = isDepartingSoon ? '#FBBF24' : '#4ADE80'; // amber or green
+  const dotColor = isDepartingSoon ? colors.warningLight : colors.success;
   const label = isDepartingSoon ? 'DEPARTS SOON' : 'LIVE DEAL';
   const sublabel = isDepartingSoon
     ? (daysUntilDep === 1 ? 'Tomorrow' : `In ${daysUntilDep} days`)
@@ -42,13 +41,13 @@ export function CardFreshnessPill({ destination }: CardFreshnessPillProps) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          backgroundColor: 'rgba(0,0,0,0.4)',
+          gap: spacing['1.5'],
+          backgroundColor: colors.overlay.card,
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: 20,
-          padding: '6px 12px',
-          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: radii['3xl'],
+          padding: `${spacing['1.5']}px ${spacing['3']}px`,
+          border: `1px solid ${colors.overlay.white}`,
         }}
       >
         <style>{`
@@ -68,13 +67,13 @@ export function CardFreshnessPill({ destination }: CardFreshnessPillProps) {
             display: 'inline-block',
           }}
         />
-        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: 1, textTransform: 'uppercase' as const }}>
+        <span style={{ fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: 'rgba(255,255,255,0.8)', letterSpacing: 1, textTransform: 'uppercase' as const }}>
           {label}
         </span>
         {sublabel && (
           <>
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10 }}>·</span>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+            <span style={{ color: colors.card.textTag, fontSize: fontSize.xs }}>·</span>
+            <span style={{ fontSize: fontSize.xs, color: colors.card.textMuted, fontWeight: fontWeight.medium }}>
               {sublabel}
             </span>
           </>
@@ -83,19 +82,18 @@ export function CardFreshnessPill({ destination }: CardFreshnessPillProps) {
     );
   }
 
-  // ── Native ──
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        borderRadius: 20,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
+        gap: spacing['1.5'],
+        backgroundColor: colors.overlay.card,
+        borderRadius: radii['3xl'],
+        paddingVertical: spacing['1.5'],
+        paddingHorizontal: spacing['3'],
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: colors.overlay.white,
       }}
     >
       <View
@@ -106,13 +104,13 @@ export function CardFreshnessPill({ destination }: CardFreshnessPillProps) {
           backgroundColor: dotColor,
         }}
       />
-      <Text style={{ fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 1, textTransform: 'uppercase' }}>
+      <Text style={{ fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: 'rgba(255,255,255,0.8)', letterSpacing: 1, textTransform: 'uppercase' }}>
         {label}
       </Text>
       {sublabel ? (
         <>
-          <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10 }}>·</Text>
-          <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '500' }}>
+          <Text style={{ color: colors.card.textTag, fontSize: fontSize.xs }}>·</Text>
+          <Text style={{ fontSize: fontSize.xs, color: colors.card.textMuted, fontWeight: fontWeight.medium }}>
             {sublabel}
           </Text>
         </>

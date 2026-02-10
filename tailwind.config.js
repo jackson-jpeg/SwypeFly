@@ -10,16 +10,14 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#FF6B35',
-          light: '#FF8F65',
-          dark: '#E55A2B',
+          DEFAULT: '#38BDF8',   // sky-400
+          light: '#7DD3FC',     // sky-300
+          dark: '#0284C7',      // sky-600
         },
         secondary: {
-          DEFAULT: '#2196F3',
-          light: '#64B5F6',
-          dark: '#1976D2',
+          DEFAULT: '#0F172A',   // slate-900
+          light: '#1E293B',     // slate-800
         },
-        accent: '#FFD700',
         'app-bg': '#F8FAFC',
         'app-surface': '#FFFFFF',
         'app-text': {

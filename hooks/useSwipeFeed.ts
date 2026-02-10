@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useUIStore } from '../stores/uiStore';
 import { supabase } from '../services/supabase';
+import { captureException } from '../utils/sentry';
 import type { Destination, DestinationFeedPage } from '../types/destination';
 
 /**
@@ -83,9 +84,7 @@ export async function recordSwipe(
         time_spent_ms: timeSpentMs,
         price_shown: priceShown,
       }),
-    }).catch(() => {
-      // Fire-and-forget — don't block UI
-    });
+    }).catch((err) => captureException(err, { context: 'recordSwipe' }));
   } catch {
     // Silently fail
   }

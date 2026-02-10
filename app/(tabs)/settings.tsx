@@ -1,4 +1,4 @@
-import { View, Text, Switch, ScrollView, Platform, Pressable, Modal, FlatList } from 'react-native';
+import { View, Text, Switch, ScrollView, Platform, Pressable, Modal, FlatList, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { useUIStore } from '../../stores/uiStore';
@@ -90,10 +90,27 @@ export default function SettingsTab() {
   const [showDepartureModal, setShowDepartureModal] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
 
-  const handleClearSaved = () => {
+  const doClearSaved = () => {
     savedIds.forEach((id) => useSavedStore.getState().toggleSaved(id));
     setShowCleared(true);
     setTimeout(() => setShowCleared(false), 2000);
+  };
+
+  const handleClearSaved = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Clear all ${savedIds.size} saved destinations? This cannot be undone.`)) {
+        doClearSaved();
+      }
+    } else {
+      Alert.alert(
+        'Clear All Saved',
+        `Remove all ${savedIds.size} saved destinations? This cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Clear All', style: 'destructive', onPress: doClearSaved },
+        ],
+      );
+    }
   };
 
   const handleSignOut = async () => {

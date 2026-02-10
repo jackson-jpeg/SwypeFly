@@ -153,7 +153,7 @@ async function fetchTripPlan(destinationId: string, city: string, country: strin
 
 export function useTripPlan(destinationId: string | undefined, city: string | undefined, country: string | undefined) {
   return useQuery({
-    queryKey: ['ai', 'trip-plan', destinationId],
+    queryKey: ['ai', 'trip-plan', destinationId, city, country],
     queryFn: () => fetchTripPlan(destinationId!, city!, country!),
     enabled: false, // On-demand — call refetch()
     staleTime: 24 * 60 * 60 * 1000, // 24 hours

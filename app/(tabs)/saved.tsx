@@ -1,18 +1,19 @@
 import { View, Text, Platform } from 'react-native';
 import { SavedGrid } from '../../components/saved/SavedGrid';
+import { colors, spacing, fontSize, fontWeight } from '../../constants/theme';
 
 export default function SavedTab() {
   if (Platform.OS === 'web') {
     return (
       <div style={{
-        flex: 1, backgroundColor: '#F8FAFC', minHeight: '100vh',
+        flex: 1, backgroundColor: colors.background, minHeight: '100vh',
         paddingBottom: 80,
       }}>
-        <div style={{ padding: '56px 20px 12px 20px' }}>
-          <h1 style={{ margin: 0, color: '#1E293B', fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
+        <div style={{ padding: `${spacing['14']}px ${spacing['5']}px ${spacing['3']}px ${spacing['5']}px` }}>
+          <h1 style={{ margin: 0, color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>
             Saved
           </h1>
-          <p style={{ margin: '4px 0 0 0', color: '#94A3B8', fontSize: 14 }}>
+          <p style={{ margin: `${spacing['1']}px 0 0 0`, color: colors.text.muted, fontSize: fontSize.lg }}>
             Your travel wishlist
           </p>
         </div>
@@ -22,10 +23,10 @@ export default function SavedTab() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      <View style={{ paddingHorizontal: 20, paddingTop: 56, paddingBottom: 12 }}>
-        <Text style={{ color: '#1E293B', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 }}>Saved</Text>
-        <Text style={{ color: '#94A3B8', fontSize: 14, marginTop: 4 }}>Your travel wishlist</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ paddingHorizontal: spacing['5'], paddingTop: spacing['14'], paddingBottom: spacing['3'] }}>
+        <Text style={{ color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>Saved</Text>
+        <Text style={{ color: colors.text.muted, fontSize: fontSize.lg, marginTop: spacing['1'] }}>Your travel wishlist</Text>
       </View>
       <SavedGrid />
     </View>

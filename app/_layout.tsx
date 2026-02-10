@@ -4,19 +4,13 @@ import { Platform, View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuthContext } from '../hooks/AuthContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { initSentry } from '../utils/sentry';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      retry: 2,
-    },
-  },
-});
+import { queryClient } from '../services/queryClient';
+import { colors } from '../constants/theme';
+import { ToastContainer } from '../components/common/ToastContainer';
 
 function useWebStyles() {
   useEffect(() => {
@@ -150,8 +144,8 @@ function AuthGatedLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#38BDF8" />
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -160,7 +154,7 @@ function AuthGatedLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#F8FAFC' },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="(tabs)" />
@@ -189,8 +183,8 @@ export default function RootLayout() {
 
   if (!mounted && Platform.OS === 'web') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#38BDF8" />
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -199,9 +193,10 @@ export default function RootLayout() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
             <StatusBar style="dark" />
             <AuthGatedLayout />
+            <ToastContainer />
           </GestureHandlerRootView>
         </AuthProvider>
       </QueryClientProvider>

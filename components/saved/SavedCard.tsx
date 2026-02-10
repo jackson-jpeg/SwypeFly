@@ -1,7 +1,9 @@
-import { Pressable, Text, View, Platform } from 'react-native';
+import { Pressable, Text, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { formatFlightPrice } from '../../utils/formatPrice';
+import { colors, radii, spacing, fontSize, fontWeight, shadows } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 interface SavedCardProps {
@@ -20,7 +22,7 @@ export function SavedCard({ destination }: SavedCardProps) {
           }
           .sg-saved-card:hover {
             transform: scale(1.02);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: ${shadows.web.xl};
           }
           .sg-saved-card:hover .sg-saved-img {
             filter: brightness(1.08);
@@ -34,13 +36,13 @@ export function SavedCard({ destination }: SavedCardProps) {
           onClick={handlePress}
           style={{
             position: 'relative',
-            borderRadius: 16,
+            borderRadius: radii['2xl'],
             overflow: 'hidden',
             cursor: 'pointer',
             aspectRatio: '3/4',
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-            border: '1px solid #E2E8F0',
+            backgroundColor: colors.surface,
+            boxShadow: shadows.web.md,
+            border: `1px solid ${colors.border}`,
           }}
         >
           <img
@@ -53,15 +55,14 @@ export function SavedCard({ destination }: SavedCardProps) {
             }}
             loading="lazy"
           />
-          {/* Bottom overlay */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
             background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
-            padding: '32px 14px 14px 14px',
+            padding: `${spacing['8']}px ${spacing['4']}px ${spacing['4']}px ${spacing['4']}px`,
           }}>
-            <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{destination.city}</div>
-            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>{destination.country}</div>
-            <div style={{ color: '#7DD3FC', fontSize: 12, fontWeight: 600, marginTop: 4 }}>
+            <div style={{ color: colors.card.textPrimary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>{destination.city}</div>
+            <div style={{ color: colors.card.textSecondary, fontSize: fontSize.md, marginTop: 2 }}>{destination.country}</div>
+            <div style={{ color: colors.card.priceTint, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginTop: spacing['1'] }}>
               {formatFlightPrice(destination.flightPrice, destination.currency)}
             </div>
           </div>
@@ -71,12 +72,19 @@ export function SavedCard({ destination }: SavedCardProps) {
   }
 
   return (
-    <Pressable onPress={handlePress} style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: 0.75, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0' }}>
+    <Pressable onPress={handlePress} style={{ borderRadius: radii['2xl'], overflow: 'hidden', aspectRatio: 0.75, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}>
       <Image source={{ uri: destination.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12, backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>{destination.city}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>{destination.country}</Text>
-      </View>
+      {/* Gradient overlay on native (was flat rgba) */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.75)']}
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing['3'], paddingTop: spacing['8'] }}
+      >
+        <Text style={{ color: colors.card.textPrimary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>{destination.city}</Text>
+        <Text style={{ color: colors.card.textSecondary, fontSize: fontSize.md, marginTop: 2 }}>{destination.country}</Text>
+        <Text style={{ color: colors.card.priceTint, fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginTop: spacing['1'] }}>
+          {formatFlightPrice(destination.flightPrice, destination.currency)}
+        </Text>
+      </LinearGradient>
     </Pressable>
   );
 }
