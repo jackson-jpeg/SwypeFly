@@ -100,13 +100,16 @@ async function fetchDestination(id: string, origin: string): Promise<Destination
   return res.json();
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function useDestination(id: string | undefined) {
   const departureCode = useUIStore((s) => s.departureCode);
+  const isValidId = !!id && UUID_RE.test(id);
 
   return useQuery({
     queryKey: ['destination', id, departureCode],
     queryFn: () => fetchDestination(id!, departureCode),
-    enabled: !!id,
+    enabled: isValidId,
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -24,7 +24,7 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       hapticsEnabled: true,
-      theme: 'dark',
+      theme: 'light',
       departureCity: 'Tampa',
       departureCode: 'TPA',
       currency: 'USD',
