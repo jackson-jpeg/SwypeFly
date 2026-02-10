@@ -55,7 +55,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
             display: 'flex',
             gap: 10,
             overflowX: 'auto',
-            scrollbarWidth: 'none' as any,
+            scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
             marginTop: 14,
             paddingBottom: 4,
           }}

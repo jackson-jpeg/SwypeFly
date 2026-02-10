@@ -531,28 +531,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Check for auth -> personalized vs generic scoring
     const userPrefs = await getUserPrefs(req.headers.authorization);
 
-    // Extract saved vibe tags for preference boost in generic scorer
-    let savedVibeTags: string[] = [];
-    if (userPrefs) {
-      try {
-        const token = (req.headers.authorization || '').replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) {
-          const { data: savedTrips } = await supabase
-            .from('saved_trips')
-            .select('destination_id')
-            .eq('user_id', user.id);
-          if (savedTrips && savedTrips.length > 0) {
-            const savedDestIds = new Set(savedTrips.map((s) => s.destination_id));
-            const savedDests = destinations.filter((d) => savedDestIds.has(d.id));
-            savedVibeTags = [...new Set(savedDests.flatMap((d) => d.vibe_tags))];
-          }
-        }
-      } catch {
-        // Ignore — preference boost is optional
-      }
-    }
-
     let scored: ScoredDest[];
     if (userPrefs) {
       const personalized = scorePersonalizedFeed(destinations, userPrefs);

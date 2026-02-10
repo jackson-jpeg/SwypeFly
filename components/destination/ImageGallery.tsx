@@ -23,7 +23,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
           style={{
             display: 'flex',
             overflowX: 'auto',
-            scrollbarWidth: 'none' as any,
+            scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
           }}
           onScroll={(e) => {
             const target = e.target as HTMLDivElement;

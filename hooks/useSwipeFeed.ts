@@ -1,5 +1,4 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { FEED_PAGE_SIZE } from '../constants/layout';
 import { useUIStore } from '../stores/uiStore';
 import { supabase } from '../services/supabase';
 import type { Destination, DestinationFeedPage } from '../types/destination';

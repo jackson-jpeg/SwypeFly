@@ -26,7 +26,7 @@ interface AuthActions {
 export type Auth = AuthState & AuthActions;
 
 // Guest mode flag persisted in memory (resets on app restart)
-let guestMode = false;
+let _guestMode = false;
 
 export function useAuth(): Auth {
   const [session, setSession] = useState<Session | null>(null);
@@ -72,7 +72,7 @@ export function useAuth(): Auth {
       setSession(session);
       if (session) {
         setIsGuest(false);
-        guestMode = false;
+        _guestMode = false;
         checkOnboarding(session.user.id);
       }
     });
@@ -128,13 +128,13 @@ export function useAuth(): Auth {
   }, []);
 
   const signOut = useCallback(async () => {
-    guestMode = false;
+    _guestMode = false;
     setIsGuest(false);
     await supabase.auth.signOut();
   }, []);
 
   const browseAsGuest = useCallback(() => {
-    guestMode = true;
+    _guestMode = true;
     setIsGuest(true);
   }, []);
 

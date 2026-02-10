@@ -59,7 +59,7 @@ async function main() {
     is_active: true,
   }));
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('destinations')
     .upsert(rows, { onConflict: 'id' });
 
