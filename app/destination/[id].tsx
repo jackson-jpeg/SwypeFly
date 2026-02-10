@@ -1,9 +1,9 @@
-import { View, Text, ScrollView, Pressable, Share, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Share, Platform, ActivityIndicator, Linking } from 'react-native';
 import { useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Image } from 'expo-image';
 import { useDestination } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
+import { usePriceCheck } from '../../hooks/useAI';
 import { formatFlightPrice, formatHotelPrice } from '../../utils/formatPrice';
 import { flightLink, hotelLink, activitiesLink } from '../../utils/affiliateLinks';
 import { useUIStore } from '../../stores/uiStore';
@@ -11,6 +11,9 @@ import ImageGallery from '../../components/destination/ImageGallery';
 import FlightScheduleBadge from '../../components/destination/FlightScheduleBadge';
 import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
+import LivePulse from '../../components/destination/LivePulse';
+import NearbyGems from '../../components/destination/NearbyGems';
+import TripStrategist from '../../components/destination/TripStrategist';
 
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -18,6 +21,12 @@ export default function DestinationDetail() {
   const { data: destination, isLoading, error } = useDestination(id);
   const departureCode = useUIStore((s) => s.departureCode);
   const [shareCopied, setShareCopied] = useState(false);
+
+  // Price verification hook (on-demand)
+  const priceCheck = usePriceCheck(
+    departureCode,
+    destination?.iataCode || '',
+  );
 
   if (isLoading) {
     if (Platform.OS === 'web') {
@@ -73,6 +82,113 @@ export default function DestinationDetail() {
   const marker = typeof process !== 'undefined'
     ? (process.env.EXPO_PUBLIC_TRAVELPAYOUTS_MARKER || '')
     : '';
+
+  // ─── Verify Price section (shared between web & native) ────────────
+  const renderVerifyPrice = () => {
+    if (priceCheck.data && priceCheck.data.price > 0) {
+      if (Platform.OS === 'web') {
+        return (
+          <div style={{
+            marginTop: 12, backgroundColor: 'rgba(56,189,248,0.06)',
+            borderRadius: 12, padding: '12px 16px',
+            border: '1px solid rgba(56,189,248,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#818CF8', backgroundColor: 'rgba(129,140,248,0.1)', borderRadius: 4, padding: '2px 6px', letterSpacing: 0.5 }}>AI VERIFIED</span>
+              </div>
+              <div style={{ color: '#1E293B', fontSize: 16, fontWeight: 700, marginTop: 4 }}>
+                ${priceCheck.data.price}
+              </div>
+              <div style={{ color: '#64748B', fontSize: 12 }}>via {priceCheck.data.source}</div>
+            </div>
+            <a
+              href={priceCheck.data.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                backgroundColor: '#38BDF8', color: '#fff',
+                borderRadius: 10, padding: '8px 16px',
+                fontSize: 13, fontWeight: 600, textDecoration: 'none',
+              }}
+            >
+              Book Now &#8599;
+            </a>
+          </div>
+        );
+      }
+
+      return (
+        <View style={{
+          marginTop: 12, backgroundColor: 'rgba(56,189,248,0.06)',
+          borderRadius: 12, padding: 12,
+          borderWidth: 1, borderColor: 'rgba(56,189,248,0.15)',
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <View>
+            <View style={{ backgroundColor: 'rgba(129,140,248,0.1)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#818CF8', letterSpacing: 0.5 }}>AI VERIFIED</Text>
+            </View>
+            <Text style={{ color: '#1E293B', fontSize: 16, fontWeight: '700', marginTop: 4 }}>
+              ${priceCheck.data.price}
+            </Text>
+            <Text style={{ color: '#64748B', fontSize: 12 }}>via {priceCheck.data.source}</Text>
+          </View>
+          <Pressable
+            onPress={() => Linking.openURL(priceCheck.data!.url)}
+            style={{
+              backgroundColor: '#38BDF8', borderRadius: 10,
+              paddingHorizontal: 16, paddingVertical: 8,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Book Now {'\u2197'}</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Button or loading state
+    if (Platform.OS === 'web') {
+      return (
+        <button
+          onClick={() => priceCheck.refetch()}
+          disabled={priceCheck.isFetching}
+          style={{
+            marginTop: 12, width: '100%',
+            background: 'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(129,140,248,0.08) 100%)',
+            border: '1px dashed rgba(56,189,248,0.3)',
+            borderRadius: 10, padding: '10px 16px',
+            color: '#0EA5E9', fontSize: 13, fontWeight: 600,
+            cursor: priceCheck.isFetching ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            opacity: priceCheck.isFetching ? 0.6 : 1,
+          }}
+        >
+          {priceCheck.isFetching ? 'Checking prices...' : '\u2728 Verify Deal with AI'}
+        </button>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => priceCheck.refetch()}
+        disabled={priceCheck.isFetching}
+        style={{
+          marginTop: 12,
+          backgroundColor: 'rgba(56,189,248,0.06)',
+          borderWidth: 1, borderColor: 'rgba(56,189,248,0.3)',
+          borderRadius: 10, padding: 10,
+          alignItems: 'center', justifyContent: 'center',
+          opacity: priceCheck.isFetching ? 0.6 : 1,
+        }}
+      >
+        <Text style={{ color: '#0EA5E9', fontSize: 13, fontWeight: '600' }}>
+          {priceCheck.isFetching ? 'Checking prices...' : '\u2728 Verify Deal with AI'}
+        </Text>
+      </Pressable>
+    );
+  };
 
   // ─── Web ──────────────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
@@ -206,11 +322,17 @@ export default function DestinationDetail() {
               {destination.description}
             </p>
 
+            {/* Live Pulse — AI weather/advisories */}
+            <LivePulse city={destination.city} country={destination.country} />
+
             {/* Itinerary (conditional) */}
             <ItineraryTimeline itinerary={destination.itinerary} />
 
             {/* Local Bites restaurants (conditional) */}
             <RestaurantCards restaurants={destination.restaurants} />
+
+            {/* Hidden Gems — AI nearby places */}
+            <NearbyGems city={destination.city} country={destination.country} />
 
             {/* Divider */}
             <div style={{ height: 1, backgroundColor: '#E2E8F0', margin: '24px 0' }} />
@@ -284,7 +406,17 @@ export default function DestinationDetail() {
                   {destination.flightDuration}
                 </span>
               </div>
+
+              {/* Verify Deal button */}
+              {renderVerifyPrice()}
             </div>
+
+            {/* Trip Strategist — AI trip planning */}
+            <TripStrategist
+              destinationId={destination.id}
+              city={destination.city}
+              country={destination.country}
+            />
 
             {/* Divider */}
             <div style={{ height: 1, backgroundColor: '#E2E8F0', margin: '24px 0' }} />
@@ -478,11 +610,17 @@ export default function DestinationDetail() {
             {destination.description}
           </Text>
 
+          {/* Live Pulse — AI weather/advisories */}
+          <LivePulse city={destination.city} country={destination.country} />
+
           {/* Itinerary (conditional) */}
           <ItineraryTimeline itinerary={destination.itinerary} />
 
           {/* Local Bites restaurants (conditional) */}
           <RestaurantCards restaurants={destination.restaurants} />
+
+          {/* Hidden Gems — AI nearby places */}
+          <NearbyGems city={destination.city} country={destination.country} />
 
           {/* Divider */}
           <View style={{ height: 1, backgroundColor: '#E2E8F0', marginVertical: 24 }} />
@@ -553,7 +691,17 @@ export default function DestinationDetail() {
               <Text style={{ color: '#64748B', fontSize: 14 }}>Flight time</Text>
               <Text style={{ color: '#475569', fontSize: 14 }}>{destination.flightDuration}</Text>
             </View>
+
+            {/* Verify Deal button */}
+            {renderVerifyPrice()}
           </View>
+
+          {/* Trip Strategist — AI trip planning */}
+          <TripStrategist
+            destinationId={destination.id}
+            city={destination.city}
+            country={destination.country}
+          />
 
           {/* Divider */}
           <View style={{ height: 1, backgroundColor: '#E2E8F0', marginVertical: 24 }} />
@@ -562,7 +710,6 @@ export default function DestinationDetail() {
           <View style={{ gap: 12 }}>
             <Pressable
               onPress={() => {
-                // Native: open link via Linking
                 const url = flightLink(departureCode, destination.iataCode, marker);
                 import('react-native').then(({ Linking }) => Linking.openURL(url));
               }}

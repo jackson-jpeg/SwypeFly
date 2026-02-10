@@ -17,6 +17,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
+    "@google/genai": "^1.40.0",
     "@sentry/react": "^10.38.0",
     "@shopify/flash-list": "2.0.2",
     "@supabase/supabase-js": "^2.95.3",

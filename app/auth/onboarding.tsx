@@ -28,12 +28,24 @@ const BUDGET_OPTIONS: { level: BudgetLevel; label: string; desc: string; range: 
   { level: 'luxury', label: 'Luxury', desc: 'Go all out', range: '$1,200+' },
 ];
 
+const TOTAL_STEPS = 3;
+
 function WebOnboarding() {
   const { user } = useAuthContext();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<0 | 1 | 2>(0);
   const [travelerType, setTravelerType] = useState<TravelerType | null>(null);
   const [budgetLevel, setBudgetLevel] = useState<BudgetLevel | null>(null);
   const [saving, setSaving] = useState(false);
+  const [slideDir, setSlideDir] = useState<'left' | 'right'>('left');
+
+  const goForward = (nextStep: 0 | 1 | 2) => {
+    setSlideDir('left');
+    setStep(nextStep);
+  };
+  const goBack = (nextStep: 0 | 1 | 2) => {
+    setSlideDir('right');
+    setStep(nextStep);
+  };
 
   const handleFinish = async () => {
     if (!travelerType || !budgetLevel || !user) return;
@@ -64,6 +76,21 @@ function WebOnboarding() {
         padding: 24,
       }}
     >
+      <style>{`
+        @keyframes sg-onboard-slide-left {
+          from { transform: translateX(40px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes sg-onboard-slide-right {
+          from { transform: translateX(-40px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes sg-plane-float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+      `}</style>
+
       {/* Background blur */}
       <div
         style={{
@@ -85,169 +112,210 @@ function WebOnboarding() {
           maxWidth: 400, width: '100%',
         }}
       >
-        {/* Progress dots */}
+        {/* Progress dots — animated width */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: 4,
-            backgroundColor: '#38BDF8',
-          }} />
-          <div style={{
-            width: 8, height: 8, borderRadius: 4,
-            backgroundColor: step === 2 ? '#38BDF8' : 'rgba(255,255,255,0.2)',
-            transition: 'background-color 0.3s',
-          }} />
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+            <div key={i} style={{
+              height: 8, borderRadius: 4,
+              width: step === i ? 24 : 8,
+              backgroundColor: step >= i ? '#38BDF8' : 'rgba(255,255,255,0.2)',
+              transition: 'width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s',
+            }} />
+          ))}
         </div>
 
-        {step === 1 ? (
-          <>
-            <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
-              What kind of traveler are you?
-            </h2>
-            <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
-              We&apos;ll personalize your feed
-            </p>
+        {/* Step content with slide animation */}
+        <div
+          key={step}
+          style={{
+            width: '100%',
+            animation: `${slideDir === 'left' ? 'sg-onboard-slide-left' : 'sg-onboard-slide-right'} 0.35s ease-out`,
+          }}
+        >
+          {/* ─── Step 0: Welcome ─── */}
+          {step === 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{
+                fontSize: 56, marginBottom: 16,
+                animation: 'sg-plane-float 3s ease-in-out infinite',
+              }}>
+                {'\u2708\uFE0F'}
+              </div>
+              <h1 style={{
+                margin: 0, color: '#fff', fontSize: 28, fontWeight: 800,
+                textAlign: 'center', letterSpacing: -0.5,
+              }}>
+                Welcome to SoGoJet
+              </h1>
+              <p style={{
+                margin: '12px 0 0 0', color: 'rgba(255,255,255,0.5)',
+                fontSize: 15, textAlign: 'center', lineHeight: 1.6, maxWidth: 320,
+              }}>
+                Discover your next adventure. We&apos;ll show you incredible destinations
+                matched to your travel style.
+              </p>
 
-            {/* 2x2 grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, width: '100%' }}>
-              {TRAVELER_OPTIONS.map((opt) => (
+              <button
+                onClick={() => goForward(1)}
+                style={{
+                  marginTop: 32, width: '100%',
+                  padding: '14px 20px', borderRadius: 12,
+                  border: 'none', backgroundColor: '#38BDF8',
+                  color: '#fff', fontSize: 15, fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.2s',
+                }}
+              >
+                Get Started
+              </button>
+            </div>
+          )}
+
+          {/* ─── Step 1: Traveler Type ─── */}
+          {step === 1 && (
+            <>
+              <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
+                What kind of traveler are you?
+              </h2>
+              <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
+                We&apos;ll personalize your feed
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, width: '100%' }}>
+                {TRAVELER_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.type}
+                    onClick={() => setTravelerType(opt.type)}
+                    style={{
+                      padding: 20, borderRadius: 16,
+                      border: travelerType === opt.type
+                        ? '2px solid #38BDF8'
+                        : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: travelerType === opt.type
+                        ? 'rgba(56,189,248,0.12)'
+                        : 'rgba(255,255,255,0.04)',
+                      cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <span style={{ fontSize: 32 }}>{opt.emoji}</span>
+                    <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{opt.label}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, width: '100%', marginTop: 24 }}>
                 <button
-                  key={opt.type}
-                  onClick={() => setTravelerType(opt.type)}
+                  onClick={() => goBack(0)}
                   style={{
-                    padding: 20,
-                    borderRadius: 16,
-                    border: travelerType === opt.type
-                      ? '2px solid #38BDF8'
-                      : '1px solid rgba(255,255,255,0.1)',
-                    backgroundColor: travelerType === opt.type
-                      ? 'rgba(56,189,248,0.12)'
-                      : 'rgba(255,255,255,0.04)',
+                    flex: 1, padding: '14px 20px', borderRadius: 12,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    backgroundColor: 'transparent',
+                    color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600,
                     cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 6,
+                  }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => travelerType && goForward(2)}
+                  disabled={!travelerType}
+                  style={{
+                    flex: 2, padding: '14px 20px', borderRadius: 12,
+                    border: 'none',
+                    backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)',
+                    fontSize: 15, fontWeight: 600,
+                    cursor: travelerType ? 'pointer' : 'default',
                     transition: 'all 0.2s',
                   }}
                 >
-                  <span style={{ fontSize: 32 }}>{opt.emoji}</span>
-                  <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{opt.label}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{opt.desc}</span>
+                  Continue
                 </button>
-              ))}
-            </div>
+              </div>
+            </>
+          )}
 
-            <button
-              onClick={() => travelerType && setStep(2)}
-              disabled={!travelerType}
-              style={{
-                marginTop: 24,
-                width: '100%',
-                padding: '14px 20px',
-                borderRadius: 12,
-                border: 'none',
-                backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
-                color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: travelerType ? 'pointer' : 'default',
-                transition: 'all 0.2s',
-              }}
-            >
-              Continue
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
-              What&apos;s your typical budget?
-            </h2>
-            <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
-              For a round-trip flight
-            </p>
+          {/* ─── Step 2: Budget ─── */}
+          {step === 2 && (
+            <>
+              <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
+                What&apos;s your typical budget?
+              </h2>
+              <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
+                For a round-trip flight
+              </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-              {BUDGET_OPTIONS.map((opt) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+                {BUDGET_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.level}
+                    onClick={() => setBudgetLevel(opt.level)}
+                    style={{
+                      padding: '16px 20px', borderRadius: 14,
+                      border: budgetLevel === opt.level
+                        ? '2px solid #38BDF8'
+                        : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: budgetLevel === opt.level
+                        ? 'rgba(56,189,248,0.12)'
+                        : 'rgba(255,255,255,0.04)',
+                      cursor: 'pointer',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div style={{ textAlign: 'left' as const }}>
+                      <div style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{opt.label}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>{opt.desc}</div>
+                    </div>
+                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 500 }}>
+                      {opt.range}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, width: '100%', marginTop: 24 }}>
                 <button
-                  key={opt.level}
-                  onClick={() => setBudgetLevel(opt.level)}
+                  onClick={() => goBack(1)}
                   style={{
-                    padding: '16px 20px',
-                    borderRadius: 14,
-                    border: budgetLevel === opt.level
-                      ? '2px solid #38BDF8'
-                      : '1px solid rgba(255,255,255,0.1)',
-                    backgroundColor: budgetLevel === opt.level
-                      ? 'rgba(56,189,248,0.12)'
-                      : 'rgba(255,255,255,0.04)',
+                    flex: 1, padding: '14px 20px', borderRadius: 12,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    backgroundColor: 'transparent',
+                    color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600,
                     cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    transition: 'all 0.2s',
                   }}
                 >
-                  <div style={{ textAlign: 'left' as const }}>
-                    <div style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{opt.label}</div>
-                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>{opt.desc}</div>
-                  </div>
-                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 500 }}>
-                    {opt.range}
-                  </span>
+                  Back
                 </button>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', gap: 12, width: '100%', marginTop: 24 }}>
-              <button
-                onClick={() => setStep(1)}
-                style={{
-                  flex: 1,
-                  padding: '14px 20px',
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  backgroundColor: 'transparent',
-                  color: 'rgba(255,255,255,0.6)',
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Back
-              </button>
-              <button
-                onClick={handleFinish}
-                disabled={!budgetLevel || saving}
-                style={{
-                  flex: 2,
-                  padding: '14px 20px',
-                  borderRadius: 12,
-                  border: 'none',
-                  backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
-                  color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)',
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: budgetLevel && !saving ? 'pointer' : 'default',
-                  opacity: saving ? 0.7 : 1,
-                }}
-              >
-                {saving ? 'Saving...' : "Let's Go"}
-              </button>
-            </div>
-          </>
-        )}
+                <button
+                  onClick={handleFinish}
+                  disabled={!budgetLevel || saving}
+                  style={{
+                    flex: 2, padding: '14px 20px', borderRadius: 12,
+                    border: 'none',
+                    backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)',
+                    fontSize: 15, fontWeight: 600,
+                    cursor: budgetLevel && !saving ? 'pointer' : 'default',
+                    opacity: saving ? 0.7 : 1,
+                  }}
+                >
+                  {saving ? 'Saving...' : "Let's Go"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Skip */}
         <button
           onClick={() => router.replace('/(tabs)')}
           style={{
-            marginTop: 16,
-            background: 'none',
-            border: 'none',
-            color: 'rgba(255,255,255,0.3)',
-            fontSize: 13,
-            cursor: 'pointer',
-            padding: 8,
+            marginTop: 16, background: 'none', border: 'none',
+            color: 'rgba(255,255,255,0.3)', fontSize: 13,
+            cursor: 'pointer', padding: 8,
           }}
         >
           Skip for now
@@ -259,7 +327,7 @@ function WebOnboarding() {
 
 function NativeOnboarding() {
   const { user } = useAuthContext();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<0 | 1 | 2>(0);
   const [travelerType, setTravelerType] = useState<TravelerType | null>(null);
   const [budgetLevel, setBudgetLevel] = useState<BudgetLevel | null>(null);
   const [saving, setSaving] = useState(false);
@@ -282,16 +350,43 @@ function NativeOnboarding() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', paddingHorizontal: 28 }}>
-      {/* Progress dots */}
+      {/* Progress dots — animated width */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 32 }}>
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#38BDF8' }} />
-        <View style={{
-          width: 8, height: 8, borderRadius: 4,
-          backgroundColor: step === 2 ? '#38BDF8' : 'rgba(255,255,255,0.2)',
-        }} />
+        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+          <View key={i} style={{
+            height: 8, borderRadius: 4,
+            width: step === i ? 24 : 8,
+            backgroundColor: step >= i ? '#38BDF8' : 'rgba(255,255,255,0.2)',
+          }} />
+        ))}
       </View>
 
-      {step === 1 ? (
+      {/* ─── Step 0: Welcome ─── */}
+      {step === 0 && (
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontSize: 56, marginBottom: 16 }}>{'\u2708\uFE0F'}</Text>
+          <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 }}>
+            Welcome to SoGoJet
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, textAlign: 'center', marginTop: 12, lineHeight: 24, maxWidth: 320 }}>
+            Discover your next adventure. We'll show you incredible destinations matched to your travel style.
+          </Text>
+
+          <Pressable
+            onPress={() => setStep(1)}
+            style={{
+              marginTop: 32, width: '100%',
+              paddingVertical: 14, borderRadius: 12,
+              backgroundColor: '#38BDF8', alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Get Started</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* ─── Step 1: Traveler Type ─── */}
+      {step === 1 && (
         <>
           <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
             What kind of traveler are you?
@@ -300,21 +395,17 @@ function NativeOnboarding() {
             We'll personalize your feed
           </Text>
 
-          {/* 2x2 grid */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {TRAVELER_OPTIONS.map((opt) => (
               <Pressable
                 key={opt.type}
                 onPress={() => setTravelerType(opt.type)}
                 style={{
-                  width: '48%',
-                  padding: 20,
-                  borderRadius: 16,
+                  width: '48%', padding: 20, borderRadius: 16,
                   borderWidth: travelerType === opt.type ? 2 : 1,
                   borderColor: travelerType === opt.type ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                   backgroundColor: travelerType === opt.type ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
-                  alignItems: 'center',
-                  gap: 6,
+                  alignItems: 'center', gap: 6,
                 }}
               >
                 <Text style={{ fontSize: 32 }}>{opt.emoji}</Text>
@@ -324,23 +415,36 @@ function NativeOnboarding() {
             ))}
           </View>
 
-          <Pressable
-            onPress={() => travelerType && setStep(2)}
-            disabled={!travelerType}
-            style={{
-              marginTop: 24,
-              paddingVertical: 14,
-              borderRadius: 12,
-              backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
-              Continue
-            </Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+            <Pressable
+              onPress={() => setStep(0)}
+              style={{
+                flex: 1, paddingVertical: 14, borderRadius: 12,
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => travelerType && setStep(2)}
+              disabled={!travelerType}
+              style={{
+                flex: 2, paddingVertical: 14, borderRadius: 12,
+                backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
+                Continue
+              </Text>
+            </Pressable>
+          </View>
         </>
-      ) : (
+      )}
+
+      {/* ─── Step 2: Budget ─── */}
+      {step === 2 && (
         <>
           <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
             What's your typical budget?
@@ -355,14 +459,11 @@ function NativeOnboarding() {
                 key={opt.level}
                 onPress={() => setBudgetLevel(opt.level)}
                 style={{
-                  padding: 16,
-                  borderRadius: 14,
+                  padding: 16, borderRadius: 14,
                   borderWidth: budgetLevel === opt.level ? 2 : 1,
                   borderColor: budgetLevel === opt.level ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                   backgroundColor: budgetLevel === opt.level ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                 }}
               >
                 <View>
@@ -380,11 +481,8 @@ function NativeOnboarding() {
             <Pressable
               onPress={() => setStep(1)}
               style={{
-                flex: 1,
-                paddingVertical: 14,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.15)',
+                flex: 1, paddingVertical: 14, borderRadius: 12,
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
                 alignItems: 'center',
               }}
             >
@@ -394,9 +492,7 @@ function NativeOnboarding() {
               onPress={handleFinish}
               disabled={!budgetLevel || saving}
               style={{
-                flex: 2,
-                paddingVertical: 14,
-                borderRadius: 12,
+                flex: 2, paddingVertical: 14, borderRadius: 12,
                 backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                 alignItems: 'center',
                 opacity: saving ? 0.7 : 1,
