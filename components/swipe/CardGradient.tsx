@@ -12,12 +12,14 @@ export function CardGradient() {
           background: `linear-gradient(
             to bottom,
             transparent 0%,
-            transparent 40%,
-            rgba(15,23,42,0.05) 50%,
-            rgba(15,23,42,0.25) 60%,
-            rgba(15,23,42,0.60) 75%,
-            rgba(15,23,42,0.85) 90%,
-            rgba(15,23,42,0.92) 100%
+            transparent 30%,
+            rgba(15,23,42,0.08) 42%,
+            rgba(15,23,42,0.30) 52%,
+            rgba(15,23,42,0.55) 62%,
+            rgba(15,23,42,0.78) 72%,
+            rgba(15,23,42,0.90) 82%,
+            rgba(15,23,42,0.96) 92%,
+            rgba(15,23,42,0.98) 100%
           )`,
           pointerEvents: 'none',
         }}
@@ -30,13 +32,15 @@ export function CardGradient() {
       colors={[
         'transparent',
         'transparent',
-        'rgba(15,23,42,0.05)',
-        'rgba(15,23,42,0.25)',
-        'rgba(15,23,42,0.60)',
-        'rgba(15,23,42,0.85)',
-        'rgba(15,23,42,0.92)',
+        'rgba(15,23,42,0.08)',
+        'rgba(15,23,42,0.30)',
+        'rgba(15,23,42,0.55)',
+        'rgba(15,23,42,0.78)',
+        'rgba(15,23,42,0.90)',
+        'rgba(15,23,42,0.96)',
+        'rgba(15,23,42,0.98)',
       ]}
-      locations={[0, 0.40, 0.50, 0.60, 0.75, 0.90, 1]}
+      locations={[0, 0.30, 0.42, 0.52, 0.62, 0.72, 0.82, 0.92, 1]}
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
     />
