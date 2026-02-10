@@ -3,8 +3,8 @@
   "name": "SoGoJet — So many places to go — So Go Jet.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0A",
-  "theme_color": "#0A0A0A",
+  "background_color": "#F8FAFC",
+  "theme_color": "#38BDF8",
   "orientation": "portrait",
   "icons": [
     {
