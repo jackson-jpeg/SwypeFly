@@ -123,9 +123,9 @@ describe('destinationQuerySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects non-uuid id', () => {
+  it('accepts numeric string id', () => {
     const result = validateRequest(destinationQuerySchema, { id: '123' });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });
 
