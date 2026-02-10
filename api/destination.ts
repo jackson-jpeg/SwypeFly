@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { destinationQuerySchema, validateRequest } from '../utils/validation';
+import { logApiError } from '../utils/apiLogger';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -10,12 +12,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const id = req.query.id as string;
-  const origin = (req.query.origin as string) || 'TPA';
-
-  if (!id) {
-    return res.status(400).json({ error: 'Missing destination id' });
-  }
+  const v = validateRequest(destinationQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const { id, origin } = v.data;
 
   try {
     // Fetch destination
@@ -73,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     return res.status(200).json(result);
   } catch (err) {
-    console.error('[api/destination]', err);
+    logApiError('api/destination', err);
     return res.status(500).json({ error: 'Failed to load destination' });
   }
 }

@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { swipeBodySchema, validateRequest } from '../utils/validation';
+import { logApiError } from '../utils/apiLogger';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -44,20 +46,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const { destination_id, action, time_spent_ms, price_shown } = req.body as {
-      destination_id: string;
-      action: string;
-      time_spent_ms?: number;
-      price_shown?: number;
-    };
-
-    if (!destination_id || !action) {
-      return res.status(400).json({ error: 'Missing destination_id or action' });
-    }
-
-    if (!['viewed', 'skipped', 'saved'].includes(action)) {
-      return res.status(400).json({ error: 'Invalid action' });
-    }
+    const v = validateRequest(swipeBodySchema, req.body);
+    if (!v.success) return res.status(400).json({ error: v.error });
+    const { destination_id, action, time_spent_ms, price_shown } = v.data;
 
     // 1. Insert swipe history
     const { error: insertErr } = await supabase
@@ -119,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ ok: true });
   } catch (err) {
-    console.error('[api/swipe]', err);
+    logApiError('api/swipe', err);
     return res.status(500).json({ error: 'Failed to record swipe' });
   }
 }

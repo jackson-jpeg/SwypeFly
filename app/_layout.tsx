@@ -6,6 +6,8 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuthContext } from '../hooks/AuthContext';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { initSentry } from '../utils/sentry';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,6 +21,11 @@ const queryClient = new QueryClient({
 function useWebStyles() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
+
+    // Initialize Sentry + Web Vitals on web
+    initSentry();
+    import('../utils/webVitals').then(({ initWebVitals }) => initWebVitals());
+
     const style = document.createElement('style');
     style.id = 'sogojet-global';
     style.textContent = `
@@ -166,6 +173,8 @@ function AuthGatedLayout() {
           animation: 'slide_from_bottom',
         }}
       />
+      <Stack.Screen name="legal/privacy" />
+      <Stack.Screen name="legal/terms" />
     </Stack>
   );
 }
@@ -187,13 +196,15 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-          <StatusBar style="dark" />
-          <AuthGatedLayout />
-        </GestureHandlerRootView>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+            <StatusBar style="dark" />
+            <AuthGatedLayout />
+          </GestureHandlerRootView>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

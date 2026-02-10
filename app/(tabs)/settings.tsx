@@ -243,6 +243,13 @@ export default function SettingsTab() {
               </button>
             </div>
 
+            {/* Legal */}
+            <span style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
+              Legal
+            </span>
+            <WebSettingsRow label="Privacy Policy" value="" onPress={() => router.push('/legal/privacy')} />
+            <WebSettingsRow label="Terms of Service" value="" onPress={() => router.push('/legal/terms')} />
+
             {/* About */}
             <span style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 16, marginBottom: 4 }}>
               About
@@ -316,6 +323,23 @@ export default function SettingsTab() {
             </View>
             <Switch value={hapticsEnabled} onValueChange={toggleHaptics} trackColor={{ false: '#CBD5E1', true: '#38BDF8' }} thumbColor="#fff" />
           </View>
+          {/* Legal */}
+          <Text style={{ color: '#94A3B8', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 16 }}>Legal</Text>
+          <Pressable
+            onPress={() => router.push('/legal/privacy')}
+            style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}
+          >
+            <Text style={{ color: '#1E293B', fontSize: 15, fontWeight: '500' }}>Privacy Policy</Text>
+            <Text style={{ color: '#94A3B8', fontSize: 14 }}>{'\u203A'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/legal/terms')}
+            style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}
+          >
+            <Text style={{ color: '#1E293B', fontSize: 15, fontWeight: '500' }}>Terms of Service</Text>
+            <Text style={{ color: '#94A3B8', fontSize: 14 }}>{'\u203A'}</Text>
+          </Pressable>
+
           <View style={{ height: 120 }} />
         </View>
       </ScrollView>

@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { feedQuerySchema, validateRequest } from '../utils/validation';
+import { logApiError } from '../utils/apiLogger';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -519,8 +521,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const origin = (req.query.origin as string) || 'TPA';
-    const cursor = parseInt((req.query.cursor as string) || '0', 10);
+    const v = validateRequest(feedQuerySchema, req.query);
+    if (!v.success) return res.status(400).json({ error: v.error });
+    const { origin, cursor: parsedCursor } = v.data;
+    const cursor = parsedCursor ?? 0;
 
     const destinations = await getDestinationsWithPrices(origin);
 
@@ -565,7 +569,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Cache-Control', `s-maxage=${cacheTime}, stale-while-revalidate=${cacheTime * 2}`);
     return res.status(200).json({ destinations: page, nextCursor });
   } catch (err) {
-    console.error('[api/feed]', err);
+    logApiError('api/feed', err);
     return res.status(500).json({ error: 'Failed to load feed' });
   }
 }

@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { fetchCityDirections, fetchCheapPrices } from '../../services/travelpayouts';
+import { pricesQuerySchema, validateRequest } from '../../utils/validation';
+import { logApiError } from '../../utils/apiLogger';
 
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
@@ -243,7 +245,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const originParam = (req.query.origin as string) || '';
+  const v = validateRequest(pricesQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const originParam = v.data.origin || '';
 
   try {
     // Get all active destination IATA codes from Supabase
@@ -285,7 +289,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('[refresh]', message);
+    logApiError('api/prices/refresh', err);
     return res.status(500).json({ error: 'Price refresh failed', detail: message });
   }
 }

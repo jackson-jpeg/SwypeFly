@@ -17,6 +17,7 @@ export default function DestinationDetail() {
   const { toggle, isSaved } = useSaveDestination();
   const { data: destination, isLoading, error } = useDestination(id);
   const departureCode = useUIStore((s) => s.departureCode);
+  const [shareCopied, setShareCopied] = useState(false);
 
   if (isLoading) {
     if (Platform.OS === 'web') {
@@ -51,8 +52,6 @@ export default function DestinationDetail() {
 
   const saved = isSaved(destination.id);
   const images = destination.imageUrls?.length ? destination.imageUrls : [destination.imageUrl];
-
-  const [shareCopied, setShareCopied] = useState(false);
 
   const handleShare = async () => {
     const text = `Check out ${destination.city}, ${destination.country} on SoGoJet! ${destination.tagline}`;

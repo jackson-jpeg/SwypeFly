@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { fetchHotelRates } from '../../services/liteapi';
+import { hotelPricesQuerySchema, validateRequest } from '../../utils/validation';
+import { logApiError } from '../../utils/apiLogger';
 
 export const maxDuration = 60;
 
@@ -19,7 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const destParam = (req.query.destination as string) || '';
+  const v = validateRequest(hotelPricesQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const destParam = v.data.destination || '';
 
   try {
     // Get destinations to refresh
@@ -99,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('[refresh-hotels]', message);
+    logApiError('api/prices/refresh-hotels', err);
     return res.status(500).json({ error: 'Hotel price refresh failed', detail: message });
   }
 }
