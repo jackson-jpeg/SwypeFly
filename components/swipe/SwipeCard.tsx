@@ -35,8 +35,36 @@ const DOUBLE_TAP_DELAY = 300;
 const STAGGER_DURATION = 350;
 const STAGGER_EASE = Easing.out(Easing.cubic);
 
+const SLIDESHOW_INTERVAL = 4500; // ms between image transitions
+
 function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleSave }: SwipeCardProps) {
   const shouldLoadImage = isActive || isPreloaded;
+
+  // ── Image slideshow ──
+  const imageList = destination.imageUrls?.length ? destination.imageUrls : [destination.imageUrl];
+  const hasMultipleImages = imageList.length > 1;
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const slideshowTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Reset image index when destination or active state changes
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [destination.id]);
+
+  // Auto-cycle images when card is active
+  useEffect(() => {
+    if (isActive && hasMultipleImages) {
+      slideshowTimerRef.current = setInterval(() => {
+        setActiveImageIndex((prev) => (prev + 1) % imageList.length);
+      }, SLIDESHOW_INTERVAL);
+    }
+    return () => {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current);
+        slideshowTimerRef.current = null;
+      }
+    };
+  }, [isActive, hasMultipleImages, imageList.length]);
 
   // ── Double-tap detection (native) ──
   const lastTapRef = useRef(0);
@@ -181,7 +209,14 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   };
 
   const handleShare = () => {
-    shareDestination(destination.city, destination.country, destination.tagline);
+    shareDestination(
+      destination.city,
+      destination.country,
+      destination.tagline,
+      destination.id,
+      destination.livePrice ?? destination.flightPrice,
+      destination.currency,
+    );
   };
 
   // ── Web stagger CSS helper ──
@@ -252,24 +287,26 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           />
         )}
 
-        {/* Background Image */}
-        {shouldLoadImage && (
+        {/* Slideshow images — stack with crossfade */}
+        {shouldLoadImage && imageList.map((url, idx) => (
           <img
-            src={destination.imageUrl}
-            alt={destination.city}
+            key={url}
+            src={url}
+            alt={idx === 0 ? destination.city : ''}
             style={{
               position: 'absolute',
               top: 0, left: 0,
               width: '100%', height: '100%',
               objectFit: 'cover',
-              opacity: webImageLoaded ? 1 : 0,
-              transition: 'opacity 0.4s ease',
+              opacity: idx === activeImageIndex ? (idx === 0 ? (webImageLoaded ? 1 : 0) : 1) : 0,
+              transition: 'opacity 0.8s ease',
+              zIndex: idx === activeImageIndex ? 1 : 0,
             }}
-            loading={isActive ? 'eager' : 'lazy'}
+            loading={idx === 0 ? (isActive ? 'eager' : 'lazy') : 'lazy'}
             draggable={false}
-            onLoad={() => setWebImageLoaded(true)}
+            onLoad={idx === 0 ? () => setWebImageLoaded(true) : undefined}
           />
-        )}
+        ))}
 
         {/* Gradient */}
         <CardGradient />
@@ -322,6 +359,34 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             onShare={handleShare}
           />
         </div>
+
+        {/* Slideshow dots */}
+        {hasMultipleImages && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 56 + 36,
+              left: 20,
+              display: 'flex',
+              gap: 4,
+              zIndex: 10,
+              pointerEvents: 'none',
+            }}
+          >
+            {imageList.map((_, idx) => (
+              <div
+                key={idx}
+                style={{
+                  width: idx === activeImageIndex ? 16 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: idx === activeImageIndex ? '#fff' : 'rgba(255,255,255,0.4)',
+                  transition: 'all 0.3s ease',
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Content — bottom */}
         <div
@@ -437,16 +502,22 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
         onPress={handleNativeTap}
         style={{ flex: 1, position: 'relative' }}
       >
-        {shouldLoadImage && (
+        {shouldLoadImage && imageList.map((url, idx) => (
           <Image
-            source={{ uri: destination.imageUrl }}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+            key={url}
+            source={{ uri: url }}
+            style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              width: '100%', height: '100%',
+              opacity: idx === activeImageIndex ? 1 : 0,
+              zIndex: idx === activeImageIndex ? 1 : 0,
+            }}
             contentFit="cover"
-            transition={isActive ? 300 : 0}
-            priority={isActive ? 'high' : 'low'}
-            placeholder={destination.blurHash || undefined}
+            transition={idx === 0 ? (isActive ? 300 : 0) : 800}
+            priority={idx === 0 ? (isActive ? 'high' : 'low') : 'low'}
+            placeholder={idx === 0 ? (destination.blurHash || undefined) : undefined}
           />
-        )}
+        ))}
 
         <CardGradient />
 
@@ -481,6 +552,23 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
         <View style={{ position: 'absolute', top: 56, left: 20, zIndex: 10 }}>
           <CardFreshnessPill destination={destination} />
         </View>
+
+        {/* Slideshow dots */}
+        {hasMultipleImages && (
+          <View style={{ position: 'absolute', top: 56 + 36, left: 20, flexDirection: 'row', gap: 4, zIndex: 10 }}>
+            {imageList.map((_, idx) => (
+              <View
+                key={idx}
+                style={{
+                  width: idx === activeImageIndex ? 16 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: idx === activeImageIndex ? '#fff' : 'rgba(255,255,255,0.4)',
+                }}
+              />
+            ))}
+          </View>
+        )}
 
         {/* Bottom-right: Action buttons (TikTok layout) */}
         <Animated.View style={[{ position: 'absolute', bottom: layout.cardPaddingBottomNative + 60, right: 20, zIndex: 10 }, actionsAnimStyle]}>

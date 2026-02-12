@@ -108,18 +108,48 @@ export function SavedCard({ destination }: SavedCardProps) {
           >
             {HEART_FILLED_SM}
           </div>
+          {/* Price drop badge */}
+          {destination.priceDirection === 'down' && destination.previousPrice != null && (
+            <div style={{
+              position: 'absolute', top: 8, left: 8,
+              backgroundColor: 'rgba(34,197,94,0.25)',
+              borderRadius: radii.full,
+              padding: '3px 8px',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(34,197,94,0.3)',
+              zIndex: 5,
+            }}>
+              <span style={{ fontSize: 10, fontWeight: fontWeight.bold, color: colors.success }}>
+                ↓ {Math.round(((destination.previousPrice - destination.flightPrice) / destination.previousPrice) * 100)}%
+              </span>
+            </div>
+          )}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
             background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
             padding: `${spacing['8']}px ${spacing['4']}px ${spacing['4']}px ${spacing['4']}px`,
           }}>
+            {/* Vibe tags */}
+            {destination.vibeTags.length > 0 && (
+              <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+                {destination.vibeTags.slice(0, 2).map((tag) => (
+                  <span key={tag} style={{
+                    fontSize: 9, fontWeight: fontWeight.semibold, color: 'rgba(255,255,255,0.5)',
+                    textTransform: 'uppercase', letterSpacing: 1,
+                  }}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
             <div style={{ color: colors.card.textPrimary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>{destination.city}</div>
             <div style={{ color: colors.card.textSecondary, fontSize: fontSize.md, marginTop: 2 }}>{destination.country}</div>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginTop: spacing['1'],
             }}>
-              <span style={{ color: colors.card.priceTint, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
+              <span style={{ color: destination.priceDirection === 'down' ? colors.success : colors.card.priceTint, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
                 {formatFlightPrice(destination.flightPrice, destination.currency)}
               </span>
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: fontSize.sm }}>
@@ -157,14 +187,41 @@ export function SavedCard({ destination }: SavedCardProps) {
       >
         {HEART_FILLED_SM}
       </Pressable>
+      {/* Price drop badge */}
+      {destination.priceDirection === 'down' && destination.previousPrice != null && (
+        <View style={{
+          position: 'absolute', top: 8, left: 8,
+          backgroundColor: 'rgba(34,197,94,0.25)',
+          borderRadius: radii.full,
+          paddingVertical: 3, paddingHorizontal: 8,
+          borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)',
+          zIndex: 5,
+        }}>
+          <Text style={{ fontSize: 10, fontWeight: fontWeight.bold, color: colors.success }}>
+            ↓ {Math.round(((destination.previousPrice - destination.flightPrice) / destination.previousPrice) * 100)}%
+          </Text>
+        </View>
+      )}
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.75)']}
         style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing['3'], paddingTop: spacing['8'] }}
       >
+        {destination.vibeTags.length > 0 && (
+          <View style={{ flexDirection: 'row', gap: 4, marginBottom: 6 }}>
+            {destination.vibeTags.slice(0, 2).map((tag) => (
+              <Text key={tag} style={{
+                fontSize: 9, fontWeight: fontWeight.semibold, color: 'rgba(255,255,255,0.5)',
+                textTransform: 'uppercase', letterSpacing: 1,
+              }}>
+                {tag}
+              </Text>
+            ))}
+          </View>
+        )}
         <Text style={{ color: colors.card.textPrimary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>{destination.city}</Text>
         <Text style={{ color: colors.card.textSecondary, fontSize: fontSize.md, marginTop: 2 }}>{destination.country}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing['1'] }}>
-          <Text style={{ color: colors.card.priceTint, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
+          <Text style={{ color: destination.priceDirection === 'down' ? colors.success : colors.card.priceTint, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
             {formatFlightPrice(destination.flightPrice, destination.currency)}
           </Text>
           <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: fontSize.sm }}>

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Share, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useDestination } from '../../hooks/useSwipeFeed';
@@ -70,20 +70,19 @@ export default function DestinationDetail() {
     : '';
 
   const handleShare = async () => {
-    const text = `Check out ${destination.city}, ${destination.country} on SoGoJet! ${destination.tagline}`;
-    if (Platform.OS === 'web') {
-      if (navigator.share) {
-        try { await navigator.share({ title: destination.city, text }); } catch {}
-      } else {
-        await navigator.clipboard.writeText(text);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      }
-      return;
+    const { shareDestination } = await import('../../utils/share');
+    const shared = await shareDestination(
+      destination.city,
+      destination.country,
+      destination.tagline,
+      destination.id,
+      destination.livePrice ?? destination.flightPrice,
+      destination.currency,
+    );
+    if (shared && Platform.OS === 'web' && !(typeof navigator !== 'undefined' && navigator.share)) {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
     }
-    try {
-      await Share.share({ message: text });
-    } catch { /* cancelled */ }
   };
 
   // ─── Web ────────────────────────────────────────────────────────────
