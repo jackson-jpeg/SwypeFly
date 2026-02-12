@@ -43,12 +43,16 @@ async function fetchPage(
   cursor: string | null,
   sessionId: string,
   excludeIds: string[],
+  vibeFilter: string | null,
 ): Promise<DestinationFeedPage> {
   const params = new URLSearchParams({ origin });
   if (cursor) params.set('cursor', cursor);
   params.set('sessionId', sessionId);
   if (excludeIds.length > 0) {
     params.set('excludeIds', excludeIds.join(','));
+  }
+  if (vibeFilter) {
+    params.set('vibeFilter', vibeFilter);
   }
 
   const authHeaders = await getAuthHeaders();
@@ -63,11 +67,12 @@ export function useSwipeFeed() {
   const departureCode = useUIStore((s) => s.departureCode);
   const sessionId = useFeedStore((s) => s.sessionId);
   const viewedIds = useFeedStore((s) => s.viewedIds);
+  const vibeFilter = useFeedStore((s) => s.vibeFilter);
 
   return useInfiniteQuery({
     queryKey: ['feed', departureCode, sessionId],
     queryFn: ({ pageParam }) =>
-      fetchPage(departureCode, pageParam, sessionId, Array.from(viewedIds)),
+      fetchPage(departureCode, pageParam, sessionId, Array.from(viewedIds), vibeFilter),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });

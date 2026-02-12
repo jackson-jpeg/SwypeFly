@@ -8,6 +8,7 @@ import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
 import { mediumHaptic } from '../../utils/haptics';
 import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
+import { FeedFilterBar } from './FeedFilterBar';
 import { ErrorState } from '../common/ErrorState';
 import { colors } from '../../constants/theme';
 
@@ -19,6 +20,8 @@ export function SwipeFeed() {
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
   const markViewed = useFeedStore((s) => s.markViewed);
   const refreshFeed = useFeedStore((s) => s.refreshFeed);
+  const vibeFilter = useFeedStore((s) => s.vibeFilter);
+  const setVibeFilter = useFeedStore((s) => s.setVibeFilter);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const webScrollRef = useRef<HTMLDivElement>(null);
@@ -245,6 +248,16 @@ export function SwipeFeed() {
         }}
         onScroll={handleWebScroll}
       >
+        {/* Filter chips overlay */}
+        <FeedFilterBar
+          activeFilter={vibeFilter}
+          onFilterChange={(vibe) => {
+            setVibeFilter(vibe);
+            webScrollRef.current?.scrollTo({ top: 0 });
+            setActiveIndex(0);
+            activeIndexRef.current = 0;
+          }}
+        />
         {destinations.map((destination, index) => (
           <div
             key={destination.id}
@@ -340,29 +353,40 @@ export function SwipeFeed() {
 
   // Native: use ScrollView with paging
   return (
-    <ScrollView
-      ref={scrollRef}
-      pagingEnabled
-      showsVerticalScrollIndicator={false}
-      decelerationRate="fast"
-      snapToInterval={screenHeight}
-      snapToAlignment="start"
-      onMomentumScrollEnd={handleNativeScroll}
-    >
-      {destinations.map((destination, index) => (
-        <View key={destination.id} style={{ height: screenHeight }}>
-          <SwipeCard
-            destination={destination}
-            isActive={index === activeIndex}
-            isPreloaded={
-              index >= activeIndex - PRELOAD_BEHIND &&
-              index <= activeIndex + PRELOAD_AHEAD
-            }
-            isSaved={isSaved(destination.id)}
-            onToggleSave={() => handleToggleSave(destination.id)}
-          />
-        </View>
-      ))}
-    </ScrollView>
+    <View style={{ flex: 1 }}>
+      <FeedFilterBar
+        activeFilter={vibeFilter}
+        onFilterChange={(vibe) => {
+          setVibeFilter(vibe);
+          scrollRef.current?.scrollTo({ y: 0, animated: false });
+          setActiveIndex(0);
+          activeIndexRef.current = 0;
+        }}
+      />
+      <ScrollView
+        ref={scrollRef}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={screenHeight}
+        snapToAlignment="start"
+        onMomentumScrollEnd={handleNativeScroll}
+      >
+        {destinations.map((destination, index) => (
+          <View key={destination.id} style={{ height: screenHeight }}>
+            <SwipeCard
+              destination={destination}
+              isActive={index === activeIndex}
+              isPreloaded={
+                index >= activeIndex - PRELOAD_BEHIND &&
+                index <= activeIndex + PRELOAD_AHEAD
+              }
+              isSaved={isSaved(destination.id)}
+              onToggleSave={() => handleToggleSave(destination.id)}
+            />
+          </View>
+        ))}
+      </ScrollView>
+    </View>
   );
 }

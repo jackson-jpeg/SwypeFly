@@ -636,7 +636,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
-    const { origin, cursor: parsedCursor, sessionId, excludeIds } = v.data;
+    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter } = v.data;
     const cursor = parsedCursor ?? 0;
 
     const allDestinations = await getDestinationsWithPrices(origin);
@@ -674,10 +674,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Filter out already-seen destinations
-    const destinations = seenIds.size > 0
+    // Filter out already-seen destinations + apply vibe filter
+    let destinations = seenIds.size > 0
       ? allDestinations.filter((d) => !seenIds.has(d.id))
-      : allDestinations;
+      : [...allDestinations];
+
+    if (vibeFilter) {
+      const vibe = vibeFilter.toLowerCase();
+      destinations = destinations.filter((d) =>
+        d.vibe_tags.some((t) => t.toLowerCase() === vibe),
+      );
+    }
 
     let scored: ScoredDest[];
     if (authResult?.prefs) {

@@ -18,7 +18,11 @@ async function fetchDestination(id: string, origin: string): Promise<Destination
   return res.json();
 }
 
-export function SavedGrid() {
+interface SavedGridProps {
+  sortBy?: 'recent' | 'price' | 'rating';
+}
+
+export function SavedGrid({ sortBy = 'recent' }: SavedGridProps) {
   const savedIds = useSavedStore((s) => s.savedIds);
   const { data } = useSwipeFeed();
   const pages = data?.pages;
@@ -58,8 +62,21 @@ export function SavedGrid() {
       const dest = cached.get(id) ?? fetchedMap.get(id);
       if (dest) results.push(dest);
     });
+
+    // Apply sort
+    if (sortBy === 'price') {
+      results.sort((a, b) => {
+        const pa = a.livePrice ?? a.flightPrice;
+        const pb = b.livePrice ?? b.flightPrice;
+        return pa - pb;
+      });
+    } else if (sortBy === 'rating') {
+      results.sort((a, b) => b.rating - a.rating);
+    }
+    // 'recent' keeps the natural insertion order from savedIds (most recent last in Set → reversed)
+
     return results;
-  }, [savedIds, cached, missingIds, missingQueries]);
+  }, [savedIds, cached, missingIds, missingQueries, sortBy]);
 
   if (savedIds.size === 0) {
     return (
