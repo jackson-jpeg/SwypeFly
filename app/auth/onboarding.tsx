@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthContext } from '../../hooks/AuthContext';
 import { supabase } from '../../services/supabase';
+import { useUIStore } from '../../stores/uiStore';
 
 type TravelerType = 'beach' | 'city' | 'adventure' | 'culture';
 type BudgetLevel = 'budget' | 'comfortable' | 'luxury';
@@ -28,21 +29,46 @@ const BUDGET_OPTIONS: { level: BudgetLevel; label: string; desc: string; range: 
   { level: 'luxury', label: 'Luxury', desc: 'Go all out', range: '$1,200+' },
 ];
 
-const TOTAL_STEPS = 3;
+const DEPARTURE_OPTIONS = [
+  { city: 'Tampa', code: 'TPA' },
+  { city: 'Miami', code: 'MIA' },
+  { city: 'Orlando', code: 'MCO' },
+  { city: 'New York', code: 'JFK' },
+  { city: 'Los Angeles', code: 'LAX' },
+  { city: 'Chicago', code: 'ORD' },
+  { city: 'Dallas', code: 'DFW' },
+  { city: 'Atlanta', code: 'ATL' },
+  { city: 'Denver', code: 'DEN' },
+  { city: 'San Francisco', code: 'SFO' },
+  { city: 'Seattle', code: 'SEA' },
+  { city: 'Boston', code: 'BOS' },
+  { city: 'Houston', code: 'IAH' },
+  { city: 'Phoenix', code: 'PHX' },
+  { city: 'Washington DC', code: 'IAD' },
+  { city: 'Philadelphia', code: 'PHL' },
+  { city: 'Minneapolis', code: 'MSP' },
+  { city: 'Detroit', code: 'DTW' },
+  { city: 'Charlotte', code: 'CLT' },
+  { city: 'Nashville', code: 'BNA' },
+];
+
+const TOTAL_STEPS = 4;
 
 function WebOnboarding() {
   const { user } = useAuthContext();
-  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const setDeparture = useUIStore((s) => s.setDeparture);
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [travelerType, setTravelerType] = useState<TravelerType | null>(null);
   const [budgetLevel, setBudgetLevel] = useState<BudgetLevel | null>(null);
+  const [departureCity, setDepartureCity] = useState<{ city: string; code: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [slideDir, setSlideDir] = useState<'left' | 'right'>('left');
 
-  const goForward = (nextStep: 0 | 1 | 2) => {
+  const goForward = (nextStep: 0 | 1 | 2 | 3) => {
     setSlideDir('left');
     setStep(nextStep);
   };
-  const goBack = (nextStep: 0 | 1 | 2) => {
+  const goBack = (nextStep: 0 | 1 | 2 | 3) => {
     setSlideDir('right');
     setStep(nextStep);
   };
@@ -50,6 +76,9 @@ function WebOnboarding() {
   const handleFinish = async () => {
     if (!travelerType || !budgetLevel || !user) return;
     setSaving(true);
+    if (departureCity) {
+      setDeparture(departureCity.city, departureCity.code);
+    }
     await supabase.from('user_preferences').upsert({
       user_id: user.id,
       traveler_type: travelerType,
@@ -57,6 +86,8 @@ function WebOnboarding() {
       budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
       travel_style: travelerType,
       has_completed_onboarding: true,
+      departure_city: departureCity?.city || 'Tampa',
+      departure_code: departureCity?.code || 'TPA',
       ...(TYPE_TO_PREFS[travelerType] || {}),
     });
     setSaving(false);
@@ -290,15 +321,80 @@ function WebOnboarding() {
                   Back
                 </button>
                 <button
-                  onClick={handleFinish}
-                  disabled={!budgetLevel || saving}
+                  onClick={() => budgetLevel && goForward(3)}
+                  disabled={!budgetLevel}
                   style={{
                     flex: 2, padding: '14px 20px', borderRadius: 12,
                     border: 'none',
                     backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                     color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)',
                     fontSize: 15, fontWeight: 600,
-                    cursor: budgetLevel && !saving ? 'pointer' : 'default',
+                    cursor: budgetLevel ? 'pointer' : 'default',
+                  }}
+                >
+                  Continue
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ─── Step 3: Departure City ─── */}
+          {step === 3 && (
+            <>
+              <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
+                Where are you flying from?
+              </h2>
+              <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
+                We&apos;ll find the best deals from your airport
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%', maxHeight: 280, overflowY: 'auto' }}>
+                {DEPARTURE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.code}
+                    onClick={() => setDepartureCity(opt)}
+                    style={{
+                      padding: '14px 16px', borderRadius: 12,
+                      border: departureCity?.code === opt.code
+                        ? '2px solid #38BDF8'
+                        : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: departureCity?.code === opt.code
+                        ? 'rgba(56,189,248,0.12)'
+                        : 'rgba(255,255,255,0.04)',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{opt.city}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: 500 }}>{opt.code}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, width: '100%', marginTop: 24 }}>
+                <button
+                  onClick={() => goBack(2)}
+                  style={{
+                    flex: 1, padding: '14px 20px', borderRadius: 12,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    backgroundColor: 'transparent',
+                    color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleFinish}
+                  disabled={!departureCity || saving}
+                  style={{
+                    flex: 2, padding: '14px 20px', borderRadius: 12,
+                    border: 'none',
+                    backgroundColor: departureCity ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    color: departureCity ? '#fff' : 'rgba(255,255,255,0.3)',
+                    fontSize: 15, fontWeight: 600,
+                    cursor: departureCity && !saving ? 'pointer' : 'default',
                     opacity: saving ? 0.7 : 1,
                   }}
                 >
@@ -327,14 +423,19 @@ function WebOnboarding() {
 
 function NativeOnboarding() {
   const { user } = useAuthContext();
-  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const setDeparture = useUIStore((s) => s.setDeparture);
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [travelerType, setTravelerType] = useState<TravelerType | null>(null);
   const [budgetLevel, setBudgetLevel] = useState<BudgetLevel | null>(null);
+  const [departureCity, setDepartureCity] = useState<{ city: string; code: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const handleFinish = async () => {
     if (!travelerType || !budgetLevel || !user) return;
     setSaving(true);
+    if (departureCity) {
+      setDeparture(departureCity.city, departureCity.code);
+    }
     await supabase.from('user_preferences').upsert({
       user_id: user.id,
       traveler_type: travelerType,
@@ -342,6 +443,8 @@ function NativeOnboarding() {
       budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
       travel_style: travelerType,
       has_completed_onboarding: true,
+      departure_city: departureCity?.city || 'Tampa',
+      departure_code: departureCity?.code || 'TPA',
       ...(TYPE_TO_PREFS[travelerType] || {}),
     });
     setSaving(false);
@@ -489,11 +592,70 @@ function NativeOnboarding() {
               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
             </Pressable>
             <Pressable
-              onPress={handleFinish}
-              disabled={!budgetLevel || saving}
+              onPress={() => budgetLevel && setStep(3)}
+              disabled={!budgetLevel}
               style={{
                 flex: 2, paddingVertical: 14, borderRadius: 12,
                 backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
+                Continue
+              </Text>
+            </Pressable>
+          </View>
+        </>
+      )}
+
+      {/* ─── Step 3: Departure City ─── */}
+      {step === 3 && (
+        <>
+          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
+            Where are you flying from?
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
+            We'll find the best deals from your airport
+          </Text>
+
+          <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {DEPARTURE_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.code}
+                  onPress={() => setDepartureCity(opt)}
+                  style={{
+                    width: '48%', padding: 14, borderRadius: 12,
+                    borderWidth: departureCity?.code === opt.code ? 2 : 1,
+                    borderColor: departureCity?.code === opt.code ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    backgroundColor: departureCity?.code === opt.code ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
+                    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{opt.city}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: '500' }}>{opt.code}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+            <Pressable
+              onPress={() => setStep(2)}
+              style={{
+                flex: 1, paddingVertical: 14, borderRadius: 12,
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleFinish}
+              disabled={!departureCity || saving}
+              style={{
+                flex: 2, paddingVertical: 14, borderRadius: 12,
+                backgroundColor: departureCity ? '#38BDF8' : 'rgba(255,255,255,0.1)',
                 alignItems: 'center',
                 opacity: saving ? 0.7 : 1,
               }}
@@ -501,7 +663,7 @@ function NativeOnboarding() {
               {saving ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
+                <Text style={{ color: departureCity ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
                   Let's Go
                 </Text>
               )}

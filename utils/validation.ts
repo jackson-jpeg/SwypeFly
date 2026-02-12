@@ -21,6 +21,7 @@ export const feedQuerySchema = z.object({
   sessionId: z.string().max(64).optional(),
   excludeIds: z.string().max(5000).optional(),
   vibeFilter: z.string().max(50).optional(),
+  sortPreset: z.enum(['default', 'cheapest', 'trending', 'topRated']).optional(),
 });
 
 // ─── Swipe endpoint ──────────────────────────────────────────────────

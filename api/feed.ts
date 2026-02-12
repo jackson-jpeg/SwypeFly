@@ -637,7 +637,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
-    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter } = v.data;
+    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset } = v.data;
     const cursor = parsedCursor ?? 0;
 
     const allDestinations = await getDestinationsWithPrices(origin);
@@ -688,15 +688,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     let scored: ScoredDest[];
-    if (authResult?.prefs) {
+
+    // Sort presets bypass normal scoring with deterministic sorts
+    if (sortPreset === 'cheapest') {
+      scored = [...destinations].sort((a, b) => {
+        const pa = a.live_price ?? a.flight_price;
+        const pb = b.live_price ?? b.flight_price;
+        return pa - pb;
+      });
+    } else if (sortPreset === 'trending') {
+      scored = [...destinations].sort((a, b) =>
+        (b.popularity_score ?? 0) - (a.popularity_score ?? 0),
+      );
+    } else if (sortPreset === 'topRated') {
+      scored = [...destinations].sort((a, b) => b.rating - a.rating);
+    } else if (authResult?.prefs) {
       const personalized = scorePersonalizedFeed(destinations, authResult.prefs, rand);
       scored = composeFeed(personalized, destinations, rand);
+      // Soft shuffle: preserve approximate relevance but break exact determinism
+      scored = softShuffle(scored, rand, 5);
     } else {
       scored = scoreFeedGeneric(destinations, rand);
+      // Soft shuffle: preserve approximate relevance but break exact determinism
+      scored = softShuffle(scored, rand, 5);
     }
-
-    // Soft shuffle: preserve approximate relevance but break exact determinism
-    scored = softShuffle(scored, rand, 5);
 
     const page = scored.slice(cursor, cursor + PAGE_SIZE).map(toFrontend);
     const nextCursor = cursor + PAGE_SIZE < scored.length ? String(cursor + PAGE_SIZE) : null;

@@ -22,6 +22,8 @@ export function SwipeFeed() {
   const refreshFeed = useFeedStore((s) => s.refreshFeed);
   const vibeFilter = useFeedStore((s) => s.vibeFilter);
   const setVibeFilter = useFeedStore((s) => s.setVibeFilter);
+  const sortPreset = useFeedStore((s) => s.sortPreset);
+  const setSortPreset = useFeedStore((s) => s.setSortPreset);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const webScrollRef = useRef<HTMLDivElement>(null);
@@ -257,6 +259,13 @@ export function SwipeFeed() {
             setActiveIndex(0);
             activeIndexRef.current = 0;
           }}
+          activeSortPreset={sortPreset}
+          onSortPresetChange={(preset) => {
+            setSortPreset(preset);
+            webScrollRef.current?.scrollTo({ top: 0 });
+            setActiveIndex(0);
+            activeIndexRef.current = 0;
+          }}
         />
         {destinations.map((destination, index) => (
           <div
@@ -358,6 +367,13 @@ export function SwipeFeed() {
         activeFilter={vibeFilter}
         onFilterChange={(vibe) => {
           setVibeFilter(vibe);
+          scrollRef.current?.scrollTo({ y: 0, animated: false });
+          setActiveIndex(0);
+          activeIndexRef.current = 0;
+        }}
+        activeSortPreset={sortPreset}
+        onSortPresetChange={(preset) => {
+          setSortPreset(preset);
           scrollRef.current?.scrollTo({ y: 0, animated: false });
           setActiveIndex(0);
           activeIndexRef.current = 0;

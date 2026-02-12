@@ -195,6 +195,19 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
     opacity: webStaggerActive ? 1 : 0,
   });
 
+  // ── Tiny thumbnail URL for progressive loading ──
+  const thumbUrl = destination.imageUrl?.includes('unsplash.com')
+    ? destination.imageUrl.replace(/w=\d+/, 'w=32').replace(/q=\d+/, 'q=20')
+    : undefined;
+
+  // Track web image loaded state for crossfade
+  const [webImageLoaded, setWebImageLoaded] = useState(false);
+  const prevDestId = useRef(destination.id);
+  if (destination.id !== prevDestId.current) {
+    prevDestId.current = destination.id;
+    setWebImageLoaded(false);
+  }
+
   // ── Web ──
   if (Platform.OS === 'web') {
     return (
@@ -222,6 +235,23 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           }
         `}</style>
 
+        {/* Tiny blurred placeholder */}
+        {thumbUrl && !webImageLoaded && (
+          <img
+            src={thumbUrl}
+            alt=""
+            style={{
+              position: 'absolute',
+              top: 0, left: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover',
+              filter: 'blur(20px)',
+              transform: 'scale(1.1)',
+            }}
+            draggable={false}
+          />
+        )}
+
         {/* Background Image */}
         {shouldLoadImage && (
           <img
@@ -232,9 +262,12 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               top: 0, left: 0,
               width: '100%', height: '100%',
               objectFit: 'cover',
+              opacity: webImageLoaded ? 1 : 0,
+              transition: 'opacity 0.4s ease',
             }}
             loading={isActive ? 'eager' : 'lazy'}
             draggable={false}
+            onLoad={() => setWebImageLoaded(true)}
           />
         )}
 
