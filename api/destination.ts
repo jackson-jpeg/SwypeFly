@@ -30,8 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Destination not found' });
     }
 
-    // Fetch cached prices, hotel prices, and Unsplash images
-    let [{ data: price }, { data: hotelPrice }, { data: destImage }] = await Promise.all([
+    // Fetch cached prices, hotel prices, and ALL Unsplash images
+    let [{ data: price }, { data: hotelPrice }, { data: destImages }] = await Promise.all([
       supabase
         .from('cached_prices')
         .select('*')
@@ -47,9 +47,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('destination_images')
         .select('*')
         .eq('destination_id', id)
-        .eq('is_primary', true)
-        .maybeSingle(),
+        .order('is_primary', { ascending: false }),
     ]);
+
+    const destImage = destImages?.[0] ?? null;
 
     // On-demand refresh: if cached prices are stale (>24h) or missing, fetch fresh inline
     const STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -117,6 +118,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Transform to frontend shape
     const imageUrl = destImage?.url_regular || dest.image_url;
+
+    // Use Unsplash gallery images if available, fall back to Pexels seed data
+    const galleryUrls = destImages && destImages.length > 0
+      ? destImages.map((img: { url_regular: string }) => img.url_regular)
+      : dest.image_urls;
+
     const result = {
       id: dest.id,
       iataCode: dest.iata_code,
@@ -125,7 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tagline: dest.tagline,
       description: dest.description,
       imageUrl,
-      imageUrls: dest.image_urls,
+      imageUrls: galleryUrls,
       flightPrice: price?.price ?? dest.flight_price,
       hotelPricePerNight: hotelPrice?.price_per_night ?? dest.hotel_price_per_night,
       currency: dest.currency,

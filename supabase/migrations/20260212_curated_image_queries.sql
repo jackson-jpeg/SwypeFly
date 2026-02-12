@@ -1,0 +1,54 @@
+-- Curated Unsplash search queries for each destination.
+-- These replace the generic "{city} {country} travel" default with
+-- landmark-specific queries that return accurate, iconic photos.
+
+UPDATE destinations SET unsplash_query = 'Bali temple rice terraces tropical' WHERE id = '1';
+UPDATE destinations SET unsplash_query = 'Santorini blue domes caldera sunset' WHERE id = '2';
+UPDATE destinations SET unsplash_query = 'Tokyo skyline shibuya crossing neon' WHERE id = '3';
+UPDATE destinations SET unsplash_query = 'Machu Picchu ruins Andes mountains' WHERE id = '4';
+UPDATE destinations SET unsplash_query = 'Marrakech medina colorful souks' WHERE id = '5';
+UPDATE destinations SET unsplash_query = 'Reykjavik Iceland northern lights waterfall' WHERE id = '6';
+UPDATE destinations SET unsplash_query = 'Amalfi Coast Italy colorful cliffside village' WHERE id = '7';
+UPDATE destinations SET unsplash_query = 'Cape Town Table Mountain coastal city' WHERE id = '8';
+UPDATE destinations SET unsplash_query = 'Kyoto bamboo grove temple pagoda' WHERE id = '9';
+UPDATE destinations SET unsplash_query = 'Dubrovnik Croatia old town red rooftops' WHERE id = '10';
+UPDATE destinations SET unsplash_query = 'Maldives overwater bungalow turquoise ocean' WHERE id = '11';
+UPDATE destinations SET unsplash_query = 'Barcelona Sagrada Familia architecture colorful' WHERE id = '12';
+UPDATE destinations SET unsplash_query = 'Banff Canada turquoise lake mountains' WHERE id = '13';
+UPDATE destinations SET unsplash_query = 'Lisbon Portugal colorful tram hillside' WHERE id = '14';
+UPDATE destinations SET unsplash_query = 'Queenstown New Zealand mountains lake adventure' WHERE id = '15';
+UPDATE destinations SET unsplash_query = 'Dubai skyline Burj Khalifa desert modern' WHERE id = '16';
+UPDATE destinations SET unsplash_query = 'Patagonia Argentina glacier mountains landscape' WHERE id = '17';
+UPDATE destinations SET unsplash_query = 'Chiang Mai Thailand golden temple mountains' WHERE id = '18';
+UPDATE destinations SET unsplash_query = 'Swiss Alps Matterhorn mountain village snow' WHERE id = '19';
+UPDATE destinations SET unsplash_query = 'Havana Cuba colorful vintage cars street' WHERE id = '20';
+UPDATE destinations SET unsplash_query = 'Cancun Mexico turquoise caribbean beach resort' WHERE id = '21';
+UPDATE destinations SET unsplash_query = 'Punta Cana Dominican Republic palm beach tropical' WHERE id = '22';
+UPDATE destinations SET unsplash_query = 'Montego Bay Jamaica tropical beach reggae' WHERE id = '23';
+UPDATE destinations SET unsplash_query = 'San Juan Puerto Rico colorful colonial street' WHERE id = '24';
+UPDATE destinations SET unsplash_query = 'Aruba caribbean beach turquoise divi tree' WHERE id = '25';
+UPDATE destinations SET unsplash_query = 'Nassau Bahamas tropical island crystal water' WHERE id = '26';
+UPDATE destinations SET unsplash_query = 'Cozumel Mexico coral reef underwater turquoise' WHERE id = '27';
+UPDATE destinations SET unsplash_query = 'St Lucia Pitons tropical volcanic island' WHERE id = '28';
+UPDATE destinations SET unsplash_query = 'Costa Rica rainforest wildlife jungle waterfall' WHERE id = '29';
+UPDATE destinations SET unsplash_query = 'Bogota Colombia street art mountains cityscape' WHERE id = '30';
+UPDATE destinations SET unsplash_query = 'Medellin Colombia valley mountains cityscape flowers' WHERE id = '31';
+UPDATE destinations SET unsplash_query = 'Lima Peru historic plaza coastal desert city' WHERE id = '32';
+UPDATE destinations SET unsplash_query = 'Cartagena Colombia colorful colonial walled city' WHERE id = '33';
+UPDATE destinations SET unsplash_query = 'Panama City skyline modern canal tropical' WHERE id = '34';
+UPDATE destinations SET unsplash_query = 'London Big Ben Tower Bridge Thames' WHERE id = '35';
+UPDATE destinations SET unsplash_query = 'Paris Eiffel Tower Seine River cityscape' WHERE id = '36';
+UPDATE destinations SET unsplash_query = 'Amsterdam canals bicycles colorful houses bridge' WHERE id = '37';
+UPDATE destinations SET unsplash_query = 'Rome Colosseum ancient ruins historic city' WHERE id = '38';
+UPDATE destinations SET unsplash_query = 'Dublin Ireland Temple Bar colorful pub street' WHERE id = '39';
+UPDATE destinations SET unsplash_query = 'Prague Czech Republic old town bridge castle' WHERE id = '40';
+UPDATE destinations SET unsplash_query = 'Copenhagen Denmark Nyhavn colorful harbor boats' WHERE id = '41';
+UPDATE destinations SET unsplash_query = 'Berlin Germany Brandenburg Gate street art' WHERE id = '42';
+UPDATE destinations SET unsplash_query = 'Bangkok Thailand grand palace temple golden' WHERE id = '43';
+UPDATE destinations SET unsplash_query = 'Singapore Marina Bay skyline Gardens by the Bay' WHERE id = '44';
+UPDATE destinations SET unsplash_query = 'Seoul South Korea Gyeongbokgung palace neon' WHERE id = '45';
+UPDATE destinations SET unsplash_query = 'Hanoi Vietnam old quarter street food lantern' WHERE id = '46';
+UPDATE destinations SET unsplash_query = 'Honolulu Hawaii Waikiki beach Diamond Head' WHERE id = '47';
+UPDATE destinations SET unsplash_query = 'New Orleans French Quarter jazz Bourbon Street' WHERE id = '48';
+UPDATE destinations SET unsplash_query = 'Nashville Tennessee music Broadway neon downtown' WHERE id = '49';
+UPDATE destinations SET unsplash_query = 'New York City Manhattan skyline Brooklyn Bridge' WHERE id = '50';

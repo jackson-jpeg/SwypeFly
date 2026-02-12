@@ -28,8 +28,9 @@ export async function searchDestinationImages(
     const params = new URLSearchParams({
       query,
       per_page: String(count),
-      orientation: 'portrait',
+      orientation: 'landscape',
       content_filter: 'high',
+      order_by: 'relevant',
     });
 
     const res = await fetch(`${BASE_URL}/search/photos?${params}`, {

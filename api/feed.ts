@@ -505,18 +505,14 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     }
   }
 
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-
   const merged: ScoredDest[] = destinations.map((d) => {
     const lp = priceMap.get(d.iata_code);
     const hp = hotelPriceMap.get(d.iata_code);
     const destImages = imageMap.get(d.id) || [];
 
-    // Image rotation: pick by dayOfYear % count
-    let primaryImage: typeof destImages[0] | undefined;
-    if (destImages.length > 0) {
-      primaryImage = destImages[dayOfYear % destImages.length];
-    }
+    // Always use the primary (is_primary=true) image — it's the most relevant search result.
+    // destImages is ordered by is_primary DESC, so index 0 is the primary.
+    const primaryImage = destImages.length > 0 ? destImages[0] : undefined;
 
     return {
       ...d,
@@ -587,6 +583,11 @@ function toFrontend(d: ScoredDest) {
   // Use Unsplash URL with Pexels fallback
   const imageUrl = d.unsplash_image_url || d.image_url;
 
+  // Use Unsplash gallery images if available, fall back to Pexels seed data
+  const galleryUrls = d.unsplash_images && d.unsplash_images.length > 0
+    ? d.unsplash_images.map((img) => img.url_regular)
+    : d.image_urls;
+
   return {
     id: d.id,
     iataCode: d.iata_code,
@@ -595,7 +596,7 @@ function toFrontend(d: ScoredDest) {
     tagline: d.tagline,
     description: d.description,
     imageUrl,
-    imageUrls: d.image_urls,
+    imageUrls: galleryUrls,
     flightPrice: d.live_price ?? d.flight_price,
     hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
     currency: d.currency,

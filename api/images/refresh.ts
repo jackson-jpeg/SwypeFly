@@ -9,7 +9,7 @@ const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-const BATCH_SIZE = 8;           // destinations per run
+const DEFAULT_BATCH_SIZE = 8;   // destinations per run
 const IMAGES_PER_DEST = 5;
 const TIME_BUDGET_MS = 45_000;  // stay under 60s Vercel limit
 
@@ -60,7 +60,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return new Date(tsA).getTime() - new Date(tsB).getTime();
     });
 
-    const batch = sorted.slice(0, BATCH_SIZE);
+    // force=true processes all destinations (useful for initial seed / re-fetch)
+    const forceAll = req.query.force === 'true';
+    const batchSize = forceAll ? sorted.length : DEFAULT_BATCH_SIZE;
+    const batch = sorted.slice(0, batchSize);
     const startTime = Date.now();
     const results: { id: string; city: string; images: number }[] = [];
 
