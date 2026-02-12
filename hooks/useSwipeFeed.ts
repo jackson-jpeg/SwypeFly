@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useUIStore } from '../stores/uiStore';
+import { useFeedStore } from '../stores/feedStore';
 import { supabase } from '../services/supabase';
 import { captureException } from '../utils/sentry';
 import type { Destination, DestinationFeedPage } from '../types/destination';
@@ -37,9 +38,18 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
 // ─── Feed ────────────────────────────────────────────────────────────
 
-async function fetchPage(origin: string, cursor: string | null): Promise<DestinationFeedPage> {
+async function fetchPage(
+  origin: string,
+  cursor: string | null,
+  sessionId: string,
+  excludeIds: string[],
+): Promise<DestinationFeedPage> {
   const params = new URLSearchParams({ origin });
   if (cursor) params.set('cursor', cursor);
+  params.set('sessionId', sessionId);
+  if (excludeIds.length > 0) {
+    params.set('excludeIds', excludeIds.join(','));
+  }
 
   const authHeaders = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/feed?${params}`, {
@@ -51,10 +61,13 @@ async function fetchPage(origin: string, cursor: string | null): Promise<Destina
 
 export function useSwipeFeed() {
   const departureCode = useUIStore((s) => s.departureCode);
+  const sessionId = useFeedStore((s) => s.sessionId);
+  const viewedIds = useFeedStore((s) => s.viewedIds);
 
   return useInfiniteQuery({
-    queryKey: ['feed', departureCode],
-    queryFn: ({ pageParam }) => fetchPage(departureCode, pageParam),
+    queryKey: ['feed', departureCode, sessionId],
+    queryFn: ({ pageParam }) =>
+      fetchPage(departureCode, pageParam, sessionId, Array.from(viewedIds)),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });

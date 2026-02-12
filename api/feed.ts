@@ -7,7 +7,7 @@ const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 // ─── Seeded PRNG (consistent within a day, fresh next day) ──────────
 
@@ -143,7 +143,7 @@ interface UserPrefs {
 
 // ─── Generic scoring (for anonymous users) ──────────────────────────
 
-function scoreFeedGeneric(destinations: ScoredDest[]): ScoredDest[] {
+function scoreFeedGeneric(destinations: ScoredDest[], rand: () => number = Math.random): ScoredDest[] {
   if (destinations.length <= 1) return destinations;
 
   const remaining = [...destinations];
@@ -190,7 +190,8 @@ function scoreFeedGeneric(destinations: ScoredDest[]): ScoredDest[] {
       }
       const ratingScore = (d.rating - 4.0) / 1.0;
 
-      const score = priceScore * 0.3 + ratingScore * 0.2 - regionPenalty * 0.35 - vibePenalty * 0.15;
+      const jitter = rand() * 0.15;
+      const score = priceScore * 0.25 + ratingScore * 0.2 - regionPenalty * 0.3 - vibePenalty * 0.15 + jitter;
 
       if (score > bestScore) {
         bestScore = score;
@@ -276,20 +277,20 @@ function scorePersonalizedFeed(destinations: ScoredDest[], prefs: UserPrefs, ran
     const prefMatch = cosineSimilarity(userVec, destVec);
     // Seasonality (15%)
     const seasonal = seasonalityScore(d.best_months || []);
-    // Popularity (10%)
+    // Popularity (5%)
     const popularity = Math.min((d.popularity_score ?? 0) / 100, 1);
-    // Freshness (10%)
+    // Freshness (5%)
     const freshness = freshnessScore(d.price_fetched_at);
-    // Exploration Bonus (5%)
-    const exploration = rand() * 0.5 + 0.5; // 0.5 to 1.0
+    // Exploration Bonus (15%) — full range for more variance
+    const exploration = rand(); // 0.0 to 1.0
 
     const rawScore =
       priceFit * 0.35 +
       prefMatch * 0.25 +
       seasonal * 0.15 +
-      popularity * 0.10 +
-      freshness * 0.10 +
-      exploration * 0.05;
+      popularity * 0.05 +
+      freshness * 0.05 +
+      exploration * 0.15;
 
     return { dest: d, rawScore };
   });
@@ -422,6 +423,19 @@ function composeFeed(
   return result;
 }
 
+// ─── Post-score soft shuffle ────────────────────────────────────────
+
+function softShuffle<T>(items: T[], rand: () => number, windowSize = 5): T[] {
+  const result = [...items];
+  for (let i = 0; i < result.length; i++) {
+    const minJ = Math.max(0, i - windowSize);
+    const maxJ = Math.min(result.length - 1, i + windowSize);
+    const j = minJ + Math.floor(rand() * (maxJ - minJ + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 // ─── In-memory cache (per origin, 10-min TTL) ───────────────────────
 
 const destCache = new Map<string, { data: ScoredDest[]; ts: number }>();
@@ -532,7 +546,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
 
 // ─── Auth helper ────────────────────────────────────────────────────
 
-async function getUserPrefs(authHeader: string | undefined): Promise<UserPrefs | null> {
+async function getUserPrefsAndId(authHeader: string | undefined): Promise<{ prefs: UserPrefs; userId: string } | null> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
 
   const token = authHeader.replace('Bearer ', '');
@@ -550,14 +564,17 @@ async function getUserPrefs(authHeader: string | undefined): Promise<UserPrefs |
     if (!prefs) return null;
 
     return {
-      budget_numeric: prefs.budget_numeric ?? 2,
-      pref_beach: prefs.pref_beach ?? 0.5,
-      pref_city: prefs.pref_city ?? 0.5,
-      pref_adventure: prefs.pref_adventure ?? 0.5,
-      pref_culture: prefs.pref_culture ?? 0.5,
-      pref_nightlife: prefs.pref_nightlife ?? 0.5,
-      pref_nature: prefs.pref_nature ?? 0.5,
-      pref_food: prefs.pref_food ?? 0.5,
+      userId: user.id,
+      prefs: {
+        budget_numeric: prefs.budget_numeric ?? 2,
+        pref_beach: prefs.pref_beach ?? 0.5,
+        pref_city: prefs.pref_city ?? 0.5,
+        pref_adventure: prefs.pref_adventure ?? 0.5,
+        pref_culture: prefs.pref_culture ?? 0.5,
+        pref_nightlife: prefs.pref_nightlife ?? 0.5,
+        pref_nature: prefs.pref_nature ?? 0.5,
+        pref_food: prefs.pref_food ?? 0.5,
+      },
     };
   } catch {
     return null;
@@ -619,32 +636,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
-    const { origin, cursor: parsedCursor } = v.data;
+    const { origin, cursor: parsedCursor, sessionId, excludeIds } = v.data;
     const cursor = parsedCursor ?? 0;
 
-    const destinations = await getDestinationsWithPrices(origin);
+    const allDestinations = await getDestinationsWithPrices(origin);
 
-    // Seeded PRNG: consistent order within a day, fresh next day
-    const dateStr = new Date().toISOString().split('T')[0];
-    const rand = seededRandom(`${origin}:${dateStr}`);
+    // Session-based PRNG: each session gets a unique feed order
+    const seed = sessionId
+      ? `${origin}:${sessionId}`
+      : `${origin}:${Date.now()}-${Math.random()}`;
+    const rand = seededRandom(seed);
 
-    // Check for auth -> personalized vs generic scoring
-    const userPrefs = await getUserPrefs(req.headers.authorization);
+    // Check for auth -> personalized vs generic scoring + get userId for seen-filtering
+    const authResult = await getUserPrefsAndId(req.headers.authorization);
+
+    // Build set of already-seen destination IDs
+    const seenIds = new Set<string>();
+
+    // Merge client-provided excludeIds
+    if (excludeIds) {
+      for (const id of excludeIds.split(',')) {
+        const trimmed = id.trim();
+        if (trimmed) seenIds.add(trimmed);
+      }
+    }
+
+    // For authenticated users, also exclude from swipe_history
+    if (authResult?.userId) {
+      const { data: history } = await supabase
+        .from('swipe_history')
+        .select('destination_id')
+        .eq('user_id', authResult.userId);
+      if (history) {
+        for (const row of history) {
+          seenIds.add(row.destination_id);
+        }
+      }
+    }
+
+    // Filter out already-seen destinations
+    const destinations = seenIds.size > 0
+      ? allDestinations.filter((d) => !seenIds.has(d.id))
+      : allDestinations;
 
     let scored: ScoredDest[];
-    if (userPrefs) {
-      const personalized = scorePersonalizedFeed(destinations, userPrefs, rand);
+    if (authResult?.prefs) {
+      const personalized = scorePersonalizedFeed(destinations, authResult.prefs, rand);
       scored = composeFeed(personalized, destinations, rand);
     } else {
-      scored = scoreFeedGeneric(destinations);
+      scored = scoreFeedGeneric(destinations, rand);
     }
+
+    // Soft shuffle: preserve approximate relevance but break exact determinism
+    scored = softShuffle(scored, rand, 5);
 
     const page = scored.slice(cursor, cursor + PAGE_SIZE).map(toFrontend);
     const nextCursor = cursor + PAGE_SIZE < scored.length ? String(cursor + PAGE_SIZE) : null;
 
-    // Shorter cache for personalized feeds
-    const cacheTime = userPrefs ? 60 : 300;
-    res.setHeader('Cache-Control', `s-maxage=${cacheTime}, stale-while-revalidate=${cacheTime * 2}`);
+    // Shorter cache for personalized/session feeds — session-based feeds are unique per user
+    const cacheTime = authResult || sessionId ? 0 : 300;
+    res.setHeader('Cache-Control', cacheTime > 0
+      ? `s-maxage=${cacheTime}, stale-while-revalidate=${cacheTime * 2}`
+      : 'no-store');
     return res.status(200).json({ destinations: page, nextCursor });
   } catch (err) {
     logApiError('api/feed', err);

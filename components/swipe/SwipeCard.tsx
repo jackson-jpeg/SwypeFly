@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
   withTiming,
   withSequence,
+  withDelay,
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
@@ -30,6 +31,10 @@ interface SwipeCardProps {
 
 const DOUBLE_TAP_DELAY = 300;
 
+// Stagger animation config
+const STAGGER_DURATION = 350;
+const STAGGER_EASE = Easing.out(Easing.cubic);
+
 function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleSave }: SwipeCardProps) {
   const shouldLoadImage = isActive || isPreloaded;
 
@@ -44,16 +49,97 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const cardScale = useSharedValue(isActive ? 1 : 0.97);
   const prevIsActive = useRef(isActive);
 
+  // ── Staggered content entrance animations (native) ──
+  const dealY = useSharedValue(isActive ? 0 : 20);
+  const dealOpacity = useSharedValue(isActive ? 1 : 0);
+  const tagsY = useSharedValue(isActive ? 0 : 15);
+  const tagsOpacity = useSharedValue(isActive ? 1 : 0);
+  const cityY = useSharedValue(isActive ? 0 : 20);
+  const cityOpacity = useSharedValue(isActive ? 1 : 0);
+  const metaY = useSharedValue(isActive ? 0 : 15);
+  const metaOpacity = useSharedValue(isActive ? 1 : 0);
+  const actionsX = useSharedValue(isActive ? 0 : 20);
+  const actionsOpacity = useSharedValue(isActive ? 1 : 0);
+
+  // ── Web stagger state ──
+  const [webStaggerActive, setWebStaggerActive] = useState(isActive);
+  const webPrevIsActive = useRef(isActive);
+
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      if (isActive && !webPrevIsActive.current) {
+        // Reset then trigger stagger
+        setWebStaggerActive(false);
+        requestAnimationFrame(() => {
+          setWebStaggerActive(true);
+        });
+      } else if (isActive) {
+        setWebStaggerActive(true);
+      }
+      webPrevIsActive.current = isActive;
+      return;
+    }
+
     if (isActive && !prevIsActive.current) {
       cardScale.value = 0.97;
       cardScale.value = withSpring(1, { damping: 20, stiffness: 300, mass: 0.8 });
+
+      // Stagger content entrance
+      dealY.value = 20;
+      dealOpacity.value = 0;
+      dealY.value = withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE });
+      dealOpacity.value = withTiming(1, { duration: STAGGER_DURATION, easing: STAGGER_EASE });
+
+      tagsY.value = 15;
+      tagsOpacity.value = 0;
+      tagsY.value = withDelay(50, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
+      tagsOpacity.value = withDelay(50, withTiming(1, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
+
+      cityY.value = 20;
+      cityOpacity.value = 0;
+      cityY.value = withDelay(100, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
+      cityOpacity.value = withDelay(100, withTiming(1, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
+
+      metaY.value = 15;
+      metaOpacity.value = 0;
+      metaY.value = withDelay(150, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
+      metaOpacity.value = withDelay(150, withTiming(1, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
+
+      actionsX.value = 20;
+      actionsOpacity.value = 0;
+      actionsX.value = withDelay(100, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
+      actionsOpacity.value = withDelay(100, withTiming(1, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
     }
     prevIsActive.current = isActive;
-  }, [isActive, cardScale]);
+  }, [isActive, cardScale, dealY, dealOpacity, tagsY, tagsOpacity, cityY, cityOpacity, metaY, metaOpacity, actionsX, actionsOpacity]);
 
   const cardAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: cardScale.value }],
+  }));
+
+  const dealAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: dealY.value }],
+    opacity: dealOpacity.value,
+  }));
+
+  const tagsAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: tagsY.value }],
+    opacity: tagsOpacity.value,
+  }));
+
+  const cityAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: cityY.value }],
+    opacity: cityOpacity.value,
+  }));
+
+  const metaAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: metaY.value }],
+    opacity: metaOpacity.value,
+  }));
+
+  const actionsAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: actionsX.value }],
+    opacity: actionsOpacity.value,
   }));
 
   // ── Heart burst (web state) ──
@@ -98,7 +184,16 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
     shareDestination(destination.city, destination.country, destination.tagline);
   };
 
-  const attribution = destination.photographerAttribution;
+  // ── Web stagger CSS helper ──
+  const webStagger = (delayMs: number, translatePx: number, direction: 'Y' | 'X' = 'Y') => ({
+    transition: `transform ${STAGGER_DURATION}ms cubic-bezier(0.33, 1, 0.68, 1) ${delayMs}ms, opacity ${STAGGER_DURATION}ms cubic-bezier(0.33, 1, 0.68, 1) ${delayMs}ms`,
+    transform: webStaggerActive
+      ? 'translate(0, 0)'
+      : direction === 'Y'
+        ? `translateY(${translatePx}px)`
+        : `translateX(${translatePx}px)`,
+    opacity: webStaggerActive ? 1 : 0,
+  });
 
   // ── Web ──
   if (Platform.OS === 'web') {
@@ -168,15 +263,23 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </div>
         )}
 
-        {/* Top row: Freshness pill (left) + Actions (right) */}
+        {/* Top-left: Freshness pill */}
         <div
           style={{ position: 'absolute', top: 56, left: 20, zIndex: 10 }}
           onClick={(e) => e.stopPropagation()}
         >
           <CardFreshnessPill destination={destination} />
         </div>
+
+        {/* Bottom-right: Action buttons (TikTok layout) */}
         <div
-          style={{ position: 'absolute', top: 56, right: 20, zIndex: 10 }}
+          style={{
+            position: 'absolute',
+            bottom: layout.cardPaddingBottom + 60,
+            right: 20,
+            zIndex: 10,
+            ...webStagger(100, 20, 'X'),
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           <CardActions
@@ -191,17 +294,17 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
         <div
           style={{
             position: 'absolute',
-            bottom: 0, left: 0, right: 0,
+            bottom: 0, left: 0, right: 80,
             padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom}px ${layout.cardPaddingHorizontal}px`,
           }}
         >
           {/* Deal Badge */}
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 16, ...webStagger(0, 20) }}>
             <CardDealBadge destination={destination} />
           </div>
 
           {/* Tags — tiny, text-only */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, ...webStagger(50, 15) }}>
             {destination.vibeTags.slice(0, 2).map((tag, i) => (
               <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {i > 0 && (
@@ -227,18 +330,38 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             style={{
               margin: 0,
               color: '#fff',
-              fontSize: 36,
+              fontSize: 42,
               fontWeight: 800,
               letterSpacing: -0.5,
               lineHeight: 1,
-              textShadow: '0 2px 12px rgba(0,0,0,0.5)',
+              textShadow: '0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)',
+              ...webStagger(100, 20),
             }}
           >
             {destination.city}
           </h1>
 
+          {/* Tagline */}
+          {destination.tagline && (
+            <p style={{
+              margin: '6px 0 0 0',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 14,
+              lineHeight: 1.3,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              ...webStagger(120, 12),
+            }}>
+              {destination.tagline}
+            </p>
+          )}
+
           {/* Country · Duration · Rating */}
-          <p style={{ margin: '10px 0 0 0', fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
+          <p style={{
+            margin: '10px 0 0 0', fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center',
+            ...webStagger(150, 15),
+          }}>
             <span style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 400 }}>
               {destination.country}
             </span>
@@ -251,13 +374,6 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               {destination.rating}★
             </span>
           </p>
-
-          {/* Photographer attribution */}
-          {attribution && (
-            <p style={{ margin: '10px 0 0 0', fontSize: 9, color: 'rgba(255,255,255,0.3)', textAlign: 'right' as const }}>
-              📷 by {attribution.name}
-            </p>
-          )}
         </div>
       </div>
     );
@@ -328,46 +444,69 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </View>
         </Animated.View>
 
-        {/* Top row: Freshness pill (left) + Actions (right) */}
+        {/* Top-left: Freshness pill */}
         <View style={{ position: 'absolute', top: 56, left: 20, zIndex: 10 }}>
           <CardFreshnessPill destination={destination} />
         </View>
-        <View style={{ position: 'absolute', top: 56, right: 20, zIndex: 10 }}>
+
+        {/* Bottom-right: Action buttons (TikTok layout) */}
+        <Animated.View style={[{ position: 'absolute', bottom: layout.cardPaddingBottomNative + 60, right: 20, zIndex: 10 }, actionsAnimStyle]}>
           <CardActions
             isSaved={isSaved}
             onToggleSave={onToggleSave}
             onInfo={handleInfo}
             onShare={handleShare}
           />
-        </View>
+        </Animated.View>
 
-        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: layout.cardPaddingHorizontal, paddingBottom: layout.cardPaddingBottomNative }}>
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 80, paddingHorizontal: layout.cardPaddingHorizontal, paddingBottom: layout.cardPaddingBottomNative }}>
           {/* Deal Badge */}
-          <View style={{ marginBottom: 16 }}>
+          <Animated.View style={[{ marginBottom: 16 }, dealAnimStyle]}>
             <CardDealBadge destination={destination} />
-          </View>
+          </Animated.View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }, tagsAnimStyle]}>
             {destination.vibeTags.slice(0, 2).map((tag, i) => (
               <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {i > 0 && <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9 }}>·</Text>}
                 <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 2 }}>{tag}</Text>
               </View>
             ))}
-          </View>
-          <Text style={{ color: '#fff', fontSize: 36, fontWeight: '800', letterSpacing: -0.5 }}>{destination.city}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 }}>
+          </Animated.View>
+
+          <Animated.View style={cityAnimStyle}>
+            <Text style={{
+              color: '#fff',
+              fontSize: 38,
+              fontWeight: '800',
+              letterSpacing: -0.5,
+              textShadowColor: 'rgba(0,0,0,0.6)',
+              textShadowOffset: { width: 0, height: 2 },
+              textShadowRadius: 16,
+            }}>
+              {destination.city}
+            </Text>
+          </Animated.View>
+
+          {/* Tagline */}
+          {destination.tagline ? (
+            <Animated.View style={[{ marginTop: 4 }, cityAnimStyle]}>
+              <Text
+                numberOfLines={1}
+                style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}
+              >
+                {destination.tagline}
+              </Text>
+            </Animated.View>
+          ) : null}
+
+          <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 }, metaAnimStyle]}>
             <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 15 }}>{destination.country}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 15 }}>·</Text>
             <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>{destination.flightDuration}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>·</Text>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '500' }}>{destination.rating}★</Text>
-          </View>
-          {attribution && (
-            <Text style={{ marginTop: 10, fontSize: 9, color: 'rgba(255,255,255,0.3)', textAlign: 'right' }}>
-              📷 by {attribution.name}
-            </Text>
-          )}
+          </Animated.View>
         </View>
       </Pressable>
     </Animated.View>

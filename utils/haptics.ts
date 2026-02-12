@@ -31,6 +31,16 @@ export async function selectionHaptic(): Promise<void> {
   }
 }
 
+export async function heavyHaptic(): Promise<void> {
+  try {
+    if (useUIStore.getState().hapticsEnabled) {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
+  } catch {
+    // Haptics not available
+  }
+}
+
 export async function successHaptic(): Promise<void> {
   try {
     if (useUIStore.getState().hapticsEnabled) {

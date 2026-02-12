@@ -6,7 +6,7 @@ import { SkeletonCard } from './SkeletonCard';
 import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
-import { selectionHaptic } from '../../utils/haptics';
+import { mediumHaptic } from '../../utils/haptics';
 import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
 import { ErrorState } from '../common/ErrorState';
 import { colors } from '../../constants/theme';
@@ -18,6 +18,7 @@ export function SwipeFeed() {
   const { toggle, isSaved } = useSaveDestination();
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
   const markViewed = useFeedStore((s) => s.markViewed);
+  const refreshFeed = useFeedStore((s) => s.refreshFeed);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const webScrollRef = useRef<HTMLDivElement>(null);
@@ -153,7 +154,7 @@ export function SwipeFeed() {
         if (index < destinations.length) {
           markViewed(destinations[index].id);
         }
-        selectionHaptic();
+        mediumHaptic();
 
         if (showHint && index > 0) {
           setShowHint(false);
@@ -187,7 +188,7 @@ export function SwipeFeed() {
         setActiveIndex(index);
         setCurrentIndex(index);
         markViewed(destinations[index].id);
-        selectionHaptic();
+        mediumHaptic();
 
         if (index >= destinations.length - 3 && hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
@@ -296,12 +297,26 @@ export function SwipeFeed() {
               <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.5, maxWidth: 300 }}>
                 You've swiped through all available destinations. Try changing your departure city or check your saved list.
               </p>
-              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                 <button
-                  onClick={() => router.push('/settings')}
+                  onClick={() => {
+                    refreshFeed();
+                    webScrollRef.current?.scrollTo({ top: 0 });
+                    setActiveIndex(0);
+                    activeIndexRef.current = 0;
+                  }}
                   style={{
                     background: '#38BDF8', color: '#fff', border: 'none', borderRadius: 14,
                     padding: '14px 24px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Shuffle Feed
+                </button>
+                <button
+                  onClick={() => router.push('/settings')}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 14, padding: '14px 24px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
                   }}
                 >
                   Change City

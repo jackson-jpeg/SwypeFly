@@ -18,4 +18,4 @@ export const SAVED_CARD_HEIGHT = SAVED_CARD_WIDTH * 1.4;
 
 export const TAB_BAR_HEIGHT = 80;
 
-export const FEED_PAGE_SIZE = 15;
+export const FEED_PAGE_SIZE = 10;

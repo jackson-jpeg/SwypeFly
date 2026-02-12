@@ -238,7 +238,7 @@ export const layout = {
   cardPaddingBottomNative: 100,
   headerPaddingTop: 56,
   closeBtnSize: 40,
-  actionBtnSize: 44,
+  actionBtnSize: 48,
   actionBtnGap: 14,
   badgeCountMin: 16,
   savedGridColumns: 2,
