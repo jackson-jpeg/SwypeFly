@@ -98,3 +98,8 @@ After setup, test the flow:
 5. Complete onboarding → lands on the swipe feed
 6. Refresh the page → should auto-login (session persisted)
 7. "Browse without account" → goes straight to feed
+
+
+<!-- Google OAuth credentials removed — store in environment variables, not in source -->
+<!-- client id: set GOOGLE_CLIENT_ID env var -->
+<!-- client secret: set GOOGLE_CLIENT_SECRET env var -->

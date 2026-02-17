@@ -45,7 +45,8 @@ export function useSaveDestination() {
       // Prevent rapid double-toggle on same destination
       if (inFlightRef.current.has(id)) return;
 
-      const wasSaved = savedIds.has(id);
+      // Read directly from store to avoid stale closure
+      const wasSaved = useSavedStore.getState().savedIds.has(id);
       mediumHaptic();
 
       // Optimistic update
@@ -84,7 +85,7 @@ export function useSaveDestination() {
         }
       }
     },
-    [toggleSaved, savedIds, user],
+    [toggleSaved, user],
   );
 
   const isSaved = useCallback((id: string) => savedIds.has(id), [savedIds]);

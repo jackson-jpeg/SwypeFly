@@ -1,24 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../services/supabase';
-
-function getApiBase(): string {
-  if (typeof window !== 'undefined' && window.location?.hostname !== 'localhost') {
-    return '';
-  }
-  return '';
-}
-
-const API_BASE = getApiBase();
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      return { Authorization: `Bearer ${session.access_token}` };
-    }
-  } catch {}
-  return {};
-}
+import { API_BASE, getAuthHeaders } from '../services/apiHelpers';
 
 // ─── Live Updates (weather/advisories) ──────────────────────────────
 

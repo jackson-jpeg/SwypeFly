@@ -1,40 +1,9 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useUIStore } from '../stores/uiStore';
 import { useFeedStore } from '../stores/feedStore';
-import { supabase } from '../services/supabase';
 import { captureException } from '../utils/sentry';
+import { API_BASE, getAuthHeaders } from '../services/apiHelpers';
 import type { Destination, DestinationFeedPage } from '../types/destination';
-
-/**
- * Resolves the API base URL.
- * - On Vercel (production): same origin, so '' works (relative paths).
- * - In local dev: Expo dev server doesn't serve /api, so we need the
- *   Vercel dev server URL or fallback gracefully.
- */
-function getApiBase(): string {
-  // In production (web) the API is same-origin
-  if (typeof window !== 'undefined' && window.location?.hostname !== 'localhost') {
-    return '';
-  }
-  // Local dev: try Vercel dev server or fall back to empty string
-  return '';
-}
-
-const API_BASE = getApiBase();
-
-// ─── Auth token helper ──────────────────────────────────────────────
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      return { Authorization: `Bearer ${session.access_token}` };
-    }
-  } catch {
-    // No auth available — that's fine
-  }
-  return {};
-}
 
 // ─── Feed ────────────────────────────────────────────────────────────
 
@@ -75,7 +44,7 @@ export function useSwipeFeed() {
   const sortPreset = useFeedStore((s) => s.sortPreset);
 
   return useInfiniteQuery({
-    queryKey: ['feed', departureCode, sessionId],
+    queryKey: ['feed', departureCode, sessionId, vibeFilter, sortPreset],
     queryFn: ({ pageParam }) =>
       fetchPage(departureCode, pageParam, sessionId, Array.from(viewedIds), vibeFilter, sortPreset),
     initialPageParam: null as string | null,

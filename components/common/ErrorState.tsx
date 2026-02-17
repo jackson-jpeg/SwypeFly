@@ -40,7 +40,7 @@ export function ErrorState({ message = 'Something went wrong', onRetry }: ErrorS
         {message}
       </Text>
       {onRetry && (
-        <Pressable onPress={onRetry} style={{ marginTop: spacing['5'], backgroundColor: colors.primary, borderRadius: radii.lg, paddingHorizontal: spacing['6'], paddingVertical: spacing['3'] }}>
+        <Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel="Try again" style={{ marginTop: spacing['5'], backgroundColor: colors.primary, borderRadius: radii.lg, paddingHorizontal: spacing['6'], paddingVertical: spacing['3'] }}>
           <Text style={{ color: '#fff', fontSize: fontSize['2xl'], fontWeight: fontWeight.bold }}>Try Again</Text>
         </Pressable>
       )}
