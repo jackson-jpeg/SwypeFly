@@ -95,17 +95,24 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      if (isActive && !webPrevIsActive.current) {
-        // Reset then trigger stagger
-        setWebStaggerActive(false);
-        requestAnimationFrame(() => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      if (isActive) {
+        if (!webPrevIsActive.current) {
+          // Animate in: brief reset then trigger stagger
+          setWebStaggerActive(false);
+          requestAnimationFrame(() => {
+            setWebStaggerActive(true);
+          });
+          // Failsafe: ensure content shows even if rAF is delayed/skipped
+          timer = setTimeout(() => setWebStaggerActive(true), 100);
+        } else {
           setWebStaggerActive(true);
-        });
-      } else if (isActive) {
-        setWebStaggerActive(true);
+        }
+      } else {
+        setWebStaggerActive(false);
       }
       webPrevIsActive.current = isActive;
-      return;
+      return () => { if (timer) clearTimeout(timer); };
     }
 
     if (isActive && !prevIsActive.current) {
