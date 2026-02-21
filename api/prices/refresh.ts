@@ -160,8 +160,8 @@ async function refreshOrigin(
     }
   }
 
-  // Step 2: Fill gaps — Travelpayouts cheap-prices for individual routes
-  const missingAfterTP = allIatas.filter((iata) => !allResults.has(iata));
+  // Step 2: Fill gaps — Travelpayouts cheap-prices for individual routes (cap at 30 to stay in time budget)
+  const missingAfterTP = allIatas.filter((iata) => !allResults.has(iata)).slice(0, 30);
   if (missingAfterTP.length > 0) {
     console.log(`[refresh] Fetching ${missingAfterTP.length} individual Travelpayouts prices for ${origin}...`);
     for (let i = 0; i < missingAfterTP.length; i += 5) {
@@ -185,8 +185,8 @@ async function refreshOrigin(
     }
   }
 
-  // Step 3: Final fallback — Amadeus for any still-missing destinations
-  const missingAfterAll = allIatas.filter((iata) => !allResults.has(iata));
+  // Step 3: Final fallback — Amadeus for any still-missing (cap at 10 to avoid timeout)
+  const missingAfterAll = allIatas.filter((iata) => !allResults.has(iata)).slice(0, 10);
   if (missingAfterAll.length > 0 && AMADEUS_KEY && AMADEUS_SECRET) {
     console.log(`[refresh] Fetching ${missingAfterAll.length} Amadeus fallback prices for ${origin}...`);
     try {
@@ -310,7 +310,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (originParam && originParam !== 'ALL') {
       origins = [originParam];
     } else {
-      origins = await pickNextOrigins(3);
+      origins = await pickNextOrigins(1);
       console.log(`[refresh] Round-robin selected origins: ${origins.join(', ')}`);
     }
 
