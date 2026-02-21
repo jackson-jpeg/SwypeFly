@@ -12,6 +12,7 @@ import { QuickStats } from '../../components/destination/QuickStats';
 import { StickyBookBar } from '../../components/destination/StickyBookBar';
 import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
+import { hotelLink } from '../../utils/affiliateLinks';
 
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -165,6 +166,33 @@ export default function DestinationDetail() {
                 </p>
               )}
             </div>
+
+            {/* Hotel card */}
+            {destination.hotelPricePerNight > 0 && (
+              <div style={{
+                marginTop: spacing['4'],
+                padding: spacing['5'], borderRadius: radii['2xl'],
+                backgroundColor: colors.surface,
+                border: `1px solid ${colors.border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ color: colors.text.muted, fontSize: fontSize.md }}>Hotels from</div>
+                  <div style={{ color: colors.text.primary, fontSize: fontSize['3xl'], fontWeight: fontWeight.extrabold }}>
+                    ${destination.hotelPricePerNight}<span style={{ fontSize: fontSize.lg, fontWeight: fontWeight.medium, color: colors.text.muted }}>/night</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => window.open(hotelLink(destination.city, destination.country, marker), '_blank')}
+                  style={{
+                    background: 'transparent', border: `1.5px solid ${colors.primary}`,
+                    color: colors.primary, borderRadius: radii.lg,
+                    padding: `${spacing['2']}px ${spacing['5']}px`,
+                    fontSize: fontSize.lg, fontWeight: fontWeight.bold, cursor: 'pointer',
+                  }}
+                >Browse Hotels ↗</button>
+              </div>
+            )}
 
             <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
 
