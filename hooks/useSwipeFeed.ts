@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { queryClient } from '../services/queryClient';
 import { useUIStore } from '../stores/uiStore';
 import { useFeedStore } from '../stores/feedStore';
 import { captureException } from '../utils/sentry';
@@ -149,11 +150,19 @@ export function useDestination(id: string | undefined) {
   const departureCode = useUIStore((s) => s.departureCode);
   const isValidId = !!id && (VALID_ID_RE.test(id) || /^\d+$/.test(id));
 
+  // Try to get initial data from feed cache for instant rendering
+  const feedData = queryClient.getQueryData<{ pages: DestinationFeedPage[] }>({
+    queryKey: ['feed'],
+    exact: false,
+  } as any);
+  const cachedDest = feedData ? getDestinationById(id || '', feedData.pages) : undefined;
+
   return useQuery({
     queryKey: ['destination', id, departureCode],
     queryFn: () => fetchDestination(id!, departureCode),
     enabled: isValidId,
     staleTime: 5 * 60 * 1000,
+    initialData: cachedDest,
   });
 }
 

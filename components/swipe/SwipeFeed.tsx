@@ -139,7 +139,7 @@ export function SwipeFeed() {
           setShowHint(false);
           try { localStorage.setItem('sg-swiped', '1'); } catch {}
         }
-        if (index >= destinations.length - 3 && hasNextPage && !isFetchingNextPage) fetchNextPage();
+        if (index >= destinations.length - 5 && hasNextPage && !isFetchingNextPage) fetchNextPage();
       }
     },
     [destinations, setCurrentIndex, markViewed, hasNextPage, isFetchingNextPage, fetchNextPage, showHint],
@@ -161,7 +161,7 @@ export function SwipeFeed() {
         setCurrentIndex(index);
         markViewed(destinations[index].id);
         mediumHaptic();
-        if (index >= destinations.length - 3 && hasNextPage && !isFetchingNextPage) fetchNextPage();
+        if (index >= destinations.length - 5 && hasNextPage && !isFetchingNextPage) fetchNextPage();
       }
     },
     [destinations, screenHeight, setCurrentIndex, markViewed, hasNextPage, isFetchingNextPage, fetchNextPage],
