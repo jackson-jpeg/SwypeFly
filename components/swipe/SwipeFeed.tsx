@@ -117,6 +117,12 @@ export function SwipeFeed() {
       } else if (e.key === 's' || e.key === 'S') {
         const current = destinations[activeIndexRef.current];
         if (current) handleToggleSave(current.id);
+      } else if (e.key === 'Enter') {
+        const current = destinations[activeIndexRef.current];
+        if (current) router.push(`/destination/${current.id}`);
+      } else if (e.key === '/' || e.key === 'f') {
+        e.preventDefault();
+        setSearchOpen(true);
       }
     };
     document.addEventListener('keydown', handler);
