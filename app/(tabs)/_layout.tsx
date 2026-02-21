@@ -162,6 +162,7 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ focused }) => <TabIconSvg name="explore" focused={focused} />,
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen

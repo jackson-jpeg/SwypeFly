@@ -398,20 +398,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : `${origin}:${Date.now()}-${Math.random()}`;
     const rand = seededRandom(seed);
 
-    // Build set of already-seen destination IDs
-    const seenIds = new Set<string>();
-    if (excludeIds) {
-      for (const id of excludeIds.split(',')) {
-        const trimmed = id.trim();
-        if (trimmed) seenIds.add(trimmed);
-      }
-    }
-
-    // Filter out already-seen destinations + apply vibe filter
-    let destinations =
-      seenIds.size > 0
-        ? allDestinations.filter((d) => !seenIds.has(d.id))
-        : [...allDestinations];
+    // Apply vibe filter only (NOT excludeIds) before scoring.
+    // Scoring must run on the full candidate set so the seeded PRNG produces
+    // a deterministic order. Cursor-based pagination then slices consistently.
+    let destinations = [...allDestinations];
 
     if (vibeFilter) {
       const vibe = vibeFilter.toLowerCase();

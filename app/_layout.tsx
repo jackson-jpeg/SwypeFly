@@ -11,6 +11,7 @@ import { initSentry } from '../utils/sentry';
 import { queryClient } from '../services/queryClient';
 import { colors } from '../constants/theme';
 import { ToastContainer } from '../components/common/ToastContainer';
+import { useGeolocation } from '../hooks/useGeolocation';
 
 function useWebStyles() {
   useEffect(() => {
@@ -139,6 +140,7 @@ function useAuthGuard() {
 }
 
 function AuthGatedLayout() {
+  useGeolocation();
   useAuthGuard();
   const { isLoading } = useAuthContext();
 

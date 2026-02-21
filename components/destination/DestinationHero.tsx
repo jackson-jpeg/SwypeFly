@@ -2,7 +2,6 @@
 // Title, rating, tagline, tags, flight schedule — above the fold.
 
 import { View, Text, Platform } from 'react-native';
-import FlightScheduleBadge from './FlightScheduleBadge';
 import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
@@ -41,12 +40,6 @@ export function DestinationHero({ destination }: DestinationHeroProps) {
         }}>
           &ldquo;{destination.tagline}&rdquo;
         </p>
-
-        {destination.available_flight_days && destination.available_flight_days.length > 0 && (
-          <div style={{ marginTop: spacing['4'] }}>
-            <FlightScheduleBadge days={destination.available_flight_days} />
-          </div>
-        )}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing['2'], marginTop: spacing['4'] }}>
           {destination.vibeTags.map((tag) => (
@@ -87,12 +80,6 @@ export function DestinationHero({ destination }: DestinationHeroProps) {
       <Text style={{ color: colors.text.secondary, fontSize: fontSize.xl, fontStyle: 'italic', marginTop: spacing['2'] }}>
         &ldquo;{destination.tagline}&rdquo;
       </Text>
-
-      {destination.available_flight_days && destination.available_flight_days.length > 0 && (
-        <View style={{ marginTop: spacing['4'] }}>
-          <FlightScheduleBadge days={destination.available_flight_days} />
-        </View>
-      )}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing['2'], marginTop: spacing['4'] }}>
         {destination.vibeTags.map((tag) => (

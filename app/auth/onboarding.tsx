@@ -78,7 +78,7 @@ function WebOnboarding() {
     if (!travelerType || !budgetLevel || !user) return;
     setSaving(true);
     if (departureCity) {
-      setDeparture(departureCity.city, departureCity.code);
+      setDeparture(departureCity.city, departureCity.code, true);
     }
     try {
       await databases.createDocument(
@@ -444,7 +444,7 @@ function NativeOnboarding() {
     if (!travelerType || !budgetLevel || !user) return;
     setSaving(true);
     if (departureCity) {
-      setDeparture(departureCity.city, departureCity.code);
+      setDeparture(departureCity.city, departureCity.code, true);
     }
     try {
       await databases.createDocument(

@@ -13,7 +13,7 @@ interface UIState {
   isGuest: boolean;
   toggleHaptics: () => void;
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
-  setDeparture: (city: string, code: string) => void;
+  setDeparture: (city: string, code: string, manual?: boolean) => void;
   setCurrency: (currency: string) => void;
   setGuest: (isGuest: boolean) => void;
 }
@@ -31,8 +31,11 @@ export const useUIStore = create<UIState>()(
       isGuest: false,
       toggleHaptics: () => set((state) => ({ hapticsEnabled: !state.hapticsEnabled })),
       setTheme: (theme) => set({ theme }),
-      setDeparture: (city, code) => {
+      setDeparture: (city, code, manual) => {
         set({ departureCity: city, departureCode: code });
+        if (manual) {
+          try { localStorage.setItem('sogojet-manual-departure', 'true'); } catch {}
+        }
         useFeedStore.getState().reset();
         // Invalidate feed queries so new departure city takes effect
         queryClient.removeQueries({ queryKey: ['feed'] });

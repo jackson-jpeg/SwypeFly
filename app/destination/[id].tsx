@@ -3,21 +3,15 @@ import { useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useDestination } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
-import { usePriceCheck, useDestinationGuide } from '../../hooks/useAI';
 import { useUIStore } from '../../stores/uiStore';
 import { colors, spacing, fontSize, fontWeight, radii, layout, shadows } from '../../constants/theme';
 import { SectionHeader } from '../../components/common/SectionHeader';
 import ImageGallery from '../../components/destination/ImageGallery';
 import { DestinationHero } from '../../components/destination/DestinationHero';
 import { QuickStats } from '../../components/destination/QuickStats';
-import { BudgetCard } from '../../components/destination/BudgetCard';
-import { ActionBar } from '../../components/destination/ActionBar';
 import { StickyBookBar } from '../../components/destination/StickyBookBar';
 import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
-import LivePulse from '../../components/destination/LivePulse';
-import NearbyGems from '../../components/destination/NearbyGems';
-import TripStrategist from '../../components/destination/TripStrategist';
 
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,9 +19,6 @@ export default function DestinationDetail() {
   const { data: destination, isLoading, error } = useDestination(id);
   const departureCode = useUIStore((s) => s.departureCode);
   const [shareCopied, setShareCopied] = useState(false);
-
-  const priceCheck = usePriceCheck(departureCode, destination?.iataCode || '');
-  const { data: guide } = useDestinationGuide(destination?.city, destination?.country);
 
   // ─── Loading ────────────────────────────────────────────────────────
   if (isLoading) {
@@ -64,6 +55,7 @@ export default function DestinationDetail() {
 
   const saved = isSaved(destination.id);
   const images = destination.imageUrls?.length ? destination.imageUrls : [destination.imageUrl];
+  const effectivePrice = destination.livePrice ?? destination.flightPrice;
 
   const marker = typeof process !== 'undefined'
     ? (process.env.EXPO_PUBLIC_TRAVELPAYOUTS_MARKER || '')
@@ -72,12 +64,8 @@ export default function DestinationDetail() {
   const handleShare = async () => {
     const { shareDestination } = await import('../../utils/share');
     const shared = await shareDestination(
-      destination.city,
-      destination.country,
-      destination.tagline,
-      destination.id,
-      destination.livePrice ?? destination.flightPrice,
-      destination.currency,
+      destination.city, destination.country, destination.tagline,
+      destination.id, effectivePrice, destination.currency,
     );
     if (shared && Platform.OS === 'web' && !(typeof navigator !== 'undefined' && navigator.share)) {
       setShareCopied(true);
@@ -102,70 +90,120 @@ export default function DestinationDetail() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: shadows.web.lg,
           }}
-        >
-          &#10005;
-        </button>
+        >&#10005;</button>
 
         {/* Scrollable content */}
         <div style={{ overflowY: 'auto', height: '100vh', maxWidth: layout.maxContentWidth, margin: '0 auto' }}>
-          {/* Hero - Image Gallery */}
+          {/* 1. Hero — Image Gallery */}
           <ImageGallery images={images} city={destination.city} />
 
-          {/* Content */}
           <div style={{ padding: `0 ${spacing['6']}px ${spacing['30']}px ${spacing['6']}px`, marginTop: -8 }}>
-            {/* ─── Hero + Essential Info (above the fold) ─── */}
+            {/* 2. Info — Hero + Essential */}
             <DestinationHero destination={destination} />
-
-            {/* ─── At a Glance ─── */}
             <QuickStats destination={destination} />
 
-            <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
-
-            {/* About */}
-            <SectionHeader title="About" />
-            <p style={{ margin: `${spacing['2']}px 0 0 0`, color: colors.text.body, fontSize: fontSize.xl, lineHeight: 1.7 }}>
+            {/* Description */}
+            <p style={{ margin: `${spacing['4']}px 0 0 0`, color: colors.text.body, fontSize: fontSize.xl, lineHeight: 1.7 }}>
               {destination.description}
             </p>
 
-            {/* Live Pulse */}
-            <LivePulse city={destination.city} country={destination.country} />
-
-            {/* Best Time to Visit */}
-            <SectionHeader title="Best Time to Visit" />
-            <p style={{ margin: `${spacing['2']}px 0 0 0`, color: colors.text.body, fontSize: fontSize.xl }}>
-              {destination.bestMonths.join(', ')}
-            </p>
-
-            <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
-
-            {/* ─── Plan Your Trip (AI cluster) ─── */}
-            <div style={{ backgroundColor: 'rgba(129,140,248,0.03)', borderRadius: radii['2xl'], padding: `${spacing['5']}px`, marginLeft: -spacing['5'], marginRight: -spacing['5'], marginBottom: spacing['6'] }}>
-              <ItineraryTimeline itinerary={guide?.itinerary ?? destination.itinerary} isAI={!!guide?.itinerary} />
-              <RestaurantCards restaurants={guide?.restaurants ?? destination.restaurants} isAI={!!guide?.restaurants} />
-              <NearbyGems city={destination.city} country={destination.country} />
-              <TripStrategist destinationId={destination.id} city={destination.city} country={destination.country} />
+            {/* Vibe tags */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: spacing['4'] }}>
+              {destination.vibeTags.map((tag) => (
+                <span key={tag} style={{
+                  padding: '4px 12px', borderRadius: 9999,
+                  backgroundColor: colors.primaryBackground,
+                  color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
+                  textTransform: 'capitalize',
+                }}>{tag}</span>
+              ))}
             </div>
 
-            {/* ─── Budget ─── */}
-            <SectionHeader title="Budget Estimate" />
-            <div style={{ marginTop: spacing['3'] }}>
-              <BudgetCard destination={destination} priceCheck={priceCheck} />
+            {/* Best months */}
+            <div style={{ marginTop: spacing['4'] }}>
+              <span style={{ color: colors.text.secondary, fontSize: fontSize.lg, fontWeight: fontWeight.medium }}>
+                Best time: {destination.bestMonths.join(', ')}
+              </span>
             </div>
 
             <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
 
-            {/* ─── Actions ─── */}
-            <ActionBar
-              departureCode={departureCode}
-              iataCode={destination.iataCode}
-              city={destination.city}
-              country={destination.country}
-              marker={marker}
-              saved={saved}
-              shareCopied={shareCopied}
-              onToggleSave={() => toggle(destination.id)}
-              onShare={handleShare}
-            />
+            {/* 3. Flight Deal Card */}
+            <div style={{
+              padding: spacing['5'], borderRadius: radii['2xl'],
+              backgroundColor: colors.surface,
+              border: `1px solid ${colors.border}`,
+              boxShadow: shadows.web.md,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing['3'] }}>
+                <span style={{ fontSize: fontSize['5xl'], fontWeight: fontWeight.extrabold, color: colors.text.primary }}>
+                  ${effectivePrice}
+                </span>
+                <span style={{
+                  padding: '4px 10px', borderRadius: 9999,
+                  backgroundColor: destination.priceSource === 'estimate' ? colors.surfaceElevated : colors.successBackground,
+                  color: destination.priceSource === 'estimate' ? colors.text.muted : colors.successDark,
+                  fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
+                }}>
+                  {destination.priceSource === 'estimate' ? 'Estimated' : 'Live price'}
+                </span>
+              </div>
+              {destination.airline && (
+                <p style={{ margin: 0, color: colors.text.secondary, fontSize: fontSize.lg }}>
+                  {destination.airline} · {destination.flightDuration}
+                </p>
+              )}
+              {!destination.airline && (
+                <p style={{ margin: 0, color: colors.text.secondary, fontSize: fontSize.lg }}>
+                  Round-trip · {destination.flightDuration}
+                </p>
+              )}
+              {destination.departureDate && destination.returnDate && (
+                <p style={{ margin: `${spacing['2']}px 0 0 0`, color: colors.text.muted, fontSize: fontSize.md }}>
+                  {destination.departureDate} — {destination.returnDate}
+                  {destination.tripDurationDays && ` (${destination.tripDurationDays} days)`}
+                </p>
+              )}
+            </div>
+
+            <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
+
+            {/* 4. Itinerary */}
+            {destination.itinerary && destination.itinerary.length > 0 && (
+              <>
+                <ItineraryTimeline itinerary={destination.itinerary} />
+                <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
+              </>
+            )}
+
+            {/* Restaurants */}
+            {destination.restaurants && destination.restaurants.length > 0 && (
+              <RestaurantCards restaurants={destination.restaurants} />
+            )}
+
+            {/* Save + Share row */}
+            <div style={{ display: 'flex', gap: 12, marginTop: spacing['6'] }}>
+              <button
+                onClick={() => toggle(destination.id)}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: radii.xl,
+                  backgroundColor: saved ? colors.primaryTint : colors.surfaceElevated,
+                  border: saved ? `1px solid ${colors.primaryBorder}` : `1px solid ${colors.border}`,
+                  color: saved ? colors.primary : colors.text.primary,
+                  fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, cursor: 'pointer',
+                }}
+              >{saved ? '♥ Saved' : '♡ Save'}</button>
+              <button
+                onClick={handleShare}
+                style={{
+                  padding: '14px 24px', borderRadius: radii.xl,
+                  backgroundColor: colors.surfaceElevated,
+                  border: `1px solid ${colors.border}`,
+                  color: colors.text.primary,
+                  fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, cursor: 'pointer',
+                }}
+              >{shareCopied ? '✓ Copied' : '↗ Share'}</button>
+            </div>
 
             {/* Disclaimer */}
             <p style={{
@@ -177,9 +215,9 @@ export default function DestinationDetail() {
           </div>
         </div>
 
-        {/* Sticky bottom CTA */}
+        {/* 5. Sticky CTA */}
         <StickyBookBar
-          flightPrice={destination.flightPrice}
+          flightPrice={effectivePrice}
           currency={destination.currency}
           priceSource={destination.priceSource}
           departureCode={departureCode}
@@ -197,61 +235,61 @@ export default function DestinationDetail() {
         <ImageGallery images={images} city={destination.city} />
 
         <View style={{ padding: spacing['6'], paddingBottom: spacing['30'] }}>
-          {/* Hero + Essential Info */}
           <DestinationHero destination={destination} />
-
-          {/* At a Glance */}
           <QuickStats destination={destination} />
 
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing['6'] }} />
-
-          {/* About */}
-          <SectionHeader title="About" />
-          <Text style={{ color: colors.text.body, fontSize: fontSize.xl, lineHeight: 24, marginTop: spacing['2'] }}>
+          <Text style={{ color: colors.text.body, fontSize: fontSize.xl, lineHeight: 24, marginTop: spacing['4'] }}>
             {destination.description}
           </Text>
 
-          {/* Live Pulse */}
-          <LivePulse city={destination.city} country={destination.country} />
+          {/* Vibe tags */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing['4'] }}>
+            {destination.vibeTags.map((tag) => (
+              <View key={tag} style={{
+                paddingHorizontal: 12, paddingVertical: 4, borderRadius: 9999,
+                backgroundColor: colors.primaryBackground,
+              }}>
+                <Text style={{ color: colors.primary, fontSize: fontSize.sm, fontWeight: '600', textTransform: 'capitalize' }}>{tag}</Text>
+              </View>
+            ))}
+          </View>
 
-          {/* Best Time to Visit */}
-          <SectionHeader title="Best Time to Visit" />
-          <Text style={{ color: colors.text.body, fontSize: fontSize.xl, marginTop: spacing['2'] }}>
-            {destination.bestMonths.join(', ')}
+          <Text style={{ color: colors.text.secondary, fontSize: fontSize.lg, fontWeight: '500', marginTop: spacing['4'] }}>
+            Best time: {destination.bestMonths.join(', ')}
           </Text>
 
           <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing['6'] }} />
 
-          {/* Plan Your Trip (AI cluster) */}
-          <View style={{ backgroundColor: 'rgba(129,140,248,0.03)', borderRadius: radii['2xl'], padding: spacing['5'], marginHorizontal: -spacing['5'], marginBottom: spacing['6'] }}>
-            <ItineraryTimeline itinerary={guide?.itinerary ?? destination.itinerary} isAI={!!guide?.itinerary} />
-            <RestaurantCards restaurants={guide?.restaurants ?? destination.restaurants} isAI={!!guide?.restaurants} />
-            <NearbyGems city={destination.city} country={destination.country} />
-            <TripStrategist destinationId={destination.id} city={destination.city} country={destination.country} />
-          </View>
-
-          {/* Budget */}
-          <SectionHeader title="Budget Estimate" />
-          <View style={{ marginTop: spacing['3'] }}>
-            <BudgetCard destination={destination} priceCheck={priceCheck} />
+          {/* Flight Deal Card */}
+          <View style={{
+            padding: spacing['5'], borderRadius: radii['2xl'],
+            backgroundColor: colors.surface,
+            borderWidth: 1, borderColor: colors.border,
+            ...shadows.native.md,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing['3'] }}>
+              <Text style={{ fontSize: fontSize['5xl'], fontWeight: '800', color: colors.text.primary }}>
+                ${effectivePrice}
+              </Text>
+            </View>
+            <Text style={{ color: colors.text.secondary, fontSize: fontSize.lg }}>
+              {destination.airline ? `${destination.airline} · ` : 'Round-trip · '}{destination.flightDuration}
+            </Text>
           </View>
 
           <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing['6'] }} />
 
-          {/* Actions */}
-          <ActionBar
-            departureCode={departureCode}
-            iataCode={destination.iataCode}
-            city={destination.city}
-            country={destination.country}
-            marker={marker}
-            saved={saved}
-            shareCopied={shareCopied}
-            onToggleSave={() => toggle(destination.id)}
-            onShare={handleShare}
-          />
+          {destination.itinerary && destination.itinerary.length > 0 && (
+            <>
+              <ItineraryTimeline itinerary={destination.itinerary} />
+              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing['6'] }} />
+            </>
+          )}
 
-          {/* Disclaimer */}
+          {destination.restaurants && destination.restaurants.length > 0 && (
+            <RestaurantCards restaurants={destination.restaurants} />
+          )}
+
           <Text style={{
             color: colors.text.muted, fontSize: fontSize.md, textAlign: 'center',
             marginTop: spacing['6'], lineHeight: 18,
@@ -275,9 +313,8 @@ export default function DestinationDetail() {
         <Text style={{ color: colors.text.primary, fontSize: fontSize['3xl'], fontWeight: fontWeight.semibold }}>{'\u2715'}</Text>
       </Pressable>
 
-      {/* Sticky bottom CTA */}
       <StickyBookBar
-        flightPrice={destination.flightPrice}
+        flightPrice={effectivePrice}
         currency={destination.currency}
         priceSource={destination.priceSource}
         departureCode={departureCode}

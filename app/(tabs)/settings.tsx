@@ -186,7 +186,7 @@ export default function SettingsTab() {
               options={DEPARTURE_OPTIONS.map((o) => ({ label: `${o.city} (${o.code})`, value: o.code }))}
               onChange={(code) => {
                 const opt = DEPARTURE_OPTIONS.find((o) => o.code === code);
-                if (opt) setDeparture(opt.city, opt.code);
+                if (opt) setDeparture(opt.city, opt.code, true);
               }}
             />
             <WebSelect
@@ -377,7 +377,7 @@ export default function SettingsTab() {
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {
-                    setDeparture(item.city, item.code);
+                    setDeparture(item.city, item.code, true);
                     setShowDepartureModal(false);
                   }}
                   style={{
