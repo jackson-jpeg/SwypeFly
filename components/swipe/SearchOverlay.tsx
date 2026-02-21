@@ -128,8 +128,48 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
         )}
 
         {!query.trim() && (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', marginTop: 40, fontSize: 14 }}>
-            Try "beach", "Tokyo", "budget", or "romantic"
+          <div style={{ marginTop: 32 }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
+              Explore by vibe
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {[
+                { emoji: '🏖️', label: 'Beach' },
+                { emoji: '🏔️', label: 'Mountain' },
+                { emoji: '🌃', label: 'City' },
+                { emoji: '💕', label: 'Romantic' },
+                { emoji: '🍜', label: 'Foodie' },
+                { emoji: '🎉', label: 'Nightlife' },
+                { emoji: '🏛️', label: 'Historic' },
+                { emoji: '🌴', label: 'Tropical' },
+                { emoji: '🎿', label: 'Winter' },
+                { emoji: '💰', label: 'Budget' },
+                { emoji: '⛰️', label: 'Nature' },
+                { emoji: '🧗', label: 'Adventure' },
+              ].map(({ emoji, label }) => (
+                <div
+                  key={label}
+                  onClick={() => setQuery(label.toLowerCase())}
+                  style={{
+                    padding: '8px 16px', borderRadius: 20,
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 500,
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(56,189,248,0.15)';
+                    e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                  }}
+                >
+                  {emoji} {label}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
