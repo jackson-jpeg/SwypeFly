@@ -234,7 +234,7 @@ export const layout = {
   tabBarPaddingBottomNative: 28,
   tabBarPaddingTop: 10,
   cardPaddingHorizontal: 28,
-  cardPaddingBottom: 84,
+  cardPaddingBottom: 40,
   cardPaddingBottomNative: 100,
   headerPaddingTop: 56,
   closeBtnSize: 40,

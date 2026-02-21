@@ -249,7 +249,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
         {/* Bottom-left: minimal content stack */}
         <div
           style={{
-            position: 'absolute', bottom: 0, left: 0, right: 80,
+            position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
             padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom}px ${layout.cardPaddingHorizontal}px`,
           }}
         >
@@ -368,7 +368,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
 
         {/* Bottom-left: minimal content */}
         <View style={{
-          position: 'absolute', bottom: 0, left: 0, right: 80,
+          position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
           paddingHorizontal: layout.cardPaddingHorizontal,
           paddingBottom: layout.cardPaddingBottomNative,
         }}>

@@ -112,9 +112,9 @@ function useWebStyles() {
   }, []);
 }
 
-/** Redirects based on auth state */
+/** Redirects based on auth state — guest by default, no login wall */
 function useAuthGuard() {
-  const { session, isLoading, isGuest, hasCompletedOnboarding } = useAuthContext();
+  const { session, isLoading, isGuest, hasCompletedOnboarding, browseAsGuest } = useAuthContext();
   const segments = useSegments();
   const router = useRouter();
 
@@ -123,20 +123,15 @@ function useAuthGuard() {
 
     const segs = segments as string[];
     const inAuthGroup = segs[0] === 'auth';
-    const onOnboarding = segs[0] === 'auth' && segs[1] === 'onboarding';
     const hasAccess = session !== null || isGuest;
 
     if (!hasAccess && !inAuthGroup) {
-      // Not signed in & not guest → send to login
-      router.replace('/auth/login');
-    } else if (session && !hasCompletedOnboarding && !onOnboarding) {
-      // Signed in but hasn't done onboarding → send to onboarding
-      router.replace('/auth/onboarding');
+      // Auto-enable guest mode — straight to feed, no login wall
+      browseAsGuest();
     } else if (session && hasCompletedOnboarding && inAuthGroup) {
-      // Signed in + onboarded but still on auth screen → send to feed
       router.replace('/(tabs)');
     }
-  }, [session, isLoading, isGuest, hasCompletedOnboarding, segments]);
+  }, [session, isLoading, isGuest, hasCompletedOnboarding, segments, browseAsGuest]);
 }
 
 function AuthGatedLayout() {
