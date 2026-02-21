@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { SwipeCard } from './SwipeCard';
 import { SkeletonCard } from './SkeletonCard';
 import { SearchOverlay } from './SearchOverlay';
+import { WelcomeOverlay } from './WelcomeOverlay';
 import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
@@ -202,6 +203,8 @@ export function SwipeFeed() {
   // ── Web ──
   if (Platform.OS === 'web') {
     return (
+      <>
+      <WelcomeOverlay />
       <div
         ref={webScrollRef}
         className="sg-feed"
@@ -294,6 +297,7 @@ export function SwipeFeed() {
           </div>
         )}
       </div>
+      </>
     );
   }
 

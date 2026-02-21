@@ -11,6 +11,8 @@ interface UIState {
   departureCode: string;
   currency: string;
   isGuest: boolean;
+  hasOnboarded: boolean;
+  setOnboarded: () => void;
   toggleHaptics: () => void;
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
   setDeparture: (city: string, code: string, manual?: boolean) => void;
@@ -29,6 +31,8 @@ export const useUIStore = create<UIState>()(
       departureCode: 'TPA',
       currency: 'USD',
       isGuest: false,
+      hasOnboarded: false,
+      setOnboarded: () => set({ hasOnboarded: true }),
       toggleHaptics: () => set((state) => ({ hapticsEnabled: !state.hapticsEnabled })),
       setTheme: (theme) => set({ theme }),
       setDeparture: (city, code, manual) => {
@@ -53,6 +57,7 @@ export const useUIStore = create<UIState>()(
         departureCode: state.departureCode,
         currency: state.currency,
         isGuest: state.isGuest,
+        hasOnboarded: state.hasOnboarded,
       }),
     },
   ),
