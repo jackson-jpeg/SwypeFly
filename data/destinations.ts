@@ -1,6 +1,7 @@
 import type { Destination } from '../types/destination';
 import { additionalDestinations } from './destinations-new';
 import { extraDestinations } from './destinations-extra';
+import { batch3Destinations } from './destinations-batch3';
 
 export const destinations: Destination[] = [
   {
@@ -1847,3 +1848,4 @@ export const destinations: Destination[] = [
 // Merge additional destinations
 destinations.push(...additionalDestinations);
 destinations.push(...extraDestinations);
+destinations.push(...batch3Destinations);

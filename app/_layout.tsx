@@ -63,7 +63,25 @@ function useWebStyles() {
     }
     themeColor.setAttribute('content', '#F8FAFC');
 
-    document.title = 'SoGoJet — So many places to go — So Go Jet.';
+    document.title = 'SoGoJet — Discover Cheap Flights to Amazing Places';
+
+    // OG meta tags for social sharing
+    const ogTags: Record<string, string> = {
+      'og:title': 'SoGoJet — Discover Cheap Flights to Amazing Places',
+      'og:description': 'Swipe through stunning destinations and find the cheapest flights from your city. TikTok meets travel deals.',
+      'og:type': 'website',
+      'og:url': 'https://sogojet.com',
+      'description': 'Swipe through stunning destinations and find the cheapest flights from your city. Discover deals to 200+ destinations worldwide.',
+    };
+    for (const [property, content] of Object.entries(ogTags)) {
+      const attr = property.startsWith('og:') ? 'property' : 'name';
+      if (!document.querySelector(`meta[${attr}="${property}"]`)) {
+        const meta = document.createElement('meta');
+        meta.setAttribute(attr, property);
+        meta.setAttribute('content', content);
+        document.head.appendChild(meta);
+      }
+    }
 
     // PWA: add manifest link
     if (!document.querySelector('link[rel="manifest"]')) {
