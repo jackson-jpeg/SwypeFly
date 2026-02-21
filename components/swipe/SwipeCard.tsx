@@ -227,6 +227,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   };
 
   // ── Web stagger CSS helper ──
+  // Content is always visible (opacity: 1). Animation is enhancement-only via transform.
   const webStagger = (delayMs: number, translatePx: number, direction: 'Y' | 'X' = 'Y') => ({
     transition: `transform ${STAGGER_DURATION}ms cubic-bezier(0.33, 1, 0.68, 1) ${delayMs}ms, opacity ${STAGGER_DURATION}ms cubic-bezier(0.33, 1, 0.68, 1) ${delayMs}ms`,
     transform: webStaggerActive
@@ -234,7 +235,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
       : direction === 'Y'
         ? `translateY(${translatePx}px)`
         : `translateX(${translatePx}px)`,
-    opacity: webStaggerActive ? 1 : 0,
+    opacity: 1,
   });
 
   // ── Tiny thumbnail URL for progressive loading ──
