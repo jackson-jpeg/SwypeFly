@@ -451,12 +451,13 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           {destination.tagline && (
             <p style={{
               margin: '6px 0 0 0',
-              color: 'rgba(255,255,255,0.5)',
+              color: 'rgba(255,255,255,0.7)',
               fontSize: 14,
               lineHeight: 1.3,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              textShadow: '0 1px 8px rgba(0,0,0,0.5)',
               ...webStagger(120, 12),
             }}>
               {destination.tagline}
@@ -466,17 +467,18 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           {/* Country · Duration · Rating */}
           <p style={{
             margin: '10px 0 0 0', fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center',
+            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
             ...webStagger(150, 15),
           }}>
-            <span style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 400 }}>
+            <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>
               {destination.country}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 10px' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>
+            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>
               {destination.flightDuration}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 10px' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
+            <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
               {destination.rating}★
             </span>
           </p>

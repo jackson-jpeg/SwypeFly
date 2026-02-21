@@ -250,35 +250,7 @@ export function SwipeFeed() {
         }}
         onScroll={handleWebScroll}
       >
-        {/* Position indicator */}
-        {destinations.length > 1 && (
-          <div
-            style={{
-              position: 'fixed',
-              right: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              zIndex: 40,
-              pointerEvents: 'none',
-            }}
-          >
-            {destinations.slice(0, Math.min(destinations.length, 15)).map((d, idx) => (
-              <div
-                key={d.id}
-                style={{
-                  width: idx === activeIndex ? 3 : 3,
-                  height: idx === activeIndex ? 14 : 6,
-                  borderRadius: 2,
-                  backgroundColor: idx === activeIndex ? '#fff' : 'rgba(255,255,255,0.25)',
-                  transition: 'all 0.3s ease',
-                }}
-              />
-            ))}
-          </div>
-        )}
+        {/* Position indicator removed — too subtle, looks like scrollbar artifact */}
         {/* Filter chips overlay */}
         <FeedFilterBar
           activeFilter={vibeFilter}
