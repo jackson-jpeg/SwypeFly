@@ -1,13 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
+import { ID } from 'node-appwrite';
 import { searchDestinationImages } from '../../services/unsplash';
 import { logApiError } from '../../utils/apiLogger';
 
 export const maxDuration = 60;
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 const DEFAULT_BATCH_SIZE = 8;   // destinations per run
 const IMAGES_PER_DEST = 5;
@@ -26,27 +23,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Find destinations with oldest/missing images
-    const { data: destinations, error: dbErr } = await supabase
-      .from('destinations')
-      .select('id, city, country, unsplash_query')
-      .eq('is_active', true);
+    const destResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
+      Query.equal('is_active', true),
+      Query.limit(500),
+    ]);
 
-    if (dbErr || !destinations) {
-      return res.status(500).json({ error: 'Failed to fetch destinations' });
-    }
+    const destinations = destResult.documents.map((d) => ({
+      id: d.$id,
+      city: d.city as string,
+      country: d.country as string,
+      unsplash_query: (d.unsplash_query as string) || '',
+    }));
 
     // Get the latest fetch time per destination from destination_images
-    const { data: imageMeta } = await supabase
-      .from('destination_images')
-      .select('destination_id, fetched_at')
-      .order('fetched_at', { ascending: false });
+    let imageMetaDocs: Array<Record<string, unknown>> = [];
+    try {
+      const imgResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
+        Query.orderDesc('fetched_at'),
+        Query.limit(500),
+      ]);
+      imageMetaDocs = imgResult.documents;
+    } catch {
+      // Collection may be empty
+    }
 
     const lastFetched = new Map<string, string>();
-    if (imageMeta) {
-      for (const row of imageMeta) {
-        if (!lastFetched.has(row.destination_id)) {
-          lastFetched.set(row.destination_id, row.fetched_at);
-        }
+    for (const row of imageMetaDocs) {
+      const destId = row.destination_id as string;
+      if (!lastFetched.has(destId)) {
+        lastFetched.set(destId, row.fetched_at as string);
       }
     }
 
@@ -82,30 +87,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Delete old images for this destination before inserting fresh ones
-      await supabase
-        .from('destination_images')
-        .delete()
-        .eq('destination_id', dest.id);
+      try {
+        const oldImages = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
+          Query.equal('destination_id', dest.id),
+          Query.limit(100),
+        ]);
+        for (const doc of oldImages.documents) {
+          await serverDatabases.deleteDocument(DATABASE_ID, COLLECTIONS.destinationImages, doc.$id);
+        }
+      } catch {
+        // May not exist yet
+      }
 
-      const rows = images.map((img, idx) => ({
-        destination_id: dest.id,
-        unsplash_id: img.unsplashId,
-        url_raw: img.urlRaw,
-        url_regular: img.urlRegular,
-        url_small: img.urlSmall,
-        blur_hash: img.blurHash,
-        photographer: img.photographer,
-        photographer_url: img.photographerUrl,
-        is_primary: idx === 0,
-        fetched_at: new Date().toISOString(),
-      }));
-
-      const { error: upsertErr } = await supabase
-        .from('destination_images')
-        .upsert(rows, { onConflict: 'destination_id,unsplash_id' });
-
-      if (upsertErr) {
-        console.error(`[images/refresh] Upsert error for ${dest.city}:`, upsertErr.message);
+      for (let idx = 0; idx < images.length; idx++) {
+        const img = images[idx];
+        try {
+          await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.destinationImages, ID.unique(), {
+            destination_id: dest.id,
+            unsplash_id: img.unsplashId,
+            url_raw: img.urlRaw || '',
+            url_regular: img.urlRegular || '',
+            url_small: img.urlSmall || '',
+            blur_hash: img.blurHash || '',
+            photographer: img.photographer || '',
+            photographer_url: img.photographerUrl || '',
+            is_primary: idx === 0,
+            fetched_at: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error(`[images/refresh] Insert error for ${dest.city}:`, err);
+        }
       }
 
       results.push({ id: dest.id, city: dest.city, images: images.length });

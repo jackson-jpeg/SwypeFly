@@ -1,14 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
+import { ID } from 'node-appwrite';
 import { fetchHotelRates } from '../../services/liteapi';
 import { hotelPricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 
 export const maxDuration = 60;
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const cronSecret = process.env.CRON_SECRET;
@@ -29,24 +26,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get destinations to refresh
     let destinations: Array<{ iata_code: string; city: string }>;
     if (destParam) {
-      const { data, error } = await supabase
-        .from('destinations')
-        .select('iata_code, city')
-        .eq('iata_code', destParam)
-        .eq('is_active', true);
-      if (error || !data) {
+      const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
+        Query.equal('iata_code', destParam),
+        Query.equal('is_active', true),
+        Query.limit(1),
+      ]);
+      if (result.documents.length === 0) {
         return res.status(404).json({ error: 'Destination not found' });
       }
-      destinations = data;
+      destinations = result.documents.map((d) => ({
+        iata_code: d.iata_code as string,
+        city: d.city as string,
+      }));
     } else {
-      const { data, error } = await supabase
-        .from('destinations')
-        .select('iata_code, city')
-        .eq('is_active', true);
-      if (error || !data) {
-        return res.status(500).json({ error: 'Failed to fetch destinations' });
-      }
-      destinations = data;
+      const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
+        Query.equal('is_active', true),
+        Query.limit(500),
+      ]);
+      destinations = result.documents.map((d) => ({
+        iata_code: d.iata_code as string,
+        city: d.city as string,
+      }));
     }
 
     // Dates: check-in 30 days from now, 3-night stay
@@ -56,6 +56,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const checkoutStr = checkout.toISOString().split('T')[0];
 
     const results: Array<{ destination: string; price: number | null }> = [];
+
+    // Get existing hotel price docs for upsert
+    const existingMap = new Map<string, string>();
+    try {
+      const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedHotelPrices, [
+        Query.limit(500),
+      ]);
+      for (const doc of existing.documents) {
+        existingMap.set(doc.destination_iata as string, doc.$id);
+      }
+    } catch {
+      // Collection may be empty
+    }
 
     // Process in batches of 5 to avoid rate limits
     for (let i = 0; i < destinations.length; i += 5) {
@@ -69,21 +82,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         results.push({ destination: dest.iata_code, price: rate?.minPrice ?? null });
 
         if (rate) {
-          const { error: upsertErr } = await supabase
-            .from('cached_hotel_prices')
-            .upsert(
-              {
-                destination_iata: dest.iata_code,
-                price_per_night: rate.minPrice,
-                currency: rate.currency,
-                hotel_count: rate.hotelCount,
-                source: 'liteapi',
-                fetched_at: new Date().toISOString(),
-              },
-              { onConflict: 'destination_iata' },
-            );
-          if (upsertErr) {
-            console.error(`[refresh-hotels] Upsert error for ${dest.iata_code}:`, upsertErr.message);
+          const data = {
+            destination_iata: dest.iata_code,
+            price_per_night: rate.minPrice,
+            currency: rate.currency,
+            hotel_count: rate.hotelCount,
+            source: 'liteapi',
+            fetched_at: new Date().toISOString(),
+          };
+
+          try {
+            const existingId = existingMap.get(dest.iata_code);
+            if (existingId) {
+              await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.cachedHotelPrices, existingId, data);
+            } else {
+              await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.cachedHotelPrices, ID.unique(), data);
+            }
+          } catch (err) {
+            console.error(`[refresh-hotels] Upsert error for ${dest.iata_code}:`, err);
           }
         }
       }

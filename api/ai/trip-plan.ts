@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
-import { getSupabase, readCache, writeCache } from './_gemini';
+import { readCache, writeCache } from './_gemini';
+import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
+import { Client, Account } from 'node-appwrite';
 import { tripPlanBodySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 
@@ -33,10 +35,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const sb = getSupabase();
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await sb.auth.getUser(token);
-    if (authError || !user) {
+    // Verify JWT via Appwrite
+    const jwt = authHeader.replace('Bearer ', '');
+    const userClient = new Client()
+      .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
+      .setProject(process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '')
+      .setJWT(jwt);
+
+    const userAccount = new Account(userClient);
+    const user = await userAccount.get();
+    if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
@@ -44,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!v.success) return res.status(400).json({ error: v.error });
 
     const { destination_id, city, country } = v.data;
-    const cacheKey = `trip-plan:${user.id}:${destination_id}`;
+    const cacheKey = `trip-plan:${user.$id}:${destination_id}`;
 
     // Check cache
     const cached = await readCache<TripPlanResponse>(cacheKey);
@@ -53,15 +61,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Fetch user preferences for personalization
-    const { data: prefs } = await sb
-      .from('user_preferences')
-      .select('traveler_type, budget_level, travel_style')
-      .eq('user_id', user.id)
-      .single();
-
-    const travelerType = prefs?.traveler_type || 'explorer';
-    const budgetLevel = prefs?.budget_level || 'comfortable';
-    const travelStyle = prefs?.travel_style || 'balanced';
+    let travelerType = 'explorer';
+    let budgetLevel = 'comfortable';
+    let travelStyle = 'balanced';
+    try {
+      const prefsResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
+        Query.equal('user_id', user.$id),
+        Query.limit(1),
+      ]);
+      if (prefsResult.documents.length > 0) {
+        const prefs = prefsResult.documents[0];
+        travelerType = (prefs.traveler_type as string) || travelerType;
+        budgetLevel = (prefs.budget_level as string) || budgetLevel;
+        travelStyle = (prefs.travel_style as string) || travelStyle;
+      }
+    } catch {
+      // Use defaults
+    }
 
     // Call Claude Sonnet 4.5
     const anthropic = getAnthropicClient();

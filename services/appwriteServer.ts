@@ -27,4 +27,7 @@ export const COLLECTIONS = {
   userPreferences: 'user_preferences',
   swipeHistory: 'swipe_history',
   cachedPrices: 'cached_prices',
+  cachedHotelPrices: 'cached_hotel_prices',
+  destinationImages: 'destination_images',
+  aiCache: 'ai_cache',
 } as const;

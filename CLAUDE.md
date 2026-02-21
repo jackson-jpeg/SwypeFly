@@ -18,7 +18,7 @@ SoGoJet is a travel deal discovery app with a TikTok-style swipe interface. User
 | State | Zustand v5 (persisted stores) |
 | Server state | TanStack React Query v5 |
 | Backend/API | Vercel Serverless Functions (Node.js, `@vercel/node`) |
-| Database | Supabase (PostgreSQL + Auth + RLS) |
+| Database | Appwrite (Database + Auth + Permissions) |
 | AI | Gemini 2.5 Flash (destination guides, live updates, nearby gems) + Claude Sonnet 4.5 (trip plans) |
 | Pricing data | Travelpayouts API (primary) + Amadeus API (fallback) + LiteAPI (hotels) |
 | Images | Unsplash API |
@@ -42,7 +42,7 @@ npm run lint           # Run ESLint
 npm run typecheck      # Run tsc --noEmit
 npm run format         # Run Prettier (write)
 npm run format:check   # Run Prettier (check)
-npm run seed           # Seed destinations to Supabase (tsx scripts/seed-destinations.ts)
+npm run seed           # Seed destinations to Appwrite (tsx scripts/seed-destinations.ts)
 ```
 
 ## Project Structure
@@ -70,7 +70,7 @@ SwypeFly/
 │   ├── destination.ts      # GET /api/destination — single destination with live prices
 │   ├── swipe.ts            # POST /api/swipe — record swipe + update preference vectors
 │   ├── ai/
-│   │   ├── _gemini.ts      # Shared Gemini client, Supabase client, cache helpers
+│   │   ├── _gemini.ts      # Shared Gemini client, Appwrite cache helpers
 │   │   ├── destination-guide.ts  # GET — AI itinerary + restaurant recommendations
 │   │   ├── live-updates.ts       # GET — real-time travel tips
 │   │   ├── nearby-gems.ts        # GET — hidden gem suggestions
@@ -94,13 +94,14 @@ SwypeFly/
 │   └── styles.ts           # Shared style objects
 ├── hooks/
 │   ├── AuthContext.tsx      # React Context wrapper for auth
-│   ├── useAuth.ts          # Auth hook (Supabase: Google, Apple, Email, Guest)
+│   ├── useAuth.ts          # Auth hook (Appwrite: Google, Apple, Email, Guest)
 │   ├── useAI.ts            # AI endpoint hooks
-│   ├── useSaveDestination.ts  # Save/unsave with Supabase sync
+│   ├── useSaveDestination.ts  # Save/unsave with Appwrite sync
 │   └── useSwipeFeed.ts     # Feed infinite query + swipe recording + destination query
 ├── services/
-│   ├── supabase.ts         # Supabase client (web: localStorage, native: SecureStore)
-│   ├── apiHelpers.ts       # API_BASE URL + auth header helpers
+│   ├── appwrite.ts         # Appwrite client SDK (Account, Databases)
+│   ├── appwriteServer.ts   # Appwrite server SDK (node-appwrite with API key)
+│   ├── apiHelpers.ts       # API_BASE URL + auth header helpers (Appwrite JWT)
 │   ├── queryClient.ts      # Shared TanStack Query client
 │   ├── travelpayouts.ts    # Travelpayouts API client
 │   ├── liteapi.ts          # LiteAPI hotel pricing client
@@ -127,7 +128,7 @@ SwypeFly/
 │   ├── storage.ts          # Cross-platform Zustand storage adapter
 │   └── webVitals.ts        # Web Vitals performance tracking
 ├── scripts/                # Data seeding scripts (run with tsx)
-├── supabase/               # SQL schema + migrations
+├── scripts/               # Data seeding scripts (legacy Supabase refs)
 ├── __tests__/              # Jest test files
 ├── data/                   # Static destination seed data
 └── public/                 # Static web assets (manifest, icons)
@@ -138,15 +139,15 @@ SwypeFly/
 ### Frontend ↔ Backend Split
 
 - **Frontend** (app/, components/, hooks/, stores/): React Native + Expo Router. Communicates with backend via `fetch` using `API_BASE` from `services/apiHelpers.ts`.
-- **Backend** (api/): Vercel Serverless Functions. Each file exports a `handler(req, res)` function. Uses Supabase service role for DB access.
+- **Backend** (api/): Vercel Serverless Functions. Each file exports a `handler(req, res)` function. Uses Appwrite server SDK (`node-appwrite`) with API key for DB access.
 - Both share `utils/validation.ts` (Zod schemas) and `types/`.
 
 ### Data Flow
 
-1. **Feed**: Client calls `GET /api/feed` → server fetches destinations from Supabase, merges with cached prices/images, applies scoring (personalized for auth'd users, generic + diversity for guests), returns paginated results.
+1. **Feed**: Client calls `GET /api/feed` → server fetches destinations from Appwrite, merges with cached prices/images, applies scoring (personalized for auth'd users, generic + diversity for guests), returns paginated results.
 2. **Swipe tracking**: Client calls `POST /api/swipe` → server records in `swipe_history` + updates user preference vectors via gradient-based learning.
 3. **Price refresh**: Daily Vercel cron → `GET /api/prices/refresh` → fetches from Travelpayouts (bulk) → Amadeus (fallback) → upserts into `cached_prices`.
-4. **AI content**: Lazy-loaded on destination detail pages via AI endpoints. Results cached in `ai_cache` table with TTL.
+4. **AI content**: Lazy-loaded on destination detail pages via AI endpoints. Results cached in `ai_cache` collection with TTL.
 
 ### Feed Scoring Algorithm
 
@@ -161,16 +162,20 @@ The feed uses a two-tier scoring system:
 
 ### Authentication
 
-- Supabase Auth with Google, Apple, and Email providers.
+- Appwrite Account API with Google OAuth, Apple OAuth, and Email/Password providers.
 - Guest mode allows browsing without auth.
 - Auth guard in `app/_layout.tsx` redirects based on session state and onboarding completion.
-- Native uses `expo-secure-store`, web uses `localStorage` for token persistence.
+- JWTs created via `account.createJWT()` are sent as Bearer tokens to API endpoints.
+- Server-side endpoints verify JWTs by creating a client with `setJWT()` and calling `account.get()`.
 
-## Database (Supabase)
+## Database (Appwrite)
 
-### Core Tables
+**Project:** `sogojet` (Database ID: `sogojet`)
+**Endpoint:** `https://nyc.cloud.appwrite.io/v1`
 
-| Table | Purpose |
+### Collections
+
+| Collection | Purpose |
 |---|---|
 | `destinations` | All travel destinations with metadata, vibe tags, feature vectors |
 | `cached_prices` | Flight prices per origin-destination pair (refreshed via cron) |
@@ -181,15 +186,16 @@ The feed uses a two-tier scoring system:
 | `saved_trips` | User's saved destinations |
 | `ai_cache` | Cached AI-generated content with TTL |
 
-### Row Level Security
+### Permissions
 
-All user-specific tables have RLS enabled. Cached/public data tables are readable by anyone, writable only by service role.
+User-specific collections use document-level permissions (set at creation time with `Permission.read/delete(Role.user(userId))`). Server-side operations use the API key for full access.
 
-### Schema Files
+### SDK Usage
 
-- `supabase/schema.sql` — Base schema
-- `supabase/migrations/` — Incremental migrations
-- `supabase/destinations_schema.sql` — Destinations table DDL
+- **Client-side:** `services/appwrite.ts` — uses `appwrite` SDK (Client, Account, Databases)
+- **Server-side:** `services/appwriteServer.ts` — uses `node-appwrite` SDK with API key
+- Auth: Appwrite Account API (Google OAuth, Apple OAuth, Email/Password)
+- JWTs: Created via `account.createJWT()` for API auth headers
 
 ## Environment Variables
 
@@ -197,9 +203,11 @@ Required variables (see `.env.example`):
 
 | Variable | Used By | Purpose |
 |---|---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | Client + Server | Supabase project URL |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Client | Supabase anonymous key (client-side) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Supabase service role (server-side DB access) |
+| `EXPO_PUBLIC_APPWRITE_ENDPOINT` | Client + Server | Appwrite API endpoint |
+| `EXPO_PUBLIC_APPWRITE_PROJECT_ID` | Client + Server | Appwrite project ID |
+| `APPWRITE_ENDPOINT` | Server only | Appwrite API endpoint (server override) |
+| `APPWRITE_PROJECT_ID` | Server only | Appwrite project ID (server override) |
+| `APPWRITE_API_KEY` | Server only | Appwrite API key (server-side DB access) |
 | `TRAVELPAYOUTS_API_TOKEN` | Server | Flight price data |
 | `AMADEUS_API_KEY` / `AMADEUS_API_SECRET` | Server | Flight price fallback |
 | `LITEAPI_API_KEY` | Server | Hotel pricing |
@@ -209,7 +217,7 @@ Required variables (see `.env.example`):
 | `CRON_SECRET` | Server | Cron job authentication |
 | `NEXT_PUBLIC_SENTRY_DSN` | Client | Error monitoring |
 
-**Important:** Variables prefixed with `EXPO_PUBLIC_` are exposed to the client bundle. Never put secrets in `EXPO_PUBLIC_` variables.
+**Important:** Variables prefixed with `EXPO_PUBLIC_` are exposed to the client bundle. Never put secrets (like `APPWRITE_API_KEY`) in `EXPO_PUBLIC_` variables.
 
 ## Coding Conventions
 
@@ -237,7 +245,7 @@ Required variables (see `.env.example`):
 - All endpoints use Vercel Serverless Function pattern: `export default async function handler(req, res)`.
 - Input validation using Zod schemas from `utils/validation.ts` with the `validateRequest()` helper.
 - Error logging via `logApiError()` from `utils/apiLogger.ts`.
-- Protected endpoints verify `Authorization: Bearer <token>` header via Supabase auth.
+- Protected endpoints verify `Authorization: Bearer <token>` header via Appwrite JWT verification.
 - Cron endpoints verify `CRON_SECRET`.
 
 ### Database Naming
@@ -283,7 +291,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push and PR:
 2. Add Zod schema in `utils/validation.ts`.
 3. Use `validateRequest()` for input validation.
 4. Use `logApiError()` for error handling.
-5. If auth required, verify Bearer token via Supabase.
+5. If auth required, verify Bearer token via Appwrite JWT.
 
 ### Adding a new destination detail component
 
@@ -301,9 +309,9 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push and PR:
 
 ### Running database migrations
 
-1. Write SQL migration in `supabase/migrations/`.
-2. Run in Supabase SQL Editor (no local CLI setup).
-3. If adding tables, add RLS policies.
+1. Create collections/attributes via Appwrite Console or using the `node-appwrite` SDK.
+2. Add indexes for query patterns (e.g., unique constraints, sort keys).
+3. Set document-level permissions as needed for user-specific data.
 
 ## Key Dependencies & Patterns to Know
 

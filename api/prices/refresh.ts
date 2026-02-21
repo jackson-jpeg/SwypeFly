@@ -1,15 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
+import { ID } from 'node-appwrite';
 import { fetchCityDirections, fetchCheapPrices } from '../../services/travelpayouts';
 import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 const AMADEUS_KEY = process.env.AMADEUS_API_KEY || '';
 const AMADEUS_SECRET = process.env.AMADEUS_API_SECRET || '';
@@ -83,16 +80,14 @@ const DEFAULT_ORIGINS = ['TPA', 'LAX', 'JFK', 'ORD', 'ATL', 'SFO', 'MIA', 'DFW',
 async function getActiveOrigins(): Promise<string[]> {
   const origins = new Set(DEFAULT_ORIGINS);
   try {
-    const { data } = await supabase
-      .from('user_preferences')
-      .select('departure_code');
-    if (data) {
-      for (const row of data) {
-        if (row.departure_code) origins.add(row.departure_code);
-      }
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
+      Query.limit(500),
+    ]);
+    for (const doc of result.documents) {
+      if (doc.departure_code) origins.add(doc.departure_code as string);
     }
   } catch {
-    // user_preferences table may not exist yet
+    // user_preferences collection may not have data yet
   }
   return Array.from(origins);
 }
@@ -103,18 +98,23 @@ async function pickNextOrigins(count: number): Promise<string[]> {
   const origins = await getActiveOrigins();
 
   // Check which origin was refreshed longest ago
-  const { data: statusRows } = await supabase
-    .from('cached_prices')
-    .select('origin, fetched_at')
-    .order('fetched_at', { ascending: true });
+  let statusDocs: Array<Record<string, unknown>> = [];
+  try {
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
+      Query.orderAsc('fetched_at'),
+      Query.limit(500),
+    ]);
+    statusDocs = result.documents;
+  } catch {
+    // No cached prices yet
+  }
 
   const lastRefreshed = new Map<string, string>();
-  if (statusRows) {
-    for (const row of statusRows) {
-      // Track the most recent fetch per origin
-      if (!lastRefreshed.has(row.origin) || row.fetched_at > lastRefreshed.get(row.origin)!) {
-        lastRefreshed.set(row.origin, row.fetched_at);
-      }
+  for (const row of statusDocs) {
+    const o = row.origin as string;
+    const ts = row.fetched_at as string;
+    if (!lastRefreshed.has(o) || ts > lastRefreshed.get(o)!) {
+      lastRefreshed.set(o, ts);
     }
   }
 
@@ -212,29 +212,34 @@ async function refreshOrigin(
   console.log(`[refresh] Total prices for ${origin}: ${allResults.size}/${allIatas.length} (TP: ${sourceCounts.travelpayouts}, Amadeus: ${sourceCounts.amadeus})`);
 
   // Step 4: Query current prices for price history tracking
-  const currentPriceMap = new Map<string, number>();
-  const { data: currentPrices } = await supabase
-    .from('cached_prices')
-    .select('destination_iata, price')
-    .eq('origin', origin);
-  if (currentPrices) {
-    for (const cp of currentPrices) {
-      currentPriceMap.set(cp.destination_iata, cp.price);
+  const currentPriceMap = new Map<string, { price: number; docId: string }>();
+  try {
+    const currentResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
+      Query.equal('origin', origin),
+      Query.limit(500),
+    ]);
+    for (const cp of currentResult.documents) {
+      currentPriceMap.set(cp.destination_iata as string, {
+        price: cp.price as number,
+        docId: cp.$id,
+      });
     }
+  } catch {
+    // No existing prices
   }
 
   // Step 5: Upsert into cached_prices with dates + price history
   const PRICE_CHANGE_THRESHOLD = 0.05; // 5% threshold for up/down
-  const rows = Array.from(allResults.values()).map((p) => {
-    const prevPrice = currentPriceMap.get(p.destination);
+  for (const p of allResults.values()) {
+    const existing = currentPriceMap.get(p.destination);
     let priceDirection: 'up' | 'down' | 'stable' = 'stable';
+    const prevPrice = existing?.price;
     if (prevPrice != null && prevPrice > 0) {
       const pctChange = (p.price - prevPrice) / prevPrice;
       if (pctChange > PRICE_CHANGE_THRESHOLD) priceDirection = 'up';
       else if (pctChange < -PRICE_CHANGE_THRESHOLD) priceDirection = 'down';
     }
 
-    // Compute trip duration from dates
     let tripDurationDays: number | null = null;
     if (p.departureDate && p.returnDate) {
       const dep = new Date(p.departureDate);
@@ -244,7 +249,7 @@ async function refreshOrigin(
       }
     }
 
-    return {
+    const data: Record<string, unknown> = {
       origin,
       destination_iata: p.destination,
       price: p.price,
@@ -252,21 +257,21 @@ async function refreshOrigin(
       airline: p.airline,
       source: p.source,
       fetched_at: new Date().toISOString(),
-      departure_date: p.departureDate ? p.departureDate.split('T')[0] : null,
-      return_date: p.returnDate ? p.returnDate.split('T')[0] : null,
-      trip_duration_days: tripDurationDays,
-      previous_price: prevPrice ?? null,
+      departure_date: p.departureDate ? p.departureDate.split('T')[0] : '',
+      return_date: p.returnDate ? p.returnDate.split('T')[0] : '',
+      trip_duration_days: tripDurationDays ?? 0,
+      previous_price: prevPrice ?? 0,
       price_direction: priceDirection,
     };
-  });
 
-  if (rows.length > 0) {
-    const { error: upsertErr } = await supabase
-      .from('cached_prices')
-      .upsert(rows, { onConflict: 'origin,destination_iata' });
-
-    if (upsertErr) {
-      console.error(`[refresh] Upsert error for ${origin}:`, upsertErr.message);
+    try {
+      if (existing) {
+        await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.cachedPrices, existing.docId, data);
+      } else {
+        await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.cachedPrices, ID.unique(), data);
+      }
+    } catch (err) {
+      console.error(`[refresh] Upsert error for ${origin}->${p.destination}:`, err);
     }
   }
 
@@ -292,25 +297,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const originParam = v.data.origin || '';
 
   try {
-    // Get all active destination IATA codes from Supabase
-    const { data: destinations, error: dbErr } = await supabase
-      .from('destinations')
-      .select('iata_code')
-      .eq('is_active', true);
+    // Get all active destination IATA codes from Appwrite
+    const destResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
+      Query.equal('is_active', true),
+      Query.limit(500),
+    ]);
 
-    if (dbErr || !destinations) {
-      return res.status(500).json({ error: 'Failed to fetch destinations from DB' });
-    }
-
-    const allIatas = destinations.map((d) => d.iata_code as string);
+    const allIatas = destResult.documents.map((d) => d.iata_code as string);
 
     // Determine which origin(s) to refresh
     let origins: string[];
     if (originParam && originParam !== 'ALL') {
-      // Specific origin requested — refresh just that one
       origins = [originParam];
     } else {
-      // No param or ALL: round-robin — refresh 3 stalest origins
       origins = await pickNextOrigins(3);
       console.log(`[refresh] Round-robin selected origins: ${origins.join(', ')}`);
     }
@@ -318,7 +317,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`[refresh] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`);
 
     const startTime = Date.now();
-    const TIME_BUDGET_MS = 45_000; // Stop if >45s used (stay under 60s Vercel limit)
+    const TIME_BUDGET_MS = 45_000;
     const results = [];
     for (const org of origins) {
       if (results.length > 0 && Date.now() - startTime > TIME_BUDGET_MS) {

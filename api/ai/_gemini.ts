@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
-import { createClient } from '@supabase/supabase-js';
+import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
+import { ID } from 'node-appwrite';
 
 // ─── Gemini client ──────────────────────────────────────────────────
 
@@ -14,44 +15,26 @@ export function getGeminiClient(): GoogleGenAI {
   return _ai;
 }
 
-// ─── Supabase client (service role, untyped for ai_cache) ───────────
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-// Use `any` schema so .from('ai_cache') works without generated types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _supabase: ReturnType<typeof createClient<any>> | null = null;
-
-export function getSupabase() {
-  if (!_supabase) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _supabase = createClient<any>(supabaseUrl, serviceRoleKey);
-  }
-  return _supabase;
-}
-
-// ─── Cache helpers ──────────────────────────────────────────────────
+// ─── Cache helpers (Appwrite) ───────────────────────────────────────
 
 export async function readCache<T>(cacheKey: string): Promise<T | null> {
   try {
-    const sb = getSupabase();
-    const { data, error } = await sb
-      .from('ai_cache')
-      .select('response_json, created_at, ttl_seconds')
-      .eq('cache_key', cacheKey)
-      .single();
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.aiCache, [
+      Query.equal('cache_key', cacheKey),
+      Query.limit(1),
+    ]);
 
-    if (error || !data) return null;
+    if (result.documents.length === 0) return null;
 
-    const age = (Date.now() - new Date(data.created_at).getTime()) / 1000;
-    if (age > data.ttl_seconds) {
+    const doc = result.documents[0];
+    const age = (Date.now() - new Date(doc.created_at as string).getTime()) / 1000;
+    if (age > (doc.ttl_seconds as number)) {
       // Expired — clean up async, don't block
-      sb.from('ai_cache').delete().eq('cache_key', cacheKey).then(() => {});
+      serverDatabases.deleteDocument(DATABASE_ID, COLLECTIONS.aiCache, doc.$id).catch(() => {});
       return null;
     }
 
-    return data.response_json as T;
+    return JSON.parse(doc.response_json as string) as T;
   } catch {
     return null;
   }
@@ -63,13 +46,29 @@ export async function writeCache(
   ttlSeconds: number,
 ): Promise<void> {
   try {
-    const sb = getSupabase();
-    await sb.from('ai_cache').upsert({
+    // Check if doc exists for this cache_key
+    const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.aiCache, [
+      Query.equal('cache_key', cacheKey),
+      Query.limit(1),
+    ]);
+
+    const data = {
       cache_key: cacheKey,
-      response_json: responseJson,
+      response_json: JSON.stringify(responseJson),
       created_at: new Date().toISOString(),
       ttl_seconds: ttlSeconds,
-    });
+    };
+
+    if (existing.documents.length > 0) {
+      await serverDatabases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.aiCache,
+        existing.documents[0].$id,
+        data,
+      );
+    } else {
+      await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.aiCache, ID.unique(), data);
+    }
   } catch {
     // Cache write failure is non-fatal
   }
