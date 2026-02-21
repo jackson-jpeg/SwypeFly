@@ -167,6 +167,38 @@ export default function DestinationDetail() {
               )}
             </div>
 
+            {/* Trip cost estimator */}
+            {destination.hotelPricePerNight > 0 && effectivePrice > 0 && (() => {
+              const nights = destination.tripDurationDays ? destination.tripDurationDays - 1 : 5;
+              const hotelTotal = destination.hotelPricePerNight * nights;
+              const totalTrip = effectivePrice + hotelTotal;
+              return (
+                <div style={{
+                  marginTop: spacing['5'],
+                  padding: `${spacing['4']}px ${spacing['5']}px`,
+                  borderRadius: radii['2xl'],
+                  background: 'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(56,189,248,0.02) 100%)',
+                  border: `1px solid rgba(56,189,248,0.15)`,
+                }}>
+                  <div style={{ color: colors.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginBottom: spacing['3'] }}>
+                    💰 Estimated Trip Cost ({nights} nights)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.text.secondary, fontSize: fontSize.lg }}>
+                      <span>✈️ Flights (roundtrip)</span><span>${effectivePrice}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.text.secondary, fontSize: fontSize.lg }}>
+                      <span>🏨 Hotel ({nights} nights × ${destination.hotelPricePerNight})</span><span>${hotelTotal}</span>
+                    </div>
+                    <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['2']}px 0` }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.extrabold }}>
+                      <span>Total</span><span>${totalTrip}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Hotel card */}
             {destination.hotelPricePerNight > 0 && (
               <div style={{
