@@ -153,17 +153,63 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
 
   // No web stagger — content is always statically visible
 
+  // ── Horizontal swipe gesture (web) ──
+  const [swipeX, setSwipeX] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const isDragging = useRef(false);
+
+  const SWIPE_THRESHOLD = 80;
+  const swipeLabel = swipeX > SWIPE_THRESHOLD ? 'SAVE' : swipeX < -SWIPE_THRESHOLD ? 'SKIP' : null;
+  const swipeColor = swipeX > SWIPE_THRESHOLD ? '#22C55E' : swipeX < -SWIPE_THRESHOLD ? '#EF4444' : 'transparent';
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+    isDragging.current = false;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    // Only start horizontal drag if predominantly horizontal
+    if (!isDragging.current && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      isDragging.current = true;
+    }
+    if (isDragging.current) {
+      setSwipeX(dx * 0.6); // dampen
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (swipeX > SWIPE_THRESHOLD) {
+      // Swipe right → save
+      if (!isSaved) onToggleSave();
+      successHaptic();
+    }
+    // Left swipe is just visual feedback for now (skip doesn't need action)
+    setSwipeX(0);
+    touchStartRef.current = null;
+    isDragging.current = false;
+  }, [swipeX, isSaved, onToggleSave]);
+
   // ── Web ──
   if (Platform.OS === 'web') {
     return (
       <div
-        onClick={handleCardTap}
+        onClick={(e) => { if (!isDragging.current) handleCardTap(); }}
         onDoubleClick={(e) => { e.stopPropagation(); triggerHeartBurst(); }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           cursor: 'pointer', overflow: 'hidden', backgroundColor: colors.navy,
-          transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          transform: isActive ? 'scale(1)' : 'scale(0.97)',
+          transition: swipeX === 0 ? 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
+          transform: swipeX !== 0
+            ? `translateX(${swipeX}px) rotate(${swipeX * 0.02}deg)`
+            : isActive ? 'scale(1)' : 'scale(0.97)',
         }}
       >
         <style>{`
@@ -205,6 +251,21 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
                 fill={colors.primary} stroke={colors.primary} strokeWidth="1.2" />
             </svg>
+          </div>
+        )}
+
+        {/* Swipe label overlay */}
+        {swipeLabel && (
+          <div style={{
+            position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)',
+            zIndex: 25, pointerEvents: 'none',
+            padding: '12px 32px', borderRadius: 16,
+            border: `3px solid ${swipeColor}`,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+          }}>
+            <span style={{
+              color: swipeColor, fontSize: 32, fontWeight: 900, letterSpacing: 4,
+            }}>{swipeLabel}</span>
           </div>
         )}
 
