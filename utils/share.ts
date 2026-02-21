@@ -1,6 +1,6 @@
 import { Share, Platform } from 'react-native';
 
-const APP_URL = 'https://swype-fly.vercel.app';
+const APP_URL = 'https://sogojet.com';
 
 export async function shareDestination(
   city: string,

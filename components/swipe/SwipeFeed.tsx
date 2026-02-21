@@ -3,6 +3,7 @@ import { View, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { SwipeCard } from './SwipeCard';
 import { SkeletonCard } from './SkeletonCard';
+import { SearchOverlay } from './SearchOverlay';
 import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
@@ -22,6 +23,7 @@ export function SwipeFeed() {
   const refreshFeed = useFeedStore((s) => s.refreshFeed);
   const departureCode = useUIStore((s) => s.departureCode);
   const departureCity = useUIStore((s) => s.departureCity);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const webScrollRef = useRef<HTMLDivElement>(null);
@@ -214,16 +216,27 @@ export function SwipeFeed() {
           }}>
             SoGo<span style={{ color: '#38BDF8' }}>Jet</span>
           </span>
-          <span style={{
-            color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
-            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-            pointerEvents: 'auto', cursor: 'pointer',
-          }}
-            onClick={() => router.push('/settings')}
-          >
-            ✈️ From {departureCode}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, pointerEvents: 'auto' }}>
+            <span style={{
+              color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
+              textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+              cursor: 'pointer',
+            }}
+              onClick={() => router.push('/settings')}
+            >
+              ✈️ {departureCode}
+            </span>
+            <span
+              onClick={() => setSearchOpen(true)}
+              style={{
+                color: 'rgba(255,255,255,0.8)', fontSize: 18, cursor: 'pointer',
+                textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+              }}
+            >🔍</span>
+          </div>
         </div>
+
+        <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
 
         {destinations.map((destination, index) => (
           <div key={destination.id} className="sg-card-snap" style={{ height: '100vh', width: '100%', position: 'relative' }}>
