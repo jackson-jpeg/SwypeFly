@@ -95,21 +95,8 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const metaY = useSharedValue(isActive ? 0 : 15);
   const actionsX = useSharedValue(isActive ? 0 : 20);
 
-  // ── Web stagger (content always visible, transforms only) ──
-  const [webStaggerActive, setWebStaggerActive] = useState(true);
-  const webPrevIsActive = useRef(isActive);
-
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      if (isActive && !webPrevIsActive.current) {
-        setWebStaggerActive(false);
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => { setWebStaggerActive(true); });
-        });
-      }
-      webPrevIsActive.current = isActive;
-      return;
-    }
+    if (Platform.OS === 'web') return;
 
     if (isActive && !prevIsActive.current) {
       cardScale.value = 0.97;
@@ -163,14 +150,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
 
   const effectivePrice = destination.livePrice ?? destination.flightPrice;
 
-  // ── Web stagger helper: transforms only, opacity always 1 ──
-  const webStagger = (delayMs: number, translatePx: number, dir: 'Y' | 'X' = 'Y') => ({
-    transition: `transform ${STAGGER_DURATION}ms cubic-bezier(0.33, 1, 0.68, 1) ${delayMs}ms`,
-    transform: webStaggerActive
-      ? 'translate(0, 0)'
-      : dir === 'Y' ? `translateY(${translatePx}px)` : `translateX(${translatePx}px)`,
-    opacity: 1,
-  });
+  // No web stagger — content is always statically visible
 
   // ── Web ──
   if (Platform.OS === 'web') {
@@ -232,7 +212,6 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           style={{
             position: 'absolute', bottom: 120, right: 16, zIndex: 10,
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
-            ...webStagger(80, 20, 'X'),
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -280,7 +259,6 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               margin: 0, color: '#fff', fontSize: 40, fontWeight: 800,
               letterSpacing: -0.5, lineHeight: 1,
               textShadow: '0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)',
-              ...webStagger(0, 20),
             }}
           >
             {destination.city}
@@ -290,7 +268,6 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           <p style={{
             margin: '8px 0 0 0', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center',
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-            ...webStagger(60, 12),
           }}>
             <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>{destination.country}</span>
             <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
@@ -304,7 +281,6 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             backgroundColor: 'rgba(0,0,0,0.3)',
             backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid rgba(255,255,255,0.1)',
-            ...webStagger(120, 15),
           }}>
             <span style={{ fontSize: 14 }}>✈️</span>
             <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>
