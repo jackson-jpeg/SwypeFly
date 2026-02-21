@@ -1,11 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { Client, Databases, Account, Query, ID } from 'node-appwrite';
 import { swipeBodySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, serviceRoleKey);
+const DATABASE_ID = 'sogojet';
+
+const COLLECTIONS = {
+  destinations: 'destinations',
+  swipeHistory: 'swipe_history',
+  userPreferences: 'user_preferences',
+} as const;
 
 // ─── Learning rates per swipe action ────────────────────────────────
 
@@ -16,13 +20,23 @@ const LEARNING_RATES: Record<string, number> = {
 };
 
 const FEATURE_KEYS = [
-  'beach_score', 'city_score', 'adventure_score',
-  'culture_score', 'nightlife_score', 'nature_score', 'food_score',
+  'beach_score',
+  'city_score',
+  'adventure_score',
+  'culture_score',
+  'nightlife_score',
+  'nature_score',
+  'food_score',
 ] as const;
 
 const PREF_KEYS = [
-  'pref_beach', 'pref_city', 'pref_adventure',
-  'pref_culture', 'pref_nightlife', 'pref_nature', 'pref_food',
+  'pref_beach',
+  'pref_city',
+  'pref_adventure',
+  'pref_culture',
+  'pref_nightlife',
+  'pref_nature',
+  'pref_food',
 ] as const;
 
 // ─── Handler ─────────────────────────────────────────────────────────
@@ -38,11 +52,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const token = authHeader.replace('Bearer ', '');
+  const jwt = authHeader.replace('Bearer ', '');
 
   try {
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-    if (authErr || !user) {
+    // Verify the JWT by creating a client with it
+    const userClient = new Client()
+      .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
+      .setProject(
+        process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '',
+      )
+      .setJWT(jwt);
+
+    const userAccount = new Account(userClient);
+    const user = await userAccount.get();
+
+    if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
@@ -50,61 +74,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!v.success) return res.status(400).json({ error: v.error });
     const { destination_id, action, time_spent_ms, price_shown } = v.data;
 
+    // Use admin client for database writes
+    const adminClient = new Client()
+      .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
+      .setProject(
+        process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '',
+      )
+      .setKey(process.env.APPWRITE_API_KEY ?? '');
+
+    const db = new Databases(adminClient);
+
     // 1. Insert swipe history
-    const { error: insertErr } = await supabase
-      .from('swipe_history')
-      .insert({
-        user_id: user.id,
+    try {
+      await db.createDocument(DATABASE_ID, COLLECTIONS.swipeHistory, ID.unique(), {
+        user_id: user.$id,
         destination_id,
         action,
-        time_spent_ms: time_spent_ms ?? null,
-        price_shown: price_shown ?? null,
+        time_spent_ms: time_spent_ms ?? 0,
+        price_shown: price_shown ?? 0,
       });
-
-    if (insertErr) {
-      console.error('[swipe] Insert error:', insertErr.message);
+    } catch (err) {
+      console.error('[swipe] Insert error:', err);
     }
 
-    // 2. Update user preference vectors (only for meaningful actions)
+    // 2. Update user preference vectors
     const lr = LEARNING_RATES[action];
     if (lr !== undefined && lr !== 0) {
-      // Fetch destination feature vector
-      const { data: dest } = await supabase
-        .from('destinations')
-        .select(FEATURE_KEYS.join(', '))
-        .eq('id', destination_id)
-        .single();
+      try {
+        // Fetch destination feature vector
+        const dest = await db.getDocument(DATABASE_ID, COLLECTIONS.destinations, destination_id);
 
-      if (dest) {
         // Fetch current user prefs
-        const { data: prefs } = await supabase
-          .from('user_preferences')
-          .select(PREF_KEYS.join(', '))
-          .eq('user_id', user.id)
-          .single();
+        const prefsResult = await db.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
+          Query.equal('user_id', user.$id),
+          Query.limit(1),
+        ]);
 
-        if (prefs) {
+        if (dest && prefsResult.documents.length > 0) {
+          const prefs = prefsResult.documents[0];
           const updates: Record<string, number> = {};
-          const destRec = dest as unknown as Record<string, number>;
-          const prefRec = prefs as unknown as Record<string, number>;
 
           for (let i = 0; i < FEATURE_KEYS.length; i++) {
-            const destFeature = destRec[FEATURE_KEYS[i]] ?? 0;
-            const oldPref = prefRec[PREF_KEYS[i]] ?? 0.5;
-            // new_pref = old_pref + lr * (dest_feature - old_pref), clamped to [0, 1]
+            const destFeature = (dest[FEATURE_KEYS[i]] as number) ?? 0;
+            const oldPref = (prefs[PREF_KEYS[i]] as number) ?? 0.5;
             const newPref = Math.max(0, Math.min(1, oldPref + lr * (destFeature - oldPref)));
-            updates[PREF_KEYS[i]] = Math.round(newPref * 1000) / 1000; // 3 decimal places
+            updates[PREF_KEYS[i]] = Math.round(newPref * 1000) / 1000;
           }
 
-          const { error: updateErr } = await supabase
-            .from('user_preferences')
-            .update(updates)
-            .eq('user_id', user.id);
-
-          if (updateErr) {
-            console.error('[swipe] Pref update error:', updateErr.message);
-          }
+          await db.updateDocument(DATABASE_ID, COLLECTIONS.userPreferences, prefs.$id, updates);
         }
+      } catch (err) {
+        console.error('[swipe] Pref update error:', err);
       }
     }
 

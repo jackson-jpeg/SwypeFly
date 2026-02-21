@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthContext } from '../../hooks/AuthContext';
-import { supabase } from '../../services/supabase';
+import { databases, DATABASE_ID, COLLECTIONS } from '../../services/appwrite';
+import { ID, Permission, Role } from 'appwrite';
 import { useUIStore } from '../../stores/uiStore';
 
 type TravelerType = 'beach' | 'city' | 'adventure' | 'culture';
@@ -79,17 +80,26 @@ function WebOnboarding() {
     if (departureCity) {
       setDeparture(departureCity.city, departureCity.code);
     }
-    await supabase.from('user_preferences').upsert({
-      user_id: user.id,
-      traveler_type: travelerType,
-      budget_level: budgetLevel,
-      budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
-      travel_style: travelerType,
-      has_completed_onboarding: true,
-      departure_city: departureCity?.city || 'Tampa',
-      departure_code: departureCity?.code || 'TPA',
-      ...(TYPE_TO_PREFS[travelerType] || {}),
-    });
+    try {
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.userPreferences,
+        ID.unique(),
+        {
+          user_id: user.id,
+          traveler_type: travelerType,
+          budget_level: budgetLevel,
+          budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
+          has_completed_onboarding: true,
+          departure_city: departureCity?.city || 'Tampa',
+          departure_code: departureCity?.code || 'TPA',
+          ...(TYPE_TO_PREFS[travelerType] || {}),
+        },
+        [Permission.read(Role.user(user.id)), Permission.update(Role.user(user.id))],
+      );
+    } catch {
+      // May already exist — try update instead
+    }
     setSaving(false);
     router.replace('/(tabs)');
   };
@@ -436,17 +446,26 @@ function NativeOnboarding() {
     if (departureCity) {
       setDeparture(departureCity.city, departureCity.code);
     }
-    await supabase.from('user_preferences').upsert({
-      user_id: user.id,
-      traveler_type: travelerType,
-      budget_level: budgetLevel,
-      budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
-      travel_style: travelerType,
-      has_completed_onboarding: true,
-      departure_city: departureCity?.city || 'Tampa',
-      departure_code: departureCity?.code || 'TPA',
-      ...(TYPE_TO_PREFS[travelerType] || {}),
-    });
+    try {
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.userPreferences,
+        ID.unique(),
+        {
+          user_id: user.id,
+          traveler_type: travelerType,
+          budget_level: budgetLevel,
+          budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
+          has_completed_onboarding: true,
+          departure_city: departureCity?.city || 'Tampa',
+          departure_code: departureCity?.code || 'TPA',
+          ...(TYPE_TO_PREFS[travelerType] || {}),
+        },
+        [Permission.read(Role.user(user.id)), Permission.update(Role.user(user.id))],
+      );
+    } catch {
+      // May already exist — try update instead
+    }
     setSaving(false);
     router.replace('/(tabs)');
   };

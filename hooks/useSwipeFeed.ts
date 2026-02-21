@@ -3,9 +3,43 @@ import { useUIStore } from '../stores/uiStore';
 import { useFeedStore } from '../stores/feedStore';
 import { captureException } from '../utils/sentry';
 import { API_BASE, getAuthHeaders } from '../services/apiHelpers';
+import { destinations as staticDestinations } from '../data/destinations';
+import { scoreFeed } from '../utils/scoreFeed';
 import type { Destination, DestinationFeedPage } from '../types/destination';
 
-// ─── Feed ────────────────────────────────────────────────────────────
+// ─── Static data fallback ─────────────────────────────────────
+
+function getStaticPage(
+  cursor: string | null,
+  vibeFilter: string | null,
+  sortPreset: string | null,
+): DestinationFeedPage {
+  let dests = [...staticDestinations];
+
+  if (vibeFilter) {
+    const vibe = vibeFilter.toLowerCase();
+    dests = dests.filter((d) => d.vibeTags.some((t) => t.toLowerCase() === vibe));
+  }
+
+  if (sortPreset === 'cheapest') {
+    dests.sort((a, b) => a.flightPrice - b.flightPrice);
+  } else if (sortPreset === 'topRated') {
+    dests.sort((a, b) => b.rating - a.rating);
+  } else if (sortPreset === 'trending') {
+    dests.sort((a, b) => b.reviewCount - a.reviewCount);
+  } else {
+    dests = scoreFeed(dests);
+  }
+
+  const pageSize = 10;
+  const offset = Number(cursor) || 0;
+  const page = dests.slice(offset, offset + pageSize);
+  const nextCursor = offset + pageSize < dests.length ? String(offset + pageSize) : null;
+
+  return { destinations: page, nextCursor };
+}
+
+// ─── Feed ────────────────────────────────────────────────────
 
 async function fetchPage(
   origin: string,
@@ -15,25 +49,30 @@ async function fetchPage(
   vibeFilter: string | null,
   sortPreset: string | null,
 ): Promise<DestinationFeedPage> {
-  const params = new URLSearchParams({ origin });
-  if (cursor) params.set('cursor', cursor);
-  params.set('sessionId', sessionId);
-  if (excludeIds.length > 0) {
-    params.set('excludeIds', excludeIds.join(','));
-  }
-  if (vibeFilter) {
-    params.set('vibeFilter', vibeFilter);
-  }
-  if (sortPreset && sortPreset !== 'default') {
-    params.set('sortPreset', sortPreset);
-  }
+  try {
+    const params = new URLSearchParams({ origin });
+    if (cursor) params.set('cursor', cursor);
+    params.set('sessionId', sessionId);
+    if (excludeIds.length > 0) {
+      params.set('excludeIds', excludeIds.join(','));
+    }
+    if (vibeFilter) {
+      params.set('vibeFilter', vibeFilter);
+    }
+    if (sortPreset && sortPreset !== 'default') {
+      params.set('sortPreset', sortPreset);
+    }
 
-  const authHeaders = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/feed?${params}`, {
-    headers: authHeaders,
-  });
-  if (!res.ok) throw new Error(`Feed request failed: ${res.status}`);
-  return res.json();
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/feed?${params}`, {
+      headers: authHeaders,
+    });
+    if (!res.ok) throw new Error(`Feed request failed: ${res.status}`);
+    return res.json();
+  } catch {
+    // API unavailable — fall back to static data
+    return getStaticPage(cursor, vibeFilter, sortPreset);
+  }
 }
 
 export function useSwipeFeed() {
@@ -46,7 +85,14 @@ export function useSwipeFeed() {
   return useInfiniteQuery({
     queryKey: ['feed', departureCode, sessionId, vibeFilter, sortPreset],
     queryFn: ({ pageParam }) =>
-      fetchPage(departureCode, pageParam, sessionId, Array.from(viewedIds), vibeFilter, sortPreset),
+      fetchPage(
+        departureCode,
+        pageParam,
+        sessionId,
+        Array.from(viewedIds),
+        vibeFilter,
+        sortPreset,
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
@@ -85,16 +131,23 @@ export async function recordSwipe(
 // ─── Single Destination ──────────────────────────────────────────────
 
 async function fetchDestination(id: string, origin: string): Promise<Destination> {
-  const res = await fetch(`${API_BASE}/api/destination?id=${id}&origin=${origin}`);
-  if (!res.ok) throw new Error(`Destination request failed: ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/destination?id=${id}&origin=${origin}`);
+    if (!res.ok) throw new Error(`Destination request failed: ${res.status}`);
+    return res.json();
+  } catch {
+    // Fallback: find in static data
+    const found = staticDestinations.find((d) => d.id === id);
+    if (found) return found;
+    throw new Error(`Destination ${id} not found`);
+  }
 }
 
 const VALID_ID_RE = /^[0-9a-f-]+$/i;
 
 export function useDestination(id: string | undefined) {
   const departureCode = useUIStore((s) => s.departureCode);
-  const isValidId = !!id && VALID_ID_RE.test(id);
+  const isValidId = !!id && (VALID_ID_RE.test(id) || /^\d+$/.test(id));
 
   return useQuery({
     queryKey: ['destination', id, departureCode],

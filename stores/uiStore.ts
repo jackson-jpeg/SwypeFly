@@ -2,9 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createPersistStorage } from '../utils/storage';
 import { useFeedStore } from './feedStore';
-import { supabase } from '../services/supabase';
 import { queryClient } from '../services/queryClient';
-import { captureException } from '../utils/sentry';
 
 interface UIState {
   hapticsEnabled: boolean;
@@ -38,18 +36,6 @@ export const useUIStore = create<UIState>()(
         useFeedStore.getState().reset();
         // Invalidate feed queries so new departure city takes effect
         queryClient.removeQueries({ queryKey: ['feed'] });
-        // Fire-and-forget sync to Supabase
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) {
-            supabase.from('user_preferences').upsert({
-              user_id: session.user.id,
-              departure_city: city,
-              departure_code: code,
-            }).then(({ error }) => {
-              if (error) captureException(error, { context: 'uiStore.setDeparture' });
-            });
-          }
-        }).catch((err) => captureException(err, { context: 'uiStore.setDeparture.getSession' }));
       },
       setCurrency: (currency) => set({ currency }),
       setGuest: (isGuest) => set({ isGuest }),

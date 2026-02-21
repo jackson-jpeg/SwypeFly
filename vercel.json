@@ -29,7 +29,7 @@
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/prices/hotel-refresh",
+      "path": "/api/prices/refresh-hotels",
       "schedule": "0 18 * * *"
     },
     {
