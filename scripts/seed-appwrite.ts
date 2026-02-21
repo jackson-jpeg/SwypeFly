@@ -7,14 +7,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-// Load .env
-const envPath = path.resolve(process.cwd(), '.env');
-if (fs.existsSync(envPath)) {
-  for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const [key, ...rest] = trimmed.split('=');
-    process.env[key.trim()] = rest.join('=').trim();
+// Load .env and .env.local (local overrides base)
+for (const envFile of ['.env', '.env.local']) {
+  const p = path.resolve(process.cwd(), envFile);
+  if (fs.existsSync(p)) {
+    for (const line of fs.readFileSync(p, 'utf-8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const [key, ...rest] = trimmed.split('=');
+      process.env[key.trim()] = rest.join('=').trim().replace(/^["']|["']$/g, '').replace(/\\n$/g, '');
+    }
   }
 }
 

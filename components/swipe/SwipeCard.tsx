@@ -24,6 +24,7 @@ interface SwipeCardProps {
   isPreloaded: boolean;
   isSaved: boolean;
   onToggleSave: () => void;
+  index?: number;
 }
 
 const DOUBLE_TAP_DELAY = 300;
@@ -54,7 +55,7 @@ const ShareIcon = (
   </svg>
 );
 
-function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleSave }: SwipeCardProps) {
+function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleSave, index }: SwipeCardProps) {
   const shouldLoadImage = isActive || isPreloaded;
 
   // ── Image slideshow ──
@@ -409,6 +410,7 @@ export const SwipeCard = React.memo(SwipeCardInner, (prev, next) => {
     prev.destination.id === next.destination.id &&
     prev.isActive === next.isActive &&
     prev.isPreloaded === next.isPreloaded &&
-    prev.isSaved === next.isSaved
+    prev.isSaved === next.isSaved &&
+    prev.index === next.index
   );
 });

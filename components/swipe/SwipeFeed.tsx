@@ -197,6 +197,19 @@ export function SwipeFeed() {
         style={{ height: '100vh', width: '100%', overflowY: 'scroll', scrollbarWidth: 'none', position: 'relative' }}
         onScroll={handleWebScroll}
       >
+        {/* Floating logo — top left */}
+        <div style={{
+          position: 'fixed', top: 16, left: 20, zIndex: 30,
+          pointerEvents: 'none',
+        }}>
+          <span style={{
+            color: '#fff', fontSize: 20, fontWeight: 800, letterSpacing: -0.5,
+            textShadow: '0 2px 12px rgba(0,0,0,0.5)',
+          }}>
+            SoGo<span style={{ color: '#38BDF8' }}>Jet</span>
+          </span>
+        </div>
+
         {destinations.map((destination, index) => (
           <div key={destination.id} className="sg-card-snap" style={{ height: '100vh', width: '100%', position: 'relative' }}>
             <SwipeCard
@@ -205,13 +218,14 @@ export function SwipeFeed() {
               isPreloaded={index >= activeIndex - PRELOAD_BEHIND && index <= activeIndex + PRELOAD_AHEAD}
               isSaved={isSaved(destination.id)}
               onToggleSave={() => handleToggleSave(destination.id)}
+              index={index}
             />
             {index === 0 && showHint && (
               <div className="sg-swipe-hint">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 5l0 14M5 12l7-7 7 7" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 19V5M5 12l7-7 7 7" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 500, letterSpacing: 1 }}>SWIPE UP</span>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase' as const }}>Swipe to explore</span>
               </div>
             )}
           </div>
@@ -269,6 +283,7 @@ export function SwipeFeed() {
               isPreloaded={index >= activeIndex - PRELOAD_BEHIND && index <= activeIndex + PRELOAD_AHEAD}
               isSaved={isSaved(destination.id)}
               onToggleSave={() => handleToggleSave(destination.id)}
+              index={index}
             />
           </View>
         ))}
