@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useSavedStore } from '../stores/savedStore';
 import { mediumHaptic, successHaptic } from '../utils/haptics';
-import { supabase } from '../services/supabase';
+import { databases, DATABASE_ID, COLLECTIONS } from '../services/appwrite';
+import { ID, Query, Permission, Role } from 'appwrite';
 import { useAuthContext } from './AuthContext';
 import { showError } from '../stores/toastStore';
 import { captureException } from '../utils/sentry';
@@ -12,26 +13,25 @@ export function useSaveDestination() {
   const hydrate = useSavedStore((s) => s.hydrate);
   const { user } = useAuthContext();
   const hydratedRef = useRef(false);
-  // Per-destination in-flight lock to prevent rapid toggle race conditions
   const inFlightRef = useRef(new Set<string>());
 
-  // Hydrate saved IDs from Supabase on login
+  // Hydrate saved IDs from Appwrite on login
   useEffect(() => {
     if (!user || hydratedRef.current) return;
     hydratedRef.current = true;
 
-    supabase
-      .from('saved_trips')
-      .select('destination_id')
-      .eq('user_id', user.id)
-      .then(({ data, error }) => {
-        if (error) {
-          captureException(error, { context: 'useSaveDestination.hydrate' });
-          return;
+    databases
+      .listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
+        Query.equal('user_id', user.id),
+        Query.limit(500),
+      ])
+      .then((result) => {
+        if (result.documents.length > 0) {
+          hydrate(result.documents.map((doc) => doc.destination_id as string));
         }
-        if (data && data.length > 0) {
-          hydrate(data.map((row) => row.destination_id));
-        }
+      })
+      .catch((err) => {
+        captureException(err, { context: 'useSaveDestination.hydrate' });
       });
   }, [user, hydrate]);
 
@@ -42,38 +42,46 @@ export function useSaveDestination() {
 
   const toggle = useCallback(
     async (id: string) => {
-      // Prevent rapid double-toggle on same destination
       if (inFlightRef.current.has(id)) return;
 
-      // Read directly from store to avoid stale closure
       const wasSaved = useSavedStore.getState().savedIds.has(id);
       mediumHaptic();
 
       // Optimistic update
       toggleSaved(id);
 
-      // Success haptic on save (not unsave)
       if (!wasSaved) successHaptic();
 
-      // Sync to Supabase if authenticated
+      // Sync to Appwrite if authenticated
       if (user) {
         inFlightRef.current.add(id);
         try {
           if (wasSaved) {
-            const { error } = await supabase
-              .from('saved_trips')
-              .delete()
-              .eq('user_id', user.id)
-              .eq('destination_id', id);
-            if (error) throw error;
-          } else {
-            const { error } = await supabase
-              .from('saved_trips')
-              .upsert(
-                { user_id: user.id, destination_id: id },
-                { onConflict: 'user_id,destination_id' },
+            // Find and delete the saved trip document
+            const result = await databases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
+              Query.equal('user_id', user.id),
+              Query.equal('destination_id', id),
+              Query.limit(1),
+            ]);
+            if (result.documents.length > 0) {
+              await databases.deleteDocument(
+                DATABASE_ID,
+                COLLECTIONS.savedTrips,
+                result.documents[0].$id,
               );
-            if (error) throw error;
+            }
+          } else {
+            await databases.createDocument(
+              DATABASE_ID,
+              COLLECTIONS.savedTrips,
+              ID.unique(),
+              {
+                user_id: user.id,
+                destination_id: id,
+                saved_at: new Date().toISOString(),
+              },
+              [Permission.read(Role.user(user.id)), Permission.delete(Role.user(user.id))],
+            );
           }
         } catch (err) {
           // Rollback optimistic update
