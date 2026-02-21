@@ -150,6 +150,8 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   };
 
   const effectivePrice = destination.livePrice ?? destination.flightPrice;
+  const isDeal = destination.livePrice != null && destination.livePrice < destination.flightPrice * 0.85;
+  const savings = isDeal ? Math.round(((destination.flightPrice - destination.livePrice!) / destination.flightPrice) * 100) : 0;
 
   // No web stagger — content is always statically visible
 
@@ -337,17 +339,28 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </p>
 
           {/* Price pill */}
-          <div style={{
-            marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 16px', borderRadius: 9999,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}>
-            <span style={{ fontSize: 14 }}>✈️</span>
-            <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>
-              From ${effectivePrice}
-            </span>
+          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', borderRadius: 9999,
+              backgroundColor: isDeal ? 'rgba(34,197,94,0.25)' : 'rgba(0,0,0,0.3)',
+              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              border: isDeal ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)',
+            }}>
+              <span style={{ fontSize: 14 }}>{isDeal ? '🔥' : '✈️'}</span>
+              <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>
+                From ${effectivePrice}
+              </span>
+            </div>
+            {isDeal && (
+              <span style={{
+                padding: '4px 10px', borderRadius: 9999,
+                backgroundColor: 'rgba(34,197,94,0.3)',
+                color: '#4ADE80', fontSize: 12, fontWeight: 700,
+              }}>
+                {savings}% off
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -456,7 +469,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               backgroundColor: 'rgba(0,0,0,0.3)', alignSelf: 'flex-start',
               borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
             }}>
-              <Text style={{ fontSize: 14 }}>✈️</Text>
+              <Text style={{ fontSize: 14 }}>{isDeal ? '🔥' : '✈️'}</Text>
               <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>From ${effectivePrice}</Text>
             </View>
           </Animated.View>
