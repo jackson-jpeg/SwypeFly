@@ -1,5 +1,12 @@
 import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
 import { useUIStore } from '../stores/uiStore';
+
+function webVibrate(ms: number | number[] = 10) {
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(ms);
+  }
+}
 
 export async function lightHaptic(): Promise<void> {
   try {
@@ -44,9 +51,10 @@ export async function heavyHaptic(): Promise<void> {
 export async function successHaptic(): Promise<void> {
   try {
     if (useUIStore.getState().hapticsEnabled) {
+      webVibrate([10, 30, 10]);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   } catch {
-    // Haptics not available
+    webVibrate([10, 30, 10]);
   }
 }

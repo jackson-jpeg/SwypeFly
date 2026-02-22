@@ -47,6 +47,7 @@ export interface Destination {
   blurHash?: string;
   priceDirection?: 'up' | 'down' | 'stable';
   previousPrice?: number;
+  otherPrices?: { origin: string; price: number; source: string }[];
   photographerAttribution?: { name: string; url: string };
 }
 

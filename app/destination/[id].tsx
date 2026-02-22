@@ -200,6 +200,28 @@ export default function DestinationDetail() {
               );
             })()}
 
+            {/* Prices from other airports */}
+            {destination.otherPrices && destination.otherPrices.length > 0 && (
+              <div style={{ marginTop: spacing['4'] }}>
+                <div style={{ color: colors.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing['2'] }}>
+                  Also available from
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {destination.otherPrices.map((op: { origin: string; price: number }) => (
+                    <div key={op.origin} style={{
+                      padding: '6px 14px', borderRadius: 9999,
+                      backgroundColor: colors.surfaceElevated,
+                      border: `1px solid ${colors.border}`,
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      <span style={{ color: colors.text.secondary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{op.origin}</span>
+                      <span style={{ color: colors.text.primary, fontSize: fontSize.sm, fontWeight: fontWeight.bold }}>${op.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Hotel card */}
             {destination.hotelPricePerNight > 0 && (
               <div style={{

@@ -39,6 +39,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // No cached prices
     }
 
+    // Fetch prices from other origins for comparison
+    let otherPrices: { origin: string; price: number; source: string }[] = [];
+    try {
+      const allPrices = await serverDatabases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.cachedPrices,
+        [
+          Query.equal('destination_iata', dest.iata_code as string),
+          Query.limit(20),
+        ],
+      );
+      otherPrices = allPrices.documents
+        .filter((p) => p.origin !== origin)
+        .map((p) => ({ origin: p.origin as string, price: p.price as number, source: p.source as string }))
+        .sort((a, b) => a.price - b.price)
+        .slice(0, 5);
+    } catch {
+      // Fine if this fails
+    }
+
     // Parse JSON fields
     let itinerary;
     let restaurants;
@@ -85,6 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       airline: (price?.airline as string) || undefined,
       priceDirection: (price?.price_direction as string) || undefined,
       previousPrice: (price?.previous_price as number) ?? undefined,
+      otherPrices,
     };
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
