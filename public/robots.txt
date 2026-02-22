@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sogojet.com/sitemap.xml
