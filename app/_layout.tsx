@@ -31,7 +31,7 @@ function useWebStyles() {
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: #F8FAFC;
+        background-color: #0F172A;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
