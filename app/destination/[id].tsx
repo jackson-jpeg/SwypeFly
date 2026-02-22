@@ -12,6 +12,7 @@ import { QuickStats } from '../../components/destination/QuickStats';
 import { StickyBookBar } from '../../components/destination/StickyBookBar';
 import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
+import { TravelTips } from '../../components/destination/TravelTips';
 import { SimilarDestinations } from '../../components/destination/SimilarDestinations';
 import { hotelLink, activitiesLink } from '../../utils/affiliateLinks';
 import { CompareModal } from '../../components/common/CompareModal';
@@ -98,7 +99,7 @@ export default function DestinationDetail() {
         >&#10005;</button>
 
         {/* Scrollable content */}
-        <div style={{ overflowY: 'auto', height: '100vh', maxWidth: layout.maxContentWidth, margin: '0 auto' }}>
+        <div style={{ overflowY: 'auto', height: '100vh', maxWidth: layout.maxContentWidth, margin: '0 auto', scrollBehavior: 'smooth' }}>
           {/* 1. Hero — Image Gallery */}
           <ImageGallery images={images} city={destination.city} />
 
@@ -279,6 +280,14 @@ export default function DestinationDetail() {
             {/* Restaurants */}
             {destination.restaurants && destination.restaurants.length > 0 && (
               <RestaurantCards restaurants={destination.restaurants} />
+            )}
+
+            {/* Travel Tips */}
+            {destination.travelTips && (
+              <>
+                <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['6']}px 0` }} />
+                <TravelTips destination={destination} />
+              </>
             )}
 
             {/* Similar destinations */}
