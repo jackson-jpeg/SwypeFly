@@ -13,7 +13,7 @@ import { StickyBookBar } from '../../components/destination/StickyBookBar';
 import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
 import { SimilarDestinations } from '../../components/destination/SimilarDestinations';
-import { hotelLink } from '../../utils/affiliateLinks';
+import { hotelLink, activitiesLink } from '../../utils/affiliateLinks';
 
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,14 +26,14 @@ export default function DestinationDetail() {
   if (isLoading) {
     if (Platform.OS === 'web') {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: colors.background }}>
-          <div style={{ width: 24, height: 24, border: `3px solid ${colors.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: colors.dark.background }}>
+          <div style={{ width: 24, height: 24, border: `3px solid ${colors.dark.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       );
     }
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dark.background }}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -43,14 +43,14 @@ export default function DestinationDetail() {
   if (!destination || error) {
     if (Platform.OS === 'web') {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: colors.background }}>
-          <span style={{ color: colors.text.primary, fontSize: fontSize['3xl'] }}>Destination not found</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: colors.dark.background }}>
+          <span style={{ color: colors.dark.text.primary, fontSize: fontSize['3xl'] }}>Destination not found</span>
         </div>
       );
     }
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <Text style={{ color: colors.text.primary, fontSize: fontSize['3xl'] }}>Destination not found</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dark.background }}>
+        <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['3xl'] }}>Destination not found</Text>
       </View>
     );
   }
@@ -78,17 +78,17 @@ export default function DestinationDetail() {
   // ─── Web ────────────────────────────────────────────────────────────
   if (Platform.OS === 'web') {
     return (
-      <div style={{ backgroundColor: colors.background, minHeight: '100vh', position: 'relative' }}>
+      <div style={{ backgroundColor: colors.dark.background, minHeight: '100vh', position: 'relative' }}>
         {/* Close button */}
         <button
           onClick={() => router.back()}
           style={{
             position: 'fixed', top: spacing['4'], left: spacing['4'], zIndex: 50,
             width: layout.closeBtnSize, height: layout.closeBtnSize, borderRadius: layout.closeBtnSize / 2,
-            backgroundColor: colors.overlay.whiteStrong, backdropFilter: 'blur(12px)',
+            backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            border: `1px solid ${colors.borderLight}`,
-            color: colors.text.primary, fontSize: fontSize['3xl'], cursor: 'pointer',
+            border: `1px solid ${colors.dark.borderLight}`,
+            color: '#FFFFFF', fontSize: fontSize['3xl'], cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: shadows.web.lg,
           }}
@@ -105,7 +105,7 @@ export default function DestinationDetail() {
             <QuickStats destination={destination} />
 
             {/* Description */}
-            <p style={{ margin: `${spacing['4']}px 0 0 0`, color: colors.text.body, fontSize: fontSize.xl, lineHeight: 1.7 }}>
+            <p style={{ margin: `${spacing['4']}px 0 0 0`, color: colors.dark.text.body, fontSize: fontSize.xl, lineHeight: 1.7 }}>
               {destination.description}
             </p>
 
@@ -123,45 +123,45 @@ export default function DestinationDetail() {
 
             {/* Best months */}
             <div style={{ marginTop: spacing['4'] }}>
-              <span style={{ color: colors.text.secondary, fontSize: fontSize.lg, fontWeight: fontWeight.medium }}>
+              <span style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg, fontWeight: fontWeight.medium }}>
                 Best time: {destination.bestMonths.join(', ')}
               </span>
             </div>
 
-            <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
+            <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['6']}px 0` }} />
 
             {/* 3. Flight Deal Card */}
             <div style={{
               padding: spacing['5'], borderRadius: radii['2xl'],
-              backgroundColor: colors.surface,
-              border: `1px solid ${colors.border}`,
+              backgroundColor: colors.dark.surface,
+              border: `1px solid ${colors.dark.border}`,
               boxShadow: shadows.web.md,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing['3'] }}>
-                <span style={{ fontSize: fontSize['5xl'], fontWeight: fontWeight.extrabold, color: colors.text.primary }}>
+                <span style={{ fontSize: fontSize['5xl'], fontWeight: fontWeight.extrabold, color: colors.dark.text.primary }}>
                   ${effectivePrice}
                 </span>
                 <span style={{
                   padding: '4px 10px', borderRadius: 9999,
-                  backgroundColor: destination.priceSource === 'estimate' ? colors.surfaceElevated : colors.successBackground,
-                  color: destination.priceSource === 'estimate' ? colors.text.muted : colors.successDark,
+                  backgroundColor: destination.priceSource === 'estimate' ? colors.dark.surfaceElevated : colors.successBackground,
+                  color: destination.priceSource === 'estimate' ? colors.dark.text.muted : colors.successDark,
                   fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
                 }}>
                   {destination.priceSource === 'estimate' ? 'Estimated' : 'Live price'}
                 </span>
               </div>
               {destination.airline && (
-                <p style={{ margin: 0, color: colors.text.secondary, fontSize: fontSize.lg }}>
+                <p style={{ margin: 0, color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
                   {destination.airline} · {destination.flightDuration}
                 </p>
               )}
               {!destination.airline && (
-                <p style={{ margin: 0, color: colors.text.secondary, fontSize: fontSize.lg }}>
+                <p style={{ margin: 0, color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
                   Round-trip · {destination.flightDuration}
                 </p>
               )}
               {destination.departureDate && destination.returnDate && (
-                <p style={{ margin: `${spacing['2']}px 0 0 0`, color: colors.text.muted, fontSize: fontSize.md }}>
+                <p style={{ margin: `${spacing['2']}px 0 0 0`, color: colors.dark.text.muted, fontSize: fontSize.md }}>
                   {destination.departureDate} — {destination.returnDate}
                   {destination.tripDurationDays && ` (${destination.tripDurationDays} days)`}
                 </p>
@@ -181,18 +181,18 @@ export default function DestinationDetail() {
                   background: 'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, rgba(56,189,248,0.02) 100%)',
                   border: `1px solid rgba(56,189,248,0.15)`,
                 }}>
-                  <div style={{ color: colors.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginBottom: spacing['3'] }}>
+                  <div style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginBottom: spacing['3'] }}>
                     💰 Estimated Trip Cost ({nights} nights)
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.text.secondary, fontSize: fontSize.lg }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
                       <span>✈️ Flights (roundtrip)</span><span>${effectivePrice}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.text.secondary, fontSize: fontSize.lg }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
                       <span>🏨 Hotel ({nights} nights × ${destination.hotelPricePerNight})</span><span>${hotelTotal}</span>
                     </div>
-                    <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['2']}px 0` }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.extrabold }}>
+                    <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['2']}px 0` }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.extrabold }}>
                       <span>Total</span><span>${totalTrip}</span>
                     </div>
                   </div>
@@ -200,22 +200,36 @@ export default function DestinationDetail() {
               );
             })()}
 
+            {/* Activities CTA */}
+            <button
+              onClick={() => window.open(activitiesLink(destination.city, destination.country, marker), '_blank')}
+              style={{
+                width: '100%', marginTop: spacing['3'],
+                padding: '14px 0', borderRadius: radii.xl,
+                background: 'transparent',
+                border: `1.5px solid ${colors.border}`,
+                color: colors.text.primary,
+                fontSize: fontSize.lg, fontWeight: fontWeight.bold, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >🎭 Find Activities & Tours</button>
+
             {/* Prices from other airports */}
             {destination.otherPrices && destination.otherPrices.length > 0 && (
               <div style={{ marginTop: spacing['4'] }}>
-                <div style={{ color: colors.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing['2'] }}>
+                <div style={{ color: colors.dark.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing['2'] }}>
                   Also available from
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {destination.otherPrices.map((op: { origin: string; price: number }) => (
                     <div key={op.origin} style={{
                       padding: '6px 14px', borderRadius: 9999,
-                      backgroundColor: colors.surfaceElevated,
-                      border: `1px solid ${colors.border}`,
+                      backgroundColor: colors.dark.surfaceElevated,
+                      border: `1px solid ${colors.dark.border}`,
                       display: 'flex', alignItems: 'center', gap: 6,
                     }}>
-                      <span style={{ color: colors.text.secondary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{op.origin}</span>
-                      <span style={{ color: colors.text.primary, fontSize: fontSize.sm, fontWeight: fontWeight.bold }}>${op.price}</span>
+                      <span style={{ color: colors.dark.text.secondary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{op.origin}</span>
+                      <span style={{ color: colors.dark.text.primary, fontSize: fontSize.sm, fontWeight: fontWeight.bold }}>${op.price}</span>
                     </div>
                   ))}
                 </div>
@@ -227,14 +241,14 @@ export default function DestinationDetail() {
               <div style={{
                 marginTop: spacing['4'],
                 padding: spacing['5'], borderRadius: radii['2xl'],
-                backgroundColor: colors.surface,
-                border: `1px solid ${colors.border}`,
+                backgroundColor: colors.dark.surface,
+                border: `1px solid ${colors.dark.border}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <div>
-                  <div style={{ color: colors.text.muted, fontSize: fontSize.md }}>Hotels from</div>
-                  <div style={{ color: colors.text.primary, fontSize: fontSize['3xl'], fontWeight: fontWeight.extrabold }}>
-                    ${destination.hotelPricePerNight}<span style={{ fontSize: fontSize.lg, fontWeight: fontWeight.medium, color: colors.text.muted }}>/night</span>
+                  <div style={{ color: colors.dark.text.muted, fontSize: fontSize.md }}>Hotels from</div>
+                  <div style={{ color: colors.dark.text.primary, fontSize: fontSize['3xl'], fontWeight: fontWeight.extrabold }}>
+                    ${destination.hotelPricePerNight}<span style={{ fontSize: fontSize.lg, fontWeight: fontWeight.medium, color: colors.dark.text.muted }}>/night</span>
                   </div>
                 </div>
                 <button
@@ -249,13 +263,13 @@ export default function DestinationDetail() {
               </div>
             )}
 
-            <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
+            <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['6']}px 0` }} />
 
             {/* 4. Itinerary */}
             {destination.itinerary && destination.itinerary.length > 0 && (
               <>
                 <ItineraryTimeline itinerary={destination.itinerary} />
-                <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
+                <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['6']}px 0` }} />
               </>
             )}
 
@@ -267,7 +281,7 @@ export default function DestinationDetail() {
             {/* Similar destinations */}
             <SimilarDestinations current={destination} />
 
-            <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
+            <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['6']}px 0` }} />
 
             {/* Save + Share row */}
             <div style={{ display: 'flex', gap: 12, marginTop: spacing['6'] }}>
@@ -275,9 +289,9 @@ export default function DestinationDetail() {
                 onClick={() => toggle(destination.id)}
                 style={{
                   flex: 1, padding: '14px 0', borderRadius: radii.xl,
-                  backgroundColor: saved ? colors.primaryTint : colors.surfaceElevated,
-                  border: saved ? `1px solid ${colors.primaryBorder}` : `1px solid ${colors.border}`,
-                  color: saved ? colors.primary : colors.text.primary,
+                  backgroundColor: saved ? colors.primaryTint : colors.dark.surfaceElevated,
+                  border: saved ? `1px solid ${colors.primaryBorder}` : `1px solid ${colors.dark.border}`,
+                  color: saved ? colors.primary : colors.dark.text.primary,
                   fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, cursor: 'pointer',
                 }}
               >{saved ? '♥ Saved' : '♡ Save'}</button>
@@ -285,9 +299,9 @@ export default function DestinationDetail() {
                 onClick={handleShare}
                 style={{
                   padding: '14px 24px', borderRadius: radii.xl,
-                  backgroundColor: colors.surfaceElevated,
-                  border: `1px solid ${colors.border}`,
-                  color: colors.text.primary,
+                  backgroundColor: colors.dark.surfaceElevated,
+                  border: `1px solid ${colors.dark.border}`,
+                  color: colors.dark.text.primary,
                   fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, cursor: 'pointer',
                 }}
               >{shareCopied ? '✓ Copied' : '↗ Share'}</button>
@@ -295,7 +309,7 @@ export default function DestinationDetail() {
 
             {/* Disclaimer */}
             <p style={{
-              color: colors.text.muted, fontSize: fontSize.md, textAlign: 'center',
+              color: colors.dark.text.muted, fontSize: fontSize.md, textAlign: 'center',
               margin: `${spacing['6']}px 0 0 0`, lineHeight: 1.5,
             }}>
               Prices are approximate and may vary. We may earn a commission from bookings.
@@ -318,7 +332,7 @@ export default function DestinationDetail() {
 
   // ─── Native ─────────────────────────────────────────────────────────
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.dark.background }}>
       <ScrollView bounces={false}>
         <ImageGallery images={images} city={destination.city} />
 
@@ -326,7 +340,7 @@ export default function DestinationDetail() {
           <DestinationHero destination={destination} />
           <QuickStats destination={destination} />
 
-          <Text style={{ color: colors.text.body, fontSize: fontSize.xl, lineHeight: 24, marginTop: spacing['4'] }}>
+          <Text style={{ color: colors.dark.text.body, fontSize: fontSize.xl, lineHeight: 24, marginTop: spacing['4'] }}>
             {destination.description}
           </Text>
 
@@ -342,35 +356,35 @@ export default function DestinationDetail() {
             ))}
           </View>
 
-          <Text style={{ color: colors.text.secondary, fontSize: fontSize.lg, fontWeight: '500', marginTop: spacing['4'] }}>
+          <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg, fontWeight: '500', marginTop: spacing['4'] }}>
             Best time: {destination.bestMonths.join(', ')}
           </Text>
 
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing['6'] }} />
+          <View style={{ height: 1, backgroundColor: colors.dark.border, marginVertical: spacing['6'] }} />
 
           {/* Flight Deal Card */}
           <View style={{
             padding: spacing['5'], borderRadius: radii['2xl'],
-            backgroundColor: colors.surface,
-            borderWidth: 1, borderColor: colors.border,
+            backgroundColor: colors.dark.surface,
+            borderWidth: 1, borderColor: colors.dark.border,
             ...shadows.native.md,
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing['3'] }}>
-              <Text style={{ fontSize: fontSize['5xl'], fontWeight: '800', color: colors.text.primary }}>
+              <Text style={{ fontSize: fontSize['5xl'], fontWeight: '800', color: colors.dark.text.primary }}>
                 ${effectivePrice}
               </Text>
             </View>
-            <Text style={{ color: colors.text.secondary, fontSize: fontSize.lg }}>
+            <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
               {destination.airline ? `${destination.airline} · ` : 'Round-trip · '}{destination.flightDuration}
             </Text>
           </View>
 
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing['6'] }} />
+          <View style={{ height: 1, backgroundColor: colors.dark.border, marginVertical: spacing['6'] }} />
 
           {destination.itinerary && destination.itinerary.length > 0 && (
             <>
               <ItineraryTimeline itinerary={destination.itinerary} />
-              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing['6'] }} />
+              <View style={{ height: 1, backgroundColor: colors.dark.border, marginVertical: spacing['6'] }} />
             </>
           )}
 
@@ -379,7 +393,7 @@ export default function DestinationDetail() {
           )}
 
           <Text style={{
-            color: colors.text.muted, fontSize: fontSize.md, textAlign: 'center',
+            color: colors.dark.text.muted, fontSize: fontSize.md, textAlign: 'center',
             marginTop: spacing['6'], lineHeight: 18,
           }}>
             Prices are approximate and may vary. We may earn a commission from bookings.
@@ -393,12 +407,12 @@ export default function DestinationDetail() {
         style={{
           position: 'absolute', top: 52, left: spacing['4'],
           width: layout.closeBtnSize, height: layout.closeBtnSize, borderRadius: layout.closeBtnSize / 2,
-          backgroundColor: colors.overlay.whiteStrong,
+          backgroundColor: 'rgba(0,0,0,0.5)',
           alignItems: 'center', justifyContent: 'center',
           ...shadows.native.lg,
         }}
       >
-        <Text style={{ color: colors.text.primary, fontSize: fontSize['3xl'], fontWeight: fontWeight.semibold }}>{'\u2715'}</Text>
+        <Text style={{ color: '#FFFFFF', fontSize: fontSize['3xl'], fontWeight: fontWeight.semibold }}>{'\u2715'}</Text>
       </Pressable>
 
       <StickyBookBar

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Platform, View, Text, ScrollView, Pressable } from 'react-native';
+import { colors } from '../../constants/theme';
 
 interface ItineraryItem {
   day: number;
@@ -25,7 +26,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
           <h3
             style={{
               margin: 0,
-              color: '#1E293B',
+              color: colors.dark.text.primary,
               fontSize: 18,
               fontWeight: 700,
             }}
@@ -67,8 +68,8 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                   fontSize: 13,
                   fontWeight: 600,
                   flexShrink: 0,
-                  backgroundColor: isActive ? '#38BDF8' : '#F1F5F9',
-                  color: isActive ? '#FFFFFF' : '#64748B',
+                  backgroundColor: isActive ? '#38BDF8' : colors.dark.surfaceElevated,
+                  color: isActive ? '#FFFFFF' : colors.dark.text.muted,
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -88,7 +89,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
               bottom: 0,
               left: 8,
               width: 2,
-              backgroundColor: '#E2E8F0',
+              backgroundColor: colors.dark.border,
               borderRadius: 1,
             }}
           />
@@ -110,22 +111,22 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                   height: 10,
                   borderRadius: 5,
                   backgroundColor: '#38BDF8',
-                  border: '2px solid #FFFFFF',
-                  boxShadow: '0 0 0 2px #E2E8F0',
+                  border: `2px solid ${colors.dark.surface}`,
+                  boxShadow: `0 0 0 2px ${colors.dark.border}`,
                 }}
               />
               {/* Card */}
               <div
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
+                  backgroundColor: colors.dark.surface,
+                  border: `1px solid ${colors.dark.border}`,
                   borderRadius: 12,
                   padding: '12px 16px',
                 }}
               >
                 <span
                   style={{
-                    color: '#334155',
+                    color: colors.dark.text.body,
                     fontSize: 14,
                     lineHeight: 1.5,
                   }}
@@ -144,7 +145,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
   return (
     <View style={{ marginTop: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '700' }}>
+        <Text style={{ color: colors.dark.text.primary, fontSize: 18, fontWeight: '700' }}>
           Suggested Itinerary
         </Text>
         {isAI && (
@@ -171,14 +172,14 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                 borderRadius: 20,
                 paddingHorizontal: 16,
                 paddingVertical: 6,
-                backgroundColor: isActive ? '#38BDF8' : '#F1F5F9',
+                backgroundColor: isActive ? '#38BDF8' : colors.dark.surfaceElevated,
               }}
             >
               <Text
                 style={{
                   fontSize: 13,
                   fontWeight: '600',
-                  color: isActive ? '#FFFFFF' : '#64748B',
+                  color: isActive ? '#FFFFFF' : colors.dark.text.muted,
                 }}
               >
                 Day {item.day}
@@ -198,7 +199,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
             bottom: 0,
             left: 8,
             width: 2,
-            backgroundColor: '#E2E8F0',
+            backgroundColor: colors.dark.border,
             borderRadius: 1,
           }}
         />
@@ -222,15 +223,15 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                 borderRadius: 5,
                 backgroundColor: '#38BDF8',
                 borderWidth: 2,
-                borderColor: '#FFFFFF',
+                borderColor: colors.dark.surface,
               }}
             />
             {/* Card */}
             <View
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: colors.dark.surface,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: colors.dark.border,
                 borderRadius: 12,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
@@ -238,7 +239,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
             >
               <Text
                 style={{
-                  color: '#334155',
+                  color: colors.dark.text.body,
                   fontSize: 14,
                   lineHeight: 21,
                 }}

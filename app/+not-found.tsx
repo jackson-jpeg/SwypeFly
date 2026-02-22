@@ -1,40 +1,53 @@
-import { View, Text, Pressable, Platform } from 'react-native';
+import { View, Text, Platform, Pressable } from 'react-native';
 import { router } from 'expo-router';
+import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 
-export default function NotFoundScreen() {
+export default function NotFound() {
   if (Platform.OS === 'web') {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', backgroundColor: '#F8FAFC', padding: 32,
+        height: '100vh', backgroundColor: '#0F172A', padding: 32, textAlign: 'center',
       }}>
-        <span style={{ fontSize: 64 }}>✈️</span>
-        <h2 style={{ color: '#1E293B', fontSize: 24, fontWeight: 700, margin: '16px 0 0 0' }}>Page Not Found</h2>
-        <p style={{ color: '#64748B', fontSize: 16, textAlign: 'center', margin: '8px 0 0 0' }}>
-          This destination doesn't exist yet. Let's get you back on track.
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🌎</div>
+        <h1 style={{ color: '#fff', fontSize: 32, fontWeight: 800, margin: '0 0 8px 0' }}>
+          Lost in transit
+        </h1>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, margin: '0 0 32px 0', lineHeight: 1.5 }}>
+          This destination doesn't exist... yet.<br />
+          Let's get you back on track.
         </p>
-        <button
-          onClick={() => router.replace('/')}
-          style={{
-            marginTop: 24, background: '#38BDF8', color: '#fff', border: 'none',
-            borderRadius: 14, padding: '14px 32px', fontSize: 16, fontWeight: 700, cursor: 'pointer',
-          }}
-        >
-          Back to Explore
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => router.replace('/')}
+            style={{
+              padding: '14px 28px', borderRadius: 9999,
+              backgroundColor: '#38BDF8', border: 'none',
+              color: '#0F172A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+            }}
+          >Explore Destinations</button>
+          <button
+            onClick={() => router.back()}
+            style={{
+              padding: '14px 28px', borderRadius: 9999,
+              backgroundColor: 'transparent', border: '1.5px solid rgba(255,255,255,0.2)',
+              color: 'rgba(255,255,255,0.7)', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+            }}
+          >Go Back</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', paddingHorizontal: 32 }}>
-      <Text style={{ fontSize: 64 }}>✈️</Text>
-      <Text style={{ color: '#1E293B', fontSize: 24, fontWeight: '700', marginTop: 16 }}>Page Not Found</Text>
-      <Text style={{ color: '#64748B', fontSize: 16, textAlign: 'center', marginTop: 8 }}>
-        This destination doesn't exist yet. Let's get you back on track.
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F172A', padding: 32 }}>
+      <Text style={{ fontSize: 64, marginBottom: 16 }}>🌎</Text>
+      <Text style={{ color: '#fff', fontSize: 32, fontWeight: '800', textAlign: 'center' }}>Lost in transit</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginTop: 8, marginBottom: 32 }}>
+        This destination doesn't exist... yet.
       </Text>
-      <Pressable onPress={() => router.replace('/')} style={{ marginTop: 24, backgroundColor: '#38BDF8', borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14 }}>
-        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Back to Explore</Text>
+      <Pressable onPress={() => router.replace('/')} style={{ backgroundColor: '#38BDF8', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 9999 }}>
+        <Text style={{ color: '#0F172A', fontSize: 16, fontWeight: '700' }}>Explore Destinations</Text>
       </Pressable>
     </View>
   );

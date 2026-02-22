@@ -26,10 +26,10 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
           position: 'fixed',
           bottom: 0, left: 0, right: 0,
           zIndex: 50,
-          backgroundColor: 'rgba(255,255,255,0.95)',
+          backgroundColor: 'rgba(15,23,42,0.85)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderTop: `1px solid ${colors.border}`,
+          borderTop: `1px solid ${colors.dark.border}`,
           padding: `${spacing['3']}px ${spacing['5']}px`,
           display: 'flex',
           alignItems: 'center',
@@ -38,8 +38,8 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
       >
         <div style={{ maxWidth: layout.maxContentWidth, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ color: colors.text.muted, fontSize: fontSize.md }}>Flights from</div>
-            <div style={{ color: colors.text.primary, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</div>
+            <div style={{ color: colors.dark.text.muted, fontSize: fontSize.md }}>Flights from</div>
+            <div style={{ color: colors.dark.text.primary, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</div>
           </div>
           <button
             onClick={() => window.open(url, '_blank')}
@@ -62,9 +62,9 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
       style={{
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
-        backgroundColor: 'rgba(255,255,255,0.95)',
+        backgroundColor: 'rgba(15,23,42,0.85)',
         borderTopWidth: 1,
-        borderTopColor: colors.border,
+        borderTopColor: colors.dark.border,
         paddingHorizontal: spacing['5'],
         paddingVertical: spacing['3'],
         flexDirection: 'row',
@@ -74,8 +74,8 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
       }}
     >
       <View>
-        <Text style={{ color: colors.text.muted, fontSize: fontSize.md }}>Flights from</Text>
-        <Text style={{ color: colors.text.primary, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</Text>
+        <Text style={{ color: colors.dark.text.muted, fontSize: fontSize.md }}>Flights from</Text>
+        <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</Text>
       </View>
       <Pressable
         onPress={() => Linking.openURL(url)}

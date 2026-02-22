@@ -81,6 +81,11 @@ export function SwipeFeed() {
         0%, 100% { transform: translateY(0); opacity: 0.6; }
         50% { transform: translateY(-12px); opacity: 1; }
       }
+      @keyframes sg-fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .sg-card-snap:first-child { animation: sg-fade-in 0.6s ease-out; }
       .sg-swipe-hint {
         position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
         display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -214,6 +219,14 @@ export function SwipeFeed() {
         style={{ height: '100vh', width: '100%', overflowY: 'scroll', scrollbarWidth: 'none', position: 'relative' }}
         onScroll={handleWebScroll}
       >
+        {/* Scroll progress bar */}
+        <div style={{
+          position: 'fixed', top: 0, left: 0, zIndex: 31,
+          height: 2, backgroundColor: '#38BDF8',
+          width: `${destinations.length > 0 ? ((activeIndex + 1) / destinations.length) * 100 : 0}%`,
+          transition: 'width 0.3s ease',
+        }} />
+
         {/* Floating header — logo + departure city */}
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 30,
@@ -305,6 +318,25 @@ export function SwipeFeed() {
 
         {/* Deal alert banner — shows after 5 cards */}
         {activeIndex >= 5 && <DealAlertBanner />}
+
+        {/* Back to top — after 10 cards */}
+        {activeIndex >= 10 && (
+          <button
+            onClick={() => {
+              webScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+              setActiveIndex(0);
+              activeIndexRef.current = 0;
+            }}
+            style={{
+              position: 'fixed', bottom: 16, left: 16, zIndex: 30,
+              width: 36, height: 36, borderRadius: 18,
+              backgroundColor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              color: 'rgba(255,255,255,0.7)', fontSize: 16, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >↑</button>
+        )}
 
         {/* Card counter — bottom right */}
         <div style={{

@@ -14,7 +14,7 @@ export function DestinationHero({ destination }: DestinationHeroProps) {
     return (
       <div>
         <h1 style={{
-          margin: 0, color: colors.navy, fontSize: fontSize['7xl'], fontWeight: fontWeight.extrabold,
+          margin: 0, color: colors.dark.text.primary, fontSize: fontSize['7xl'], fontWeight: fontWeight.extrabold,
           letterSpacing: -0.5, lineHeight: 1.1,
         }}>
           {destination.city}, {destination.country}
@@ -22,20 +22,20 @@ export function DestinationHero({ destination }: DestinationHeroProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing['1'] }}>
             <span style={{ color: colors.warning, fontSize: fontSize.lg }}>&#9733;</span>
-            <span style={{ color: colors.text.dark, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
+            <span style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
               {destination.rating.toFixed(1)}
             </span>
-            <span style={{ color: colors.text.muted, fontSize: fontSize.base }}>
+            <span style={{ color: colors.dark.text.muted, fontSize: fontSize.base }}>
               ({destination.reviewCount.toLocaleString()})
             </span>
           </div>
-          <span style={{ color: colors.borderSoft }}>|</span>
-          <span style={{ color: colors.text.secondary, fontSize: fontSize.lg }}>
+          <span style={{ color: colors.dark.border }}>|</span>
+          <span style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
             {destination.flightDuration} flight
           </span>
         </div>
         <p style={{
-          margin: `${spacing['2']}px 0 0 0`, color: colors.text.secondary, fontSize: fontSize.xl,
+          margin: `${spacing['2']}px 0 0 0`, color: colors.dark.text.secondary, fontSize: fontSize.xl,
           fontStyle: 'italic',
         }}>
           &ldquo;{destination.tagline}&rdquo;
@@ -59,25 +59,25 @@ export function DestinationHero({ destination }: DestinationHeroProps) {
 
   return (
     <View>
-      <Text style={{ color: colors.navy, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>
+      <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>
         {destination.city}, {destination.country}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing['1'] }}>
           <Text style={{ color: colors.warning, fontSize: fontSize.lg }}>{'\u2733'}</Text>
-          <Text style={{ color: colors.text.dark, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
+          <Text style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
             {destination.rating.toFixed(1)}
           </Text>
-          <Text style={{ color: colors.text.muted, fontSize: fontSize.base }}>
+          <Text style={{ color: colors.dark.text.muted, fontSize: fontSize.base }}>
             ({destination.reviewCount.toLocaleString()})
           </Text>
         </View>
-        <Text style={{ color: colors.borderSoft }}>|</Text>
-        <Text style={{ color: colors.text.secondary, fontSize: fontSize.lg }}>
+        <Text style={{ color: colors.dark.border }}>|</Text>
+        <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
           {destination.flightDuration} flight
         </Text>
       </View>
-      <Text style={{ color: colors.text.secondary, fontSize: fontSize.xl, fontStyle: 'italic', marginTop: spacing['2'] }}>
+      <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.xl, fontStyle: 'italic', marginTop: spacing['2'] }}>
         &ldquo;{destination.tagline}&rdquo;
       </Text>
 

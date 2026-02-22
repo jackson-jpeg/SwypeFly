@@ -154,6 +154,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const savings = isDeal ? Math.round(((destination.flightPrice - destination.livePrice!) / destination.flightPrice) * 100) : 0;
   const currentMonth = new Date().toLocaleString('en', { month: 'short' });
   const isGoodTime = destination.bestMonths?.includes(currentMonth);
+  const isNew = parseInt(destination.id) >= 147; // batch3 destinations
 
   // No web stagger — content is always statically visible
 
@@ -239,8 +240,22 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             }}
             loading={idx === 0 ? (isActive ? 'eager' : 'lazy') : 'lazy'}
             draggable={false}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750';
+            }}
           />
         ))}
+
+        {/* New badge */}
+        {isNew && (
+          <div style={{
+            position: 'absolute', top: 56, left: 20, zIndex: 5,
+            padding: '3px 8px', borderRadius: 6,
+            backgroundColor: 'rgba(168,85,247,0.3)', border: '1px solid rgba(168,85,247,0.4)',
+          }}>
+            <span style={{ color: '#C084FC', fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>NEW</span>
+          </div>
+        )}
 
         {/* Image indicator dots */}
         {hasMultipleImages && (
@@ -346,9 +361,18 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             {destination.city}
           </h1>
 
+          {/* Tagline */}
+          <p style={{
+            margin: '6px 0 0 0', fontSize: 15, fontWeight: 400, fontStyle: 'italic',
+            color: 'rgba(255,255,255,0.6)', lineHeight: 1.3,
+            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+          }}>
+            {destination.tagline}
+          </p>
+
           {/* Country · Flight duration */}
           <p style={{
-            margin: '8px 0 0 0', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center',
+            margin: '6px 0 0 0', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center',
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
           }}>
             <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>{destination.country}</span>

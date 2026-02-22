@@ -1,4 +1,5 @@
 import { Platform, View, Text, ScrollView, Pressable, Linking } from 'react-native';
+import { colors } from '../../constants/theme';
 
 interface Restaurant {
   name: string;
@@ -32,7 +33,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
           <h3
             style={{
               margin: 0,
-              color: '#1E293B',
+              color: colors.dark.text.primary,
               fontSize: 18,
               fontWeight: 700,
             }}
@@ -67,8 +68,8 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
                 style={{
                   minWidth: 140,
                   maxWidth: 140,
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
+                  backgroundColor: colors.dark.surface,
+                  border: `1px solid ${colors.dark.border}`,
                   borderRadius: 12,
                   padding: 14,
                   flexShrink: 0,
@@ -81,7 +82,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               >
                 <span
                   style={{
-                    color: '#1E293B',
+                    color: colors.dark.text.primary,
                     fontSize: 14,
                     fontWeight: 600,
                     lineHeight: 1.3,
@@ -94,7 +95,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
                 </span>
                 <span
                   style={{
-                    color: '#64748B',
+                    color: colors.dark.text.muted,
                     fontSize: 12,
                     textTransform: 'capitalize',
                   }}
@@ -127,7 +128,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
   return (
     <View style={{ marginTop: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '700' }}>
+        <Text style={{ color: colors.dark.text.primary, fontSize: 18, fontWeight: '700' }}>
           Local Bites
         </Text>
         {isAI && (
@@ -148,7 +149,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               <Text
                 numberOfLines={1}
                 style={{
-                  color: '#1E293B',
+                  color: colors.dark.text.primary,
                   fontSize: 14,
                   fontWeight: '600',
                 }}
@@ -157,7 +158,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               </Text>
               <Text
                 style={{
-                  color: '#64748B',
+                  color: colors.dark.text.muted,
                   fontSize: 12,
                   textTransform: 'capitalize',
                 }}
@@ -181,9 +182,9 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               onPress={() => Linking.openURL(r.mapsUrl!)}
               style={{
                 width: 140,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: colors.dark.surface,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: colors.dark.border,
                 borderRadius: 12,
                 padding: 14,
                 gap: 4,
@@ -196,9 +197,9 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               key={idx}
               style={{
                 width: 140,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: colors.dark.surface,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: colors.dark.border,
                 borderRadius: 12,
                 padding: 14,
                 gap: 4,

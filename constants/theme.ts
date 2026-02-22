@@ -68,6 +68,21 @@ export const colors = {
     whiteTabNative: 'rgba(255,255,255,0.92)',
   },
 
+  // Dark theme (detail page, settings)
+  dark: {
+    background: '#0F172A',
+    surface: '#1E293B',
+    surfaceElevated: '#334155',
+    text: {
+      primary: '#F1F5F9',
+      secondary: '#94A3B8',
+      muted: '#64748B',
+      body: '#CBD5E1',
+    },
+    border: '#334155',
+    borderLight: 'rgba(255,255,255,0.08)',
+  },
+
   // Semantic
   success: '#4ADE80',         // green-400
   successDark: '#22C55E',     // green-500

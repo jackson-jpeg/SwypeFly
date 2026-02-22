@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { destinations } from '../../data/destinations';
@@ -12,15 +12,23 @@ interface SearchOverlayProps {
 
 export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [maxPrice, setMaxPrice] = useState(2000);
   const inputRef = useRef<HTMLInputElement>(null);
   const departureCode = useUIStore(s => s.departureCode);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleQueryChange = useCallback((val: string) => {
+    setQuery(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedQuery(val), 150);
+  }, []);
 
   useEffect(() => {
     if (visible && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-    if (!visible) setQuery('');
+    if (!visible) { setQuery(''); setDebouncedQuery(''); }
   }, [visible]);
 
   // Close on Escape
@@ -34,8 +42,8 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
   }, [visible, onClose]);
 
   const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
+    if (!debouncedQuery.trim()) return [];
+    const q = debouncedQuery.toLowerCase();
     return destinations
       .filter(d => {
         const price = d.livePrice ?? d.flightPrice;
@@ -47,7 +55,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
       })
       .sort((a, b) => (a.livePrice ?? a.flightPrice) - (b.livePrice ?? b.flightPrice))
       .slice(0, 10);
-  }, [query, maxPrice]);
+  }, [debouncedQuery, maxPrice]);
 
   if (!visible || Platform.OS !== 'web') return null;
 
@@ -71,7 +79,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
             type="text"
             placeholder="Search cities, countries, vibes..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             style={{
               width: '100%', padding: '16px 20px 16px 48px',
               fontSize: 18, fontWeight: 500,
@@ -156,6 +164,24 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
 
         {!query.trim() && (
           <div style={{ marginTop: 32 }}>
+            {/* Surprise Me */}
+            <button
+              onClick={() => {
+                const rand = destinations[Math.floor(Math.random() * destinations.length)];
+                onClose();
+                router.push(`/destination/${rand.id}`);
+              }}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 14, marginBottom: 24,
+                background: 'linear-gradient(135deg, rgba(56,189,248,0.15) 0%, rgba(168,85,247,0.15) 100%)',
+                border: '1px solid rgba(56,189,248,0.2)',
+                color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              🎲 Surprise Me
+            </button>
+
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
               Explore by vibe
             </div>
