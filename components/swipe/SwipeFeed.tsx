@@ -8,7 +8,7 @@ import { WelcomeOverlay } from './WelcomeOverlay';
 import { DealAlertBanner } from './DealAlertBanner';
 import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
-import { useFeedStore } from '../../stores/feedStore';
+import { useFeedStore, SortPreset } from '../../stores/feedStore';
 import { useUIStore } from '../../stores/uiStore';
 import { mediumHaptic } from '../../utils/haptics';
 import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
@@ -23,6 +23,8 @@ export function SwipeFeed() {
   const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
   const markViewed = useFeedStore((s) => s.markViewed);
   const refreshFeed = useFeedStore((s) => s.refreshFeed);
+  const sortPreset = useFeedStore((s) => s.sortPreset);
+  const setSortPreset = useFeedStore((s) => s.setSortPreset);
   const departureCode = useUIStore((s) => s.departureCode);
   const departureCity = useUIStore((s) => s.departureCity);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -244,6 +246,38 @@ export function SwipeFeed() {
               }}
             >🔍</span>
           </div>
+        </div>
+
+        {/* Sort pills */}
+        <div style={{
+          position: 'fixed', top: 48, left: 0, right: 0, zIndex: 29,
+          display: 'flex', justifyContent: 'center', gap: 6,
+          pointerEvents: 'auto', padding: '0 20px',
+        }}>
+          {([
+            { key: 'default' as SortPreset, label: '✨ For You' },
+            { key: 'cheapest' as SortPreset, label: '💰 Cheapest' },
+            { key: 'topRated' as SortPreset, label: '⭐ Top Rated' },
+          ]).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => {
+                setSortPreset(key);
+                webScrollRef.current?.scrollTo({ top: 0 });
+                setActiveIndex(0);
+                activeIndexRef.current = 0;
+              }}
+              style={{
+                padding: '5px 12px', borderRadius: 9999, border: 'none',
+                fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                backgroundColor: sortPreset === key ? 'rgba(56,189,248,0.25)' : 'rgba(0,0,0,0.3)',
+                color: sortPreset === key ? '#38BDF8' : 'rgba(255,255,255,0.6)',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                transition: 'all 0.2s',
+                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              }}
+            >{label}</button>
+          ))}
         </div>
 
         <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
