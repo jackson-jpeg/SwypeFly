@@ -12,6 +12,7 @@ interface SearchOverlayProps {
 
 export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
+  const [maxPrice, setMaxPrice] = useState(2000);
   const inputRef = useRef<HTMLInputElement>(null);
   const departureCode = useUIStore(s => s.departureCode);
 
@@ -36,13 +37,17 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
     return destinations
-      .filter(d =>
-        d.city.toLowerCase().includes(q) ||
-        d.country.toLowerCase().includes(q) ||
-        d.vibeTags.some(t => t.toLowerCase().includes(q))
-      )
-      .slice(0, 8);
-  }, [query]);
+      .filter(d => {
+        const price = d.livePrice ?? d.flightPrice;
+        return price <= maxPrice && (
+          d.city.toLowerCase().includes(q) ||
+          d.country.toLowerCase().includes(q) ||
+          d.vibeTags.some(t => t.toLowerCase().includes(q))
+        );
+      })
+      .sort((a, b) => (a.livePrice ?? a.flightPrice) - (b.livePrice ?? b.flightPrice))
+      .slice(0, 10);
+  }, [query, maxPrice]);
 
   if (!visible || Platform.OS !== 'web') return null;
 
@@ -81,6 +86,26 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
             position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
             fontSize: 20, opacity: 0.5,
           }}>🔍</span>
+        </div>
+
+        {/* Budget slider */}
+        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>💰 Max</span>
+          <input
+            type="range"
+            min={50}
+            max={2000}
+            step={50}
+            value={maxPrice}
+            onChange={e => setMaxPrice(Number(e.target.value))}
+            style={{ flex: 1, accentColor: '#38BDF8' }}
+          />
+          <span style={{
+            color: maxPrice < 2000 ? '#38BDF8' : 'rgba(255,255,255,0.4)',
+            fontSize: 14, fontWeight: 700, minWidth: 50, textAlign: 'right',
+          }}>
+            {maxPrice < 2000 ? `$${maxPrice}` : 'Any'}
+          </span>
         </div>
 
         {/* Results */}
@@ -181,7 +206,10 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
               Top deals from {departureCode}
             </div>
             {destinations
-              .filter(d => (d.livePrice ?? d.flightPrice) > 0)
+              .filter(d => {
+                const p = d.livePrice ?? d.flightPrice;
+                return p > 0 && p <= maxPrice;
+              })
               .sort((a, b) => (a.livePrice ?? a.flightPrice) - (b.livePrice ?? b.flightPrice))
               .slice(0, 5)
               .map(dest => (
