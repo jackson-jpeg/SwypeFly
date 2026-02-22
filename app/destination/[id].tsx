@@ -106,72 +106,142 @@ export default function DestinationDetail() {
 
           <div style={{ padding: `0 ${spacing['6']}px ${spacing['30']}px ${spacing['6']}px`, marginTop: -8 }}>
             {/* 2. Info — Hero + Essential */}
-            <DestinationHero destination={destination} />
+            <DestinationHero destination={destination} saved={saved} onToggleSave={() => toggle(destination.id)} />
             <QuickStats destination={destination} />
             <WeatherWidget city={destination.city} country={destination.country} averageTemp={destination.averageTemp} />
 
-            {/* Description */}
-            <p style={{ margin: `${spacing['4']}px 0 0 0`, color: colors.dark.text.body, fontSize: fontSize.xl, lineHeight: 1.7 }}>
-              {destination.description}
-            </p>
+            <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['6']}px 0` }} />
 
-            {/* Vibe tags */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: spacing['4'] }}>
-              {destination.vibeTags.map((tag) => (
-                <span key={tag} style={{
-                  padding: '4px 12px', borderRadius: 9999,
-                  backgroundColor: colors.primaryBackground,
-                  color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
-                  textTransform: 'capitalize',
-                }}>{tag}</span>
-              ))}
-            </div>
+            {/* ─── ABOUT THIS PLACE ─── */}
+            <div>
+              <div style={{
+                color: colors.dark.text.muted, fontSize: 11, fontWeight: fontWeight.bold,
+                letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing['3'],
+              }}>
+                📋 ABOUT THIS PLACE
+              </div>
+              <p style={{ margin: 0, color: colors.dark.text.body, fontSize: fontSize.xl, lineHeight: 1.7 }}>
+                {destination.description}
+              </p>
 
-            {/* Best months */}
-            <div style={{ marginTop: spacing['4'] }}>
-              <span style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg, fontWeight: fontWeight.medium }}>
-                Best time: {destination.bestMonths.join(', ')}
-              </span>
+              {/* Highlights from vibeTags */}
+              {destination.vibeTags.length > 0 && (
+                <div style={{ marginTop: spacing['4'] }}>
+                  <div style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginBottom: spacing['2'] }}>
+                    Highlights
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {destination.vibeTags.map((tag) => (
+                      <div key={tag} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ color: colors.warning, fontSize: 14 }}>★</span>
+                        <span style={{ color: colors.dark.text.body, fontSize: fontSize.lg, textTransform: 'capitalize' }}>
+                          {tag === 'foodie' ? 'Amazing local cuisine & food scene' :
+                           tag === 'beach' ? 'Beautiful beaches & coastal scenery' :
+                           tag === 'culture' ? 'Rich cultural experiences & heritage' :
+                           tag === 'adventure' ? 'Thrilling adventure activities' :
+                           tag === 'historic' ? 'Fascinating historical landmarks' :
+                           tag === 'nature' ? 'Stunning natural landscapes' :
+                           tag === 'romantic' ? 'Perfect romantic getaway setting' :
+                           tag === 'nightlife' ? 'Vibrant nightlife & entertainment' :
+                           tag === 'mountain' ? 'Breathtaking mountain scenery' :
+                           tag === 'tropical' ? 'Tropical paradise vibes' :
+                           tag === 'city' ? 'Exciting urban exploration' :
+                           tag === 'luxury' ? 'World-class luxury experiences' :
+                           tag === 'budget' ? 'Great value for money' :
+                           tag === 'winter' ? 'Magical winter wonderland' :
+                           (tag as string).charAt(0).toUpperCase() + (tag as string).slice(1)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Info Bar */}
+              <div style={{
+                display: 'flex', gap: spacing['4'], marginTop: spacing['4'],
+                padding: `${spacing['3']}px ${spacing['4']}px`,
+                backgroundColor: colors.dark.surface,
+                borderRadius: radii.lg,
+                border: `1px solid ${colors.dark.border}`,
+                flexWrap: 'wrap',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 140 }}>
+                  <span style={{ fontSize: 16 }}>📅</span>
+                  <div>
+                    <div style={{ color: colors.dark.text.muted, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>Best Time</div>
+                    <div style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
+                      {destination.bestMonths.slice(0, 3).join(', ')}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ width: 1, backgroundColor: colors.dark.border, alignSelf: 'stretch' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 140 }}>
+                  <span style={{ fontSize: 16 }}>💰</span>
+                  <div>
+                    <div style={{ color: colors.dark.text.muted, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>Daily Budget</div>
+                    <div style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
+                      ~${Math.round(destination.hotelPricePerNight + 50)}/day
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div style={{ height: 1, backgroundColor: colors.dark.border, margin: `${spacing['6']}px 0` }} />
 
-            {/* 3. Flight Deal Card */}
+            {/* ─── FLIGHT DEAL CARD ─── */}
             <div style={{
               padding: spacing['5'], borderRadius: radii['2xl'],
               backgroundColor: colors.dark.surface,
               border: `1px solid ${colors.dark.border}`,
               boxShadow: shadows.web.md,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing['3'] }}>
-                <span style={{ fontSize: fontSize['5xl'], fontWeight: fontWeight.extrabold, color: colors.dark.text.primary }}>
+              <div style={{
+                color: '#38BDF8', fontSize: 10, fontWeight: fontWeight.bold,
+                letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing['2'],
+              }}>
+                ✈️ FLIGHT DEAL
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: spacing['1'] }}>
+                <span style={{ fontSize: 36, fontWeight: fontWeight.extrabold, color: colors.dark.text.primary }}>
                   ${effectivePrice}
                 </span>
-                <span style={{
-                  padding: '4px 10px', borderRadius: 9999,
-                  backgroundColor: destination.priceSource === 'estimate' ? colors.dark.surfaceElevated : colors.successBackground,
-                  color: destination.priceSource === 'estimate' ? colors.dark.text.muted : colors.successDark,
-                  fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
-                }}>
-                  {destination.priceSource === 'estimate' ? 'Estimated' : 'Live price'}
-                </span>
+                <span style={{ color: colors.dark.text.muted, fontSize: fontSize.lg }}>round trip</span>
+                {destination.priceSource !== 'estimate' && (
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 9999,
+                    backgroundColor: colors.successBackground,
+                    color: colors.successDark,
+                    fontSize: fontSize.sm, fontWeight: fontWeight.semibold,
+                    marginLeft: 4,
+                  }}>Live price</span>
+                )}
               </div>
-              {destination.airline && (
-                <p style={{ margin: 0, color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
-                  {destination.airline} · {destination.flightDuration}
-                </p>
-              )}
-              {!destination.airline && (
-                <p style={{ margin: 0, color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
-                  Round-trip · {destination.flightDuration}
-                </p>
-              )}
+              <div style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg, marginBottom: spacing['3'] }}>
+                From {departureCode || 'TPA'}
+                {destination.airline ? ` · ${destination.airline}` : ''} · {destination.flightDuration}
+              </div>
               {destination.departureDate && destination.returnDate && (
-                <p style={{ margin: `${spacing['2']}px 0 0 0`, color: colors.dark.text.muted, fontSize: fontSize.md }}>
+                <div style={{ color: colors.dark.text.muted, fontSize: fontSize.md, marginBottom: spacing['3'] }}>
                   {destination.departureDate} — {destination.returnDate}
                   {destination.tripDurationDays && ` (${destination.tripDurationDays} days)`}
-                </p>
+                </div>
               )}
+              <button
+                onClick={() => {
+                  const url = `https://www.aviasales.com/search/${departureCode || 'TPA'}01${destination.iataCode}01?marker=${marker}`;
+                  window.open(url, '_blank');
+                }}
+                style={{
+                  width: '100%', padding: '12px 0', borderRadius: radii.lg,
+                  backgroundColor: '#38BDF8', border: 'none',
+                  color: '#fff', fontSize: fontSize['2xl'], fontWeight: fontWeight.bold,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                🔍 Book This Flight
+              </button>
             </div>
 
             {/* Trip cost estimator */}
@@ -206,19 +276,29 @@ export default function DestinationDetail() {
               );
             })()}
 
-            {/* Activities CTA */}
-            <button
-              onClick={() => window.open(activitiesLink(destination.city, destination.country, marker), '_blank')}
-              style={{
-                width: '100%', marginTop: spacing['3'],
-                padding: '14px 0', borderRadius: radii.xl,
-                background: 'transparent',
-                border: `1.5px solid ${colors.border}`,
-                color: colors.text.primary,
-                fontSize: fontSize.lg, fontWeight: fontWeight.bold, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-            >🎭 Find Activities & Tours</button>
+            {/* Action buttons — reference style */}
+            <div style={{ display: 'flex', gap: 12, marginTop: spacing['4'] }}>
+              <button
+                onClick={() => window.open(hotelLink(destination.city, destination.country, marker), '_blank')}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: radii.xl,
+                  backgroundColor: colors.dark.surface,
+                  border: `1px solid ${colors.dark.border}`,
+                  color: '#38BDF8', fontSize: fontSize.lg, fontWeight: fontWeight.bold,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >🛏️ Find Hotels</button>
+              <button
+                onClick={() => window.open(activitiesLink(destination.city, destination.country, marker), '_blank')}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: radii.xl,
+                  backgroundColor: colors.dark.surface,
+                  border: `1px solid ${colors.dark.border}`,
+                  color: '#38BDF8', fontSize: fontSize.lg, fontWeight: fontWeight.bold,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >🥾 Browse Activities</button>
+            </div>
 
             {/* Travel insurance link */}
             <button

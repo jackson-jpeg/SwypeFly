@@ -44,7 +44,7 @@ export function QuickStats({ destination }: QuickStatsProps) {
   if (isWeb) {
     return (
       <div style={{ display: 'flex', gap: spacing['3'], marginTop: spacing['5'], flexWrap: 'wrap' }}>
-        <StatBox label="Avg Temp" value={`${destination.averageTemp}\u00B0F`} isWeb />
+        <StatBox label="Avg Temp" value={`${destination.averageTemp}°C / ${Math.round(destination.averageTemp * 9/5 + 32)}°F`} isWeb />
         <StatBox label="Flight" value={destination.flightDuration} isWeb />
         <StatBox label="Rating" value={`${destination.rating.toFixed(1)} ${"★".repeat(Math.round(destination.rating))}`} isWeb />
       </div>
@@ -53,7 +53,7 @@ export function QuickStats({ destination }: QuickStatsProps) {
 
   return (
     <View style={{ flexDirection: 'row', gap: spacing['3'], marginTop: spacing['5'] }}>
-      <StatBox label="Avg Temp" value={`${destination.averageTemp}\u00B0F`} isWeb={false} />
+      <StatBox label="Avg Temp" value={`${destination.averageTemp}°C / ${Math.round(destination.averageTemp * 9/5 + 32)}°F`} isWeb={false} />
       <StatBox label="Flight" value={destination.flightDuration} isWeb={false} />
       <StatBox label="Rating" value={`${destination.rating.toFixed(1)} ${"★".repeat(Math.round(destination.rating))}`} isWeb={false} />
     </View>

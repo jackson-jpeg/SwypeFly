@@ -12,33 +12,53 @@ export function TravelTips({ destination }: TravelTipsProps) {
   const tips = destination.travelTips;
   if (!tips || Platform.OS !== 'web') return null;
 
-  const items = [
+  const quickFacts = [
     { icon: '🛂', label: 'Visa', value: tips.visa },
     { icon: '💱', label: 'Currency', value: tips.currency },
     { icon: '🗣️', label: 'Language', value: tips.language },
     { icon: '🛡️', label: 'Safety', value: tips.safety },
-    { icon: '💰', label: 'Cost Level', value: COST_LABELS[tips.costLevel] || '$$' },
   ];
+
+  const proTips = [
+    `Cost level: ${COST_LABELS[tips.costLevel] || '$$'} — plan your budget accordingly`,
+    tips.visa.toLowerCase().includes('free') || tips.visa.toLowerCase().includes('no') ?
+      `Easy visa situation: ${tips.visa}` : `Check visa requirements: ${tips.visa}`,
+    `Local currency is ${tips.currency} — exchange before you go or use ATMs on arrival`,
+    tips.language !== 'English' ? `Learn basic phrases in ${tips.language} — locals appreciate the effort!` : null,
+    tips.safety.toLowerCase().includes('safe') ? `Generally safe destination — still keep valuables secure` : `Stay aware: ${tips.safety}`,
+  ].filter(Boolean) as string[];
 
   return (
     <div style={{ marginTop: spacing['2'] }}>
-      <div style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginBottom: spacing['4'] }}>
-        Travel Tips
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {items.map(({ icon, label, value }) => (
+      {/* Quick facts strip */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: spacing['5'] }}>
+        {quickFacts.map(({ icon, label, value }) => (
           <div key={label} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
+            flex: '1 1 calc(50% - 4px)', minWidth: 150,
+            display: 'flex', alignItems: 'center', gap: 10,
             padding: `${spacing['3']}px ${spacing['4']}px`,
             backgroundColor: colors.dark.surface,
             borderRadius: radii.lg,
             border: `1px solid ${colors.dark.border}`,
           }}>
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{icon}</span>
+            <span style={{ fontSize: 18 }}>{icon}</span>
             <div>
               <div style={{ color: colors.dark.text.muted, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{label}</div>
               <div style={{ color: colors.dark.text.primary, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>{value}</div>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pro Tips section */}
+      <div style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginBottom: spacing['3'] }}>
+        Pro Tips
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {proTips.map((tip, idx) => (
+          <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>💡</span>
+            <span style={{ color: colors.dark.text.body, fontSize: fontSize.lg, lineHeight: 1.5 }}>{tip}</span>
           </div>
         ))}
       </div>
