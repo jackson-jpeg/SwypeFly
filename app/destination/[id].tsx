@@ -14,6 +14,8 @@ import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
 import { SimilarDestinations } from '../../components/destination/SimilarDestinations';
 import { hotelLink, activitiesLink } from '../../utils/affiliateLinks';
+import { CompareModal } from '../../components/common/CompareModal';
+import { Footer } from '../../components/common/Footer';
 
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +23,7 @@ export default function DestinationDetail() {
   const { data: destination, isLoading, error } = useDestination(id);
   const departureCode = useUIStore((s) => s.departureCode);
   const [shareCopied, setShareCopied] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   // ─── Loading ────────────────────────────────────────────────────────
   if (isLoading) {
@@ -305,7 +308,20 @@ export default function DestinationDetail() {
                   fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, cursor: 'pointer',
                 }}
               >{shareCopied ? '✓ Copied' : '↗ Share'}</button>
+              <button
+                onClick={() => setCompareOpen(true)}
+                style={{
+                  padding: '14px 18px', borderRadius: radii.xl,
+                  backgroundColor: colors.dark.surfaceElevated,
+                  border: `1px solid ${colors.dark.border}`,
+                  color: colors.dark.text.primary,
+                  fontSize: fontSize.lg, fontWeight: fontWeight.bold, cursor: 'pointer',
+                }}
+              >⚖️</button>
             </div>
+
+            {/* Compare modal */}
+            <CompareModal destination={destination} visible={compareOpen} onClose={() => setCompareOpen(false)} />
 
             {/* Disclaimer */}
             <p style={{

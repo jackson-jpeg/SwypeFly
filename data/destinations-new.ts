@@ -21,6 +21,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Uchi', type: 'Japanese Farmhouse', rating: 4.8 },
       { name: 'Torchy\'s Tacos', type: 'Tex-Mex', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["solo","couples","foodies","music lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '52', iataCode: 'DEN', city: 'Denver', country: 'USA',
@@ -40,6 +48,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Linger', type: 'Global Street Food', rating: 4.6 },
       { name: 'Snooze', type: 'Brunch', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["adventurers","solo","couples"],
+      costLevel: 2,
+    },
   },
   {
     id: '53', iataCode: 'CHS', city: 'Charleston', country: 'USA',
@@ -59,6 +75,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Husk', type: 'Southern', rating: 4.7 },
       { name: 'Leon\'s Oyster Shop', type: 'Seafood', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","foodies","history buffs"],
+      costLevel: 2,
+    },
   },
   {
     id: '54', iataCode: 'SFO', city: 'San Francisco', country: 'USA',
@@ -78,6 +102,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'State Bird Provisions', type: 'New American', rating: 4.8 },
       { name: 'La Taqueria', type: 'Mission Burritos', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe, standard city precautions",
+      bestFor: ["solo","couples","foodies"],
+      costLevel: 4,
+    },
   },
   {
     id: '55', iataCode: 'LAS', city: 'Las Vegas', country: 'USA',
@@ -97,6 +129,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Lotus of Siam', type: 'Thai', rating: 4.7 },
       { name: 'In-N-Out Burger', type: 'Burgers', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe on the Strip",
+      bestFor: ["couples","groups","nightlife lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '56', iataCode: 'SEA', city: 'Seattle', country: 'USA',
@@ -116,6 +156,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Pike Place Chowder', type: 'Seafood', rating: 4.6 },
       { name: 'Paseo', type: 'Cuban Sandwiches', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["solo","couples","foodies"],
+      costLevel: 3,
+    },
   },
   {
     id: '57', iataCode: 'MIA', city: 'Miami', country: 'USA',
@@ -135,6 +183,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Joe\'s Stone Crab', type: 'Seafood', rating: 4.7 },
       { name: 'KYU', type: 'Asian BBQ', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English, Spanish",
+      safety: "Safe in tourist areas",
+      bestFor: ["couples","nightlife lovers","beach lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '58', iataCode: 'PHX', city: 'Scottsdale', country: 'USA',
@@ -154,6 +210,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Barrio Queen', type: 'Mexican', rating: 4.5 },
       { name: 'Citizen Public House', type: 'Gastropub', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","luxury travelers","golfers"],
+      costLevel: 3,
+    },
   },
   {
     id: '59', iataCode: 'SAV', city: 'Savannah', country: 'USA',
@@ -173,6 +237,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Mrs. Wilkes\' Dining Room', type: 'Southern Comfort', rating: 4.7 },
       { name: 'Leopold\'s Ice Cream', type: 'Ice Cream', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","history buffs","foodies"],
+      costLevel: 2,
+    },
   },
   {
     id: '60', iataCode: 'SAN', city: 'San Diego', country: 'USA',
@@ -192,6 +264,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Tacos El Gordo', type: 'Tijuana-Style Tacos', rating: 4.6 },
       { name: 'Juniper & Ivy', type: 'New American', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["families","couples","beach lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '61', iataCode: 'PDX', city: 'Portland', country: 'USA',
@@ -211,6 +291,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Pok Pok', type: 'Thai Street Food', rating: 4.6 },
       { name: 'Screen Door', type: 'Southern Brunch', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["solo","foodies","couples"],
+      costLevel: 2,
+    },
   },
   {
     id: '62', iataCode: 'ATL', city: 'Atlanta', country: 'USA',
@@ -230,6 +318,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Fox Bros. Bar-B-Q', type: 'BBQ', rating: 4.7 },
       { name: 'Buford Highway Farmers Market', type: 'International', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe in tourist areas",
+      bestFor: ["families","culture lovers","foodies"],
+      costLevel: 2,
+    },
   },
   // ─── More Caribbean (63-70) ──────────────────────────────────────
   {
@@ -250,6 +346,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Oistins Fish Fry', type: 'Bajan Seafood', rating: 4.6 },
       { name: 'Cutters of Barbados', type: 'Local Street Food', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (6 months)",
+      currency: "Barbadian Dollar (BBD) — pegged 2:1 to USD",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","families","beach lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '64', iataCode: 'GCM', city: 'Grand Cayman', country: 'Cayman Islands',
@@ -269,6 +373,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Chicken! Chicken!', type: 'Jerk Chicken', rating: 4.5 },
       { name: 'The Brasserie', type: 'Farm-to-Table', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days)",
+      currency: "Cayman Islands Dollar (KYD) — USD widely accepted",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","divers","luxury travelers"],
+      costLevel: 4,
+    },
   },
   {
     id: '65', iataCode: 'POS', city: 'Trinidad', country: 'Trinidad and Tobago',
@@ -288,6 +400,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Richard\'s Bake & Shark', type: 'Street Food', rating: 4.7 },
       { name: 'Aioli', type: 'Mediterranean', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Trinidad & Tobago Dollar (TTD) — ~6.8 per $1",
+      language: "English",
+      safety: "Safe in tourist areas",
+      bestFor: ["culture lovers","foodies","carnival goers"],
+      costLevel: 2,
+    },
   },
   {
     id: '66', iataCode: 'CUR', city: 'Curaçao', country: 'Curaçao',
@@ -307,6 +427,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Plasa Bieu', type: 'Local Stews', rating: 4.5 },
       { name: 'Kome', type: 'Asian Fusion', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Netherlands Antillean Guilder (ANG) — USD accepted",
+      language: "Dutch, Papiamentu, English",
+      safety: "Very safe",
+      bestFor: ["couples","divers","beach lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '67', iataCode: 'SXM', city: 'St. Maarten', country: 'St. Maarten',
@@ -326,6 +454,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'The Hideaway', type: 'Caribbean Tapas', rating: 4.5 },
       { name: 'Rosemary\'s', type: 'French-Creole', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Netherlands Antillean Guilder (ANG) — USD accepted",
+      language: "Dutch, English, French",
+      safety: "Safe",
+      bestFor: ["couples","beach lovers","families"],
+      costLevel: 3,
+    },
   },
   // ─── More Southeast Asia (68-78) ─────────────────────────────────
   {
@@ -346,6 +482,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Bugs Cafe', type: 'Insect Cuisine', rating: 4.3 },
       { name: 'Haven', type: 'Social Enterprise', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens (30 days)",
+      currency: "Cambodian Riel (KHR) — USD widely used",
+      language: "Khmer, English in tourist areas",
+      safety: "Generally safe",
+      bestFor: ["solo","budget travelers","history buffs"],
+      costLevel: 1,
+    },
   },
   {
     id: '69', iataCode: 'LPQ', city: 'Luang Prabang', country: 'Laos',
@@ -365,6 +509,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Joma Bakery Café', type: 'French-Lao Café', rating: 4.5 },
       { name: 'Dyen Sabai', type: 'Riverside Lao', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens (30 days)",
+      currency: "Lao Kip (LAK) — ~20,000 per $1",
+      language: "Lao, limited English",
+      safety: "Very safe",
+      bestFor: ["solo","budget travelers","culture lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '70', iataCode: 'RGN', city: 'Yangon', country: 'Myanmar',
@@ -384,6 +536,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Feel Myanmar Food', type: 'Traditional Burmese', rating: 4.5 },
       { name: '999 Shan Noodle House', type: 'Shan Noodles', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens (28 days)",
+      currency: "Myanmar Kyat (MMK) — ~2,100 per $1",
+      language: "Burmese, limited English",
+      safety: "Check current travel advisories",
+      bestFor: ["adventurers","culture lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '71', iataCode: 'CEB', city: 'Cebu', country: 'Philippines',
@@ -403,6 +563,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Lantaw Native Restaurant', type: 'Filipino Seafood', rating: 4.6 },
       { name: 'Casa Verde', type: 'Filipino-Western', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days)",
+      currency: "Philippine Peso (₱) — ~56 per $1",
+      language: "Filipino, English widely spoken",
+      safety: "Generally safe in tourist areas",
+      bestFor: ["solo","budget travelers","divers"],
+      costLevel: 1,
+    },
   },
   {
     id: '72', iataCode: 'DAD', city: 'Da Nang', country: 'Vietnam',
@@ -422,6 +590,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Banh Mi Phuong', type: 'Banh Mi', rating: 4.8 },
       { name: 'Morning Glory', type: 'Vietnamese Street Food', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (45 days)",
+      currency: "Vietnamese Dong (₫) — ~24,500 per $1",
+      language: "Vietnamese, some English",
+      safety: "Very safe",
+      bestFor: ["solo","budget travelers","beach lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '73', iataCode: 'KUL', city: 'Kuala Lumpur', country: 'Malaysia',
@@ -441,6 +617,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Nasi Kandar Pelita', type: 'Mamak', rating: 4.5 },
       { name: 'Dewakan', type: 'Modern Malaysian', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Malaysian Ringgit (MYR) — ~4.7 per $1",
+      language: "Malay, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["families","foodies","budget travelers"],
+      costLevel: 1,
+    },
   },
   // ─── More South America (74-82) ──────────────────────────────────
   {
@@ -461,6 +645,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Confeitaria Colombo', type: 'Historic Café', rating: 4.6 },
       { name: 'Marius Degustare', type: 'Seafood & Churrasco', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Brazilian Real (BRL) — ~5 per $1",
+      language: "Portuguese",
+      safety: "Safe in tourist areas, stay aware",
+      bestFor: ["couples","culture lovers","nightlife lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '75', iataCode: 'SCL', city: 'Santiago', country: 'Chile',
@@ -480,6 +672,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Mercado Central', type: 'Seafood Market', rating: 4.6 },
       { name: 'La Chercana', type: 'Traditional Chilean', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Chilean Peso (CLP) — ~900 per $1",
+      language: "Spanish, limited English",
+      safety: "Very safe",
+      bestFor: ["solo","foodies","couples"],
+      costLevel: 2,
+    },
   },
   {
     id: '76', iataCode: 'UIO', city: 'Quito', country: 'Ecuador',
@@ -499,6 +699,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Mercado Central', type: 'Street Food Hall', rating: 4.5 },
       { name: 'Café Mosaico', type: 'Panoramic Café', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "US Dollar ($) — official currency",
+      language: "Spanish, Quechua",
+      safety: "Safe with normal precautions",
+      bestFor: ["adventurers","culture lovers","budget travelers"],
+      costLevel: 1,
+    },
   },
   {
     id: '77', iataCode: 'MVD', city: 'Montevideo', country: 'Uruguay',
@@ -518,6 +726,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'La Perdiz', type: 'Uruguayan Comfort', rating: 4.5 },
       { name: 'Jacinto', type: 'Modern Uruguayan', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Uruguayan Peso (UYU) — ~40 per $1",
+      language: "Spanish",
+      safety: "Very safe",
+      bestFor: ["couples","foodies","culture lovers"],
+      costLevel: 2,
+    },
   },
   // ─── Africa (78-86) ──────────────────────────────────────────────
   {
@@ -538,6 +754,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Mama Oliech', type: 'Kenyan Home Cooking', rating: 4.5 },
       { name: 'Talisman', type: 'Pan-African Fine Dining', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "eVisa required for US citizens",
+      currency: "Kenyan Shilling (KES) — ~155 per $1",
+      language: "Swahili, English",
+      safety: "Safe on guided safaris",
+      bestFor: ["adventurers","couples","families"],
+      costLevel: 2,
+    },
   },
   {
     id: '79', iataCode: 'ZNZ', city: 'Zanzibar', country: 'Tanzania',
@@ -557,6 +781,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'The Rock Restaurant', type: 'Seafood', rating: 4.7 },
       { name: 'Emerson Spice Tea House', type: 'Swahili-Indian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens",
+      currency: "Tanzanian Shilling (TZS) — ~2,500 per $1",
+      language: "Swahili, English",
+      safety: "Safe in tourist areas",
+      bestFor: ["couples","beach lovers","honeymooners"],
+      costLevel: 2,
+    },
   },
   {
     id: '80', iataCode: 'CMN', city: 'Casablanca', country: 'Morocco',
@@ -576,6 +808,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'La Sqala', type: 'Moroccan Traditional', rating: 4.6 },
       { name: 'Le Cabestan', type: 'French-Moroccan', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Moroccan Dirham (MAD) — ~10 per $1",
+      language: "Arabic, French, Berber",
+      safety: "Generally safe",
+      bestFor: ["couples","solo","culture lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '81', iataCode: 'ACC', city: 'Accra', country: 'Ghana',
@@ -595,6 +835,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Azmera', type: 'Ethiopian-Ghanaian', rating: 4.5 },
       { name: 'Santoku', type: 'Asian Fusion', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens (30 days)",
+      currency: "Ghanaian Cedi (GHS) — ~14 per $1",
+      language: "English",
+      safety: "Safe, friendly locals",
+      bestFor: ["solo","culture lovers","adventurers"],
+      costLevel: 1,
+    },
   },
   // ─── Middle East (82-86) ─────────────────────────────────────────
   {
@@ -615,6 +863,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Al Mourjan', type: 'Middle Eastern', rating: 4.6 },
       { name: 'Souq Waqif restaurants', type: 'Traditional Qatari', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days)",
+      currency: "Qatari Riyal (QAR) — ~3.64 per $1",
+      language: "Arabic, English widely spoken",
+      safety: "Extremely safe",
+      bestFor: ["luxury travelers","families","couples"],
+      costLevel: 4,
+    },
   },
   {
     id: '83', iataCode: 'AMM', city: 'Amman', country: 'Jordan',
@@ -634,6 +890,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Hashem', type: 'Falafel & Hummus', rating: 4.6 },
       { name: 'Sufra', type: 'Jordanian Traditional', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (60 days)",
+      currency: "Jordanian Dinar (JOD) — ~0.71 per $1",
+      language: "Arabic, English widely spoken",
+      safety: "Very safe for tourists",
+      bestFor: ["couples","history buffs","adventurers"],
+      costLevel: 2,
+    },
   },
   {
     id: '84', iataCode: 'TLV', city: 'Tel Aviv', country: 'Israel',
@@ -653,6 +917,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Miznon', type: 'Israeli Street Food', rating: 4.7 },
       { name: 'OCD', type: 'Tasting Menu', rating: 4.9 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Israeli New Shekel (₪) — ~3.7 per $1",
+      language: "Hebrew, Arabic, English widely spoken",
+      safety: "Check current travel advisories",
+      bestFor: ["solo","foodies","culture lovers","nightlife"],
+      costLevel: 3,
+    },
   },
   // ─── More Europe (85-100) ────────────────────────────────────────
   {
@@ -673,6 +945,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Café Central', type: 'Viennese Coffee House', rating: 4.5 },
       { name: 'Steirereck', type: 'Austrian Fine Dining', rating: 4.9 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "German, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["couples","culture lovers","foodies"],
+      costLevel: 3,
+    },
   },
   {
     id: '86', iataCode: 'ATH', city: 'Athens', country: 'Greece',
@@ -692,6 +972,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Thanasis', type: 'Souvlaki & Kebab', rating: 4.5 },
       { name: 'Karamanlidika', type: 'Meze & Deli', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Greek, English widely spoken",
+      safety: "Safe, watch for pickpockets",
+      bestFor: ["solo","couples","history buffs"],
+      costLevel: 2,
+    },
   },
   {
     id: '87', iataCode: 'BUD', city: 'Budapest', country: 'Hungary',
@@ -711,6 +999,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Szimpla Kert', type: 'Ruin Bar & Food', rating: 4.4 },
       { name: 'Bors GasztroBar', type: 'Soup & Sandwich', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Hungarian Forint (HUF) — ~360 per $1",
+      language: "Hungarian, English in tourist areas",
+      safety: "Very safe",
+      bestFor: ["couples","budget travelers","nightlife lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '88', iataCode: 'WAW', city: 'Warsaw', country: 'Poland',
@@ -730,6 +1026,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Zapiecek', type: 'Polish Pierogi', rating: 4.5 },
       { name: 'Bar Mleczny', type: 'Milk Bar (Traditional)', rating: 4.3 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Polish Zloty (PLN) — ~4 per $1",
+      language: "Polish, English in cities",
+      safety: "Very safe",
+      bestFor: ["solo","budget travelers","history buffs"],
+      costLevel: 1,
+    },
   },
   {
     id: '89', iataCode: 'EDI', city: 'Edinburgh', country: 'United Kingdom',
@@ -749,6 +1053,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Ondine', type: 'Seafood', rating: 4.7 },
       { name: 'Baba', type: 'Eastern Mediterranean', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (6 months)",
+      currency: "British Pound (£) — ~$1.27 USD",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["solo","couples","history buffs"],
+      costLevel: 3,
+    },
   },
   {
     id: '90', iataCode: 'VCE', city: 'Venice', country: 'Italy',
@@ -768,6 +1080,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'All\'Arco', type: 'Cicchetti Bar', rating: 4.6 },
       { name: 'Trattoria da Romano', type: 'Burano Seafood', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Italian, some English",
+      safety: "Very safe",
+      bestFor: ["couples","honeymooners","culture lovers"],
+      costLevel: 4,
+    },
   },
   {
     id: '91', iataCode: 'IST', city: 'Istanbul', country: 'Turkey',
@@ -787,6 +1107,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Çiya Sofrası', type: 'Anatolian Home Cooking', rating: 4.7 },
       { name: 'Karaköy Lokantası', type: 'Ottoman-Turkish', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "eVisa or visa on arrival for US citizens",
+      currency: "Turkish Lira (TRY) — ~30 per $1",
+      language: "Turkish, English in tourist areas",
+      safety: "Generally safe in tourist areas",
+      bestFor: ["couples","solo","history buffs","foodies"],
+      costLevel: 2,
+    },
   },
   {
     id: '92', iataCode: 'MXP', city: 'Milan', country: 'Italy',
@@ -806,6 +1134,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Luini', type: 'Panzerotti', rating: 4.6 },
       { name: 'Carlo e Camilla', type: 'Contemporary Italian', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Italian, English in business areas",
+      safety: "Safe, watch for pickpockets",
+      bestFor: ["couples","foodies","fashion lovers"],
+      costLevel: 4,
+    },
   },
   {
     id: '93', iataCode: 'OPO', city: 'Porto', country: 'Portugal',
@@ -825,6 +1161,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Café Santiago', type: 'Francesinha', rating: 4.6 },
       { name: 'DOP', type: 'Portuguese Fine Dining', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Portuguese, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["couples","solo","foodies"],
+      costLevel: 2,
+    },
   },
   {
     id: '94', iataCode: 'SVQ', city: 'Seville', country: 'Spain',
@@ -844,6 +1188,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Eslava', type: 'Creative Tapas', rating: 4.8 },
       { name: 'Casa Robles', type: 'Andalusian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Spanish, some English",
+      safety: "Very safe",
+      bestFor: ["couples","solo","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '95', iataCode: 'FLR', city: 'Florence', country: 'Italy',
@@ -863,6 +1215,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'All\'Antico Vinaio', type: 'Schiacciata Sandwiches', rating: 4.6 },
       { name: 'Enoteca Pinchiorri', type: 'Fine Dining', rating: 4.9 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Italian, some English",
+      safety: "Very safe",
+      bestFor: ["couples","foodies","art lovers"],
+      costLevel: 3,
+    },
   },
   // ─── Oceania & More Asia (96-105) ────────────────────────────────
   {
@@ -883,6 +1243,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Bourke Street Bakery', type: 'Bakery & Café', rating: 4.6 },
       { name: 'Mr. Wong', type: 'Cantonese', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "ETA required for US citizens (online)",
+      currency: "Australian Dollar (AUD) — ~1.55 per $1",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["families","solo","couples","adventurers"],
+      costLevel: 3,
+    },
   },
   {
     id: '97', iataCode: 'MEL', city: 'Melbourne', country: 'Australia',
@@ -902,6 +1270,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Lune Croissanterie', type: 'Croissants', rating: 4.7 },
       { name: 'Chin Chin', type: 'Southeast Asian', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "ETA required for US citizens (online)",
+      currency: "Australian Dollar (AUD) — ~1.55 per $1",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["solo","foodies","culture lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '98', iataCode: 'HKG', city: 'Hong Kong', country: 'China',
@@ -921,6 +1297,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Kam\'s Roast Goose', type: 'Cantonese Roast', rating: 4.8 },
       { name: 'Lung King Heen', type: 'Cantonese Fine Dining', rating: 4.9 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Hong Kong Dollar (HKD) — ~7.8 per $1",
+      language: "Cantonese, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["solo","foodies","couples","families"],
+      costLevel: 3,
+    },
   },
   {
     id: '99', iataCode: 'TPE', city: 'Taipei', country: 'Taiwan',
@@ -940,6 +1324,14 @@ export const additionalDestinations: Destination[] = [
       { name: 'Addiction Aquatic Development', type: 'Seafood Market', rating: 4.6 },
       { name: 'RAW', type: 'Modern Taiwanese', rating: 4.9 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "New Taiwan Dollar (TWD) — ~32 per $1",
+      language: "Mandarin, some English",
+      safety: "Very safe",
+      bestFor: ["solo","foodies","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '100', iataCode: 'DEL', city: 'New Delhi', country: 'India',
@@ -959,5 +1351,13 @@ export const additionalDestinations: Destination[] = [
       { name: 'Karim\'s', type: 'Mughlai', rating: 4.7 },
       { name: 'Indian Accent', type: 'Modern Indian', rating: 4.9 },
     ],
+    travelTips: {
+      visa: "eVisa required for US citizens",
+      currency: "Indian Rupee (₹) — ~83 per $1",
+      language: "Hindi, English widely spoken",
+      safety: "Safe with normal precautions",
+      bestFor: ["solo","culture lovers","adventurers"],
+      costLevel: 1,
+    },
   },
 ];

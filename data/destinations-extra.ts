@@ -21,6 +21,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Merriman\'s', type: 'Farm-to-Table', rating: 4.7 },
       { name: 'Star Noodle', type: 'Asian Fusion', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US state)",
+      currency: "US Dollar ($)",
+      language: "English, Hawaiian",
+      safety: "Very safe",
+      bestFor: ["couples","honeymooners","families"],
+      costLevel: 4,
+    },
   },
   {
     id: '102', iataCode: 'EYW', city: 'Key West', country: 'USA',
@@ -40,6 +48,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Santiago\'s Bodega', type: 'Tapas', rating: 4.7 },
       { name: 'Latitudes on Sunset Key', type: 'Fine Dining', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["couples","solo","nightlife lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '103', iataCode: 'ABQ', city: 'Santa Fe', country: 'USA',
@@ -59,6 +75,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Geronimo', type: 'Fine Dining', rating: 4.8 },
       { name: 'Tia Sophia\'s', type: 'New Mexican Breakfast', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English, Spanish",
+      safety: "Very safe",
+      bestFor: ["couples","art lovers","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '104', iataCode: 'ASE', city: 'Aspen', country: 'USA',
@@ -78,6 +102,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Matsuhisa', type: 'Japanese', rating: 4.8 },
       { name: 'White House Tavern', type: 'American', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","luxury travelers","adventurers"],
+      costLevel: 4,
+    },
   },
   {
     id: '105', iataCode: 'RNO', city: 'Lake Tahoe', country: 'USA',
@@ -97,6 +129,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Gar Woods', type: 'Lakeside American', rating: 4.5 },
       { name: 'Sunnyside Resort', type: 'Lakeside Dining', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["families","couples","adventurers"],
+      costLevel: 3,
+    },
   },
   {
     id: '106', iataCode: 'AVL', city: 'Asheville', country: 'USA',
@@ -116,6 +156,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Buxton Hall', type: 'BBQ', rating: 4.7 },
       { name: 'Chai Pani', type: 'Indian Street Food', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","foodies","nature lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '107', iataCode: 'ANC', city: 'Anchorage', country: 'USA',
@@ -135,6 +183,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Simon & Seafort\'s', type: 'Seafood', rating: 4.6 },
       { name: 'Snow City Café', type: 'Breakfast', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US state)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe, wildlife awareness needed",
+      bestFor: ["adventurers","families","nature lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '108', iataCode: 'MVY', city: 'Martha\'s Vineyard', country: 'USA',
@@ -154,6 +210,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Détente', type: 'Farm-to-Table', rating: 4.8 },
       { name: 'Back Door Donuts', type: 'Bakery', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","families","luxury travelers"],
+      costLevel: 4,
+    },
   },
   {
     id: '109', iataCode: 'JAC', city: 'Jackson Hole', country: 'USA',
@@ -173,6 +237,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Persephone Bakery', type: 'French Bakery', rating: 4.7 },
       { name: 'The Million Dollar Cowboy Steakhouse', type: 'Steakhouse', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["adventurers","couples","luxury travelers"],
+      costLevel: 4,
+    },
   },
   {
     id: '110', iataCode: 'CNY', city: 'Moab', country: 'USA',
@@ -192,6 +264,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Quesadilla Mobilla', type: 'Food Truck', rating: 4.5 },
       { name: 'Sunset Grill', type: 'American', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["adventurers","solo","nature lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '111', iataCode: 'FCA', city: 'Whitefish', country: 'USA',
@@ -211,6 +291,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Whitefish Lake Restaurant', type: 'Lakeside Dining', rating: 4.6 },
       { name: 'Loula\'s', type: 'Breakfast', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["families","adventurers","couples"],
+      costLevel: 2,
+    },
   },
 
   // ─── Caribbean ───────────────────────────────────────────────────
@@ -232,6 +320,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Coco Bistro', type: 'Caribbean Fine Dining', rating: 4.8 },
       { name: 'Omar\'s Beach Hut', type: 'Beach Bar', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","honeymooners","beach lovers"],
+      costLevel: 4,
+    },
   },
   {
     id: '113', iataCode: 'STT', city: 'St. Thomas', country: 'US Virgin Islands',
@@ -251,6 +347,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Banana Tree Grille', type: 'Fine Dining', rating: 4.7 },
       { name: 'Hull Bay Hideaway', type: 'Beach Bar', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US territory)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe in tourist areas",
+      bestFor: ["couples","families","beach lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '114', iataCode: 'ANU', city: 'Antigua', country: 'Antigua and Barbuda',
@@ -270,6 +374,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Catherine\'s Café', type: 'French-Caribbean', rating: 4.7 },
       { name: 'Papa Zouk', type: 'Seafood & Rum Bar', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (6 months)",
+      currency: "East Caribbean Dollar (XCD) — USD accepted",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","families","beach lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '115', iataCode: 'GND', city: 'Grenada', country: 'Grenada',
@@ -289,6 +401,14 @@ export const extraDestinations: Destination[] = [
       { name: 'The Beach House', type: 'Beachfront Dining', rating: 4.7 },
       { name: 'Patrick\'s', type: 'Local Grenadian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (6 months)",
+      currency: "East Caribbean Dollar (XCD) — USD accepted",
+      language: "English, French Creole",
+      safety: "Very safe",
+      bestFor: ["couples","adventurers","divers"],
+      costLevel: 2,
+    },
   },
   {
     id: '116', iataCode: 'SKB', city: 'St. Kitts', country: 'St. Kitts and Nevis',
@@ -308,6 +428,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Spice Mill', type: 'Beachfront', rating: 4.7 },
       { name: 'Marshall\'s', type: 'Fine Dining', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "East Caribbean Dollar (XCD) — USD accepted",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","beach lovers","history buffs"],
+      costLevel: 3,
+    },
   },
   {
     id: '117', iataCode: 'BON', city: 'Bonaire', country: 'Netherlands',
@@ -327,6 +455,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Brass Boer', type: 'Dutch Fine Dining', rating: 4.8 },
       { name: 'Karel\'s Beach Bar', type: 'Beach Bar', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "US Dollar ($)",
+      language: "Dutch, Papiamentu, English",
+      safety: "Very safe",
+      bestFor: ["divers","couples","nature lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '118', iataCode: 'BDA', city: 'Bermuda', country: 'Bermuda',
@@ -346,6 +482,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Art Mel\'s Spicy Dicy', type: 'Bermudian', rating: 4.5 },
       { name: 'Wahoo\'s Bistro', type: 'Seafood', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Bermudian Dollar (BMD) — pegged to USD",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["couples","families","golfers"],
+      costLevel: 4,
+    },
   },
   {
     id: '119', iataCode: 'BZE', city: 'Belize City', country: 'Belize',
@@ -365,6 +509,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Rose\'s Grill & Bar', type: 'Seafood', rating: 4.5 },
       { name: 'Nerie\'s II', type: 'Local Creole', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days)",
+      currency: "Belize Dollar (BZD) — pegged 2:1 to USD",
+      language: "English, Spanish, Kriol",
+      safety: "Safe in tourist areas",
+      bestFor: ["adventurers","divers","couples"],
+      costLevel: 2,
+    },
   },
   {
     id: '120', iataCode: 'RTB', city: 'Roatán', country: 'Honduras',
@@ -384,6 +536,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Gio\'s', type: 'Italian-Caribbean', rating: 4.5 },
       { name: 'Cannibal Café', type: 'Eclectic', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Honduran Lempira (HNL) — USD accepted on island",
+      language: "Spanish, English on Roatán",
+      safety: "Safe on the island",
+      bestFor: ["divers","budget travelers","couples"],
+      costLevel: 1,
+    },
   },
 
   // ─── Central America ─────────────────────────────────────────────
@@ -405,6 +565,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Café Sky', type: 'Rooftop Café', rating: 4.5 },
       { name: 'Sabe Dios', type: 'Modern Guatemalan', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Guatemalan Quetzal (GTQ) — ~7.8 per $1",
+      language: "Spanish, Mayan languages",
+      safety: "Safe with guided tours",
+      bestFor: ["adventurers","culture lovers","budget travelers"],
+      costLevel: 1,
+    },
   },
   {
     id: '122', iataCode: 'MGA', city: 'Granada', country: 'Nicaragua',
@@ -424,6 +592,14 @@ export const extraDestinations: Destination[] = [
       { name: 'The Garden Café', type: 'Café & Bistro', rating: 4.6 },
       { name: 'Pita Pita', type: 'Middle Eastern Fusion', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Nicaraguan Córdoba (NIO) — ~37 per $1",
+      language: "Spanish",
+      safety: "Check travel advisories",
+      bestFor: ["adventurers","budget travelers"],
+      costLevel: 1,
+    },
   },
   {
     id: '123', iataCode: 'SAL', city: 'San Salvador', country: 'El Salvador',
@@ -443,6 +619,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Café de Don Pedro', type: 'Coffee & Pastries', rating: 4.4 },
       { name: 'Hunan', type: 'Chinese-Salvadoran', rating: 4.3 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "US Dollar ($) — official currency",
+      language: "Spanish",
+      safety: "Safe in tourist areas",
+      bestFor: ["adventurers","surfers","budget travelers"],
+      costLevel: 1,
+    },
   },
   {
     id: '124', iataCode: 'TGU', city: 'Tegucigalpa', country: 'Honduras',
@@ -462,6 +646,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Café Paradiso', type: 'Café', rating: 4.4 },
       { name: 'Rojo, Verde y Ajo', type: 'Latin Fusion', rating: 4.3 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Honduran Lempira (HNL) — ~25 per $1",
+      language: "Spanish",
+      safety: "Exercise caution",
+      bestFor: ["adventurers","culture lovers"],
+      costLevel: 1,
+    },
   },
 
   // ─── South America ───────────────────────────────────────────────
@@ -483,6 +675,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Popular Cocina Boliviana', type: 'Bolivian', rating: 4.5 },
       { name: 'Ali Pacha', type: 'Vegan Bolivian', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Boliviano (BOB) — ~6.9 per $1",
+      language: "Spanish, Quechua, Aymara",
+      safety: "Generally safe",
+      bestFor: ["adventurers","budget travelers","culture lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '126', iataCode: 'GRU', city: 'São Paulo', country: 'Brazil',
@@ -502,6 +702,14 @@ export const extraDestinations: Destination[] = [
       { name: 'A Casa do Porco', type: 'Pork BBQ', rating: 4.8 },
       { name: 'Maní', type: 'Brazilian Contemporary', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Brazilian Real (BRL) — ~5 per $1",
+      language: "Portuguese",
+      safety: "Safe in upscale areas, stay aware",
+      bestFor: ["foodies","culture lovers","business travelers"],
+      costLevel: 2,
+    },
   },
   {
     id: '127', iataCode: 'GPS', city: 'Galápagos', country: 'Ecuador',
@@ -522,6 +730,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Lo & Lo', type: 'Ecuadorian', rating: 4.5 },
       { name: 'Angermeyer Waterfront Inn', type: 'Fine Dining', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "US Dollar ($) — official currency",
+      language: "Spanish, English",
+      safety: "Very safe",
+      bestFor: ["adventurers","nature lovers","couples"],
+      costLevel: 4,
+    },
   },
   {
     id: '128', iataCode: 'FTE', city: 'El Calafate', country: 'Argentina',
@@ -541,6 +757,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Isabel', type: 'Patagonian Cuisine', rating: 4.6 },
       { name: 'La Zaina', type: 'Café & Wine Bar', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Argentine Peso (ARS) — blue rate varies",
+      language: "Spanish",
+      safety: "Safe",
+      bestFor: ["adventurers","nature lovers","couples"],
+      costLevel: 2,
+    },
   },
 
   // ─── Europe ──────────────────────────────────────────────────────
@@ -562,6 +786,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Is-Serkin', type: 'Maltese', rating: 4.6 },
       { name: 'Pastizzi shop in Rabat', type: 'Street Food', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Maltese, English",
+      safety: "Very safe",
+      bestFor: ["couples","history buffs","divers"],
+      costLevel: 2,
+    },
   },
   {
     id: '130', iataCode: 'BRU', city: 'Brussels', country: 'Belgium',
@@ -581,6 +813,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Comme Chez Soi', type: 'French Fine Dining', rating: 4.8 },
       { name: 'Fritland', type: 'Belgian Frites', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "French, Dutch, German",
+      safety: "Very safe",
+      bestFor: ["foodies","couples","culture lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '131', iataCode: 'BGO', city: 'Bergen', country: 'Norway',
@@ -600,6 +840,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Colonialen', type: 'Nordic Fine Dining', rating: 4.8 },
       { name: 'Bryggeloftet', type: 'Traditional Norwegian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Norwegian Krone (NOK) — ~10.5 per $1",
+      language: "Norwegian, English widely spoken",
+      safety: "Extremely safe",
+      bestFor: ["adventurers","couples","nature lovers"],
+      costLevel: 4,
+    },
   },
   {
     id: '132', iataCode: 'SPU', city: 'Split', country: 'Croatia',
@@ -619,6 +867,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Konoba Matejuška', type: 'Seafood', rating: 4.6 },
       { name: 'Zoi', type: 'Fine Dining', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Croatian, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["couples","beach lovers","history buffs"],
+      costLevel: 2,
+    },
   },
   {
     id: '133', iataCode: 'TLL', city: 'Tallinn', country: 'Estonia',
@@ -638,6 +894,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Olde Hansa', type: 'Medieval', rating: 4.6 },
       { name: 'Leib Resto ja Aed', type: 'Estonian Fine Dining', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Estonian, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["solo","couples","digital nomads"],
+      costLevel: 2,
+    },
   },
   {
     id: '134', iataCode: 'RIX', city: 'Riga', country: 'Latvia',
@@ -657,6 +921,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Milda', type: 'Latvian', rating: 4.5 },
       { name: 'Folkklubs Ala Pagrabs', type: 'Latvian Pub', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Latvian, English in cities",
+      safety: "Very safe",
+      bestFor: ["solo","budget travelers","culture lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '135', iataCode: 'TBS', city: 'Tbilisi', country: 'Georgia',
@@ -676,6 +948,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Café Littera', type: 'Georgian Fine Dining', rating: 4.8 },
       { name: 'Machakhela', type: 'Traditional Georgian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (1 year)",
+      currency: "Georgian Lari (GEL) — ~2.7 per $1",
+      language: "Georgian, some English",
+      safety: "Very safe",
+      bestFor: ["solo","foodies","budget travelers","adventurers"],
+      costLevel: 1,
+    },
   },
 
   // ─── Africa ──────────────────────────────────────────────────────
@@ -697,6 +977,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Chez Loutcha', type: 'Senegalese', rating: 4.5 },
       { name: 'Le Lagon', type: 'Seafood', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "eVisa or visa on arrival for US citizens",
+      currency: "West African CFA Franc (XOF) — ~620 per $1",
+      language: "French, Wolof",
+      safety: "Generally safe",
+      bestFor: ["solo","culture lovers","adventurers"],
+      costLevel: 1,
+    },
   },
   {
     id: '137', iataCode: 'LVI', city: 'Victoria Falls', country: 'Zambia',
@@ -716,6 +1004,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Olga\'s Italian', type: 'Italian', rating: 4.5 },
       { name: 'Lookout Café', type: 'Café & Grill', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "eVisa required for US citizens",
+      currency: "Zambian Kwacha (ZMW) — ~25 per $1",
+      language: "English, local languages",
+      safety: "Safe in tourist areas",
+      bestFor: ["adventurers","couples","nature lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '138', iataCode: 'JRO', city: 'Kilimanjaro', country: 'Tanzania',
@@ -735,6 +1031,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Arusha Coffee Lodge', type: 'Coffee & Brunch', rating: 4.6 },
       { name: 'Khan\'s BBQ', type: 'BBQ', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens",
+      currency: "Tanzanian Shilling (TZS) — ~2,500 per $1",
+      language: "Swahili, English",
+      safety: "Safe with guides",
+      bestFor: ["adventurers","couples"],
+      costLevel: 3,
+    },
   },
   {
     id: '139', iataCode: 'LOS', city: 'Lagos', country: 'Nigeria',
@@ -754,6 +1058,14 @@ export const extraDestinations: Destination[] = [
       { name: 'NOK by Alara', type: 'Pan-African', rating: 4.7 },
       { name: 'Yellow Chilli', type: 'Nigerian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens",
+      currency: "Nigerian Naira (NGN) — ~1,500 per $1",
+      language: "English, Yoruba, Igbo",
+      safety: "Exercise caution",
+      bestFor: ["culture lovers","adventurers"],
+      costLevel: 1,
+    },
   },
   {
     id: '140', iataCode: 'ADD', city: 'Addis Ababa', country: 'Ethiopia',
@@ -773,6 +1085,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Tomoca Coffee', type: 'Coffee House', rating: 4.6 },
       { name: 'Kategna', type: 'Ethiopian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "eVisa for US citizens",
+      currency: "Ethiopian Birr (ETB) — ~56 per $1",
+      language: "Amharic, English in cities",
+      safety: "Check travel advisories",
+      bestFor: ["culture lovers","adventurers","history buffs"],
+      costLevel: 1,
+    },
   },
 
   // ─── Middle East ─────────────────────────────────────────────────
@@ -794,6 +1114,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Bait Al Luban', type: 'Omani', rating: 4.6 },
       { name: 'Kargeen Café', type: 'Middle Eastern', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "eVisa for US citizens (10 days)",
+      currency: "Omani Rial (OMR) — ~0.38 per $1",
+      language: "Arabic, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["couples","adventurers","culture lovers"],
+      costLevel: 3,
+    },
   },
 
   // ─── Asia ────────────────────────────────────────────────────────
@@ -815,6 +1143,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Fisherman\'s Wharf', type: 'Goan Seafood', rating: 4.6 },
       { name: 'Thalassa', type: 'Greek', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "eVisa required for US citizens",
+      currency: "Indian Rupee (₹) — ~83 per $1",
+      language: "Konkani, English, Hindi",
+      safety: "Safe in tourist areas",
+      bestFor: ["solo","budget travelers","beach lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '143', iataCode: 'KTM', city: 'Kathmandu', country: 'Nepal',
@@ -834,6 +1170,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Bhojan Griha', type: 'Traditional Nepali', rating: 4.6 },
       { name: 'OR2K', type: 'Vegetarian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens (30 days)",
+      currency: "Nepalese Rupee (NPR) — ~133 per $1",
+      language: "Nepali, English in tourist areas",
+      safety: "Safe",
+      bestFor: ["adventurers","solo","budget travelers"],
+      costLevel: 1,
+    },
   },
   {
     id: '144', iataCode: 'CMB', city: 'Colombo', country: 'Sri Lanka',
@@ -853,6 +1197,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Upali\'s', type: 'Sri Lankan', rating: 4.6 },
       { name: 'Nihonbashi', type: 'Japanese', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "eVisa for US citizens (30 days)",
+      currency: "Sri Lankan Rupee (LKR) — ~320 per $1",
+      language: "Sinhala, Tamil, English",
+      safety: "Safe",
+      bestFor: ["couples","solo","adventurers"],
+      costLevel: 1,
+    },
   },
 
   // ─── Oceania ─────────────────────────────────────────────────────
@@ -874,6 +1226,14 @@ export const extraDestinations: Destination[] = [
       { name: 'Tu\'s Place', type: 'Fijian', rating: 4.5 },
       { name: 'Nadina Authentic Fijian', type: 'Traditional Fijian', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (4 months)",
+      currency: "Fijian Dollar (FJD) — ~2.2 per $1",
+      language: "English, Fijian, Hindi",
+      safety: "Very safe",
+      bestFor: ["couples","honeymooners","families"],
+      costLevel: 3,
+    },
   },
   {
     id: '146', iataCode: 'PPT', city: 'Tahiti', country: 'French Polynesia',
@@ -893,5 +1253,13 @@ export const extraDestinations: Destination[] = [
       { name: 'Bloody Mary\'s', type: 'Seafood', rating: 4.6 },
       { name: 'Snack Mahana', type: 'Local Polynesian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "CFP Franc (XPF) — ~$1.08 per 100 XPF",
+      language: "French, Tahitian",
+      safety: "Very safe",
+      bestFor: ["couples","honeymooners","luxury travelers"],
+      costLevel: 4,
+    },
   },
 ];

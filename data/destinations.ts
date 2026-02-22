@@ -41,6 +41,14 @@ export const destinations: Destination[] = [
       { name: 'Mozaic', type: 'Fine Dining', rating: 4.9 },
       { name: 'Naughty Nuri\'s', type: 'BBQ & Ribs', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "Visa on arrival for US citizens (30 days)",
+      currency: "Indonesian Rupiah (IDR) — ~15,500 per $1",
+      language: "Indonesian, English in tourist areas",
+      safety: "Generally safe for tourists",
+      bestFor: ["couples","solo","budget travelers"],
+      costLevel: 1,
+    },
   },
   {
     id: '2',
@@ -78,6 +86,14 @@ export const destinations: Destination[] = [
       { name: 'Selene', type: 'Fine Dining Greek', rating: 4.6 },
       { name: 'To Psaraki', type: 'Seafood', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Greek, English widely spoken",
+      safety: "Very safe for tourists",
+      bestFor: ["couples","honeymooners"],
+      costLevel: 4,
+    },
   },
   {
     id: '3',
@@ -117,6 +133,14 @@ export const destinations: Destination[] = [
       { name: 'Narisawa', type: 'Innovative French-Japanese', rating: 4.8 },
       { name: 'Afuri', type: 'Yuzu Ramen', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Japanese Yen (¥) — ~¥150 per $1",
+      language: "Japanese, limited English",
+      safety: "Extremely safe",
+      bestFor: ["solo","couples","foodies"],
+      costLevel: 3,
+    },
   },
   {
     id: '4',
@@ -153,6 +177,14 @@ export const destinations: Destination[] = [
       { name: 'Chicha', type: 'Andean Cuisine', rating: 4.8 },
       { name: 'Jack\'s Caf\u00e9', type: 'International', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (183 days)",
+      currency: "Peruvian Sol (S/) — ~3.7 per $1",
+      language: "Spanish, Quechua",
+      safety: "Safe with normal precautions",
+      bestFor: ["adventurers","solo","couples"],
+      costLevel: 2,
+    },
   },
   {
     id: '5',
@@ -191,6 +223,14 @@ export const destinations: Destination[] = [
       { name: 'Caf\u00e9 des \u00c9pices', type: 'Caf\u00e9 & Light Bites', rating: 4.5 },
       { name: 'Dar Yacout', type: 'Fine Dining Moroccan', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Moroccan Dirham (MAD) — ~10 per $1",
+      language: "Arabic, French, Berber",
+      safety: "Generally safe, be street-smart",
+      bestFor: ["couples","solo","culture lovers"],
+      costLevel: 1,
+    },
   },
   {
     id: '6',
@@ -226,6 +266,14 @@ export const destinations: Destination[] = [
       { name: 'Dill', type: 'New Nordic', rating: 4.9 },
       { name: 'S\u00e6greifinn', type: 'Seafood', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Icelandic Króna (ISK) — ~138 per $1",
+      language: "Icelandic, English widely spoken",
+      safety: "Extremely safe",
+      bestFor: ["couples","adventurers","solo"],
+      costLevel: 4,
+    },
   },
   {
     id: '7',
@@ -263,6 +311,14 @@ export const destinations: Destination[] = [
       { name: 'Lo Guarracino', type: 'Coastal Italian', rating: 4.6 },
       { name: 'Ristorante Max', type: 'Fine Dining', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Italian, some English",
+      safety: "Very safe for tourists",
+      bestFor: ["couples","honeymooners","foodies"],
+      costLevel: 4,
+    },
   },
   {
     id: '8',
@@ -299,6 +355,14 @@ export const destinations: Destination[] = [
       { name: 'Harbour House', type: 'Seafood', rating: 4.6 },
       { name: 'The Pot Luck Club', type: 'Tapas', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "South African Rand (ZAR) — ~18 per $1",
+      language: "English, Afrikaans, Xhosa",
+      safety: "Safe in tourist areas, stay aware",
+      bestFor: ["adventurers","couples","families"],
+      costLevel: 2,
+    },
   },
   {
     id: '9',
@@ -336,6 +400,14 @@ export const destinations: Destination[] = [
       { name: 'Gion Nanba', type: 'Tempura', rating: 4.7 },
       { name: 'Musubi', type: 'Obanzai Cuisine', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Japanese Yen (¥) — ~¥150 per $1",
+      language: "Japanese, limited English",
+      safety: "Extremely safe",
+      bestFor: ["solo","couples","culture lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '10',
@@ -371,6 +443,14 @@ export const destinations: Destination[] = [
       { name: 'Proto', type: 'Seafood', rating: 4.6 },
       { name: 'Barba', type: 'Street Seafood', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Croatian, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["couples","families","history buffs"],
+      costLevel: 2,
+    },
   },
   {
     id: '11',
@@ -408,6 +488,14 @@ export const destinations: Destination[] = [
       { name: 'Muraka', type: 'Japanese-Peruvian', rating: 4.6 },
       { name: 'The Lighthouse', type: 'International', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days)",
+      currency: "Maldivian Rufiyaa (MVR) — USD widely accepted",
+      language: "Dhivehi, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["couples","honeymooners","luxury travelers"],
+      costLevel: 4,
+    },
   },
   {
     id: '12',
@@ -447,6 +535,14 @@ export const destinations: Destination[] = [
       { name: 'Disfrutar', type: 'Avant-Garde', rating: 4.9 },
       { name: 'La Paradeta', type: 'Seafood Market', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Spanish, Catalan, English common",
+      safety: "Safe, watch for pickpockets",
+      bestFor: ["couples","solo","foodies","families"],
+      costLevel: 3,
+    },
   },
   {
     id: '13',
@@ -484,6 +580,14 @@ export const destinations: Destination[] = [
       { name: 'Juniper Bistro', type: 'Modern Canadian', rating: 4.6 },
       { name: 'Block Kitchen + Bar', type: 'Farm-to-Table', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (180 days)",
+      currency: "Canadian Dollar (CAD) — ~1.36 per $1",
+      language: "English, French",
+      safety: "Very safe",
+      bestFor: ["adventurers","families","couples"],
+      costLevel: 3,
+    },
   },
   {
     id: '14',
@@ -521,6 +625,14 @@ export const destinations: Destination[] = [
       { name: 'Taberna da Rua das Flores', type: 'Petiscos', rating: 4.8 },
       { name: 'Past\u00e9is de Bel\u00e9m', type: 'Pastry Shop', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Portuguese, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["solo","couples","budget travelers"],
+      costLevel: 2,
+    },
   },
   {
     id: '15',
@@ -557,6 +669,14 @@ export const destinations: Destination[] = [
       { name: 'Rata', type: 'Modern New Zealand', rating: 4.8 },
       { name: 'Flame Bar & Grill', type: 'BBQ', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "New Zealand Dollar (NZD) — ~1.65 per $1",
+      language: "English, Māori",
+      safety: "Very safe",
+      bestFor: ["adventurers","couples","solo"],
+      costLevel: 3,
+    },
   },
   {
     id: '16',
@@ -595,6 +715,14 @@ export const destinations: Destination[] = [
       { name: 'Zuma', type: 'Japanese', rating: 4.6 },
       { name: 'Arabian Tea House', type: 'Emirati', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days on arrival)",
+      currency: "UAE Dirham (AED) — ~3.67 per $1",
+      language: "Arabic, English widely spoken",
+      safety: "Extremely safe",
+      bestFor: ["luxury travelers","families","couples"],
+      costLevel: 4,
+    },
   },
   {
     id: '17',
@@ -631,6 +759,14 @@ export const destinations: Destination[] = [
       { name: 'Isabel', type: 'Cocina Casera', rating: 4.6 },
       { name: 'Mi Rancho', type: 'Argentine BBQ', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Argentine Peso (ARS) — blue rate varies",
+      language: "Spanish",
+      safety: "Safe in tourist areas",
+      bestFor: ["adventurers","solo","nature lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '18',
@@ -668,6 +804,14 @@ export const destinations: Destination[] = [
       { name: 'SP Chicken', type: 'Thai Street Food', rating: 4.6 },
       { name: 'Dash! Teak House', type: 'Traditional Thai', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days, extendable)",
+      currency: "Thai Baht (฿) — ~35 per $1",
+      language: "Thai, English in tourist areas",
+      safety: "Very safe for tourists",
+      bestFor: ["solo","budget travelers","digital nomads"],
+      costLevel: 1,
+    },
   },
   {
     id: '19',
@@ -705,6 +849,14 @@ export const destinations: Destination[] = [
       { name: 'Whymper Stube', type: 'Fondue & Raclette', rating: 4.6 },
       { name: 'Memory', type: 'Fine Dining', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Swiss Franc (CHF) — ~0.88 per $1",
+      language: "German, French, Italian",
+      safety: "Extremely safe",
+      bestFor: ["couples","families","adventurers"],
+      costLevel: 4,
+    },
   },
   {
     id: '20',
@@ -740,6 +892,14 @@ export const destinations: Destination[] = [
       { name: 'Do\u00f1a Eutimia', type: 'Traditional Cuban', rating: 4.7 },
       { name: 'O\'Reilly 304', type: 'Cocktail Bar & Bites', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "Visa required — tourist card available",
+      currency: "Cuban Peso (CUP) — ~24 per $1",
+      language: "Spanish",
+      safety: "Generally safe",
+      bestFor: ["solo","culture lovers","adventurers"],
+      costLevel: 1,
+    },
   },
   // ─── Caribbean & Mexico (21–28) ──────────────────────────────────────
   {
@@ -778,6 +938,14 @@ export const destinations: Destination[] = [
       { name: 'Lorenzillo\'s', type: 'Lobster House', rating: 4.7 },
       { name: 'La Habichuela Sunset', type: 'Yucatecan', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (180 days)",
+      currency: "Mexican Peso (MXN) — ~17 per $1",
+      language: "Spanish, English in resorts",
+      safety: "Safe in resort areas",
+      bestFor: ["families","couples","spring breakers"],
+      costLevel: 2,
+    },
   },
   {
     id: '22',
@@ -813,6 +981,14 @@ export const destinations: Destination[] = [
       { name: 'Peperoni Ristorante', type: 'Italian', rating: 4.5 },
       { name: 'Captain Cook', type: 'Seafood Grill', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days, tourist card)",
+      currency: "Dominican Peso (DOP) — USD widely accepted",
+      language: "Spanish, English in resorts",
+      safety: "Safe in resort areas",
+      bestFor: ["families","couples","budget travelers"],
+      costLevel: 2,
+    },
   },
   {
     id: '23',
@@ -849,6 +1025,14 @@ export const destinations: Destination[] = [
       { name: 'Pier 1', type: 'Caribbean Seafood', rating: 4.5 },
       { name: 'Pelican Grill', type: 'International', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Jamaican Dollar (JMD) — USD widely accepted",
+      language: "English, Jamaican Patois",
+      safety: "Safe in resort areas, be cautious elsewhere",
+      bestFor: ["couples","families","spring breakers"],
+      costLevel: 2,
+    },
   },
   {
     id: '24',
@@ -885,6 +1069,14 @@ export const destinations: Destination[] = [
       { name: 'Santaella', type: 'Modern Puerto Rican', rating: 4.7 },
       { name: 'Barrachina', type: 'Classic Puerto Rican', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed (US territory)",
+      currency: "US Dollar ($)",
+      language: "Spanish, English",
+      safety: "Generally safe in tourist areas",
+      bestFor: ["couples","families","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '25',
@@ -920,6 +1112,14 @@ export const destinations: Destination[] = [
       { name: 'Zeerovers', type: 'Casual Seafood', rating: 4.6 },
       { name: 'The Old Man & The Sea', type: 'Waterfront Grill', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days)",
+      currency: "Aruban Florin (AWG) — USD widely accepted",
+      language: "Dutch, Papiamento, English, Spanish",
+      safety: "Very safe",
+      bestFor: ["couples","families","beach lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '26',
@@ -956,6 +1156,14 @@ export const destinations: Destination[] = [
       { name: 'Dune', type: 'French-Asian', rating: 4.5 },
       { name: 'Caf\u00e9 Matisse', type: 'Italian-Bahamian', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Bahamian Dollar (BSD) — pegged to USD",
+      language: "English",
+      safety: "Safe in resort areas",
+      bestFor: ["families","couples","spring breakers"],
+      costLevel: 3,
+    },
   },
   {
     id: '27',
@@ -991,6 +1199,14 @@ export const destinations: Destination[] = [
       { name: 'Kinta', type: 'Modern Mexican', rating: 4.5 },
       { name: 'Coconuts Bar & Grill', type: 'Beachfront Casual', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (180 days)",
+      currency: "Mexican Peso (MXN) — USD widely accepted",
+      language: "Spanish, English in tourist areas",
+      safety: "Safe in tourist areas",
+      bestFor: ["couples","divers","families"],
+      costLevel: 2,
+    },
   },
   {
     id: '28',
@@ -1027,6 +1243,14 @@ export const destinations: Destination[] = [
       { name: 'Orlando\'s', type: 'Authentic St. Lucian', rating: 4.5 },
       { name: 'Boucan', type: 'Cacao Cuisine', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (6 weeks)",
+      currency: "East Caribbean Dollar (XCD) — USD accepted",
+      language: "English, French Creole",
+      safety: "Very safe",
+      bestFor: ["couples","honeymooners","adventurers"],
+      costLevel: 3,
+    },
   },
   // ─── Central & South America (29–34) ─────────────────────────────────
   {
@@ -1065,6 +1289,14 @@ export const destinations: Destination[] = [
       { name: 'Al Mercat', type: 'Mediterranean', rating: 4.6 },
       { name: 'Caf\u00e9 de los Deseos', type: 'Bohemian Caf\u00e9', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Costa Rican Colón (CRC) — ~520 per $1",
+      language: "Spanish, English in tourist areas",
+      safety: "Very safe",
+      bestFor: ["adventurers","families","eco-travelers"],
+      costLevel: 2,
+    },
   },
   {
     id: '30',
@@ -1100,6 +1332,14 @@ export const destinations: Destination[] = [
       { name: 'Mini-Mal', type: 'Modern Colombian', rating: 4.7 },
       { name: 'La Puerta Falsa', type: 'Traditional Bogotano', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Colombian Peso (COP) — ~4,000 per $1",
+      language: "Spanish, limited English",
+      safety: "Safe in tourist areas, stay aware",
+      bestFor: ["solo","culture lovers","budget travelers"],
+      costLevel: 1,
+    },
   },
   {
     id: '31',
@@ -1136,6 +1376,14 @@ export const destinations: Destination[] = [
       { name: 'Carmen', type: 'Modern Latin', rating: 4.7 },
       { name: 'Hacienda Junin', type: 'Colombian Comfort', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Colombian Peso (COP) — ~4,000 per $1",
+      language: "Spanish, some English",
+      safety: "Much improved, safe in tourist areas",
+      bestFor: ["digital nomads","solo","couples"],
+      costLevel: 1,
+    },
   },
   {
     id: '32',
@@ -1172,6 +1420,14 @@ export const destinations: Destination[] = [
       { name: 'Isolina', type: 'Peruvian Comfort Food', rating: 4.6 },
       { name: 'Tanta', type: 'Casual Peruvian', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (183 days)",
+      currency: "Peruvian Sol (S/) — ~3.7 per $1",
+      language: "Spanish, Quechua",
+      safety: "Safe with normal precautions",
+      bestFor: ["foodies","solo","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '33',
@@ -1208,6 +1464,14 @@ export const destinations: Destination[] = [
       { name: 'Alma', type: 'Colombian Fine Dining', rating: 4.6 },
       { name: 'La Paletter\u00eda', type: 'Ice Cream & Paletas', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Colombian Peso (COP) — ~4,000 per $1",
+      language: "Spanish, some English",
+      safety: "Safe in tourist areas",
+      bestFor: ["couples","history buffs","foodies"],
+      costLevel: 2,
+    },
   },
   {
     id: '34',
@@ -1243,6 +1507,14 @@ export const destinations: Destination[] = [
       { name: 'Mercado de Mariscos', type: 'Seafood Market', rating: 4.5 },
       { name: 'Fonda Lo Que Hay', type: 'Modern Panamanian', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (180 days)",
+      currency: "US Dollar ($) — official currency",
+      language: "Spanish, English widely spoken",
+      safety: "Safe in tourist areas",
+      bestFor: ["families","couples","business travelers"],
+      costLevel: 2,
+    },
   },
   // ─── Europe (35–42) ──────────────────────────────────────────────────
   {
@@ -1283,6 +1555,14 @@ export const destinations: Destination[] = [
       { name: 'Borough Market', type: 'Food Market', rating: 4.5 },
       { name: 'Flat Iron', type: 'Steak', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (6 months)",
+      currency: "British Pound (£) — ~$1.27 USD",
+      language: "English",
+      safety: "Very safe",
+      bestFor: ["solo","couples","families","culture lovers"],
+      costLevel: 4,
+    },
   },
   {
     id: '36',
@@ -1321,6 +1601,14 @@ export const destinations: Destination[] = [
       { name: 'Le Bouillon Chartier', type: 'Traditional French', rating: 4.4 },
       { name: 'Pierre Herm\u00e9', type: 'Pastry & Macaron', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "French, English in tourist areas",
+      safety: "Safe, watch for pickpockets",
+      bestFor: ["couples","solo","foodies","culture lovers"],
+      costLevel: 4,
+    },
   },
   {
     id: '37',
@@ -1358,6 +1646,14 @@ export const destinations: Destination[] = [
       { name: 'Blauw', type: 'Indonesian', rating: 4.6 },
       { name: 'De Kas', type: 'Farm-to-Table', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Dutch, English very widely spoken",
+      safety: "Very safe",
+      bestFor: ["solo","couples","culture lovers"],
+      costLevel: 3,
+    },
   },
   {
     id: '38',
@@ -1397,6 +1693,14 @@ export const destinations: Destination[] = [
       { name: 'Armando al Pantheon', type: 'Classic Roman', rating: 4.5 },
       { name: 'Gelateria del Teatro', type: 'Gelato', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "Italian, some English",
+      safety: "Safe, watch for pickpockets",
+      bestFor: ["couples","families","foodies","history buffs"],
+      costLevel: 3,
+    },
   },
   {
     id: '39',
@@ -1432,6 +1736,14 @@ export const destinations: Destination[] = [
       { name: 'Fish Shop', type: 'Fish & Chips', rating: 4.6 },
       { name: 'Gallagher\'s Boxty House', type: 'Traditional Irish', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "English, Irish",
+      safety: "Very safe",
+      bestFor: ["solo","couples","families"],
+      costLevel: 3,
+    },
   },
   {
     id: '40',
@@ -1468,6 +1780,14 @@ export const destinations: Destination[] = [
       { name: 'Eska', type: 'Modern Czech', rating: 4.7 },
       { name: 'Caf\u00e9 Savoy', type: 'Grand Caf\u00e9', rating: 4.6 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Czech Koruna (CZK) — ~23 per $1",
+      language: "Czech, English widely spoken in tourism",
+      safety: "Very safe",
+      bestFor: ["couples","budget travelers","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '41',
@@ -1503,6 +1823,14 @@ export const destinations: Destination[] = [
       { name: 'Gasoline Grill', type: 'Burgers', rating: 4.5 },
       { name: 'Geranium', type: 'Fine Dining', rating: 4.9 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Danish Krone (DKK) — ~6.9 per $1",
+      language: "Danish, English very widely spoken",
+      safety: "Extremely safe",
+      bestFor: ["couples","foodies","design lovers"],
+      costLevel: 4,
+    },
   },
   {
     id: '42',
@@ -1539,6 +1867,14 @@ export const destinations: Destination[] = [
       { name: 'Curry 36', type: 'Currywurst', rating: 4.4 },
       { name: 'CODA', type: 'Dessert Bar', rating: 4.7 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days Schengen)",
+      currency: "Euro (€) — ~$1.08 USD",
+      language: "German, English widely spoken",
+      safety: "Very safe",
+      bestFor: ["solo","couples","culture lovers","nightlife"],
+      costLevel: 2,
+    },
   },
   // ─── Asia (43–46) ────────────────────────────────────────────────────
   {
@@ -1579,6 +1915,14 @@ export const destinations: Destination[] = [
       { name: 'Nahm', type: 'Royal Thai', rating: 4.6 },
       { name: 'Som Tam Nua', type: 'Isaan Thai', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (30 days, extendable)",
+      currency: "Thai Baht (฿) — ~35 per $1",
+      language: "Thai, English in tourist areas",
+      safety: "Very safe for tourists",
+      bestFor: ["solo","budget travelers","foodies","families"],
+      costLevel: 1,
+    },
   },
   {
     id: '44',
@@ -1617,6 +1961,14 @@ export const destinations: Destination[] = [
       { name: 'Odette', type: 'French Fine Dining', rating: 4.9 },
       { name: 'Tian Tian', type: 'Hainanese Chicken Rice', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days)",
+      currency: "Singapore Dollar (SGD) — ~1.35 per $1",
+      language: "English, Mandarin, Malay, Tamil",
+      safety: "Extremely safe",
+      bestFor: ["families","foodies","couples"],
+      costLevel: 3,
+    },
   },
   {
     id: '45',
@@ -1655,6 +2007,14 @@ export const destinations: Destination[] = [
       { name: 'Mingles', type: 'Korean Fine Dining', rating: 4.9 },
       { name: 'Tosokchon', type: 'Samgyetang', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (90 days, K-ETA)",
+      currency: "South Korean Won (₩) — ~1,330 per $1",
+      language: "Korean, English in Seoul",
+      safety: "Very safe",
+      bestFor: ["solo","couples","foodies","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '46',
@@ -1694,6 +2054,14 @@ export const destinations: Destination[] = [
       { name: 'La Badiane', type: 'French-Vietnamese', rating: 4.5 },
       { name: 'B\u00fan B\u00f2 Nam B\u1ed9', type: 'Noodle House', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed for US citizens (45 days)",
+      currency: "Vietnamese Dong (₫) — ~24,500 per $1",
+      language: "Vietnamese, limited English",
+      safety: "Very safe for tourists",
+      bestFor: ["solo","budget travelers","foodies"],
+      costLevel: 1,
+    },
   },
   // ─── Domestic US (47–50) ─────────────────────────────────────────────
   {
@@ -1732,6 +2100,14 @@ export const destinations: Destination[] = [
       { name: 'Giovanni\'s Shrimp Truck', type: 'Garlic Shrimp', rating: 4.5 },
       { name: 'Senia', type: 'Hawaii Regional', rating: 4.8 },
     ],
+    travelTips: {
+      visa: "No visa needed (US state)",
+      currency: "US Dollar ($)",
+      language: "English, Hawaiian",
+      safety: "Very safe",
+      bestFor: ["families","couples","honeymooners"],
+      costLevel: 3,
+    },
   },
   {
     id: '48',
@@ -1768,6 +2144,14 @@ export const destinations: Destination[] = [
       { name: 'Dooky Chase', type: 'Soul & Creole', rating: 4.5 },
       { name: 'Parkway Bakery', type: 'Po\'boys', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe in tourist areas",
+      bestFor: ["couples","solo","foodies","culture lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '49',
@@ -1803,6 +2187,14 @@ export const destinations: Destination[] = [
       { name: 'The Catbird Seat', type: 'Tasting Menu', rating: 4.8 },
       { name: 'Biscuit Love', type: 'Southern Brunch', rating: 4.5 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe",
+      bestFor: ["couples","solo","music lovers"],
+      costLevel: 2,
+    },
   },
   {
     id: '50',
@@ -1842,6 +2234,14 @@ export const destinations: Destination[] = [
       { name: 'Xi\'an Famous Foods', type: 'Chinese Noodles', rating: 4.5 },
       { name: 'Los Tacos No. 1', type: 'Mexican Tacos', rating: 4.4 },
     ],
+    travelTips: {
+      visa: "No visa needed (US city)",
+      currency: "US Dollar ($)",
+      language: "English",
+      safety: "Safe, standard city precautions",
+      bestFor: ["solo","couples","families","foodies"],
+      costLevel: 4,
+    },
   },
 ];
 
