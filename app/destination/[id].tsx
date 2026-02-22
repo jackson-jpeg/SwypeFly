@@ -12,6 +12,7 @@ import { QuickStats } from '../../components/destination/QuickStats';
 import { StickyBookBar } from '../../components/destination/StickyBookBar';
 import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
+import { SimilarDestinations } from '../../components/destination/SimilarDestinations';
 import { hotelLink } from '../../utils/affiliateLinks';
 
 export default function DestinationDetail() {
@@ -240,6 +241,11 @@ export default function DestinationDetail() {
             {destination.restaurants && destination.restaurants.length > 0 && (
               <RestaurantCards restaurants={destination.restaurants} />
             )}
+
+            {/* Similar destinations */}
+            <SimilarDestinations current={destination} />
+
+            <div style={{ height: 1, backgroundColor: colors.border, margin: `${spacing['6']}px 0` }} />
 
             {/* Save + Share row */}
             <div style={{ display: 'flex', gap: 12, marginTop: spacing['6'] }}>

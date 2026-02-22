@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { destinations } from '../../data/destinations';
+import { useUIStore } from '../../stores/uiStore';
 import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
 
 interface SearchOverlayProps {
@@ -12,6 +13,7 @@ interface SearchOverlayProps {
 export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const departureCode = useUIStore(s => s.departureCode);
 
   useEffect(() => {
     if (visible && inputRef.current) {
@@ -170,6 +172,38 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {/* Cheapest destinations hint */}
+        {!query.trim() && (
+          <div style={{ marginTop: 24 }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
+              Top deals from {departureCode}
+            </div>
+            {destinations
+              .filter(d => (d.livePrice ?? d.flightPrice) > 0)
+              .sort((a, b) => (a.livePrice ?? a.flightPrice) - (b.livePrice ?? b.flightPrice))
+              .slice(0, 5)
+              .map(dest => (
+                <div
+                  key={dest.id}
+                  onClick={() => { onClose(); router.push(`/destination/${dest.id}`); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '10px 16px', cursor: 'pointer', borderRadius: 12, marginBottom: 2,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <span style={{ fontSize: 18 }}>🔥</span>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{dest.city}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginLeft: 8 }}>{dest.country}</span>
+                  </div>
+                  <span style={{ color: '#4ADE80', fontSize: 15, fontWeight: 700 }}>${dest.livePrice ?? dest.flightPrice}</span>
+                </div>
+              ))
+            }
           </div>
         )}
       </div>
