@@ -330,6 +330,8 @@ export default function DestinationDetail() {
             }}>
               Prices are approximate and may vary. We may earn a commission from bookings.
             </p>
+
+            <Footer />
           </div>
         </div>
 
