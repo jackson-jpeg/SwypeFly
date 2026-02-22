@@ -190,6 +190,16 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}
               >🎯 Quiz</button>
+              <button
+                onClick={() => { onClose(); router.push('/budget'); }}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: 14,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
+              >💰 Budget</button>
             </div>
 
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
