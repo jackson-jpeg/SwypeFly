@@ -11,7 +11,7 @@ export async function shareDestination(
   _currency?: string,
 ): Promise<boolean> {
   const priceStr = price ? ` from $${Math.round(price)} roundtrip` : '';
-  const url = destinationId ? `${APP_URL}/destination/${destinationId}` : APP_URL;
+  const url = destinationId ? `${APP_URL}/api/share/${destinationId}` : APP_URL;
   const text = `${city}, ${country}${priceStr} — ${tagline}`;
 
   if (Platform.OS === 'web') {
