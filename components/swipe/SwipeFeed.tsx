@@ -268,6 +268,16 @@ export function SwipeFeed() {
           </div>
         ))}
 
+        {/* Card counter — bottom right */}
+        <div style={{
+          position: 'fixed', bottom: 16, right: 16, zIndex: 30,
+          pointerEvents: 'none',
+          color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 600,
+          textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+        }}>
+          {activeIndex + 1} / {destinations.length}
+        </div>
+
         {/* Simple end-of-feed */}
         {!hasNextPage && destinations.length > 0 && (
           <div className="sg-card-snap" style={{
@@ -276,23 +286,39 @@ export function SwipeFeed() {
             backgroundColor: colors.navy,
           }}>
             <div style={{ textAlign: 'center', padding: '0 32px' }}>
-              <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: 15, marginBottom: 16 }}>
-                More destinations coming soon
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🌍</div>
+              <p style={{ margin: 0, color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
+                You've explored {destinations.length} destinations!
               </p>
-              <button
-                onClick={() => {
-                  refreshFeed();
-                  webScrollRef.current?.scrollTo({ top: 0 });
-                  setActiveIndex(0);
-                  activeIndexRef.current = 0;
-                }}
-                style={{
-                  background: colors.primary, color: '#fff', border: 'none', borderRadius: 9999,
-                  padding: '12px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
-                }}
-              >
-                Shuffle Feed
-              </button>
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>
+                Shuffle for a fresh feed, or check your saved picks.
+              </p>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <button
+                  onClick={() => {
+                    refreshFeed();
+                    webScrollRef.current?.scrollTo({ top: 0 });
+                    setActiveIndex(0);
+                    activeIndexRef.current = 0;
+                  }}
+                  style={{
+                    background: colors.primary, color: '#fff', border: 'none', borderRadius: 9999,
+                    padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  🔄 Shuffle Feed
+                </button>
+                <button
+                  onClick={() => router.push('/saved')}
+                  style={{
+                    background: 'transparent', color: 'rgba(255,255,255,0.7)',
+                    border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 9999,
+                    padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  ❤️ Saved
+                </button>
+              </div>
             </div>
           </div>
         )}
