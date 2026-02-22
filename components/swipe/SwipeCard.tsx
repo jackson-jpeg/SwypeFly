@@ -152,6 +152,8 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const effectivePrice = destination.livePrice ?? destination.flightPrice;
   const isDeal = destination.livePrice != null && destination.livePrice < destination.flightPrice * 0.85;
   const savings = isDeal ? Math.round(((destination.flightPrice - destination.livePrice!) / destination.flightPrice) * 100) : 0;
+  const currentMonth = new Date().toLocaleString('en', { month: 'short' });
+  const isGoodTime = destination.bestMonths?.includes(currentMonth);
 
   // No web stagger — content is always statically visible
 
@@ -352,6 +354,12 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>{destination.country}</span>
             <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
             <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>{destination.flightDuration}</span>
+            {isGoodTime && (
+              <>
+                <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
+                <span style={{ color: '#4ADE80', fontWeight: 500, fontSize: 12 }}>☀️ Great time to go</span>
+              </>
+            )}
           </p>
 
           {/* Price pill */}
