@@ -39,6 +39,7 @@ const COLLECTION_ID = 'destinations';
 // ─── Args ─────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
+const RETRY_EMPTY = args.includes('--retry-empty');
 const onlyCity = args.find(a => a.startsWith('--only='))?.split('=')[1];
 const skip = parseInt(args.find(a => a.startsWith('--skip='))?.split('=')[1] || '0');
 
@@ -64,17 +65,27 @@ interface PexelsResponse {
   photos: PexelsPhoto[];
 }
 
-async function searchPexels(query: string, perPage = 5): Promise<PexelsPhoto[]> {
+async function searchPexels(query: string, perPage = 5, retries = 3): Promise<PexelsPhoto[]> {
   const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=landscape&size=large`;
-  const res = await fetch(url, {
-    headers: { Authorization: PEXELS_KEY },
-  });
-  if (!res.ok) {
-    console.error(`  Pexels error ${res.status} for "${query}"`);
-    return [];
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(url, {
+      headers: { Authorization: PEXELS_KEY },
+    });
+    if (res.status === 429) {
+      const waitSec = 30 * (attempt + 1);
+      console.log(`  ⏳ Rate limited on "${query}", waiting ${waitSec}s (attempt ${attempt + 1}/${retries + 1})`);
+      await sleep(waitSec * 1000);
+      continue;
+    }
+    if (!res.ok) {
+      console.error(`  Pexels error ${res.status} for "${query}"`);
+      return [];
+    }
+    const data = (await res.json()) as PexelsResponse;
+    return data.photos || [];
   }
-  const data = (await res.json()) as PexelsResponse;
-  return data.photos || [];
+  console.error(`  Pexels exhausted retries for "${query}"`);
+  return [];
 }
 
 function sleep(ms: number) {
@@ -143,6 +154,15 @@ async function main() {
   console.log(`Found ${allDocs.length} destinations\n`);
 
   let filtered = allDocs;
+  if (RETRY_EMPTY) {
+    filtered = allDocs.filter(d => !d.image_url || d.image_urls?.length === 0 || d.image_url.includes('pexels') === false);
+    // Actually, check for ones that still have old non-pexels URLs or empty
+    filtered = allDocs.filter(d => {
+      const urls = d.image_urls || [];
+      return urls.length === 0;
+    });
+    console.log(`Retrying ${filtered.length} destinations with no images\n`);
+  }
   if (onlyCity) {
     filtered = allDocs.filter(d => d.city.toLowerCase() === onlyCity.toLowerCase());
     console.log(`Filtering to: ${onlyCity} (${filtered.length} found)\n`);
