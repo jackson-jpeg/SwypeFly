@@ -453,7 +453,73 @@ export function SwipeFeed() {
           }}>
             SoGo<span style={{ color: '#38BDF8' }}>Jet</span>
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, pointerEvents: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
+            {/* Region filter */}
+            <div style={{ position: 'relative' }}>
+              <span
+                onClick={() => setRegionOpen(!regionOpen)}
+                style={{
+                  color: regionFilter !== 'all' ? '#38BDF8' : 'rgba(255,255,255,0.7)',
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  padding: '4px 10px', borderRadius: 9999,
+                  backgroundColor: regionFilter !== 'all' ? 'rgba(56,189,248,0.2)' : 'rgba(0,0,0,0.3)',
+                  border: regionFilter !== 'all' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                  textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                {REGION_OPTIONS.find(r => r.key === regionFilter)?.emoji || '🌍'}{' '}
+                {REGION_OPTIONS.find(r => r.key === regionFilter)?.label || 'Everywhere'}
+                <span style={{ fontSize: 8, opacity: 0.6 }}>▼</span>
+              </span>
+              {regionOpen && (
+                <>
+                  <div
+                    onClick={() => setRegionOpen(false)}
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 98 }}
+                  />
+                  <div style={{
+                    position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 99,
+                    backgroundColor: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                    borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)', overflow: 'hidden',
+                    minWidth: 200,
+                  }}>
+                    <div style={{ padding: '10px 14px 6px', color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5 }}>
+                      Destination Region
+                    </div>
+                    {REGION_OPTIONS.map(({ key, label, emoji }) => (
+                      <div
+                        key={key}
+                        onClick={() => {
+                          setRegionFilter(key);
+                          setRegionOpen(false);
+                          webScrollRef.current?.scrollTo({ top: 0 });
+                          setActiveIndex(0);
+                          activeIndexRef.current = 0;
+                        }}
+                        style={{
+                          padding: '10px 14px', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          backgroundColor: regionFilter === key ? 'rgba(56,189,248,0.1)' : 'transparent',
+                          transition: 'background-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => { if (regionFilter !== key) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+                        onMouseLeave={(e) => { if (regionFilter !== key) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
+                      >
+                        <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>{emoji}</span>
+                        <span style={{
+                          color: regionFilter === key ? '#38BDF8' : 'rgba(255,255,255,0.8)',
+                          fontSize: 14, fontWeight: regionFilter === key ? 700 : 500,
+                        }}>{label}</span>
+                        {regionFilter === key && <span style={{ marginLeft: 'auto', color: '#38BDF8', fontSize: 14 }}>✓</span>}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <span style={{
               color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
               textShadow: '0 1px 8px rgba(0,0,0,0.5)',
