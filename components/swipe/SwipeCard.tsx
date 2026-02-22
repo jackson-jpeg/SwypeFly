@@ -240,6 +240,22 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           />
         ))}
 
+        {/* Image indicator dots */}
+        {hasMultipleImages && (
+          <div style={{
+            position: 'absolute', top: 52, left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', gap: 4, zIndex: 5, pointerEvents: 'none',
+          }}>
+            {imageList.map((_, i) => (
+              <div key={i} style={{
+                width: i === activeImageIndex ? 16 : 6, height: 4, borderRadius: 2,
+                backgroundColor: i === activeImageIndex ? '#fff' : 'rgba(255,255,255,0.3)',
+                transition: 'all 0.3s ease',
+              }} />
+            ))}
+          </div>
+        )}
+
         {/* Minimal gradient — just enough for text */}
         <CardGradient />
 
