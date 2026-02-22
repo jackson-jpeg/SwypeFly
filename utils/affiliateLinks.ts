@@ -16,7 +16,7 @@ export function flightLink(origin: string, destIata: string, marker: string): st
     return `${TP_BASE}?marker=${marker}&p=4114&u=${encodeURIComponent(target)}&subid=${destIata}&subid2=detail_view`;
   }
 
-  return `https://www.google.com/travel/flights?q=flights+from+${origin}+to+${destIata}&d=${date}&curr=USD`;
+  return `https://www.google.com/travel/flights?q=flights+from+${origin}+to+${destIata}&d=${date}&curr=USD&utm_source=sogojet&utm_medium=web&utm_campaign=flight_search`;
 }
 
 /**

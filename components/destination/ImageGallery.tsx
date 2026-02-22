@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Platform, View, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -9,6 +9,20 @@ interface ImageGalleryProps {
 
 export default function ImageGallery({ images, city }: ImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-play slideshow every 5 seconds
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveIndex(prev => {
+        const next = (prev + 1) % images.length;
+        scrollRef.current?.scrollTo({ left: next * scrollRef.current.clientWidth, behavior: 'smooth' });
+        return next;
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [images.length]);
 
   if (Platform.OS === 'web') {
     return (
@@ -19,6 +33,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
           .ig-slide { scroll-snap-align: start; scroll-snap-stop: always; }
         `}</style>
         <div
+          ref={scrollRef}
           className="ig-scroll"
           style={{
             display: 'flex',
@@ -83,13 +98,19 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
             {images.map((_, i) => (
               <div
                 key={i}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveIndex(i);
+                  scrollRef.current?.scrollTo({ left: i * scrollRef.current.clientWidth, behavior: 'smooth' });
+                }}
                 style={{
                   width: i === activeIndex ? 16 : 6,
                   height: 6,
                   borderRadius: 3,
                   backgroundColor:
-                    i === activeIndex ? '#38BDF8' : 'rgba(0,0,0,0.25)',
+                    i === activeIndex ? '#38BDF8' : 'rgba(255,255,255,0.4)',
                   transition: 'all 0.2s ease',
+                  cursor: 'pointer',
                 }}
               />
             ))}
