@@ -164,23 +164,33 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
 
         {!query.trim() && (
           <div style={{ marginTop: 32 }}>
-            {/* Surprise Me */}
-            <button
-              onClick={() => {
-                const rand = destinations[Math.floor(Math.random() * destinations.length)];
-                onClose();
-                router.push(`/destination/${rand.id}`);
-              }}
-              style={{
-                width: '100%', padding: '14px 0', borderRadius: 14, marginBottom: 24,
-                background: 'linear-gradient(135deg, rgba(56,189,248,0.15) 0%, rgba(168,85,247,0.15) 100%)',
-                border: '1px solid rgba(56,189,248,0.2)',
-                color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-            >
-              🎲 Surprise Me
-            </button>
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+              <button
+                onClick={() => {
+                  const rand = destinations[Math.floor(Math.random() * destinations.length)];
+                  onClose();
+                  router.push(`/destination/${rand.id}`);
+                }}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: 14,
+                  background: 'linear-gradient(135deg, rgba(56,189,248,0.15) 0%, rgba(168,85,247,0.15) 100%)',
+                  border: '1px solid rgba(56,189,248,0.2)',
+                  color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
+              >🎲 Surprise Me</button>
+              <button
+                onClick={() => { onClose(); router.push('/quiz'); }}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: 14,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
+              >🎯 Quiz</button>
+            </div>
 
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
               Explore by vibe
