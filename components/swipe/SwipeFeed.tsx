@@ -6,6 +6,7 @@ import { SkeletonCard } from './SkeletonCard';
 import { SearchOverlay } from './SearchOverlay';
 import { WelcomeOverlay } from './WelcomeOverlay';
 import { DealAlertBanner } from './DealAlertBanner';
+import { DealsTicker } from './DealsTicker';
 import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore, SortPreset } from '../../stores/feedStore';
@@ -293,6 +294,7 @@ export function SwipeFeed() {
           ))}
         </div>
 
+        <DealsTicker />
         <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
 
         {destinations.map((destination, index) => (
