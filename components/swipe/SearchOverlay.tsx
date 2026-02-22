@@ -16,7 +16,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
   const [maxPrice, setMaxPrice] = useState(2000);
   const inputRef = useRef<HTMLInputElement>(null);
   const departureCode = useUIStore(s => s.departureCode);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleQueryChange = useCallback((val: string) => {
     setQuery(val);

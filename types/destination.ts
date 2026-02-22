@@ -49,6 +49,14 @@ export interface Destination {
   previousPrice?: number;
   otherPrices?: { origin: string; price: number; source: string }[];
   photographerAttribution?: { name: string; url: string };
+  travelTips?: {
+    visa: string;
+    currency: string;
+    language: string;
+    safety: string;
+    bestFor: string[];
+    costLevel: 1 | 2 | 3 | 4;
+  };
 }
 
 export interface DestinationFeedPage {
