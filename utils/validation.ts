@@ -90,10 +90,14 @@ export const tripPlanBodySchema = z.object({
 
 // ─── Validate helper ─────────────────────────────────────────────────
 
+type ValidationSuccess<T> = { success: true; data: T; error?: undefined };
+type ValidationFailure = { success: false; error: string; data?: undefined };
+type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure;
+
 export function validateRequest<T>(
   schema: ZodSchema<T>,
   data: unknown,
-): { success: true; data: T } | { success: false; error: string } {
+): ValidationResult<T> {
   const result = schema.safeParse(data);
   if (result.success) {
     return { success: true, data: result.data };
