@@ -13,6 +13,7 @@ import { StickyBookBar } from '../../components/destination/StickyBookBar';
 import ItineraryTimeline from '../../components/destination/ItineraryTimeline';
 import RestaurantCards from '../../components/destination/RestaurantCards';
 import { TravelTips } from '../../components/destination/TravelTips';
+import { WeatherWidget } from '../../components/destination/WeatherWidget';
 import { SimilarDestinations } from '../../components/destination/SimilarDestinations';
 import { hotelLink, activitiesLink } from '../../utils/affiliateLinks';
 import { CompareModal } from '../../components/common/CompareModal';
@@ -107,6 +108,7 @@ export default function DestinationDetail() {
             {/* 2. Info — Hero + Essential */}
             <DestinationHero destination={destination} />
             <QuickStats destination={destination} />
+            <WeatherWidget city={destination.city} country={destination.country} averageTemp={destination.averageTemp} />
 
             {/* Description */}
             <p style={{ margin: `${spacing['4']}px 0 0 0`, color: colors.dark.text.body, fontSize: fontSize.xl, lineHeight: 1.7 }}>
@@ -217,6 +219,20 @@ export default function DestinationDetail() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >🎭 Find Activities & Tours</button>
+
+            {/* Travel insurance link */}
+            <button
+              onClick={() => window.open(`https://www.worldnomads.com/travel-insurance/?utm_source=sogojet&utm_medium=web`, '_blank')}
+              style={{
+                width: '100%', marginTop: spacing['2'],
+                padding: '12px 0', borderRadius: radii.xl,
+                background: 'transparent',
+                border: `1px solid ${colors.dark.borderLight}`,
+                color: colors.dark.text.secondary,
+                fontSize: fontSize.md, fontWeight: fontWeight.medium, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >🛡️ Get Travel Insurance</button>
 
             {/* Prices from other airports */}
             {destination.otherPrices && destination.otherPrices.length > 0 && (
