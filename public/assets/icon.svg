@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#0F172A"/>
+  <text x="256" y="200" text-anchor="middle" dominant-baseline="middle" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800" font-size="160" fill="#FFFFFF">SG</text>
+  <text x="256" y="360" text-anchor="middle" dominant-baseline="middle" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800" font-size="60" fill="#38BDF8">JET</text>
+  <circle cx="256" cy="440" r="6" fill="#38BDF8" opacity="0.5"/>
+</svg>
