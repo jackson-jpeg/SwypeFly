@@ -342,10 +342,11 @@ export function SwipeFeed() {
         <div style={{
           position: 'fixed', bottom: 16, right: 16, zIndex: 30,
           pointerEvents: 'none',
-          color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 600,
+          color: 'rgba(255,255,255,0.25)', fontSize: 10, fontWeight: 600,
           textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2,
         }}>
-          {activeIndex + 1} / {destinations.length}
+          <span>{activeIndex + 1} / {destinations.length}</span>
         </div>
 
         {/* Simple end-of-feed */}

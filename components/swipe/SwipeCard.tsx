@@ -155,6 +155,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const currentMonth = new Date().toLocaleString('en', { month: 'short' });
   const isGoodTime = destination.bestMonths?.includes(currentMonth);
   const isNew = parseInt(destination.id) >= 147; // batch3 destinations
+  const costLevel = destination.hotelPricePerNight <= 60 ? '$' : destination.hotelPricePerNight <= 120 ? '$$' : destination.hotelPricePerNight <= 200 ? '$$$' : '$$$$';
 
   // No web stagger — content is always statically visible
 
@@ -237,6 +238,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               opacity: idx === activeImageIndex ? 1 : 0,
               transition: 'opacity 0.8s ease',
               zIndex: idx === activeImageIndex ? 1 : 0,
+              backgroundColor: colors.navy,
             }}
             loading={idx === 0 ? (isActive ? 'eager' : 'lazy') : 'lazy'}
             draggable={false}
@@ -378,6 +380,8 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>{destination.country}</span>
             <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
             <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>{destination.flightDuration}</span>
+            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400, fontSize: 12 }}>{costLevel}</span>
             {isGoodTime && (
               <>
                 <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>

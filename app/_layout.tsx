@@ -100,6 +100,11 @@ function useWebStyles() {
       document.head.appendChild(icon);
     }
 
+    // Service worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
     // PWA: mobile-web-app-capable
     if (!document.querySelector('meta[name="mobile-web-app-capable"]')) {
       const capable = document.createElement('meta');
