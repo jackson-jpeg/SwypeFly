@@ -5,6 +5,7 @@ import { SwipeCard } from './SwipeCard';
 import { SkeletonCard } from './SkeletonCard';
 import { SearchOverlay } from './SearchOverlay';
 import { WelcomeOverlay } from './WelcomeOverlay';
+import { DealAlertBanner } from './DealAlertBanner';
 import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
 import { useFeedStore } from '../../stores/feedStore';
@@ -267,6 +268,9 @@ export function SwipeFeed() {
             )}
           </div>
         ))}
+
+        {/* Deal alert banner — shows after 5 cards */}
+        {activeIndex >= 5 && <DealAlertBanner />}
 
         {/* Card counter — bottom right */}
         <div style={{
