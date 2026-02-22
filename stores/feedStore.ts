@@ -5,16 +5,30 @@ function generateSessionId(): string {
 }
 
 export type SortPreset = 'default' | 'cheapest' | 'trending' | 'topRated';
+export type RegionFilter = 'all' | 'domestic' | 'caribbean' | 'latam' | 'europe' | 'asia' | 'africa-me' | 'oceania';
+
+export const REGION_OPTIONS: { key: RegionFilter; label: string; emoji: string }[] = [
+  { key: 'all', label: 'Everywhere', emoji: '🌍' },
+  { key: 'domestic', label: 'USA', emoji: '🇺🇸' },
+  { key: 'caribbean', label: 'Caribbean', emoji: '🏝️' },
+  { key: 'latam', label: 'Latin America', emoji: '🌎' },
+  { key: 'europe', label: 'Europe', emoji: '🇪🇺' },
+  { key: 'asia', label: 'Asia', emoji: '🌏' },
+  { key: 'africa-me', label: 'Africa & Middle East', emoji: '🌍' },
+  { key: 'oceania', label: 'Oceania', emoji: '🏄' },
+];
 
 interface FeedState {
   sessionId: string;
   currentIndex: number;
   viewedIds: Set<string>;
   vibeFilter: string | null;
+  regionFilter: RegionFilter;
   sortPreset: SortPreset;
   setCurrentIndex: (index: number) => void;
   markViewed: (id: string) => void;
   setVibeFilter: (vibe: string | null) => void;
+  setRegionFilter: (region: RegionFilter) => void;
   setSortPreset: (preset: SortPreset) => void;
   reset: () => void;
   refreshFeed: () => void;
@@ -25,6 +39,7 @@ export const useFeedStore = create<FeedState>((set) => ({
   currentIndex: 0,
   viewedIds: new Set(),
   vibeFilter: null,
+  regionFilter: 'all',
   sortPreset: 'default',
   setCurrentIndex: (index) => set({ currentIndex: index }),
   markViewed: (id) =>
@@ -36,6 +51,13 @@ export const useFeedStore = create<FeedState>((set) => ({
   setVibeFilter: (vibe) =>
     set({
       vibeFilter: vibe,
+      sessionId: generateSessionId(),
+      currentIndex: 0,
+      viewedIds: new Set(),
+    }),
+  setRegionFilter: (region) =>
+    set({
+      regionFilter: region,
       sessionId: generateSessionId(),
       currentIndex: 0,
       viewedIds: new Set(),

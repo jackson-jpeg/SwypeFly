@@ -157,7 +157,13 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const isNew = parseInt(destination.id) >= 147; // batch3 destinations
   const costLevel = destination.hotelPricePerNight <= 60 ? '$' : destination.hotelPricePerNight <= 120 ? '$$' : destination.hotelPricePerNight <= 200 ? '$$$' : '$$$$';
 
-  // No web stagger — content is always statically visible
+  // ── Ken Burns effect — cycle through different pan/zoom combos ──
+  const kenBurnsVariants = [
+    { from: 'scale(1) translate(0%, 0%)', to: 'scale(1.15) translate(-2%, -1%)' },
+    { from: 'scale(1.1) translate(-3%, 0%)', to: 'scale(1) translate(1%, 2%)' },
+    { from: 'scale(1) translate(2%, 1%)', to: 'scale(1.12) translate(-1%, -2%)' },
+    { from: 'scale(1.08) translate(0%, -2%)', to: 'scale(1.02) translate(2%, 1%)' },
+  ];
 
   // ── Horizontal swipe gesture (web) ──
   const [swipeX, setSwipeX] = useState(0);
@@ -179,22 +185,19 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
     const t = e.touches[0];
     const dx = t.clientX - touchStartRef.current.x;
     const dy = t.clientY - touchStartRef.current.y;
-    // Only start horizontal drag if predominantly horizontal
     if (!isDragging.current && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       isDragging.current = true;
     }
     if (isDragging.current) {
-      setSwipeX(dx * 0.6); // dampen
+      setSwipeX(dx * 0.6);
     }
   }, []);
 
   const handleTouchEnd = useCallback(() => {
     if (swipeX > SWIPE_THRESHOLD) {
-      // Swipe right → save
       if (!isSaved) onToggleSave();
       successHaptic();
     }
-    // Left swipe is just visual feedback for now (skip doesn't need action)
     setSwipeX(0);
     touchStartRef.current = null;
     isDragging.current = false;
@@ -202,6 +205,9 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
 
   // ── Web ──
   if (Platform.OS === 'web') {
+    // Generate unique animation name per card for Ken Burns
+    const kbId = `kb-${destination.id}`;
+
     return (
       <div
         onClick={(e) => { if (!isDragging.current) handleCardTap(); }}
@@ -224,29 +230,59 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
           }
+          @keyframes sg-city-enter {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes sg-price-enter {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes sg-meta-enter {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          ${kenBurnsVariants.map((v, i) => `
+            @keyframes ${kbId}-${i} {
+              0% { transform: ${v.from}; }
+              100% { transform: ${v.to}; }
+            }
+          `).join('')}
         `}</style>
 
-        {/* Images — stack with crossfade */}
-        {shouldLoadImage && imageList.map((url, idx) => (
-          <img
-            key={url}
-            src={url}
-            alt={idx === 0 ? destination.city : ''}
-            style={{
-              position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-              objectFit: 'cover',
-              opacity: idx === activeImageIndex ? 1 : 0,
-              transition: 'opacity 0.8s ease',
-              zIndex: idx === activeImageIndex ? 1 : 0,
-              backgroundColor: colors.navy,
-            }}
-            loading={idx === 0 ? (isActive ? 'eager' : 'lazy') : 'lazy'}
-            draggable={false}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750';
-            }}
-          />
-        ))}
+        {/* Images — stack with crossfade + Ken Burns */}
+        {shouldLoadImage && imageList.map((url, idx) => {
+          const kbVariant = kenBurnsVariants[idx % kenBurnsVariants.length];
+          const isActiveImg = idx === activeImageIndex;
+          return (
+            <img
+              key={url}
+              src={url}
+              alt={idx === 0 ? destination.city : ''}
+              style={{
+                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                objectFit: 'cover',
+                opacity: isActiveImg ? 1 : 0,
+                transition: 'opacity 0.8s ease',
+                zIndex: isActiveImg ? 1 : 0,
+                backgroundColor: colors.navy,
+                animation: isActiveImg && isActive ? `${kbId}-${idx % kenBurnsVariants.length} ${SLIDESHOW_INTERVAL}ms ease-out forwards` : 'none',
+                willChange: isActiveImg ? 'transform' : 'auto',
+              }}
+              loading={idx === 0 ? (isActive ? 'eager' : 'lazy') : 'lazy'}
+              draggable={false}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750';
+              }}
+            />
+          );
+        })}
+
+        {/* Vignette overlay for cinematic feel */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.45) 100%)',
+        }} />
 
         {/* New badge */}
         {isNew && (
@@ -345,19 +381,20 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </div>
         </div>
 
-        {/* Bottom-left: minimal content stack */}
+        {/* Bottom-left: minimal content stack with animated entry */}
         <div
           style={{
             position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
             padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom}px ${layout.cardPaddingHorizontal}px`,
           }}
         >
-          {/* City */}
+          {/* City — slides up */}
           <h1
             style={{
               margin: 0, color: '#fff', fontSize: 40, fontWeight: 800,
               letterSpacing: -0.5, lineHeight: 1,
               textShadow: '0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)',
+              animation: isActive ? 'sg-city-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both' : 'none',
             }}
           >
             {destination.city}
@@ -368,6 +405,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             margin: '6px 0 0 0', fontSize: 15, fontWeight: 400, fontStyle: 'italic',
             color: 'rgba(255,255,255,0.6)', lineHeight: 1.3,
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+            animation: isActive ? 'sg-meta-enter 0.5s 0.15s ease-out both' : 'none',
           }}>
             {destination.tagline}
           </p>
@@ -376,6 +414,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           <p style={{
             margin: '6px 0 0 0', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center',
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+            animation: isActive ? 'sg-meta-enter 0.4s 0.2s ease-out both' : 'none',
           }}>
             <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>{destination.country}</span>
             <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
@@ -390,8 +429,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             )}
           </p>
 
-          {/* Price pill */}
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Price pill — fades in with delay */}
+          <div style={{
+            marginTop: 14, display: 'flex', alignItems: 'center', gap: 8,
+            animation: isActive ? 'sg-price-enter 0.5s 0.3s ease-out both' : 'none',
+          }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '8px 16px', borderRadius: 9999,

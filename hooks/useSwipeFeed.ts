@@ -10,12 +10,34 @@ import type { Destination, DestinationFeedPage } from '../types/destination';
 
 // ─── Static data fallback ─────────────────────────────────────
 
+const REGION_COUNTRY_MAP: Record<string, string[]> = {
+  domestic: ['USA'],
+  caribbean: ['Jamaica', 'Bahamas', 'Barbados', 'Trinidad and Tobago', 'St. Lucia', 'Aruba', 'Curaçao', 'Cayman Islands', 'Turks and Caicos', 'Antigua and Barbuda', 'Grenada', 'St. Kitts and Nevis', 'Dominica', 'Anguilla', 'Montserrat', 'Saint Barthélemy', 'St. Maarten', 'US Virgin Islands', 'British Virgin Islands', 'Puerto Rico', 'Dominican Republic', 'Cuba', 'Guadeloupe', 'Martinique'],
+  latam: ['Mexico', 'Colombia', 'Brazil', 'Argentina', 'Chile', 'Peru', 'Costa Rica', 'Panama', 'Ecuador', 'Bolivia', 'Uruguay', 'Guatemala', 'Honduras', 'El Salvador', 'Nicaragua', 'Belize'],
+  europe: ['United Kingdom', 'France', 'Italy', 'Spain', 'Germany', 'Portugal', 'Greece', 'Croatia', 'Netherlands', 'Belgium', 'Switzerland', 'Austria', 'Czech Republic', 'Poland', 'Hungary', 'Ireland', 'Norway', 'Denmark', 'Sweden', 'Iceland', 'Estonia', 'Latvia', 'Slovenia', 'Montenegro', 'Malta'],
+  asia: ['Japan', 'Thailand', 'Indonesia', 'Vietnam', 'South Korea', 'India', 'Cambodia', 'Malaysia', 'Philippines', 'Singapore', 'China', 'Taiwan', 'Nepal', 'Sri Lanka', 'Maldives', 'Myanmar', 'Laos', 'Bhutan'],
+  'africa-me': ['Morocco', 'South Africa', 'Egypt', 'Kenya', 'Tanzania', 'Ethiopia', 'Senegal', 'Nigeria', 'Madagascar', 'UAE', 'Jordan', 'Israel', 'Turkey', 'Oman', 'Qatar', 'Georgia'],
+  oceania: ['Australia', 'New Zealand', 'Fiji', 'French Polynesia'],
+};
+
+function matchesRegion(country: string, region: string): boolean {
+  if (region === 'all') return true;
+  const countries = REGION_COUNTRY_MAP[region];
+  if (!countries) return true;
+  return countries.some(c => c.toLowerCase() === country.toLowerCase());
+}
+
 function getStaticPage(
   cursor: string | null,
   vibeFilter: string | null,
   sortPreset: string | null,
+  regionFilter: string | null,
 ): DestinationFeedPage {
   let dests = [...staticDestinations];
+
+  if (regionFilter && regionFilter !== 'all') {
+    dests = dests.filter((d) => matchesRegion(d.country, regionFilter));
+  }
 
   if (vibeFilter) {
     const vibe = vibeFilter.toLowerCase();
@@ -49,6 +71,7 @@ async function fetchPage(
   excludeIds: string[],
   vibeFilter: string | null,
   sortPreset: string | null,
+  regionFilter?: string | null,
 ): Promise<DestinationFeedPage> {
   try {
     const params = new URLSearchParams({ origin });
@@ -63,6 +86,9 @@ async function fetchPage(
     if (sortPreset && sortPreset !== 'default') {
       params.set('sortPreset', sortPreset);
     }
+    if (regionFilter && regionFilter !== 'all') {
+      params.set('regionFilter', regionFilter);
+    }
 
     const authHeaders = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/api/feed?${params}`, {
@@ -72,7 +98,7 @@ async function fetchPage(
     return res.json();
   } catch {
     // API unavailable — fall back to static data
-    return getStaticPage(cursor, vibeFilter, sortPreset);
+    return getStaticPage(cursor, vibeFilter, sortPreset, regionFilter);
   }
 }
 
@@ -81,10 +107,11 @@ export function useSwipeFeed() {
   const sessionId = useFeedStore((s) => s.sessionId);
   const viewedIds = useFeedStore((s) => s.viewedIds);
   const vibeFilter = useFeedStore((s) => s.vibeFilter);
+  const regionFilter = useFeedStore((s) => s.regionFilter);
   const sortPreset = useFeedStore((s) => s.sortPreset);
 
   return useInfiniteQuery({
-    queryKey: ['feed', departureCode, sessionId, vibeFilter, sortPreset],
+    queryKey: ['feed', departureCode, sessionId, vibeFilter, sortPreset, regionFilter],
     queryFn: ({ pageParam }) =>
       fetchPage(
         departureCode,
@@ -93,6 +120,7 @@ export function useSwipeFeed() {
         Array.from(viewedIds),
         vibeFilter,
         sortPreset,
+        regionFilter,
       ),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,

@@ -22,6 +22,7 @@ export const feedQuerySchema = z.object({
   excludeIds: z.string().max(5000).optional(),
   vibeFilter: z.string().max(50).optional(),
   sortPreset: z.enum(['default', 'cheapest', 'trending', 'topRated']).optional(),
+  regionFilter: z.enum(['all', 'domestic', 'caribbean', 'latam', 'europe', 'asia', 'africa-me', 'oceania']).optional(),
 });
 
 // ─── Swipe endpoint ──────────────────────────────────────────────────

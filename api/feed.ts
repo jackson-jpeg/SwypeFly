@@ -387,7 +387,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
-    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset } = v.data;
+    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter } = v.data;
     const cursor = parsedCursor ?? 0;
 
     const allDestinations = await getDestinationsWithPrices(origin);
@@ -402,6 +402,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Scoring must run on the full candidate set so the seeded PRNG produces
     // a deterministic order. Cursor-based pagination then slices consistently.
     let destinations = [...allDestinations];
+
+    if (regionFilter && regionFilter !== 'all') {
+      destinations = destinations.filter((d) => getRegion(d) === regionFilter);
+    }
 
     if (vibeFilter) {
       const vibe = vibeFilter.toLowerCase();

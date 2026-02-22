@@ -121,7 +121,7 @@ function useWebStyles() {
     if (!document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')) {
       const style = document.createElement('meta');
       style.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
-      style.setAttribute('content', 'default');
+      style.setAttribute('content', 'black-translucent');
       document.head.appendChild(style);
     }
 

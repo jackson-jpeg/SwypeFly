@@ -3,17 +3,21 @@ import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { destinations } from '../../data/destinations';
 import { useUIStore } from '../../stores/uiStore';
-import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
+import { colors } from '../../constants/theme';
 
 interface SearchOverlayProps {
   visible: boolean;
   onClose: () => void;
 }
 
+// Trending destinations — hand-picked popular ones
+const TRENDING_CITIES = ['Paris', 'Tokyo', 'Bali', 'Barcelona', 'Dubai', 'Lisbon'];
+
 export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [maxPrice, setMaxPrice] = useState(2000);
+  const [animating, setAnimating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const departureCode = useUIStore(s => s.departureCode);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -25,10 +29,11 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
   }, []);
 
   useEffect(() => {
-    if (visible && inputRef.current) {
+    if (visible) {
+      setAnimating(true);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-    if (!visible) { setQuery(''); setDebouncedQuery(''); }
+    if (!visible) { setQuery(''); setDebouncedQuery(''); setAnimating(false); }
   }, [visible]);
 
   // Close on Escape
@@ -57,6 +62,11 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
       .slice(0, 10);
   }, [debouncedQuery, maxPrice]);
 
+  const trendingDests = useMemo(() =>
+    TRENDING_CITIES.map(city => destinations.find(d => d.city === city)).filter(Boolean),
+    [],
+  );
+
   if (!visible || Platform.OS !== 'web') return null;
 
   return (
@@ -68,9 +78,22 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
         WebkitBackdropFilter: 'blur(20px)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', paddingTop: 80,
+        animation: animating ? 'sg-search-open 0.3s ease-out' : undefined,
+        overflowY: 'auto',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
+      <style>{`
+        @keyframes sg-search-open {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sg-trending-in {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+
       {/* Search input */}
       <div style={{ width: '90%', maxWidth: 500 }}>
         <div style={{ position: 'relative' }}>
@@ -149,7 +172,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                   </div>
                 </div>
                 <div style={{ marginLeft: 'auto', color: '#38BDF8', fontSize: 15, fontWeight: 700 }}>
-                  ${dest.flightPrice}
+                  ${dest.livePrice ?? dest.flightPrice}
                 </div>
               </div>
             ))}
@@ -163,9 +186,45 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
         )}
 
         {!query.trim() && (
-          <div style={{ marginTop: 32 }}>
+          <>
+            {/* Trending Now */}
+            <div style={{ marginTop: 28 }}>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
+                🔥 Trending Now
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {trendingDests.map((dest, i) => dest && (
+                  <div
+                    key={dest.id}
+                    onClick={() => { onClose(); router.push(`/destination/${dest.id}`); }}
+                    style={{
+                      position: 'relative', borderRadius: 14, overflow: 'hidden',
+                      aspectRatio: '1', cursor: 'pointer',
+                      animation: `sg-trending-in 0.4s ${i * 0.06}s ease-out both`,
+                    }}
+                  >
+                    <img src={dest.imageUrl} alt={dest.city} style={{
+                      width: '100%', height: '100%', objectFit: 'cover',
+                      transition: 'transform 0.3s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+                    onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                    />
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)',
+                    }} />
+                    <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8 }}>
+                      <div style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>{dest.city}</div>
+                      <div style={{ color: '#38BDF8', fontSize: 11, fontWeight: 600 }}>${dest.livePrice ?? dest.flightPrice}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 24, marginBottom: 24 }}>
               <button
                 onClick={() => {
                   const rand = destinations[Math.floor(Math.random() * destinations.length)];
@@ -222,7 +281,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
               ].map(({ emoji, label }) => (
                 <div
                   key={label}
-                  onClick={() => setQuery(label.toLowerCase())}
+                  onClick={() => handleQueryChange(label.toLowerCase())}
                   style={{
                     padding: '8px 16px', borderRadius: 20,
                     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -243,42 +302,41 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        {/* Cheapest destinations hint */}
-        {!query.trim() && (
-          <div style={{ marginTop: 24 }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
-              Top deals from {departureCode}
-            </div>
-            {destinations
-              .filter(d => {
-                const p = d.livePrice ?? d.flightPrice;
-                return p > 0 && p <= maxPrice;
-              })
-              .sort((a, b) => (a.livePrice ?? a.flightPrice) - (b.livePrice ?? b.flightPrice))
-              .slice(0, 5)
-              .map(dest => (
-                <div
-                  key={dest.id}
-                  onClick={() => { onClose(); router.push(`/destination/${dest.id}`); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '10px 16px', cursor: 'pointer', borderRadius: 12, marginBottom: 2,
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <span style={{ fontSize: 18 }}>🔥</span>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{dest.city}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginLeft: 8 }}>{dest.country}</span>
+
+            {/* Top deals */}
+            <div style={{ marginTop: 24, paddingBottom: 40 }}>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12 }}>
+                Top deals from {departureCode}
+              </div>
+              {destinations
+                .filter(d => {
+                  const p = d.livePrice ?? d.flightPrice;
+                  return p > 0 && p <= maxPrice;
+                })
+                .sort((a, b) => (a.livePrice ?? a.flightPrice) - (b.livePrice ?? b.flightPrice))
+                .slice(0, 5)
+                .map(dest => (
+                  <div
+                    key={dest.id}
+                    onClick={() => { onClose(); router.push(`/destination/${dest.id}`); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '10px 16px', cursor: 'pointer', borderRadius: 12, marginBottom: 2,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <img src={dest.imageUrl} alt={dest.city} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
+                    <div style={{ flex: 1 }}>
+                      <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{dest.city}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginLeft: 8 }}>{dest.country}</span>
+                    </div>
+                    <span style={{ color: '#4ADE80', fontSize: 15, fontWeight: 700 }}>${dest.livePrice ?? dest.flightPrice}</span>
                   </div>
-                  <span style={{ color: '#4ADE80', fontSize: 15, fontWeight: 700 }}>${dest.livePrice ?? dest.flightPrice}</span>
-                </div>
-              ))
-            }
-          </div>
+                ))
+              }
+            </div>
+          </>
         )}
       </div>
     </div>
