@@ -1,128 +1,130 @@
-// ─── Destination Hero ────────────────────────────────────────────────────────
-import { View, Text, Platform } from 'react-native';
-import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
-import type { Destination, VibeTag } from '../../types/destination';
+import React from 'react';
+import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
+import { AntDesign, Feather, Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  interpolate,
+  Extrapolate,
+} from 'react-native-reanimated';
+import { Button } from '@/components/common/Button';
+import { QuickStats } from './QuickStats';
+import { formatPrice } from '@/utils/formatPrice';
+import { H1 } from '@/components/common/Typography';
+import type { Destination } from '@/types/destination';
+
+const { height } = Dimensions.get('window');
+const HERO_HEIGHT = height * 0.6;
+
+const getImageSource = (destination: Destination): string => {
+  // Fallback hierarchy: destination.image → city.image → country.image → placeholder
+  const placeholderImage = 'https://images.unsplash.com/photo-1482192505345-5655af888cc4?w=1200&q=90';
+  
+  return destination.image || 
+         destination.city?.image || 
+         destination.country?.image || 
+         placeholderImage;
+};
 
 interface DestinationHeroProps {
   destination: Destination;
-  saved?: boolean;
-  onToggleSave?: () => void;
+  scrollOffset: Animated.SharedValue<number>;
 }
 
-const VIBE_EMOJIS: Record<VibeTag, string> = {
-  beach: '🏖️', mountain: '⛰️', city: '🏙️', culture: '🏛️',
-  adventure: '🏞️', romantic: '💕', foodie: '🍜', nightlife: '🌃',
-  nature: '🌿', historic: '🏛️', tropical: '🌴', winter: '❄️',
-  luxury: '✨', budget: '💰',
-};
+export const DestinationHero: React.FC<DestinationHeroProps> = ({ 
+  destination, 
+  scrollOffset 
+}) => {
+  const router = useRouter();
+  const imageSource = getImageSource(destination);
 
-export function DestinationHero({ destination, saved, onToggleSave }: DestinationHeroProps) {
-  if (Platform.OS === 'web') {
-    return (
-      <div style={{ position: 'relative' }}>
-        {/* Heart / favorite button */}
-        {onToggleSave && (
-          <button
-            onClick={onToggleSave}
-            style={{
-              position: 'absolute', top: 0, right: 0,
-              width: 40, height: 40, borderRadius: 20,
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(8px)',
-              border: `1px solid ${colors.dark.borderLight}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', fontSize: 20,
-            }}
-          >
-            {saved ? '❤️' : '🤍'}
-          </button>
-        )}
-
-        <h1 style={{
-          margin: 0, color: colors.dark.text.primary, fontSize: fontSize['7xl'], fontWeight: fontWeight.extrabold,
-          letterSpacing: -0.5, lineHeight: 1.1,
-        }}>
-          {destination.city}, {destination.country}
-        </h1>
-
-        {/* Tagline */}
-        <p style={{
-          margin: `${spacing['2']}px 0 0 0`, color: colors.dark.text.secondary, fontSize: fontSize.xl,
-          fontStyle: 'italic',
-        }}>
-          &ldquo;{destination.tagline}&rdquo;
-        </p>
-
-        {/* Category tags with emoji - inline style */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: spacing['4'], marginTop: spacing['3'], flexWrap: 'wrap' }}>
-          {destination.vibeTags.slice(0, 4).map((tag) => (
-            <span key={tag} style={{
-              color: colors.dark.text.secondary, fontSize: fontSize.lg, fontWeight: fontWeight.medium,
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              {VIBE_EMOJIS[tag] || '🏷️'} {tag.charAt(0).toUpperCase() + tag.slice(1)}
-            </span>
-          ))}
-        </div>
-
-        {/* Rating row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing['1'] }}>
-            <span style={{ color: colors.warning, fontSize: fontSize.lg }}>&#9733;</span>
-            <span style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
-              {destination.rating.toFixed(1)}
-            </span>
-            <span style={{ color: colors.dark.text.muted, fontSize: fontSize.base }}>
-              ({destination.reviewCount.toLocaleString()})
-            </span>
-          </div>
-          <span style={{ color: colors.dark.border }}>|</span>
-          <span style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
-            {destination.flightDuration} flight
-          </span>
-        </div>
-      </div>
+  const imageStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      scrollOffset.value,
+      [0, HERO_HEIGHT],
+      [1, 1.5],
+      Extrapolate.CLAMP
     );
-  }
 
-  // ─── Native ──────────────────────────────────────────────────────
+    const opacity = interpolate(
+      scrollOffset.value,
+      [0, HERO_HEIGHT * 0.8],
+      [1, 0],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
+
   return (
-    <View>
-      <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>
-        {destination.city}, {destination.country}
-      </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing['1'] }}>
-          <Text style={{ color: colors.warning, fontSize: fontSize.lg }}>{'\u2733'}</Text>
-          <Text style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
-            {destination.rating.toFixed(1)}
-          </Text>
-          <Text style={{ color: colors.dark.text.muted, fontSize: fontSize.base }}>
-            ({destination.reviewCount.toLocaleString()})
-          </Text>
-        </View>
-        <Text style={{ color: colors.dark.border }}>|</Text>
-        <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
-          {destination.flightDuration} flight
-        </Text>
-      </View>
-      <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.xl, fontStyle: 'italic', marginTop: spacing['2'] }}>
-        &ldquo;{destination.tagline}&rdquo;
-      </Text>
+    <View style={{ height: HERO_HEIGHT }} className="relative">
+      <Animated.View style={imageStyle} className="absolute inset-0">
+        <Image
+          source={{ uri: imageSource }}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          cachePolicy={'memory-disk'}
+          priority="high"
+        />
+      </Animated.View>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing['2'], marginTop: spacing['4'] }}>
-        {destination.vibeTags.map((tag) => (
-          <View key={tag} style={{
-            backgroundColor: colors.primaryTint, borderRadius: radii['3xl'],
-            paddingHorizontal: spacing['4'], paddingVertical: 5,
-            borderWidth: 1, borderColor: colors.primaryBorder,
-          }}>
-            <Text style={{ color: colors.primaryDarker, fontSize: fontSize.base, fontWeight: fontWeight.semibold, textTransform: 'capitalize' }}>
-              {tag}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '50%',
+        }}
+      />
+
+      <View className="absolute bottom-8 left-6 right-6">
+        <View className="flex-row items-center mb-2">
+          <Text className="text-white/90 text-sm font-medium">
+            {destination.city?.name || destination.country?.name}
+          </Text>
+          <Feather name="chevron-right" size={16} color="white" />
+          <Text className="text-white text-sm font-semibold">{destination.name}</Text>
+        </View>
+
+        <H1 className="text-white mb-3" numberOfLines={1}>
+          {destination.name}
+        </H1>
+
+        <QuickStats destination={destination} />
+
+        <View className="mt-4 flex-row gap-3">
+          <Button
+            variant="primary"
+            size="lg"
+            onPress={() => {
+              // Book action
+            }}
+            className="flex-1"
+          >
+            <Text className="font-bold text-base">
+              Book from {formatPrice(destination.price)}
             </Text>
-          </View>
-        ))}
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="lg"
+            icon={<AntDesign name="hearto" size={20} color="white" />}
+            onPress={() => {
+              // Save action
+            }}
+            className="aspect-square"
+          />
+        </View>
       </View>
     </View>
   );
-}
+};

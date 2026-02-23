@@ -1,584 +1,63 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { MotiView, MotiImage } from 'moti';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  withSequence,
-  withDelay,
-  Easing,
-  runOnJS,
-} from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 import { CardGradient } from './CardGradient';
-import { shareDestination } from '../../utils/share';
-import { successHaptic } from '../../utils/haptics';
-import { colors, layout } from '../../constants/theme';
-import type { Destination } from '../../types/destination';
+import { CardActions } from './CardActions';
+import { CardPriceTag } from './CardPriceTag';
+import { H4 } from '@/components/common/Typography';
+import { formatPrice } from '@/utils/formatPrice';
+import { getCategoryColor } from '@/utils/categoryColors';
+import type { Destination } from '@/types/destination';
 
 interface SwipeCardProps {
   destination: Destination;
-  isActive: boolean;
-  isPreloaded: boolean;
-  isSaved: boolean;
-  onToggleSave: () => void;
   index?: number;
+  style?: any;
+  showActions?: boolean;
 }
 
-const DOUBLE_TAP_DELAY = 300;
-const SLIDESHOW_INTERVAL = 4500;
-const STAGGER_DURATION = 350;
-const STAGGER_EASE = Easing.out(Easing.cubic);
+const getImageSource = (destination: Destination): string => {
+  // Fallback hierarchy: destination.image → city.image → country.image → placeholder
+  const placeholderImage = 'https://images.unsplash.com/photo-1482192505345-5655af888cc4?w=800&q=80';
+  
+  return destination.image || 
+         destination.city?.image || 
+         destination.country?.image || 
+         placeholderImage;
+};
 
-// ── SVG Icons (web only) ──
-
-const HeartOutline = (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const HeartFilled = (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      fill="#38BDF8" stroke="#38BDF8" strokeWidth="1.8" />
-  </svg>
-);
-
-const ShareIcon = (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
-      stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleSave, index }: SwipeCardProps) {
-  const shouldLoadImage = isActive || isPreloaded;
-
-  // ── Image slideshow ──
-  const imageList = destination.imageUrls?.length ? destination.imageUrls : [destination.imageUrl];
-  const hasMultipleImages = imageList.length > 1;
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const slideshowTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => { setActiveImageIndex(0); }, [destination.id]);
-
-  useEffect(() => {
-    if (isActive && hasMultipleImages) {
-      slideshowTimerRef.current = setInterval(() => {
-        setActiveImageIndex((prev) => (prev + 1) % imageList.length);
-      }, SLIDESHOW_INTERVAL);
-    }
-    return () => {
-      if (slideshowTimerRef.current) {
-        clearInterval(slideshowTimerRef.current);
-        slideshowTimerRef.current = null;
-      }
-    };
-  }, [isActive, hasMultipleImages, imageList.length]);
-
-  // ── Double-tap (native) ──
-  const lastTapRef = useRef(0);
-
-  // ── Heart burst ──
-  const heartScale = useSharedValue(0);
-  const heartOpacity = useSharedValue(0);
-
-  // ── Card scale (native) ──
-  const cardScale = useSharedValue(isActive ? 1 : 0.97);
-  const prevIsActive = useRef(isActive);
-
-  // ── Native stagger shared values ──
-  const cityY = useSharedValue(isActive ? 0 : 20);
-  const metaY = useSharedValue(isActive ? 0 : 15);
-  const actionsX = useSharedValue(isActive ? 0 : 20);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-
-    if (isActive && !prevIsActive.current) {
-      cardScale.value = 0.97;
-      cardScale.value = withSpring(1, { damping: 20, stiffness: 300, mass: 0.8 });
-      cityY.value = 20;
-      cityY.value = withDelay(50, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
-      metaY.value = 15;
-      metaY.value = withDelay(100, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
-      actionsX.value = 20;
-      actionsX.value = withDelay(80, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
-    }
-    prevIsActive.current = isActive;
-  }, [isActive, cardScale, cityY, metaY, actionsX]);
-
-  const cardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
-  const cityAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateY: cityY.value }] }));
-  const metaAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateY: metaY.value }] }));
-  const actionsAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateX: actionsX.value }] }));
-
-  // ── Heart burst (web) ──
-  const [showWebHeart, setShowWebHeart] = useState(false);
-
-  const triggerHeartBurst = useCallback(() => {
-    if (!isSaved) onToggleSave();
-    successHaptic();
-    if (Platform.OS === 'web') {
-      setShowWebHeart(true);
-      setTimeout(() => setShowWebHeart(false), 800);
-    } else {
-      heartOpacity.value = 1;
-      heartScale.value = withSequence(
-        withTiming(1.5, { duration: 300, easing: Easing.out(Easing.back(2)) }),
-        withTiming(0, { duration: 400, easing: Easing.in(Easing.ease) }),
-      );
-      heartOpacity.value = withSequence(
-        withTiming(1, { duration: 300 }),
-        withTiming(0, { duration: 400 }),
-      );
-    }
-  }, [isSaved, onToggleSave, heartScale, heartOpacity]);
-
-  const heartAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
-    opacity: heartOpacity.value,
-  }));
-
-  const handleCardTap = () => { router.push(`/destination/${destination.id}`); };
-  const handleShare = () => {
-    shareDestination(destination.city, destination.country, destination.tagline, destination.id, destination.livePrice ?? destination.flightPrice, destination.currency);
-  };
-
-  const effectivePrice = destination.livePrice ?? destination.flightPrice;
-  const isDeal = destination.livePrice != null && destination.livePrice < destination.flightPrice * 0.85;
-  const savings = isDeal ? Math.round(((destination.flightPrice - destination.livePrice!) / destination.flightPrice) * 100) : 0;
-  const currentMonth = new Date().toLocaleString('en', { month: 'short' });
-  const isGoodTime = destination.bestMonths?.includes(currentMonth);
-  const isNew = parseInt(destination.id) >= 147; // batch3 destinations
-  const costLevel = destination.hotelPricePerNight <= 60 ? '$' : destination.hotelPricePerNight <= 120 ? '$$' : destination.hotelPricePerNight <= 200 ? '$$$' : '$$$$';
-
-  // ── Ken Burns effect — cycle through different pan/zoom combos ──
-  const kenBurnsVariants = [
-    { from: 'scale(1) translate(0%, 0%)', to: 'scale(1.15) translate(-2%, -1%)' },
-    { from: 'scale(1.1) translate(-3%, 0%)', to: 'scale(1) translate(1%, 2%)' },
-    { from: 'scale(1) translate(2%, 1%)', to: 'scale(1.12) translate(-1%, -2%)' },
-    { from: 'scale(1.08) translate(0%, -2%)', to: 'scale(1.02) translate(2%, 1%)' },
-  ];
-
-  // ── Horizontal swipe gesture (web) ──
-  const [swipeX, setSwipeX] = useState(0);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const isDragging = useRef(false);
-
-  const SWIPE_THRESHOLD = 80;
-  const swipeLabel = swipeX > SWIPE_THRESHOLD ? 'SAVE' : swipeX < -SWIPE_THRESHOLD ? 'SKIP' : null;
-  const swipeColor = swipeX > SWIPE_THRESHOLD ? '#22C55E' : swipeX < -SWIPE_THRESHOLD ? '#EF4444' : 'transparent';
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const t = e.touches[0];
-    touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
-    isDragging.current = false;
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const t = e.touches[0];
-    const dx = t.clientX - touchStartRef.current.x;
-    const dy = t.clientY - touchStartRef.current.y;
-    if (!isDragging.current && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      isDragging.current = true;
-    }
-    if (isDragging.current) {
-      setSwipeX(dx * 0.6);
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    if (swipeX > SWIPE_THRESHOLD) {
-      if (!isSaved) onToggleSave();
-      successHaptic();
-    }
-    setSwipeX(0);
-    touchStartRef.current = null;
-    isDragging.current = false;
-  }, [swipeX, isSaved, onToggleSave]);
-
-  // ── Web ──
-  if (Platform.OS === 'web') {
-    // Generate unique animation name per card for Ken Burns
-    const kbId = `kb-${destination.id}`;
-
-    return (
-      <div
-        onClick={(e) => { if (!isDragging.current) handleCardTap(); }}
-        onDoubleClick={(e) => { e.stopPropagation(); triggerHeartBurst(); }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          cursor: 'pointer', overflow: 'hidden', backgroundColor: colors.navy,
-          transition: swipeX === 0 ? 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
-          transform: swipeX !== 0
-            ? `translateX(${swipeX}px) rotate(${swipeX * 0.02}deg)`
-            : isActive ? 'scale(1)' : 'scale(0.97)',
-        }}
-      >
-        <style>{`
-          @keyframes sg-heart-burst {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
-          }
-          @keyframes sg-city-enter {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes sg-price-enter {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes sg-meta-enter {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          ${kenBurnsVariants.map((v, i) => `
-            @keyframes ${kbId}-${i} {
-              0% { transform: ${v.from}; }
-              100% { transform: ${v.to}; }
-            }
-          `).join('')}
-        `}</style>
-
-        {/* Images — stack with crossfade + Ken Burns */}
-        {shouldLoadImage && imageList.map((url, idx) => {
-          const kbVariant = kenBurnsVariants[idx % kenBurnsVariants.length];
-          const isActiveImg = idx === activeImageIndex;
-          return (
-            <img
-              key={url}
-              src={url}
-              alt={idx === 0 ? destination.city : ''}
-              style={{
-                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                objectFit: 'cover',
-                opacity: isActiveImg ? 1 : 0,
-                transition: 'opacity 0.8s ease',
-                zIndex: isActiveImg ? 1 : 0,
-                backgroundColor: colors.navy,
-                animation: isActiveImg && isActive ? `${kbId}-${idx % kenBurnsVariants.length} ${SLIDESHOW_INTERVAL}ms ease-out forwards` : 'none',
-                willChange: isActiveImg ? 'transform' : 'auto',
-              }}
-              loading={idx === 0 ? (isActive ? 'eager' : 'lazy') : 'lazy'}
-              draggable={false}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750';
-              }}
-            />
-          );
-        })}
-
-        {/* Vignette overlay for cinematic feel */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.45) 100%)',
-        }} />
-
-        {/* New badge */}
-        {isNew && (
-          <div style={{
-            position: 'absolute', top: 56, left: 20, zIndex: 5,
-            padding: '3px 8px', borderRadius: 6,
-            backgroundColor: 'rgba(168,85,247,0.3)', border: '1px solid rgba(168,85,247,0.4)',
-          }}>
-            <span style={{ color: '#C084FC', fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>NEW</span>
-          </div>
-        )}
-
-        {/* Image indicator dots */}
-        {hasMultipleImages && (
-          <div style={{
-            position: 'absolute', top: 52, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', gap: 4, zIndex: 5, pointerEvents: 'none',
-          }}>
-            {imageList.map((_, i) => (
-              <div key={i} style={{
-                width: i === activeImageIndex ? 16 : 6, height: 4, borderRadius: 2,
-                backgroundColor: i === activeImageIndex ? '#fff' : 'rgba(255,255,255,0.3)',
-                transition: 'all 0.3s ease',
-              }} />
-            ))}
-          </div>
-        )}
-
-        {/* Minimal gradient — just enough for text */}
-        <CardGradient />
-
-        {/* Heart burst overlay */}
-        {showWebHeart && (
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%', zIndex: 20, pointerEvents: 'none',
-            animation: 'sg-heart-burst 0.8s ease-out forwards',
-          }}>
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                fill={colors.primary} stroke={colors.primary} strokeWidth="1.2" />
-            </svg>
-          </div>
-        )}
-
-        {/* Swipe label overlay */}
-        {swipeLabel && (
-          <div style={{
-            position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)',
-            zIndex: 25, pointerEvents: 'none',
-            padding: '12px 32px', borderRadius: 16,
-            border: `3px solid ${swipeColor}`,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-          }}>
-            <span style={{
-              color: swipeColor, fontSize: 32, fontWeight: 900, letterSpacing: 4,
-            }}>{swipeLabel}</span>
-          </div>
-        )}
-
-        {/* Right side: action column (TikTok-style) — just save + share */}
-        <div
-          style={{
-            position: 'absolute', bottom: 120, right: 16, zIndex: 10,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Save */}
-          <div
-            onClick={() => onToggleSave()}
-            style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
-            {isSaved ? HeartFilled : HeartOutline}
-          </div>
-          {/* Share */}
-          <div
-            onClick={handleShare}
-            style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
-            {ShareIcon}
-          </div>
-        </div>
-
-        {/* Bottom-left: minimal content stack with animated entry */}
-        <div
-          style={{
-            position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
-            padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom}px ${layout.cardPaddingHorizontal}px`,
-          }}
-        >
-          {/* City — slides up */}
-          <h1
-            style={{
-              margin: 0, color: '#fff', fontSize: 40, fontWeight: 800,
-              letterSpacing: -0.5, lineHeight: 1,
-              textShadow: '0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)',
-              animation: isActive ? 'sg-city-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both' : 'none',
-            }}
-          >
-            {destination.city}
-          </h1>
-
-          {/* Tagline */}
-          <p style={{
-            margin: '6px 0 0 0', fontSize: 15, fontWeight: 400, fontStyle: 'italic',
-            color: 'rgba(255,255,255,0.6)', lineHeight: 1.3,
-            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-            animation: isActive ? 'sg-meta-enter 0.5s 0.15s ease-out both' : 'none',
-          }}>
-            {destination.tagline}
-          </p>
-
-          {/* Country · Flight duration */}
-          <p style={{
-            margin: '6px 0 0 0', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center',
-            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-            animation: isActive ? 'sg-meta-enter 0.4s 0.2s ease-out both' : 'none',
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>{destination.country}</span>
-            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>{destination.flightDuration}</span>
-            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400, fontSize: 12 }}>{costLevel}</span>
-            {isGoodTime && (
-              <>
-                <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
-                <span style={{ color: '#4ADE80', fontWeight: 500, fontSize: 12 }}>☀️ Great time to go</span>
-              </>
-            )}
-          </p>
-
-          {/* Price pill — fades in with delay */}
-          <div style={{
-            marginTop: 14, display: 'flex', alignItems: 'center', gap: 8,
-            animation: isActive ? 'sg-price-enter 0.5s 0.3s ease-out both' : 'none',
-          }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '8px 16px', borderRadius: 9999,
-              backgroundColor: isDeal ? 'rgba(34,197,94,0.25)' : 'rgba(0,0,0,0.3)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              border: isDeal ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)',
-            }}>
-              <span style={{ fontSize: 14 }}>{isDeal ? '🔥' : '✈️'}</span>
-              <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>
-                From ${effectivePrice}
-              </span>
-            </div>
-            {isDeal && (
-              <span style={{
-                padding: '4px 10px', borderRadius: 9999,
-                backgroundColor: 'rgba(34,197,94,0.3)',
-                color: '#4ADE80', fontSize: 12, fontWeight: 700,
-              }}>
-                {savings}% off
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Native ──
-  const handleNativeTap = () => {
-    const now = Date.now();
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      lastTapRef.current = 0;
-      triggerHeartBurst();
-    } else {
-      lastTapRef.current = now;
-      setTimeout(() => {
-        if (lastTapRef.current !== 0) { lastTapRef.current = 0; runOnJS(handleCardTap)(); }
-      }, DOUBLE_TAP_DELAY);
-    }
-  };
+export const SwipeCard: React.FC<SwipeCardProps> = ({ 
+  destination, 
+  index = 0, 
+  style,
+  showActions = true
+}) => {
+  const router = useRouter();
+  const imageSource = getImageSource(destination);
+  const categoryColor = getCategoryColor(destination.category || 'budget');
 
   return (
-    <Animated.View style={[{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: colors.navy }, cardAnimStyle]}>
-      <Pressable onPress={handleNativeTap} style={{ flex: 1, position: 'relative' }}
-        accessibilityRole="button"
-        accessibilityLabel={`${destination.city}, ${destination.country}. From $${effectivePrice}.`}
-        accessibilityHint="Tap to view details, double tap to save"
-      >
-        {shouldLoadImage && imageList.map((url, idx) => (
-          <Image key={url} source={{ uri: url }}
-            style={{
-              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-              width: '100%', height: '100%',
-              opacity: idx === activeImageIndex ? 1 : 0,
-              zIndex: idx === activeImageIndex ? 1 : 0,
-            }}
-            contentFit="cover"
-            transition={idx === 0 ? (isActive ? 300 : 0) : 800}
-            priority={idx === 0 ? (isActive ? 'high' : 'low') : 'low'}
-            placeholder={idx === 0 ? (destination.blurHash || undefined) : undefined}
-          />
-        ))}
-
-        <CardGradient />
-
-        {/* Heart burst (native) */}
-        <Animated.View
-          style={[{
-            position: 'absolute', top: '50%', left: '50%',
-            marginLeft: -40, marginTop: -40, zIndex: 20,
-          }, heartAnimStyle]}
-          pointerEvents="none"
-        >
-          <Text style={{ fontSize: 64, textAlign: 'center' }}>❤️</Text>
-        </Animated.View>
-
-        {/* Right side: action column */}
-        <Animated.View style={[{
-          position: 'absolute', bottom: 120, right: 16, zIndex: 10,
-          alignItems: 'center', gap: 20,
-        }, actionsAnimStyle]}>
-          <Pressable onPress={onToggleSave} hitSlop={12}
-            style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              alignItems: 'center', justifyContent: 'center',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-            }}>
-            <Text style={{ fontSize: 24 }}>{isSaved ? '❤️' : '🤍'}</Text>
-          </Pressable>
-          <Pressable onPress={handleShare} hitSlop={12}
-            style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              alignItems: 'center', justifyContent: 'center',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-            }}>
-            <Text style={{ fontSize: 22 }}>↗</Text>
-          </Pressable>
-        </Animated.View>
-
-        {/* Bottom-left: minimal content */}
-        <View style={{
-          position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
-          paddingHorizontal: layout.cardPaddingHorizontal,
-          paddingBottom: layout.cardPaddingBottomNative,
-        }}>
-          <Animated.View style={cityAnimStyle}>
-            <Text style={{
-              color: '#fff', fontSize: 38, fontWeight: '800', letterSpacing: -0.5,
-              textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 16,
-            }}>
-              {destination.city}
-            </Text>
-          </Animated.View>
-
-          <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 10 }, metaAnimStyle]}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{destination.country}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>·</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{destination.flightDuration}</Text>
-          </Animated.View>
-
-          <Animated.View style={[{ marginTop: 14 }, metaAnimStyle]}>
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999,
-              backgroundColor: 'rgba(0,0,0,0.3)', alignSelf: 'flex-start',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-            }}>
-              <Text style={{ fontSize: 14 }}>{isDeal ? '🔥' : '✈️'}</Text>
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>From ${effectivePrice}</Text>
-            </View>
-          </Animated.View>
-        </View>
-      </Pressable>
-    </Animated.View>
+    <Pressable 
+      className="w-full h-full"
+      onPress={() => router.push(`/destination/${destination.slug}`)}
+    >
+      <View className="relative w-full h-full overflow-hidden rounded-3xl">
+        <Image
+          source={{ uri: imageSource }}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          transition={1000}
+          priority={index < 5 ? 'high' : 'low'}
+        />
+        
+        <CardGradient intensity="medium">
+          <CardActions destination={destination} />
+          <CardPriceTag price={destination.price} category={destination.category} />
+        </CardGradient>
+      </View>
+    </Pressable>
   );
-}
-
-export const SwipeCard = React.memo(SwipeCardInner, (prev, next) => {
-  return (
-    prev.destination.id === next.destination.id &&
-    prev.isActive === next.isActive &&
-    prev.isPreloaded === next.isPreloaded &&
-    prev.isSaved === next.isSaved &&
-    prev.index === next.index
-  );
-});
+};

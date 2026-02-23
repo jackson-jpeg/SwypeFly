@@ -1,65 +1,43 @@
-export type VibeTag =
-  | 'beach'
-  | 'mountain'
-  | 'city'
-  | 'culture'
-  | 'adventure'
-  | 'romantic'
-  | 'foodie'
-  | 'nightlife'
-  | 'nature'
-  | 'historic'
-  | 'tropical'
-  | 'winter'
-  | 'luxury'
-  | 'budget';
+export interface City {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  coordinates?: [number, number];
+}
+
+export interface Country {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  code: string;
+  continent?: string;
+}
 
 export interface Destination {
   id: string;
-  iataCode: string;
-  city: string;
-  country: string;
-  tagline: string;
+  name: string;
+  slug: string;
   description: string;
-  imageUrl: string;
-  flightPrice: number;
-  hotelPricePerNight: number;
+  price: number;
   currency: string;
-  vibeTags: VibeTag[];
-  rating: number;
-  reviewCount: number;
-  bestMonths: string[];
-  averageTemp: number;
-  flightDuration: string;
-  livePrice?: number | null;
-  imageUrls?: string[];
-  priceSource?: 'travelpayouts' | 'amadeus' | 'estimate';
-  priceFetchedAt?: string;
-  liveHotelPrice?: number | null;
-  hotelPriceSource?: 'liteapi' | 'estimate';
-  available_flight_days?: string[];
-  itinerary?: { day: number; activities: string[] }[];
-  restaurants?: { name: string; type: string; rating: number; mapsUrl?: string }[];
-  departureDate?: string;
-  returnDate?: string;
-  tripDurationDays?: number;
-  airline?: string;
-  blurHash?: string;
-  priceDirection?: 'up' | 'down' | 'stable';
-  previousPrice?: number;
-  otherPrices?: { origin: string; price: number; source: string }[];
-  photographerAttribution?: { name: string; url: string };
-  travelTips?: {
-    visa: string;
-    currency: string;
-    language: string;
-    safety: string;
-    bestFor: string[];
-    costLevel: 1 | 2 | 3 | 4;
-  };
+  image?: string;
+  gallery?: string[];
+  city?: City;
+  country?: Country;
+  category?: 'budget' | 'mid-range' | 'luxury' | 'exclusive';
+  tags?: string[];
+  highlights?: string[];
+  coordinates?: [number, number];
+  featured?: boolean;
+  trending?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface DestinationFeedPage {
-  destinations: Destination[];
-  nextCursor: string | null;
+export interface SavedDestination extends Destination {
+  saved_at?: string;
 }
+
+export type DestinationImageSource = string | { uri: string };
