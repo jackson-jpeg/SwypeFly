@@ -16,6 +16,10 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json}\"",
     "typecheck": "tsc --noEmit"
   },
+  "jest": {
+    "preset": "jest-expo"
+  }
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
     "@google/genai": "^1.40.0",
