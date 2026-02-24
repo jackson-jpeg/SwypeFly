@@ -25,4 +25,5 @@ export const COLLECTIONS = {
   userPreferences: 'user_preferences',
   swipeHistory: 'swipe_history',
   cachedPrices: 'cached_prices',
+  priceAlerts: 'price_alerts',
 } as const;

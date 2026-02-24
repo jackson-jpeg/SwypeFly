@@ -31,14 +31,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta name="description" content="${tagline}">
   <meta property="og:title" content="${city}, ${country}${priceText}">
   <meta property="og:description" content="${tagline} — Discover cheap flights on SoGoJet">
-  <meta property="og:image" content="${imageUrl}">
+  <meta property="og:image" content="https://sogojet.com/api/og?id=${destId}">
   <meta property="og:url" content="https://sogojet.com/destination/${destId}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SoGoJet">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${city}${priceText} — SoGoJet">
   <meta name="twitter:description" content="${tagline}">
-  <meta name="twitter:image" content="${imageUrl}">
+  <meta name="twitter:image" content="https://sogojet.com/api/og?id=${destId}">
   <meta http-equiv="refresh" content="0;url=/destination/${destId}">
 </head>
 <body>

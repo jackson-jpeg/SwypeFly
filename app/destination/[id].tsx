@@ -18,6 +18,8 @@ import { SimilarDestinations } from '../../components/destination/SimilarDestina
 import { hotelLink, activitiesLink } from '../../utils/affiliateLinks';
 import { CompareModal } from '../../components/common/CompareModal';
 import { Footer } from '../../components/common/Footer';
+import { AiTripPlanner } from '../../components/destination/AiTripPlanner';
+import { PriceAlertButton } from '../../components/destination/PriceAlertButton';
 
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -314,6 +316,12 @@ export default function DestinationDetail() {
               }}
             >🛡️ Get Travel Insurance</button>
 
+            {/* Price Alert */}
+            <PriceAlertButton
+              destinationId={destination.id}
+              currentPrice={effectivePrice}
+            />
+
             {/* Prices from other airports */}
             {destination.otherPrices && destination.otherPrices.length > 0 && (
               <div style={{ marginTop: spacing['4'] }}>
@@ -385,6 +393,9 @@ export default function DestinationDetail() {
                 <TravelTips destination={destination} />
               </>
             )}
+
+            {/* AI Trip Planner */}
+            <AiTripPlanner city={destination.city} country={destination.country} />
 
             {/* Similar destinations */}
             <SimilarDestinations current={destination} />

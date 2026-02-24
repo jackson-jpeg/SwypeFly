@@ -30,4 +30,5 @@ export const COLLECTIONS = {
   cachedHotelPrices: 'cached_hotel_prices',
   destinationImages: 'destination_images',
   aiCache: 'ai_cache',
+  priceAlerts: 'price_alerts',
 } as const;

@@ -38,6 +38,10 @@
     {
       "path": "/api/images/refresh",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/alerts/check",
+      "schedule": "0 8 * * *"
     }
   ]
 }

@@ -98,7 +98,7 @@ async function fetchPage(
     return res.json();
   } catch {
     // API unavailable — fall back to static data
-    return getStaticPage(cursor, vibeFilter, sortPreset, regionFilter);
+    return getStaticPage(cursor, vibeFilter, sortPreset, regionFilter ?? null);
   }
 }
 

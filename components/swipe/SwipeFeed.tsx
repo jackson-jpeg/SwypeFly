@@ -16,6 +16,7 @@ import { mediumHaptic } from '../../utils/haptics';
 import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
 import { ErrorState } from '../common/ErrorState';
 import { colors } from '../../constants/theme';
+import { MapView } from './MapView';
 import type { VibeTag } from '../../types/destination';
 
 // ── Approximate city coords for mini-map (normalized 0-1 on a world projection) ──
@@ -219,6 +220,7 @@ export function SwipeFeed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [vibeFilter, setVibeFilter] = useState<VibeTag | null>(null);
   const [showMiniMap, setShowMiniMap] = useState(false);
+  const [showFullMap, setShowFullMap] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const webScrollRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(0);
@@ -424,6 +426,7 @@ export function SwipeFeed() {
     return (
       <>
       <WelcomeOverlay />
+      {showFullMap && <MapView destinations={destinations} onClose={() => setShowFullMap(false)} />}
       {showMiniMap && <MiniMap cities={cityNames} onClose={() => setShowMiniMap(false)} />}
       <div
         ref={webScrollRef}
@@ -444,8 +447,9 @@ export function SwipeFeed() {
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 30,
           padding: '14px 20px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%)',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)',
           pointerEvents: 'none',
+          paddingBottom: 56,
         }}>
           <span style={{
             color: '#fff', fontSize: 20, fontWeight: 800, letterSpacing: -0.5,
@@ -530,6 +534,14 @@ export function SwipeFeed() {
               ✈️ {departureCode}
             </span>
             <span
+              onClick={() => setShowFullMap(true)}
+              style={{
+                color: 'rgba(255,255,255,0.8)', fontSize: 16, cursor: 'pointer',
+                textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+              }}
+              title="Map view"
+            >🗺️</span>
+            <span
               onClick={() => setSearchOpen(true)}
               style={{
                 color: 'rgba(255,255,255,0.8)', fontSize: 18, cursor: 'pointer',
@@ -541,9 +553,11 @@ export function SwipeFeed() {
 
         {/* Category quick-filter chips */}
         <div style={{
-          position: 'fixed', top: 44, left: 0, right: 0, zIndex: 29,
-          display: 'flex', justifyContent: 'center', gap: 5,
-          pointerEvents: 'auto', padding: '0 12px', flexWrap: 'wrap',
+          position: 'fixed', top: 48, left: 0, right: 0, zIndex: 29,
+          display: 'flex', justifyContent: 'center', gap: 4,
+          pointerEvents: 'auto', padding: '0 12px', flexWrap: 'nowrap',
+          overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+          msOverflowStyle: 'none', scrollbarWidth: 'none',
         }}>
           {VIBE_CHIPS.map(({ tag, label, emoji }) => (
             <button
@@ -568,7 +582,7 @@ export function SwipeFeed() {
 
         {/* Sort pills */}
         <div style={{
-          position: 'fixed', top: 68, left: 0, right: 0, zIndex: 29,
+          position: 'fixed', top: 74, left: 0, right: 0, zIndex: 29,
           display: 'flex', justifyContent: 'center', gap: 6,
           pointerEvents: 'auto', padding: '0 20px',
         }}>
@@ -644,50 +658,48 @@ export function SwipeFeed() {
           </div>
         )}
 
-        {/* Floating Explore mini-map button — bottom left */}
-        <button
-          onClick={() => setShowMiniMap(true)}
-          style={{
-            position: 'fixed', bottom: 60, left: 16, zIndex: 30,
-            width: 40, height: 40, borderRadius: 20,
-            backgroundColor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-            color: '#fff', fontSize: 18, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          }}
-          title="Explore map"
-        >🌐</button>
-
-        {/* Floating Discover/Trending button */}
-        <button
-          onClick={() => setShowTrending(true)}
-          style={{
-            position: 'fixed', bottom: 106, left: 16, zIndex: 30,
-            width: 40, height: 40, borderRadius: 20,
-            backgroundColor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-            color: '#fff', fontSize: 18, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          }}
-          title="Discover trending"
-        >✨</button>
-
-        {/* Back to top — after 10 cards */}
-        {activeIndex >= 10 && (
+        {/* Floating left-side buttons — stacked vertically with safe spacing */}
+        <div style={{
+          position: 'fixed', bottom: 24, left: 12, zIndex: 30,
+          display: 'flex', flexDirection: 'column', gap: 8,
+          alignItems: 'center',
+        }}>
+          {activeIndex >= 10 && (
+            <button
+              onClick={resetToTop}
+              style={{
+                width: 34, height: 34, borderRadius: 17,
+                backgroundColor: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                color: 'rgba(255,255,255,0.7)', fontSize: 14, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+              title="Back to top"
+            >↑</button>
+          )}
           <button
-            onClick={resetToTop}
+            onClick={() => setShowTrending(true)}
             style={{
-              position: 'fixed', bottom: 16, left: 16, zIndex: 30,
-              width: 36, height: 36, borderRadius: 18,
-              backgroundColor: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)',
+              width: 34, height: 34, borderRadius: 17,
+              backgroundColor: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.12)',
               backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              color: 'rgba(255,255,255,0.7)', fontSize: 16, cursor: 'pointer',
+              color: '#fff', fontSize: 14, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
-          >↑</button>
-        )}
+            title="Discover trending"
+          >✨</button>
+          <button
+            onClick={() => setShowMiniMap(true)}
+            style={{
+              width: 34, height: 34, borderRadius: 17,
+              backgroundColor: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              color: '#fff', fontSize: 14, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            title="Explore map"
+          >🌐</button>
+        </div>
 
         {/* Card counter — bottom right */}
         <div style={{
