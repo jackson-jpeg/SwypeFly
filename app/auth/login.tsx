@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, TextInput, Platform, ActivityIndicator, KeyboardAvoidingView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthContext } from '../../hooks/AuthContext';
+import * as SecureStore from 'expo-secure-store';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
 
 function WebLogin() {
   const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, browseAsGuest } =
@@ -12,6 +14,26 @@ function WebLogin() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const { handleError } = useErrorHandler();
+
+  useEffect(() => {
+    checkBiometricCredentials();
+  }, []);
+
+  const checkBiometricCredentials = async () => {
+    try {
+      const storedEmail = await SecureStore.getItemAsync('userEmail');
+      const storedPassword = await SecureStore.getItemAsync('userPassword');
+      
+      if (storedEmail && storedPassword) {
+        setEmail(storedEmail);
+        setPassword(storedPassword);
+      }
+    } catch (error) {
+      handleError(error, 'biometric-check');
+    }
+  };
 
   const handleEmailAuth = async () => {
     if (!email || !password) {
@@ -20,15 +42,121 @@ function WebLogin() {
     }
     setLoading(true);
     setError(null);
-    const fn = isSignUp ? signUpWithEmail : signInWithEmail;
-    const { error: err } = await fn(email, password);
-    setLoading(false);
-    if (err) setError(err);
+    
+    try {
+      const fn = isSignUp ? signUpWithEmail : signInWithEmail;
+      const { error: err } = await fn(email, password);
+      
+      if (!err && !isSignUp) {
+        await SecureStore.setItemAsync('userEmail', email);
+        await SecureStore.setItemAsync('userPassword', password);
+      }
+      
+      setLoading(false);
+      if (err) {
+        handleError(err, 'email-auth');
+        setError(err);
+      }
+    } catch (error) {
+      setLoading(false);
+      handleError(error, 'email-auth');
+      setError('Authentication failed. Please try again.');
+    }
   };
 
   const handleGuest = () => {
     browseAsGuest();
     router.replace('/(tabs)');
+  };
+
+  const handleBiometricLogin = async () => {
+    setBiometricLoading(true);
+    try {
+      const storedEmail = await SecureStore.getItemAsync('userEmail');
+      const storedPassword = await SecureStore.getItemAsync('userPassword');
+      
+      if (!storedEmail || !storedPassword) {
+        Alert.alert('No saved credentials', 'Please sign in with email to enable biometric login');
+        setBiometricLoading(false);
+        return;
+      }
+
+      // Attempt biometric authentication first
+      const isBiometricAvailable = await SecureStore.isAvailableAsync();
+      if (!isBiometricAvailable) {
+        throw new Error('Biometric authentication not available');
+      }
+
+      // Try to authenticate with biometrics
+      try {
+        const { error: err } = await signInWithEmail(storedEmail, storedPassword);
+        
+        if (err) {
+          handleError(err, 'biometric-login');
+          setError(err);
+          await SecureStore.deleteItemAsync('userEmail');
+          await SecureStore.deleteItemAsync('userPassword');
+        }
+      } catch (biometricError) {
+        // Fallback to device PIN/password if biometrics fail
+        Alert.alert(
+          'Biometric Authentication Failed',
+          'Would you like to use your device PIN/password instead?',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                setBiometricLoading(false);
+              }
+            },
+            {
+              text: 'Use PIN',
+              onPress: async () => {
+                try {
+                  // Device PIN fallback - directly use stored credentials
+                  const { error: err } = await signInWithEmail(storedEmail, storedPassword);
+                  
+                  if (err) {
+                    handleError(err, 'pin-fallback-login');
+                    setError(err);
+                    await SecureStore.deleteItemAsync('userEmail');
+                    await SecureStore.deleteItemAsync('userPassword');
+                  }
+                } catch (pinError) {
+                  handleError(pinError, 'pin-fallback-login');
+                  setError('Authentication failed. Please sign in manually.');
+                  await SecureStore.deleteItemAsync('userEmail');
+                  await SecureStore.deleteItemAsync('userPassword');
+                } finally {
+                  setBiometricLoading(false);
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+    } catch (error) {
+      handleError(error, 'biometric-login');
+      setError('Biometric authentication failed. Please sign in manually.');
+      await SecureStore.deleteItemAsync('userEmail');
+      await SecureStore.deleteItemAsync('userPassword');
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
+  const clearStoredCredentials = async () => {
+    try {
+      await SecureStore.deleteItemAsync('userEmail');
+      await SecureStore.deleteItemAsync('userPassword');
+      setEmail('');
+      setPassword('');
+      Alert.alert('Credentials cleared', 'Stored login credentials have been removed');
+    } catch (error) {
+      handleError(error, 'clear-credentials');
+    }
   };
 
   return (
