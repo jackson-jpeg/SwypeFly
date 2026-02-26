@@ -888,6 +888,31 @@ export function SwipeFeed() {
     );
   }
 
+  // ── Native empty state when filters yield no results ──
+  if (destinations.length === 0 && !isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.navy, padding: 32 }}>
+        <Text style={{ fontSize: 56, marginBottom: 16 }}>🔍</Text>
+        <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
+          No destinations match
+        </Text>
+        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24, maxWidth: 280 }}>
+          Try adjusting your filters to see more results.
+        </Text>
+        <Pressable
+          onPress={() => {
+            useFeedStore.getState().setVibeFilter(null);
+            useFeedStore.getState().setMaxPrice(null);
+            useFeedStore.getState().setRegionFilter('all');
+          }}
+          style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: 9999, backgroundColor: colors.primary }}
+        >
+          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Clear All Filters</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   // ── Native ──
   return (
     <View style={{ flex: 1 }}>
