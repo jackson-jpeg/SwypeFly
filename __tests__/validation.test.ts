@@ -327,4 +327,12 @@ describe('validateRequest', () => {
       expect(result.error).toContain('destination_id');
     }
   });
+
+  it('returns success data on valid input', () => {
+    const result = validateRequest(feedQuerySchema, { origin: 'JFK' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toHaveProperty('origin', 'JFK');
+    }
+  });
 });
