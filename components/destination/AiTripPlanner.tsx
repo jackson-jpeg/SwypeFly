@@ -147,7 +147,7 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
                     flex: 1, padding: '10px 0', borderRadius: 10,
                     backgroundColor: duration === d ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.05)',
                     border: duration === d ? '1px solid rgba(56,189,248,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                    color: duration === d ? '#38BDF8' : 'rgba(255,255,255,0.6)',
+                    color: duration === d ? colors.primary : 'rgba(255,255,255,0.6)',
                     fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                   }}
                 >{d} days</button>
@@ -205,7 +205,7 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
             disabled={isLoading}
             style={{
               width: '100%', padding: '14px 0',
-              background: isLoading ? 'rgba(129,140,248,0.2)' : 'linear-gradient(135deg, #818CF8, #38BDF8)',
+              background: isLoading ? 'rgba(129,140,248,0.2)' : `linear-gradient(135deg, #818CF8, ${colors.primary})`,
               border: 'none', borderRadius: 12,
               color: '#fff', fontSize: 15, fontWeight: 700, cursor: isLoading ? 'default' : 'pointer',
               boxShadow: isLoading ? 'none' : '0 4px 20px rgba(56,189,248,0.25)',

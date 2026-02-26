@@ -186,7 +186,7 @@ export default function QuizPage() {
         {QUESTIONS.map((_, i) => (
           <div key={i} style={{
             width: i <= step ? 32 : 12, height: 4, borderRadius: 2,
-            backgroundColor: i <= step ? '#38BDF8' : 'rgba(255,255,255,0.15)',
+            backgroundColor: i <= step ? colors.primary : 'rgba(255,255,255,0.15)',
             transition: 'all 0.3s ease',
           }} />
         ))}

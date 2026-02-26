@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { destinations } from '../data/destinations';
 import { useUIStore } from '../stores/uiStore';
+import { colors } from '../constants/theme';
 
 export default function BudgetCalculator() {
   const departureCode = useUIStore(s => s.departureCode);
@@ -53,10 +54,10 @@ export default function BudgetCalculator() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>Total Budget</span>
-              <span style={{ color: '#38BDF8', fontSize: 15, fontWeight: 700 }}>${budget.toLocaleString()}</span>
+              <span style={{ color: colors.primary, fontSize: 15, fontWeight: 700 }}>${budget.toLocaleString()}</span>
             </div>
             <input type="range" min={500} max={10000} step={100} value={budget} onChange={e => setBudget(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#38BDF8' }} />
+              style={{ width: '100%', accentColor: colors.primary }} />
           </div>
           <div style={{ display: 'flex', gap: 16 }}>
             <div style={{ flex: 1 }}>
@@ -65,7 +66,7 @@ export default function BudgetCalculator() {
                 <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{nights}</span>
               </div>
               <input type="range" min={1} max={14} value={nights} onChange={e => setNights(Number(e.target.value))}
-                style={{ width: '100%', accentColor: '#38BDF8' }} />
+                style={{ width: '100%', accentColor: colors.primary }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -73,7 +74,7 @@ export default function BudgetCalculator() {
                 <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{travelers}</span>
               </div>
               <input type="range" min={1} max={6} value={travelers} onChange={e => setTravelers(Number(e.target.value))}
-                style={{ width: '100%', accentColor: '#38BDF8' }} />
+                style={{ width: '100%', accentColor: colors.primary }} />
             </div>
           </div>
         </div>
@@ -89,12 +90,12 @@ export default function BudgetCalculator() {
             const hotelCost = dest.hotelPricePerNight * nights;
             const total = flightCost + hotelCost;
             return (
-              <div
+              <button
                 key={dest.id}
                 onClick={() => router.push(`/destination/${dest.id}`)}
-                style={{ borderRadius: 14, overflow: 'hidden', cursor: 'pointer', position: 'relative', aspectRatio: '3/2' }}
+                style={{ borderRadius: 14, overflow: 'hidden', cursor: 'pointer', position: 'relative', aspectRatio: '3/2', border: 'none', padding: 0, textAlign: 'left' }}
               >
-                <img src={dest.imageUrl} alt={dest.city} loading="lazy"
+                <img src={dest.imageUrl} alt={`${dest.city}, ${dest.country}`} loading="lazy"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 30%, rgba(0,0,0,0.8))' }} />
                 <div style={{ position: 'absolute', bottom: 10, left: 12, right: 12 }}>
@@ -104,7 +105,7 @@ export default function BudgetCalculator() {
                     <span style={{ color: '#4ADE80', fontSize: 13, fontWeight: 700 }}>${total.toLocaleString()}</span>
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

@@ -27,8 +27,9 @@ export function DealsTicker() {
   const savings = Math.round(((deal.flightPrice - deal.livePrice!) / deal.flightPrice) * 100);
 
   return (
-    <div
+    <button
       onClick={() => router.push(`/destination/${deal.id}`)}
+      aria-label={`Deal: ${deal.city} $${deal.livePrice}, ${savings}% off`}
       style={{
         position: 'fixed', top: 82, left: '50%', transform: 'translateX(-50%)',
         zIndex: 28, cursor: 'pointer',
@@ -37,13 +38,13 @@ export function DealsTicker() {
         backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', gap: 6,
         transition: 'opacity 0.3s',
-        whiteSpace: 'nowrap',
+        whiteSpace: 'nowrap', fontFamily: 'inherit',
       }}
     >
       <span style={{ fontSize: 12 }}>🔥</span>
       <span style={{ color: '#4ADE80', fontSize: 11, fontWeight: 700 }}>
         {deal.city} ${deal.livePrice} ({savings}% off)
       </span>
-    </div>
+    </button>
   );
 }

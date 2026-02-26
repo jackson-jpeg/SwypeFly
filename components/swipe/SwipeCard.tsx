@@ -44,7 +44,7 @@ const HeartOutline = (
 const HeartFilled = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      fill="#38BDF8" stroke="#38BDF8" strokeWidth="1.8" />
+      fill={colors.primary} stroke={colors.primary} strokeWidth="1.8" />
   </svg>
 );
 
@@ -333,8 +333,9 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           onClick={(e) => e.stopPropagation()}
         >
           {/* Save */}
-          <div
+          <button
             onClick={() => onToggleSave()}
+            aria-label={isSaved ? 'Unsave destination' : 'Save destination'}
             style={{
               width: 48, height: 48, borderRadius: 24,
               backgroundColor: 'rgba(0,0,0,0.3)',
@@ -343,13 +344,15 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               cursor: 'pointer',
               transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
               border: '1px solid rgba(255,255,255,0.1)',
+              padding: 0, fontFamily: 'inherit',
             }}
           >
             {isSaved ? HeartFilled : HeartOutline}
-          </div>
+          </button>
           {/* Share */}
-          <div
+          <button
             onClick={handleShare}
+            aria-label="Share destination"
             style={{
               width: 48, height: 48, borderRadius: 24,
               backgroundColor: 'rgba(0,0,0,0.3)',
@@ -357,10 +360,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
               border: '1px solid rgba(255,255,255,0.1)',
+              padding: 0, fontFamily: 'inherit',
             }}
           >
             {ShareIcon}
-          </div>
+          </button>
         </div>
 
         {/* Bottom-left: minimal content stack with animated entry */}

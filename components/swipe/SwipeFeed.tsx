@@ -102,7 +102,7 @@ function MiniMap({ cities, onClose }: { cities: string[]; onClose: () => void })
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             }}>
               <div style={{
-                width: 8, height: 8, borderRadius: 4, backgroundColor: '#38BDF8',
+                width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary,
                 boxShadow: '0 0 8px rgba(56,189,248,0.6), 0 0 16px rgba(56,189,248,0.3)',
               }} />
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: 600, whiteSpace: 'nowrap' }}>{city}</span>
@@ -148,7 +148,7 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
             borderRadius: 16, padding: '20px 28px', textAlign: 'center',
             animation: 'sg-stats-pulse 2s ease-in-out infinite',
           }}>
-            <div style={{ color: '#38BDF8', fontSize: 36, fontWeight: 800 }}>{animatedDest}</div>
+            <div style={{ color: colors.primary, fontSize: 36, fontWeight: 800 }}>{animatedDest}</div>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Destinations</div>
           </div>
           <div style={{
@@ -167,7 +167,7 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
           <button
             onClick={onShuffle}
             style={{
-              background: 'linear-gradient(135deg, #38BDF8, #818CF8)', color: '#fff',
+              background: `linear-gradient(135deg, ${colors.primary}, #818CF8)`, color: '#fff',
               border: 'none', borderRadius: 9999,
               padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
               boxShadow: '0 4px 20px rgba(56,189,248,0.3)',
@@ -391,7 +391,7 @@ export function SwipeFeed() {
         {/* Scroll progress bar */}
         <div style={{
           position: 'fixed', top: 0, left: 0, zIndex: 31,
-          height: 2, backgroundColor: '#38BDF8',
+          height: 2, backgroundColor: colors.primary,
           width: `${destinations.length > 0 ? ((activeIndex + 1) / destinations.length) * 100 : 0}%`,
           transition: 'width 0.3s ease',
         }} />
@@ -409,7 +409,7 @@ export function SwipeFeed() {
             color: '#fff', fontSize: 20, fontWeight: 800, letterSpacing: -0.5,
             textShadow: '0 2px 12px rgba(0,0,0,0.5)',
           }}>
-            SoGo<span style={{ color: '#38BDF8' }}>Jet</span>
+            SoGo<span style={{ color: colors.primary }}>Jet</span>
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
             {/* Region filter */}
@@ -418,7 +418,7 @@ export function SwipeFeed() {
                 onClick={() => setRegionOpen(!regionOpen)}
                 aria-label="Filter by region"
                 style={{
-                  color: regionFilter !== 'all' ? '#38BDF8' : 'rgba(255,255,255,0.7)',
+                  color: regionFilter !== 'all' ? colors.primary : 'rgba(255,255,255,0.7)',
                   fontSize: 12, fontWeight: 700, cursor: 'pointer',
                   padding: '4px 10px', borderRadius: 9999,
                   backgroundColor: regionFilter !== 'all' ? 'rgba(56,189,248,0.2)' : 'rgba(0,0,0,0.3)',
@@ -469,10 +469,10 @@ export function SwipeFeed() {
                       >
                         <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>{emoji}</span>
                         <span style={{
-                          color: regionFilter === key ? '#38BDF8' : 'rgba(255,255,255,0.8)',
+                          color: regionFilter === key ? colors.primary : 'rgba(255,255,255,0.8)',
                           fontSize: 14, fontWeight: regionFilter === key ? 700 : 500,
                         }}>{label}</span>
-                        {regionFilter === key && <span style={{ marginLeft: 'auto', color: '#38BDF8', fontSize: 14 }}>✓</span>}
+                        {regionFilter === key && <span style={{ marginLeft: 'auto', color: colors.primary, fontSize: 14 }}>✓</span>}
                       </div>
                     ))}
                   </div>
@@ -530,7 +530,7 @@ export function SwipeFeed() {
                 padding: '4px 10px', borderRadius: 9999,
                 fontSize: 10, fontWeight: 600, cursor: 'pointer',
                 backgroundColor: vibeFilter === tag ? 'rgba(56,189,248,0.3)' : 'rgba(0,0,0,0.25)',
-                color: vibeFilter === tag ? '#38BDF8' : 'rgba(255,255,255,0.5)',
+                color: vibeFilter === tag ? colors.primary : 'rgba(255,255,255,0.5)',
                 backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
                 transition: 'all 0.2s',
                 textShadow: '0 1px 4px rgba(0,0,0,0.3)',
@@ -561,7 +561,7 @@ export function SwipeFeed() {
                 padding: '5px 12px', borderRadius: 9999, border: 'none',
                 fontSize: 11, fontWeight: 600, cursor: 'pointer',
                 backgroundColor: sortPreset === key ? 'rgba(56,189,248,0.25)' : 'rgba(0,0,0,0.3)',
-                color: sortPreset === key ? '#38BDF8' : 'rgba(255,255,255,0.6)',
+                color: sortPreset === key ? colors.primary : 'rgba(255,255,255,0.6)',
                 backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
                 transition: 'all 0.2s',
                 textShadow: '0 1px 4px rgba(0,0,0,0.3)',

@@ -13,7 +13,7 @@ interface ItineraryTimelineProps {
 }
 
 const TIME_SLOTS = ['MORNING', 'AFTERNOON', 'EVENING'] as const;
-const TIME_COLORS = { MORNING: '#38BDF8', AFTERNOON: '#38BDF8', EVENING: '#38BDF8' };
+const TIME_COLORS = { MORNING: colors.primary, AFTERNOON: colors.primary, EVENING: colors.primary };
 
 const DAY_THEMES = [
   'Arrival & First Impressions',
@@ -118,7 +118,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                         width: 10,
                         height: 10,
                         borderRadius: 5,
-                        backgroundColor: '#38BDF8',
+                        backgroundColor: colors.primary,
                         border: `2px solid ${colors.dark.surface}`,
                         boxShadow: '0 0 0 2px rgba(56,189,248,0.3)',
                       }} />
@@ -166,7 +166,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
               borderRadius: 12,
               border: `1px solid ${colors.dark.border}`,
               backgroundColor: 'transparent',
-              color: '#38BDF8',
+              color: colors.primary,
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
@@ -210,7 +210,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
               onPress={() => setActiveDay(idx)}
               style={{
                 borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6,
-                backgroundColor: isActive ? '#38BDF8' : colors.dark.surfaceElevated,
+                backgroundColor: isActive ? colors.primary : colors.dark.surfaceElevated,
               }}
             >
               <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? '#FFFFFF' : colors.dark.text.muted }}>
@@ -231,7 +231,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
             <View style={{
               position: 'absolute', left: -16, top: 14,
               width: 10, height: 10, borderRadius: 5,
-              backgroundColor: '#38BDF8', borderWidth: 2, borderColor: colors.dark.surface,
+              backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.dark.surface,
             }} />
             <View style={{
               backgroundColor: colors.dark.surface, borderWidth: 1, borderColor: colors.dark.border,

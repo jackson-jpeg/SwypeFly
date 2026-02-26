@@ -35,7 +35,7 @@ function TrendingCard({ destination, rank }: { destination: Destination; rank: n
       <div style={{
         position: 'absolute', top: 8, left: 8,
         width: 28, height: 28, borderRadius: 14,
-        background: 'linear-gradient(135deg, #38BDF8, #0284C7)',
+        background: `linear-gradient(135deg, ${colors.primary}, #0284C7)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
       }}>

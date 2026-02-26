@@ -118,7 +118,7 @@ export function SimilarDestinations({ current }: SimilarDestinationsProps) {
                 <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{dest.city}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
                   <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{dest.country}</span>
-                  <span style={{ color: '#38BDF8', fontSize: 13, fontWeight: 700 }}>${price}</span>
+                  <span style={{ color: colors.primary, fontSize: 13, fontWeight: 700 }}>${price}</span>
                 </div>
               </div>
             </div>

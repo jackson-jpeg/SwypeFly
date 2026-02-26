@@ -258,10 +258,10 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
             step={50}
             value={maxPrice}
             onChange={e => setMaxPrice(Number(e.target.value))}
-            style={{ flex: 1, accentColor: '#38BDF8' }}
+            style={{ flex: 1, accentColor: colors.primary }}
           />
           <span style={{
-            color: maxPrice < 2000 ? '#38BDF8' : 'rgba(255,255,255,0.4)',
+            color: maxPrice < 2000 ? colors.primary : 'rgba(255,255,255,0.4)',
             fontSize: 14, fontWeight: 700, minWidth: 50, textAlign: 'right',
           }}>
             {maxPrice < 2000 ? `$${maxPrice}` : 'Any'}
@@ -272,7 +272,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
         {results.length > 0 && (
           <div style={{ marginTop: 12 }}>
             {results.map((dest) => (
-              <div
+              <button
                 key={dest.id}
                 onClick={() => {
                   onClose();
@@ -283,13 +283,15 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                   padding: '14px 16px', cursor: 'pointer',
                   borderRadius: 12, marginBottom: 4,
                   transition: 'background 0.15s',
+                  background: 'none', border: 'none', width: '100%',
+                  textAlign: 'left', fontFamily: 'inherit',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <img
                   src={dest.imageUrl}
-                  alt={dest.city}
+                  alt={`${dest.city}, ${dest.country}`}
                   style={{ width: 52, height: 52, borderRadius: 10, objectFit: 'cover' }}
                 />
                 <div>
@@ -300,10 +302,10 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                     {dest.country} · {dest.vibeTags.slice(0, 2).join(', ')}
                   </div>
                 </div>
-                <div style={{ marginLeft: 'auto', color: '#38BDF8', fontSize: 15, fontWeight: 700 }}>
+                <div style={{ marginLeft: 'auto', color: colors.primary, fontSize: 15, fontWeight: 700 }}>
                   ${dest.livePrice ?? dest.flightPrice}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -323,18 +325,19 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                 {trendingDests.map((dest, i) => dest && (
-                  <div
+                  <button
                     key={dest.id}
                     onClick={() => { onClose(); router.push(`/destination/${dest.id}`); }}
                     style={{
                       position: 'relative', borderRadius: 14, overflow: 'hidden',
-                      aspectRatio: '1', cursor: 'pointer',
+                      aspectRatio: '1', cursor: 'pointer', border: 'none', padding: 0,
+                      textAlign: 'left',
                       animation: `sg-trending-in 0.4s ${i * 0.06}s ease-out both`,
                     }}
                   >
-                    <img src={dest.imageUrl} alt={dest.city} style={{
+                    <img src={dest.imageUrl} alt={`${dest.city}, ${dest.country}`} style={{
                       width: '100%', height: '100%', objectFit: 'cover',
-                      transition: 'transform 0.3s',
+                      transition: 'transform 0.3s', display: 'block',
                     }}
                     onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
                     onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
@@ -345,9 +348,9 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                     }} />
                     <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8 }}>
                       <div style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>{dest.city}</div>
-                      <div style={{ color: '#38BDF8', fontSize: 11, fontWeight: 600 }}>${dest.livePrice ?? dest.flightPrice}</div>
+                      <div style={{ color: colors.primary, fontSize: 11, fontWeight: 600 }}>${dest.livePrice ?? dest.flightPrice}</div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -408,7 +411,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                 { emoji: '⛰️', label: 'Nature' },
                 { emoji: '🧗', label: 'Adventure' },
               ].map(({ emoji, label }) => (
-                <div
+                <button
                   key={label}
                   onClick={() => handleQueryChange(label.toLowerCase())}
                   style={{
@@ -417,6 +420,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 500,
                     cursor: 'pointer', transition: 'all 0.15s',
+                    fontFamily: 'inherit',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'rgba(56,189,248,0.15)';
@@ -428,7 +432,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                   }}
                 >
                   {emoji} {label}
-                </div>
+                </button>
               ))}
             </div>
 

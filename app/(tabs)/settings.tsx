@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthContext } from '../../hooks/AuthContext';
+import { colors } from '../../constants/theme';
 
 const DEPARTURE_OPTIONS = [
   { city: 'Tampa', code: 'TPA' },
@@ -27,7 +28,7 @@ const CARD = '#1E293B';
 const BORDER = '#334155';
 const TEXT = '#F8FAFC';
 const MUTED = '#94A3B8';
-const ACCENT = '#38BDF8';
+const ACCENT = colors.primary;
 const DANGER = '#EF4444';
 
 export default function SettingsTab() {

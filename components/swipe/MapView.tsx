@@ -160,7 +160,7 @@ export function MapView({ destinations, onClose }: MapViewProps) {
                 <div style={{
                   width: isHovered ? 14 : 8, height: isHovered ? 14 : 8,
                   borderRadius: '50%',
-                  backgroundColor: isHovered ? '#38BDF8' : 'rgba(56,189,248,0.8)',
+                  backgroundColor: isHovered ? colors.primary : 'rgba(56,189,248,0.8)',
                   boxShadow: isHovered
                     ? '0 0 12px rgba(56,189,248,0.6), 0 0 24px rgba(56,189,248,0.3)'
                     : '0 0 6px rgba(56,189,248,0.4)',
@@ -175,7 +175,7 @@ export function MapView({ destinations, onClose }: MapViewProps) {
                   padding: '2px 6px', borderRadius: 6,
                   backgroundColor: isHovered ? 'rgba(56,189,248,0.2)' : 'rgba(0,0,0,0.5)',
                   fontSize: 9, fontWeight: 700,
-                  color: isHovered ? '#38BDF8' : 'rgba(255,255,255,0.5)',
+                  color: isHovered ? colors.primary : 'rgba(255,255,255,0.5)',
                   transition: 'all 0.15s',
                 }}>
                   ${price}
@@ -198,7 +198,7 @@ export function MapView({ destinations, onClose }: MapViewProps) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
                       <span style={{
                         padding: '3px 8px', borderRadius: 999,
-                        background: 'rgba(56,189,248,0.2)', color: '#38BDF8',
+                        background: 'rgba(56,189,248,0.2)', color: colors.primary,
                         fontSize: 12, fontWeight: 700,
                       }}>✈️ ${price}</span>
                       {dest.rating && (
@@ -222,7 +222,7 @@ export function MapView({ destinations, onClose }: MapViewProps) {
         }}>
           <span style={{ color: '#fff', fontWeight: 700 }}>{hovered.city}, {hovered.country}</span>
           <span style={{ color: 'rgba(255,255,255,0.4)' }}>·</span>
-          <span style={{ color: '#38BDF8', fontWeight: 600 }}>From ${hovered.livePrice ?? hovered.flightPrice}</span>
+          <span style={{ color: colors.primary, fontWeight: 600 }}>From ${hovered.livePrice ?? hovered.flightPrice}</span>
           <span style={{ color: 'rgba(255,255,255,0.4)' }}>·</span>
           <span style={{ color: 'rgba(255,255,255,0.5)' }}>{hovered.flightDuration}</span>
         </div>

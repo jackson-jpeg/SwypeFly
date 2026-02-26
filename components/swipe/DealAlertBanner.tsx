@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Platform } from 'react-native';
 import { useUIStore } from '../../stores/uiStore';
+import { colors } from '../../constants/theme';
 
 export function DealAlertBanner() {
   const [email, setEmail] = useState('');
@@ -80,7 +81,7 @@ export function DealAlertBanner() {
           onClick={handleSubmit}
           style={{
             padding: '10px 18px', borderRadius: 10,
-            backgroundColor: '#38BDF8', border: 'none',
+            backgroundColor: colors.primary, border: 'none',
             color: '#0F172A', fontSize: 14, fontWeight: 700,
             cursor: 'pointer', whiteSpace: 'nowrap',
           }}

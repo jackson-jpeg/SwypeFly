@@ -71,7 +71,7 @@ export function TravelTips({ destination }: TravelTipsProps) {
             <span key={tag} style={{
               padding: '3px 10px', borderRadius: 9999,
               backgroundColor: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.15)',
-              color: '#38BDF8', fontSize: fontSize.sm, fontWeight: fontWeight.medium,
+              color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.medium,
               textTransform: 'capitalize',
             }}>{tag}</span>
           ))}

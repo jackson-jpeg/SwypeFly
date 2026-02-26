@@ -22,7 +22,7 @@ export default function NotFound() {
             onClick={() => router.replace('/')}
             style={{
               padding: '14px 28px', borderRadius: 9999,
-              backgroundColor: '#38BDF8', border: 'none',
+              backgroundColor: colors.primary, border: 'none',
               color: '#0F172A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
             }}
           >Explore Destinations</button>
@@ -46,7 +46,7 @@ export default function NotFound() {
       <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginTop: 8, marginBottom: 32 }}>
         This destination doesn't exist... yet.
       </Text>
-      <Pressable onPress={() => router.replace('/')} style={{ backgroundColor: '#38BDF8', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 9999 }}>
+      <Pressable onPress={() => router.replace('/')} style={{ backgroundColor: colors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 9999 }}>
         <Text style={{ color: '#0F172A', fontSize: 16, fontWeight: '700' }}>Explore Destinations</Text>
       </Pressable>
     </View>

@@ -129,20 +129,20 @@ export function WelcomeOverlay() {
           marginBottom: 24, maxHeight: 240, overflowY: 'auto',
         }}>
           {filteredAirports.map(airport => (
-            <div
+            <button
               key={airport.code}
               onClick={() => setSelectedCode(airport.code)}
               style={{
                 padding: '10px 8px', borderRadius: 12, cursor: 'pointer',
-                textAlign: 'center', transition: 'all 0.2s',
+                textAlign: 'center', transition: 'all 0.2s', fontFamily: 'inherit',
                 backgroundColor: selectedCode === airport.code ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)',
                 border: selectedCode === airport.code ? '1.5px solid rgba(56,189,248,0.5)' : '1.5px solid rgba(255,255,255,0.06)',
                 animation: selectedCode === airport.code ? 'sg-welcome-glow 2s ease-in-out infinite' : 'none',
               }}
             >
-              <div style={{ color: selectedCode === airport.code ? '#38BDF8' : '#fff', fontSize: 15, fontWeight: 700 }}>{airport.code}</div>
+              <div style={{ color: selectedCode === airport.code ? colors.primary : '#fff', fontSize: 15, fontWeight: 700 }}>{airport.code}</div>
               <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 2 }}>{airport.city}</div>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -192,15 +192,16 @@ export function WelcomeOverlay() {
         </button>
 
         {/* Skip */}
-        <div
+        <button
           onClick={() => setOnboarded()}
           style={{
             color: 'rgba(255,255,255,0.25)', fontSize: 13, marginTop: 16,
-            cursor: 'pointer',
+            cursor: 'pointer', background: 'none', border: 'none',
+            fontFamily: 'inherit', padding: 0,
           }}
         >
           Skip — detect my location
-        </div>
+        </button>
       </div>
     </div>
   );

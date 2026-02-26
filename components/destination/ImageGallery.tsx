@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Platform, View, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Image } from 'expo-image';
+import { colors } from '../../constants/theme';
 
 interface ImageGalleryProps {
   images: string[];
@@ -108,7 +109,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
                   height: 6,
                   borderRadius: 3,
                   backgroundColor:
-                    i === activeIndex ? '#38BDF8' : 'rgba(255,255,255,0.4)',
+                    i === activeIndex ? colors.primary : 'rgba(255,255,255,0.4)',
                   transition: 'all 0.2s ease',
                   cursor: 'pointer',
                 }}
@@ -166,7 +167,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
                 height: 6,
                 borderRadius: 3,
                 backgroundColor:
-                  i === activeIndex ? '#38BDF8' : 'rgba(0,0,0,0.25)',
+                  i === activeIndex ? colors.primary : 'rgba(0,0,0,0.25)',
               }}
             />
           ))}
