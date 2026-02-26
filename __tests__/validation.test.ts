@@ -44,6 +44,44 @@ describe('feedQuerySchema', () => {
     const result = validateRequest(feedQuerySchema, { origin: 'JFK', cursor: '-1' });
     expect(result.success).toBe(false);
   });
+
+  it('accepts maxPrice filter', () => {
+    const result = validateRequest(feedQuerySchema, { origin: 'JFK', maxPrice: '500' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.maxPrice).toBe(500);
+    }
+  });
+
+  it('rejects maxPrice over 10000', () => {
+    const result = validateRequest(feedQuerySchema, { origin: 'JFK', maxPrice: '99999' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects maxPrice of 0', () => {
+    const result = validateRequest(feedQuerySchema, { origin: 'JFK', maxPrice: '0' });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts vibeFilter and regionFilter together', () => {
+    const result = validateRequest(feedQuerySchema, {
+      origin: 'LAX',
+      vibeFilter: 'beach',
+      regionFilter: 'caribbean',
+      sortPreset: 'cheapest',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.vibeFilter).toBe('beach');
+      expect(result.data.regionFilter).toBe('caribbean');
+      expect(result.data.sortPreset).toBe('cheapest');
+    }
+  });
+
+  it('rejects invalid regionFilter', () => {
+    const result = validateRequest(feedQuerySchema, { origin: 'JFK', regionFilter: 'mars' });
+    expect(result.success).toBe(false);
+  });
 });
 
 // ─── swipeBodySchema ─────────────────────────────────────────────────
