@@ -56,6 +56,8 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
     })),
   });
 
+  const isLoadingMissing = missingQueries.some((q) => q.isLoading);
+
   const savedDestinations = useMemo(() => {
     const fetchedMap = new Map<string, Destination>();
     missingIds.forEach((id, i) => {
@@ -106,10 +108,26 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
   };
 
   if (Platform.OS === 'web') {
+    const skeletonCount = missingIds.length - savedDestinations.length + cached.size;
+    const skeletons = isLoadingMissing && skeletonCount > 0 ? (
+      <>
+        {Array.from({ length: Math.min(skeletonCount, 4) }, (_, i) => (
+          <div key={`skeleton-${i}`} style={{
+            borderRadius: 20, aspectRatio: '3/4', backgroundColor: colors.surface,
+            border: `1px solid ${colors.border}`, overflow: 'hidden',
+            animation: 'sg-pulse 1.5s ease-in-out infinite',
+          }}>
+            <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${colors.surface}, ${colors.surfaceElevated}, ${colors.surface})` }} />
+          </div>
+        ))}
+      </>
+    ) : null;
+
     if (groupByRegion && regionGroups.length > 1) {
       return (
         <>
           <style>{`
+            @keyframes sg-pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
             .sg-region-header {
               display: flex; align-items: center; gap: 10px;
               padding: 12px ${spacing['5']}px 8px;
@@ -175,6 +193,7 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
     return (
       <>
         <style>{`
+          @keyframes sg-pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
           .sg-saved-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -192,6 +211,7 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
           {savedDestinations.map((d) => (
             <SavedCard key={d.id} destination={d} savedAt={savedAt[d.id]} />
           ))}
+          {skeletons}
         </div>
       </>
     );

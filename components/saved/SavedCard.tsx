@@ -96,6 +96,11 @@ export function SavedCard({ destination, savedAt }: SavedCardProps) {
               transition: 'transform 0.4s cubic-bezier(.4,0,.2,1)',
             }}
             loading="lazy"
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              target.parentElement!.style.background = 'linear-gradient(135deg, #1E293B, #334155)';
+            }}
           />
           {/* Unsave button */}
           <button
