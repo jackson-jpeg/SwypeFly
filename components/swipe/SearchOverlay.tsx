@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text, TextInput, Pressable, FlatList, Modal, KeyboardAvoidingView } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { destinations } from '../../data/destinations';
 import { useUIStore } from '../../stores/uiStore';
-import { colors } from '../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
 
 interface SearchOverlayProps {
   visible: boolean;
@@ -67,8 +68,136 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
     [],
   );
 
-  if (!visible || Platform.OS !== 'web') return null;
+  if (!visible) return null;
 
+  // ─── Native Search ──────────────────────────────────────────────────
+  if (Platform.OS !== 'web') {
+    return (
+      <Modal visible={visible} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.95)' }}>
+            {/* Header */}
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 12,
+              paddingTop: 60, paddingHorizontal: spacing['4'], paddingBottom: spacing['3'],
+              borderBottomWidth: 1, borderBottomColor: colors.dark.border,
+            }}>
+              <TextInput
+                autoFocus
+                placeholder="Search cities, countries, vibes..."
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                value={query}
+                onChangeText={handleQueryChange}
+                style={{
+                  flex: 1, padding: spacing['3'],
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                  color: '#fff', fontSize: fontSize.lg, fontWeight: fontWeight.medium,
+                }}
+              />
+              <Pressable onPress={onClose} hitSlop={8}>
+                <Text style={{ color: colors.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>Done</Text>
+              </Pressable>
+            </View>
+
+            {/* Vibe chips */}
+            {!debouncedQuery.trim() && (
+              <View style={{ paddingHorizontal: spacing['4'], paddingTop: spacing['3'] }}>
+                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>
+                  Explore by vibe
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {[
+                    { emoji: '🏖️', label: 'Beach' }, { emoji: '🏔️', label: 'Mountain' },
+                    { emoji: '🌃', label: 'City' }, { emoji: '💕', label: 'Romantic' },
+                    { emoji: '🍜', label: 'Foodie' }, { emoji: '🎉', label: 'Nightlife' },
+                    { emoji: '🏛️', label: 'Historic' }, { emoji: '🌴', label: 'Tropical' },
+                  ].map(({ emoji, label }) => (
+                    <Pressable
+                      key={label}
+                      onPress={() => handleQueryChange(label.toLowerCase())}
+                      style={{
+                        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                      }}
+                    >
+                      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '500' }}>
+                        {emoji} {label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Results */}
+            <FlatList
+              data={results}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingHorizontal: spacing['4'], paddingTop: spacing['3'] }}
+              renderItem={({ item: dest }) => (
+                <Pressable
+                  onPress={() => { onClose(); router.push(`/destination/${dest.id}`); }}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 14,
+                    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <Image
+                    source={{ uri: dest.imageUrl }}
+                    style={{ width: 48, height: 48, borderRadius: 10 }}
+                    contentFit="cover"
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{dest.city}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+                      {dest.country} · {dest.vibeTags.slice(0, 2).join(', ')}
+                    </Text>
+                  </View>
+                  <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '700' }}>
+                    ${dest.livePrice ?? dest.flightPrice}
+                  </Text>
+                </Pressable>
+              )}
+              ListEmptyComponent={
+                debouncedQuery.trim() ? (
+                  <View style={{ alignItems: 'center', paddingTop: 40 }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }}>
+                      No destinations found
+                    </Text>
+                  </View>
+                ) : null
+              }
+            />
+
+            {/* Surprise Me button */}
+            {!debouncedQuery.trim() && (
+              <View style={{ padding: spacing['4'] }}>
+                <Pressable
+                  onPress={() => {
+                    const rand = destinations[Math.floor(Math.random() * destinations.length)];
+                    onClose();
+                    router.push(`/destination/${rand.id}`);
+                  }}
+                  style={{
+                    padding: spacing['4'], borderRadius: radii.lg,
+                    backgroundColor: 'rgba(56,189,248,0.12)',
+                    borderWidth: 1, borderColor: 'rgba(56,189,248,0.2)',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>🎲 Surprise Me</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  }
+
+  // ─── Web Search ─────────────────────────────────────────────────────
   return (
     <div
       style={{

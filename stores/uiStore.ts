@@ -41,8 +41,10 @@ export const useUIStore = create<UIState>()(
           try { localStorage.setItem('sogojet-manual-departure', 'true'); } catch {}
         }
         useFeedStore.getState().reset();
-        // Invalidate feed queries so new departure city takes effect
+        // Invalidate all origin-dependent queries so new departure city takes effect
         queryClient.removeQueries({ queryKey: ['feed'] });
+        queryClient.removeQueries({ queryKey: ['destination'] });
+        queryClient.invalidateQueries({ queryKey: ['ai'] });
       },
       setCurrency: (currency) => set({ currency }),
       setGuest: (isGuest) => set({ isGuest }),

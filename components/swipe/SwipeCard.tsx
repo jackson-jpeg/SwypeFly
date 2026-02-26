@@ -427,6 +427,13 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
               <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>
                 From ${effectivePrice}
               </span>
+              {destination.priceSource && destination.priceSource !== 'estimate' && (
+                <span style={{
+                  width: 6, height: 6, borderRadius: 3,
+                  backgroundColor: '#22C55E', display: 'inline-block',
+                  boxShadow: '0 0 4px rgba(34,197,94,0.5)',
+                }} title="Live price" />
+              )}
             </div>
             {isDeal && (
               <span style={{

@@ -31,4 +31,5 @@ export const COLLECTIONS = {
   destinationImages: 'destination_images',
   aiCache: 'ai_cache',
   priceAlerts: 'price_alerts',
+  subscribers: 'subscribers',
 } as const;

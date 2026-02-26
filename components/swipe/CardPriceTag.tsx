@@ -1,13 +1,17 @@
 import { View, Text } from 'react-native';
 import { formatFlightPrice, formatHotelPrice } from '../../utils/formatPrice';
+import { colors } from '../../constants/theme';
 
 interface CardPriceTagProps {
   flightPrice: number;
   hotelPricePerNight: number;
   currency: string;
+  priceSource?: string;
 }
 
-export function CardPriceTag({ flightPrice, hotelPricePerNight, currency }: CardPriceTagProps) {
+export function CardPriceTag({ flightPrice, hotelPricePerNight, currency, priceSource }: CardPriceTagProps) {
+  const isLive = priceSource && priceSource !== 'estimate';
+
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
       <View
@@ -23,9 +27,15 @@ export function CardPriceTag({ flightPrice, hotelPricePerNight, currency }: Card
         }}
       >
         <Text style={{ fontSize: 13 }}>{'\u2708\uFE0F'}</Text>
-        <Text style={{ color: '#7DD3FC', fontSize: 13, fontWeight: '700', marginLeft: 6 }}>
+        <Text style={{ color: colors.primaryLight, fontSize: 13, fontWeight: '700', marginLeft: 6 }}>
           {formatFlightPrice(flightPrice, currency)}
         </Text>
+        {isLive && (
+          <View style={{
+            width: 6, height: 6, borderRadius: 3,
+            backgroundColor: colors.success, marginLeft: 6,
+          }} />
+        )}
       </View>
       <View
         style={{
@@ -39,7 +49,7 @@ export function CardPriceTag({ flightPrice, hotelPricePerNight, currency }: Card
           borderColor: 'rgba(33,150,243,0.25)',
         }}
       >
-        <Text style={{ fontSize: 13 }}>{'\U0001F3E8'}</Text>
+        <Text style={{ fontSize: 13 }}>{'\u{1F3E8}'}</Text>
         <Text style={{ color: '#64B5F6', fontSize: 13, fontWeight: '700', marginLeft: 6 }}>
           {formatHotelPrice(hotelPricePerNight, currency)}
         </Text>

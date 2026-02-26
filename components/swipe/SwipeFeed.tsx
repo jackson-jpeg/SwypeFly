@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, Platform, useWindowDimensions } from 'react-native';
+import { View, ScrollView, Text, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { SwipeCard } from './SwipeCard';
 import { SkeletonCard } from './SkeletonCard';
@@ -722,6 +722,31 @@ export function SwipeFeed() {
           </View>
         ))}
       </ScrollView>
+
+      {/* Floating header */}
+      <View style={{
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
+        paddingTop: 52, paddingHorizontal: 16, paddingBottom: 12,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', letterSpacing: -0.5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 }}>
+          SoGoJet
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Pressable onPress={() => router.push('/settings')} hitSlop={8}>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}>
+              {'\u2708\uFE0F'} {departureCode}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => setSearchOpen(true)} hitSlop={8}>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}>
+              {'\U0001F50D'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
     </View>
   );
 }

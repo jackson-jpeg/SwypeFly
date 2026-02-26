@@ -2,20 +2,40 @@ import { useState } from 'react';
 import { Platform, View, Text } from 'react-native';
 import { router } from 'expo-router';
 import { useUIStore } from '../stores/uiStore';
+import { colors } from '../constants/theme';
+import { API_BASE } from '../services/apiHelpers';
 
 export default function SubscribePage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const departureCode = useUIStore(s => s.departureCode);
 
-  const handleSubmit = () => {
-    if (!email.includes('@')) return;
+  const handleSubmit = async () => {
+    if (!email.includes('@')) {
+      setError('Please enter a valid email');
+      return;
+    }
+    setError('');
+    setLoading(true);
     try {
-      const existing = JSON.parse(localStorage.getItem('sogojet-subscribers') || '[]');
-      existing.push({ email, airport: departureCode, date: new Date().toISOString() });
-      localStorage.setItem('sogojet-subscribers', JSON.stringify(existing));
-    } catch {}
-    setSubmitted(true);
+      const res = await fetch(`${API_BASE}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, airport: departureCode }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Something went wrong' }));
+        setError(data.error || 'Something went wrong');
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError('Network error — please try again');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (Platform.OS !== 'web') return null;
@@ -48,7 +68,7 @@ export default function SubscribePage() {
               onClick={() => router.replace('/')}
               style={{
                 padding: '14px 28px', borderRadius: 9999,
-                backgroundColor: '#38BDF8', border: 'none',
+                backgroundColor: colors.primary, border: 'none',
                 color: '#0F172A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
               }}
             >Back to Exploring</button>
@@ -78,14 +98,23 @@ export default function SubscribePage() {
               />
               <button
                 onClick={handleSubmit}
+                disabled={loading}
                 style={{
                   padding: '14px 24px', borderRadius: 14,
-                  backgroundColor: '#38BDF8', border: 'none',
-                  color: '#0F172A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+                  backgroundColor: loading ? 'rgba(56,189,248,0.5)' : colors.primary, border: 'none',
+                  color: '#0F172A', fontSize: 16, fontWeight: 700,
+                  cursor: loading ? 'default' : 'pointer',
                   whiteSpace: 'nowrap',
+                  opacity: loading ? 0.7 : 1,
+                  transition: 'opacity 0.2s',
                 }}
-              >Subscribe</button>
+              >{loading ? 'Subscribing...' : 'Subscribe'}</button>
             </div>
+            {error && (
+              <p style={{ color: '#EF4444', fontSize: 13, margin: '12px 0 0 0' }}>
+                {error}
+              </p>
+            )}
             <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, margin: '16px 0 0 0' }}>
               Unsubscribe anytime. We respect your inbox.
             </p>

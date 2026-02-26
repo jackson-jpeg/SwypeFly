@@ -6,6 +6,7 @@ import {
   hotelPricesQuerySchema,
   priceAlertBodySchema,
   tripPlanBodySchema,
+  subscribeBodySchema,
   validateRequest,
 } from '../utils/validation';
 
@@ -249,6 +250,31 @@ describe('tripPlanBodySchema', () => {
 
   it('rejects invalid style', () => {
     const result = validateRequest(tripPlanBodySchema, { city: 'Paris', style: 'ultra' });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── subscribeBodySchema ─────────────────────────────────────────────
+
+describe('subscribeBodySchema', () => {
+  it('accepts valid email with airport', () => {
+    const result = validateRequest(subscribeBodySchema, { email: 'user@test.com', airport: 'JFK' });
+    expect(result.success).toBe(true);
+  });
+
+  it('defaults airport to TPA', () => {
+    const result = validateRequest(subscribeBodySchema, { email: 'user@test.com' });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.airport).toBe('TPA');
+  });
+
+  it('rejects invalid email', () => {
+    const result = validateRequest(subscribeBodySchema, { email: 'not-email' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing email', () => {
+    const result = validateRequest(subscribeBodySchema, { airport: 'JFK' });
     expect(result.success).toBe(false);
   });
 });

@@ -100,6 +100,13 @@ export const priceAlertBodySchema = z.object({
   email: z.string().email().max(255).optional(),
 });
 
+// ─── Subscribe endpoint ─────────────────────────────────────────────
+
+export const subscribeBodySchema = z.object({
+  email: z.string().email().max(255),
+  airport: iataCode.default('TPA'),
+});
+
 // ─── Validate helper ─────────────────────────────────────────────────
 
 type ValidationSuccess<T> = { success: true; data: T; error?: undefined };

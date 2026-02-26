@@ -230,6 +230,25 @@ export default function DestinationDetail() {
                   {destination.tripDurationDays && ` (${destination.tripDurationDays} days)`}
                 </div>
               )}
+              {destination.priceFetchedAt && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  color: colors.dark.text.muted, fontSize: fontSize.sm, marginBottom: spacing['3'],
+                }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: 3,
+                    backgroundColor: destination.priceSource !== 'estimate' ? colors.success : colors.warning,
+                    display: 'inline-block',
+                  }} />
+                  Price updated {(() => {
+                    const diff = Date.now() - new Date(destination.priceFetchedAt).getTime();
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    if (hours < 1) return 'just now';
+                    if (hours < 24) return `${hours}h ago`;
+                    return `${Math.floor(hours / 24)}d ago`;
+                  })()}
+                </div>
+              )}
               <button
                 onClick={() => {
                   const url = `https://www.aviasales.com/search/${departureCode || 'TPA'}01${destination.iataCode}01?marker=${marker}`;

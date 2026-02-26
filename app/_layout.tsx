@@ -189,6 +189,18 @@ function AuthGatedLayout() {
       />
       <Stack.Screen name="legal/privacy" />
       <Stack.Screen name="legal/terms" />
+      <Stack.Screen
+        name="quiz"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen
+        name="budget"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen
+        name="subscribe"
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
     </Stack>
   );
 }

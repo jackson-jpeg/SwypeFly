@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Platform, View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { destinations } from '../data/destinations';
+import { useFeedStore } from '../stores/feedStore';
+import { colors } from '../constants/theme';
 import type { VibeTag } from '../types/destination';
 
 const QUESTIONS = [
@@ -82,6 +84,15 @@ export default function QuizPage() {
         .map(s => s.dest);
 
       setResults(scored);
+
+      // Apply quiz preferences to feed filters
+      const topVibe = [...vibeScores.entries()].sort((a, b) => b[1] - a[1])[0];
+      if (topVibe) {
+        useFeedStore.getState().setVibeFilter(topVibe[0]);
+      }
+      if (maxPrice <= 300) {
+        useFeedStore.getState().setSortPreset('cheapest');
+      }
     }
   };
 
@@ -104,25 +115,30 @@ export default function QuizPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
             {results.map(dest => (
-              <div
+              <button
                 key={dest.id}
                 onClick={() => router.push(`/destination/${dest.id}`)}
                 style={{
                   borderRadius: 16, overflow: 'hidden', cursor: 'pointer',
                   position: 'relative', aspectRatio: '3/2',
+                  border: 'none', padding: 0, textAlign: 'left',
                 }}
               >
-                <img src={dest.imageUrl} alt={dest.city} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={dest.imageUrl} alt={`${dest.city}, ${dest.country}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 40%, rgba(0,0,0,0.8))' }} />
                 <div style={{ position: 'absolute', bottom: 10, left: 12 }}>
                   <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>{dest.city}</div>
-                  <div style={{ color: '#38BDF8', fontSize: 13, fontWeight: 700 }}>${dest.livePrice ?? dest.flightPrice}</div>
+                  <div style={{ color: colors.primary, fontSize: 13, fontWeight: 700 }}>${dest.livePrice ?? dest.flightPrice}</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'center' }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '16px 0 0', fontStyle: 'italic' }}>
+            Your feed has been personalized based on your answers
+          </p>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'center' }}>
             <button
               onClick={() => { setStep(0); setAnswers([]); setResults(null); }}
               style={{
@@ -135,10 +151,10 @@ export default function QuizPage() {
               onClick={() => router.replace('/')}
               style={{
                 padding: '12px 24px', borderRadius: 9999,
-                backgroundColor: '#38BDF8', border: 'none',
+                backgroundColor: colors.primary, border: 'none',
                 color: '#0F172A', fontSize: 14, fontWeight: 700, cursor: 'pointer',
               }}
-            >Explore Feed</button>
+            >View Your Feed</button>
           </div>
         </div>
       </div>
