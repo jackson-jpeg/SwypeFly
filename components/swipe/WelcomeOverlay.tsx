@@ -51,25 +51,6 @@ export function WelcomeOverlay() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: 24, overflowY: 'auto',
     }}>
-      <style>{`
-        @keyframes sg-welcome-float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-        @keyframes sg-welcome-fade {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes sg-welcome-glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.1); }
-          50% { box-shadow: 0 0 40px rgba(56,189,248,0.2); }
-        }
-        @keyframes sg-shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-      `}</style>
-
       <div style={{
         textAlign: 'center', maxWidth: 420, width: '100%',
         animation: 'sg-welcome-fade 0.6s ease-out',
@@ -92,7 +73,7 @@ export function WelcomeOverlay() {
           backgroundSize: '200% auto',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          animation: 'sg-shimmer 4s linear infinite',
+          animation: 'sg-shimmer-text 4s linear infinite',
         }}>
           SoGoJet
         </div>

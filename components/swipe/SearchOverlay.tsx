@@ -212,17 +212,6 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <style>{`
-        @keyframes sg-search-open {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes sg-trending-in {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
-
       {/* Search input */}
       <div style={{ width: '90%', maxWidth: 500 }}>
         <div style={{ position: 'relative' }}>

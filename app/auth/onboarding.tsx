@@ -141,21 +141,6 @@ function WebOnboarding() {
         padding: 24,
       }}
     >
-      <style>{`
-        @keyframes sg-onboard-slide-left {
-          from { transform: translateX(40px); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes sg-onboard-slide-right {
-          from { transform: translateX(-40px); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes sg-plane-float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
-        }
-      `}</style>
-
       {/* Background blur */}
       <div
         style={{

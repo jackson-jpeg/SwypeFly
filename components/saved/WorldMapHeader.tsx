@@ -82,14 +82,6 @@ export function WorldMapHeader({ destinations }: WorldMapHeaderProps) {
       margin: '0 auto 16px',
       background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
     }}>
-      <style>{`
-        @keyframes sg-pin-pulse {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.8); opacity: 0.3; }
-        }
-        .sg-map-pin { transition: transform 0.2s ease; }
-        .sg-map-pin:hover { transform: scale(2); }
-      `}</style>
       <svg
         viewBox="0 0 900 340"
         style={{ width: '100%', height: '100%', opacity: 0.15 }}

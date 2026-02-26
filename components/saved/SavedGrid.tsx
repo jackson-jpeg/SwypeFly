@@ -127,7 +127,6 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
       return (
         <>
           <style>{`
-            @keyframes sg-pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
             .sg-region-header {
               display: flex; align-items: center; gap: 10px;
               padding: 12px ${spacing['5']}px 8px;
@@ -193,7 +192,6 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
     return (
       <>
         <style>{`
-          @keyframes sg-pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
           .sg-saved-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
