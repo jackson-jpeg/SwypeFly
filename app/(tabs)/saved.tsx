@@ -1,6 +1,7 @@
 import { View, Text, Platform, Pressable, ScrollView, Share } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
 import { useQueries } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { SavedGrid } from '../../components/saved/SavedGrid';
 import { WorldMapHeader } from '../../components/saved/WorldMapHeader';
 import { SavedStatsBar } from '../../components/saved/SavedStatsBar';
@@ -236,18 +237,41 @@ export default function SavedTab() {
             Your travel wishlist
           </p>
         </div>
-        {/* World map header */}
-        {resolved.length > 0 && (
-          <div style={{ padding: `0 ${spacing['5']}px` }}>
-            <WorldMapHeader destinations={resolved} />
+        {resolved.length === 0 ? (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '80px 32px', textAlign: 'center',
+          }}>
+            <span style={{ fontSize: 56, marginBottom: 16 }}>✈️</span>
+            <span style={{ color: colors.text.primary, fontSize: 22, fontWeight: 700, marginBottom: 8 }}>No saved destinations yet</span>
+            <span style={{ color: colors.text.muted, fontSize: 14, lineHeight: 1.5, maxWidth: 320, marginBottom: 24 }}>
+              Swipe through destinations and tap the heart to save your favorites here.
+            </span>
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                padding: '12px 28px', borderRadius: 9999,
+                background: `linear-gradient(135deg, ${colors.primary}, #818CF8)`,
+                border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+                cursor: 'pointer', boxShadow: '0 4px 16px rgba(56,189,248,0.25)',
+                fontFamily: 'inherit',
+              }}
+            >Explore Destinations</button>
           </div>
+        ) : (
+          <>
+            {/* World map header */}
+            <div style={{ padding: `0 ${spacing['5']}px` }}>
+              <WorldMapHeader destinations={resolved} />
+            </div>
+            {/* Stats bar */}
+            <SavedStatsBar destinations={resolved} />
+            {/* Sort + share */}
+            {sortBar}
+            {/* Grid with region groups */}
+            <SavedGrid sortBy={sortBy} groupByRegion={true} />
+          </>
         )}
-        {/* Stats bar */}
-        <SavedStatsBar destinations={resolved} />
-        {/* Sort + share */}
-        {sortBar}
-        {/* Grid with region groups */}
-        <SavedGrid sortBy={sortBy} groupByRegion={true} />
         {/* Footer */}
         <Footer />
       </div>
@@ -277,9 +301,27 @@ export default function SavedTab() {
           </Pressable>
         )}
       </View>
-      <SavedStatsBar destinations={resolved} />
-      {sortBar}
-      <SavedGrid sortBy={sortBy} />
+      {resolved.length === 0 ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          <Text style={{ fontSize: 56, marginBottom: 16 }}>✈️</Text>
+          <Text style={{ color: colors.text.primary, fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>No saved destinations yet</Text>
+          <Text style={{ color: colors.text.muted, fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 }}>
+            Swipe through destinations and tap the heart to save your favorites here.
+          </Text>
+          <Pressable
+            onPress={() => router.push('/')}
+            style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: 9999, backgroundColor: colors.primary }}
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Explore Destinations</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <>
+          <SavedStatsBar destinations={resolved} />
+          {sortBar}
+          <SavedGrid sortBy={sortBy} />
+        </>
+      )}
     </View>
   );
 }

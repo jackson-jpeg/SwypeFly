@@ -4,7 +4,7 @@ import { mediumHaptic, successHaptic } from '../utils/haptics';
 import { databases, DATABASE_ID, COLLECTIONS } from '../services/appwrite';
 import { ID, Query, Permission, Role } from 'appwrite';
 import { useAuthContext } from './AuthContext';
-import { showError } from '../stores/toastStore';
+import { showError, showToast } from '../stores/toastStore';
 import { captureException } from '../utils/sentry';
 
 export function useSaveDestination() {
@@ -50,7 +50,12 @@ export function useSaveDestination() {
       // Optimistic update
       toggleSaved(id);
 
-      if (!wasSaved) successHaptic();
+      if (!wasSaved) {
+        successHaptic();
+        showToast('Saved to wishlist ❤️', { label: 'Undo', onPress: () => toggleSaved(id) });
+      } else {
+        showToast('Removed from wishlist');
+      }
 
       // Sync to Appwrite if authenticated
       if (user) {

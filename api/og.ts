@@ -4,6 +4,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   let cityStr = 'Amazing Destination';
   let countryStr = '';
@@ -19,10 +23,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (id) {
     try {
       const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, String(id));
-      cityStr = dest.city || cityStr;
-      countryStr = dest.country || '';
-      tagline = dest.tagline || '';
-      imageUrl = dest.image_url || imageUrl;
+      cityStr = escapeHtml(dest.city || cityStr);
+      countryStr = escapeHtml(dest.country || '');
+      tagline = escapeHtml(dest.tagline || '');
+      imageUrl = encodeURI(dest.image_url || imageUrl);
       const effectivePrice = dest.live_price ?? dest.flight_price;
       priceStr = effectivePrice ? `$${effectivePrice}` : '';
       rating = dest.rating ? `★ ${dest.rating}` : '';
@@ -34,11 +38,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // Query param overrides
-  if (city) cityStr = String(city);
-  if (country) countryStr = String(country);
-  if (price) priceStr = `$${price}`;
-  if (image) imageUrl = String(image);
+  // Query param overrides (sanitized)
+  if (city) cityStr = escapeHtml(String(city));
+  if (country) countryStr = escapeHtml(String(country));
+  if (price) priceStr = `$${escapeHtml(String(price))}`;
+  if (image) imageUrl = encodeURI(String(image));
 
   const metaRow = [countryStr, flightDuration, costLevel].filter(Boolean).join('  ·  ');
 

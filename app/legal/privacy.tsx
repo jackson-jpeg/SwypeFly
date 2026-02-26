@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
           </Section>
 
           <Section title="Third-Party Services">
-            <P>Supabase: database hosting and user authentication.</P>
+            <P>Appwrite: database hosting and user authentication.</P>
             <P>Travelpayouts / Aviasales: flight price data and affiliate booking links.</P>
             <P>Amadeus: supplemental flight pricing data.</P>
             <P>LiteAPI: hotel pricing data.</P>
