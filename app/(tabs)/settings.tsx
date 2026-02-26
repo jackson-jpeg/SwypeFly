@@ -2,25 +2,44 @@ import { View, Text, ScrollView, Platform, Pressable, Switch, Modal, FlatList } 
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { useUIStore } from '../../stores/uiStore';
+import { useSavedStore } from '../../stores/savedStore';
 import { useAuthContext } from '../../hooks/AuthContext';
 import { colors } from '../../constants/theme';
+import { showToast } from '../../stores/toastStore';
 
 const DEPARTURE_OPTIONS = [
-  { city: 'Tampa', code: 'TPA' },
-  { city: 'Miami', code: 'MIA' },
-  { city: 'Orlando', code: 'MCO' },
-  { city: 'New York', code: 'JFK' },
-  { city: 'Los Angeles', code: 'LAX' },
-  { city: 'Chicago', code: 'ORD' },
-  { city: 'Dallas', code: 'DFW' },
-  { city: 'Atlanta', code: 'ATL' },
-  { city: 'Denver', code: 'DEN' },
-  { city: 'San Francisco', code: 'SFO' },
-  { city: 'Seattle', code: 'SEA' },
-  { city: 'Boston', code: 'BOS' },
-  { city: 'Phoenix', code: 'PHX' },
-  { city: 'Houston', code: 'IAH' },
-  { city: 'Minneapolis', code: 'MSP' },
+  // US
+  { city: 'Tampa', code: 'TPA', region: 'US' },
+  { city: 'Miami', code: 'MIA', region: 'US' },
+  { city: 'Orlando', code: 'MCO', region: 'US' },
+  { city: 'New York', code: 'JFK', region: 'US' },
+  { city: 'Los Angeles', code: 'LAX', region: 'US' },
+  { city: 'Chicago', code: 'ORD', region: 'US' },
+  { city: 'Dallas', code: 'DFW', region: 'US' },
+  { city: 'Atlanta', code: 'ATL', region: 'US' },
+  { city: 'Denver', code: 'DEN', region: 'US' },
+  { city: 'San Francisco', code: 'SFO', region: 'US' },
+  { city: 'Seattle', code: 'SEA', region: 'US' },
+  { city: 'Boston', code: 'BOS', region: 'US' },
+  { city: 'Phoenix', code: 'PHX', region: 'US' },
+  { city: 'Houston', code: 'IAH', region: 'US' },
+  { city: 'Minneapolis', code: 'MSP', region: 'US' },
+  { city: 'Washington DC', code: 'IAD', region: 'US' },
+  // Canada
+  { city: 'Toronto', code: 'YYZ', region: 'CA' },
+  { city: 'Vancouver', code: 'YVR', region: 'CA' },
+  { city: 'Montreal', code: 'YUL', region: 'CA' },
+  // Europe
+  { city: 'London', code: 'LHR', region: 'EU' },
+  { city: 'Paris', code: 'CDG', region: 'EU' },
+  { city: 'Amsterdam', code: 'AMS', region: 'EU' },
+  { city: 'Frankfurt', code: 'FRA', region: 'EU' },
+  { city: 'Madrid', code: 'MAD', region: 'EU' },
+  // Other
+  { city: 'Sydney', code: 'SYD', region: 'Other' },
+  { city: 'Tokyo', code: 'NRT', region: 'Other' },
+  { city: 'Singapore', code: 'SIN', region: 'Other' },
+  { city: 'Dubai', code: 'DXB', region: 'Other' },
 ];
 
 const BG = '#0F172A';
@@ -39,6 +58,8 @@ export default function SettingsTab() {
   const hapticsEnabled = useUIStore((s) => s.hapticsEnabled);
   const theme = useUIStore((s) => s.theme);
   const currency = useUIStore((s) => s.currency);
+  const savedCount = useSavedStore((s) => s.savedIds.size);
+  const clearAllSaved = useSavedStore((s) => s.clearAll);
   const [showDepartureModal, setShowDepartureModal] = useState(false);
 
   const handleSignOut = async () => {
@@ -249,6 +270,42 @@ export default function SettingsTab() {
               )}
             </div>
 
+            {/* Data */}
+            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
+              Data
+            </span>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: CARD, borderRadius: 14, padding: '16px 18px',
+              border: `1px solid ${BORDER}`,
+            }}>
+              <div>
+                <span style={{ color: TEXT, fontSize: 15, fontWeight: 500, display: 'block' }}>
+                  ❤️ Saved Destinations
+                </span>
+                <span style={{ color: MUTED, fontSize: 12, marginTop: 2, display: 'block' }}>
+                  {savedCount} destination{savedCount !== 1 ? 's' : ''} saved
+                </span>
+              </div>
+              {savedCount > 0 && (
+                <button
+                  onClick={() => {
+                    if (confirm('Clear all saved destinations? This cannot be undone.')) {
+                      clearAllSaved();
+                      showToast('Saved destinations cleared');
+                    }
+                  }}
+                  style={{
+                    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                    color: DANGER, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+
             {/* Legal */}
             <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
               Legal
@@ -368,6 +425,23 @@ export default function SettingsTab() {
             ) : (
               <Pressable onPress={() => router.replace('/auth/login')} style={{ backgroundColor: 'rgba(56,189,248,0.1)', borderWidth: 1, borderColor: 'rgba(56,189,248,0.3)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 }}>
                 <Text style={{ color: ACCENT, fontSize: 13, fontWeight: '600' }}>Sign In</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Data */}
+          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Data</Text>
+          <View style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: BORDER }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={{ color: TEXT, fontSize: 15, fontWeight: '500' }}>Saved Destinations</Text>
+              <Text style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>{savedCount} destination{savedCount !== 1 ? 's' : ''} saved</Text>
+            </View>
+            {savedCount > 0 && (
+              <Pressable
+                onPress={() => { clearAllSaved(); showToast('Saved destinations cleared'); }}
+                style={{ backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 }}
+              >
+                <Text style={{ color: DANGER, fontSize: 13, fontWeight: '600' }}>Clear All</Text>
               </Pressable>
             )}
           </View>

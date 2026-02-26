@@ -9,6 +9,7 @@ interface SavedState {
   isSaved: (id: string) => boolean;
   getSavedAt: (id: string) => number | undefined;
   hydrate: (ids: string[]) => void;
+  clearAll: () => void;
 }
 
 const storage = createPersistStorage({
@@ -46,6 +47,7 @@ export const useSavedStore = create<SavedState>()(
         }),
       isSaved: (id) => get().savedIds.has(id),
       getSavedAt: (id) => get().savedAt[id],
+      clearAll: () => set({ savedIds: new Set(), savedAt: {} }),
       hydrate: (ids) =>
         set((state) => {
           // Merge server IDs with any locally saved IDs (preserves guest saves on login)
