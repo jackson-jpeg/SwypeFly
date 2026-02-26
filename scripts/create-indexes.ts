@@ -1,4 +1,4 @@
-import { Client, Databases } from 'node-appwrite';
+import { Client, Databases, IndexType, OrderBy } from 'node-appwrite';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -20,9 +20,9 @@ async function createIndexes() {
       DATABASE_ID,
       DESTINATIONS_ID,
       'price_index',
-      'key',
+      IndexType.Key,
       ['price'],
-      ['ASC']
+      [OrderBy.Asc]
     );
 
     // Create index for country filtering
@@ -30,9 +30,9 @@ async function createIndexes() {
       DATABASE_ID,
       DESTINATIONS_ID,
       'country_index',
-      'key',
+      IndexType.Key,
       ['country'],
-      ['ASC']
+      [OrderBy.Asc]
     );
 
     // Create index for rating sorting
@@ -40,9 +40,9 @@ async function createIndexes() {
       DATABASE_ID,
       DESTINATIONS_ID,
       'rating_index',
-      'key',
+      IndexType.Key,
       ['rating'],
-      ['DESC']
+      [OrderBy.Desc]
     );
 
     // Create index for tags array filtering
@@ -50,9 +50,9 @@ async function createIndexes() {
       DATABASE_ID,
       DESTINATIONS_ID,
       'tags_index',
-      'key',
+      IndexType.Key,
       ['tags'],
-      ['ASC']
+      [OrderBy.Asc]
     );
 
     // Create composite index for common queries
@@ -60,9 +60,9 @@ async function createIndexes() {
       DATABASE_ID,
       DESTINATIONS_ID,
       'country_price_index',
-      'key',
+      IndexType.Key,
       ['country', 'price'],
-      ['ASC', 'ASC']
+      [OrderBy.Asc, OrderBy.Asc]
     );
 
     console.log('Indexes created successfully');

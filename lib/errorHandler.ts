@@ -33,18 +33,19 @@ export function logError(error: unknown, options: LogErrorOptions = {}) {
     ...extra,
   };
 
+  const consoleMethod = level === 'warning' ? 'warn' : level;
   if (process.env.NODE_ENV === 'development') {
-    console[level](`[${context || 'Error'}]`, errorData);
+    console[consoleMethod](`[${context || 'Error'}]`, errorData);
   } else {
     Sentry.withScope((scope) => {
       if (context) scope.setTag('context', context);
       if (userId) scope.setUser({ id: userId });
       scope.setExtras(extra);
-      
+
       if (error instanceof Error) {
-        Sentry[level](error);
+        Sentry.captureException(error);
       } else {
-        Sentry[level](String(error));
+        Sentry.captureMessage(String(error), level);
       }
     });
   }
