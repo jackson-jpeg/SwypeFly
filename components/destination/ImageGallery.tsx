@@ -97,13 +97,14 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
             }}
           >
             {images.map((_, i) => (
-              <div
+              <button
                 key={i}
                 onClick={(e) => {
                   e.stopPropagation();
                   setActiveIndex(i);
                   scrollRef.current?.scrollTo({ left: i * scrollRef.current.clientWidth, behavior: 'smooth' });
                 }}
+                aria-label={`View image ${i + 1}`}
                 style={{
                   width: i === activeIndex ? 16 : 6,
                   height: 6,
@@ -112,6 +113,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
                     i === activeIndex ? colors.primary : 'rgba(255,255,255,0.4)',
                   transition: 'all 0.2s ease',
                   cursor: 'pointer',
+                  border: 'none', padding: 0,
                 }}
               />
             ))}

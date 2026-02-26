@@ -98,11 +98,12 @@ function ActionButton({
   if (Platform.OS === 'web') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div
+        <button
           onClick={(e) => {
             e.stopPropagation();
             handlePress();
           }}
+          aria-label={label}
           style={{
             width: BTN_SIZE,
             height: BTN_SIZE,
@@ -116,10 +117,11 @@ function ActionButton({
             cursor: 'pointer',
             transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
             border: `1px solid ${isActive ? activeBorder : inactiveBorder}`,
+            padding: 0, fontFamily: 'inherit',
           }}
         >
           {children}
-        </div>
+        </button>
         <span style={LABEL_STYLE}>{label}</span>
       </div>
     );
@@ -191,11 +193,12 @@ function HeartButton({
   if (Platform.OS === 'web') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div
+        <button
           onClick={(e) => {
             e.stopPropagation();
             handlePress();
           }}
+          aria-label={isSaved ? 'Unsave destination' : 'Save destination'}
           style={{
             width: BTN_SIZE,
             height: BTN_SIZE,
@@ -208,12 +211,12 @@ function HeartButton({
             justifyContent: 'center',
             cursor: 'pointer',
             transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
-            transform: isSaved ? 'scale(1)' : 'scale(1)',
             border: `1px solid ${isSaved ? activeBorder : inactiveBorder}`,
+            padding: 0, fontFamily: 'inherit',
           }}
         >
           {isSaved ? HEART_FILLED : HEART_OUTLINE}
-        </div>
+        </button>
         <span style={LABEL_STYLE}>Save</span>
       </div>
     );
