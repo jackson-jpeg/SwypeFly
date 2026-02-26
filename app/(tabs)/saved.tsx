@@ -260,6 +260,7 @@ export default function SavedTab() {
         <Text style={{ color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>Saved</Text>
         <Text style={{ color: colors.text.muted, fontSize: fontSize.lg, marginTop: spacing['1'] }}>Your travel wishlist</Text>
       </View>
+      <SavedStatsBar destinations={resolved} />
       {sortBar}
       <SavedGrid sortBy={sortBy} />
     </View>

@@ -205,8 +205,11 @@ export function SwipeFeed() {
   const departureCity = useUIStore((s) => s.departureCity);
   const regionFilter = useFeedStore((s) => s.regionFilter);
   const setRegionFilter = useFeedStore((s) => s.setRegionFilter);
+  const maxPrice = useFeedStore((s) => s.maxPrice);
+  const setMaxPrice = useFeedStore((s) => s.setMaxPrice);
   const [searchOpen, setSearchOpen] = useState(false);
   const [regionOpen, setRegionOpen] = useState(false);
+  const [budgetOpen, setBudgetOpen] = useState(false);
   const [showTrending, setShowTrending] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [vibeFilter, setVibeFilter] = useState<VibeTag | null>(null);
@@ -568,6 +571,64 @@ export function SwipeFeed() {
               }}
             >{label}</button>
           ))}
+          {/* Budget filter */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setBudgetOpen(!budgetOpen)}
+              aria-label="Filter by budget"
+              style={{
+                padding: '5px 12px', borderRadius: 9999,
+                border: maxPrice ? '1px solid rgba(34,197,94,0.3)' : 'none',
+                fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                backgroundColor: maxPrice ? 'rgba(34,197,94,0.2)' : 'rgba(0,0,0,0.3)',
+                color: maxPrice ? '#4ADE80' : 'rgba(255,255,255,0.6)',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                transition: 'all 0.2s',
+                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              }}
+            >{maxPrice ? `≤$${maxPrice}` : '💵 Budget'}</button>
+            {budgetOpen && (
+              <>
+                <div onClick={() => setBudgetOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 99,
+                  backgroundColor: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: 12,
+                  minWidth: 180,
+                }}>
+                  {[
+                    { label: 'Any Price', value: null },
+                    { label: 'Under $200', value: 200 },
+                    { label: 'Under $400', value: 400 },
+                    { label: 'Under $600', value: 600 },
+                    { label: 'Under $1000', value: 1000 },
+                  ].map(({ label, value }) => (
+                    <button
+                      key={label}
+                      onClick={() => {
+                        setMaxPrice(value);
+                        setBudgetOpen(false);
+                        resetToTop();
+                      }}
+                      style={{
+                        display: 'block', width: '100%', padding: '8px 12px',
+                        borderRadius: 8, border: 'none', cursor: 'pointer',
+                        textAlign: 'left', fontSize: 13, fontFamily: 'inherit',
+                        color: maxPrice === value ? '#4ADE80' : 'rgba(255,255,255,0.8)',
+                        fontWeight: maxPrice === value ? 700 : 500,
+                        backgroundColor: maxPrice === value ? 'rgba(34,197,94,0.15)' : 'transparent',
+                        transition: 'background-color 0.15s',
+                      }}
+                    >
+                      {label}
+                      {maxPrice === value && <span style={{ marginLeft: 'auto', float: 'right', color: '#4ADE80' }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         <DealsTicker />

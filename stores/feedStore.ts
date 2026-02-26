@@ -25,11 +25,13 @@ interface FeedState {
   vibeFilter: string | null;
   regionFilter: RegionFilter;
   sortPreset: SortPreset;
+  maxPrice: number | null;
   setCurrentIndex: (index: number) => void;
   markViewed: (id: string) => void;
   setVibeFilter: (vibe: string | null) => void;
   setRegionFilter: (region: RegionFilter) => void;
   setSortPreset: (preset: SortPreset) => void;
+  setMaxPrice: (price: number | null) => void;
   reset: () => void;
   refreshFeed: () => void;
 }
@@ -41,6 +43,7 @@ export const useFeedStore = create<FeedState>((set) => ({
   vibeFilter: null,
   regionFilter: 'all',
   sortPreset: 'default',
+  maxPrice: null,
   setCurrentIndex: (index) => set({ currentIndex: index }),
   markViewed: (id) =>
     set((state) => {
@@ -69,6 +72,13 @@ export const useFeedStore = create<FeedState>((set) => ({
       currentIndex: 0,
       viewedIds: new Set(),
     })),
+  setMaxPrice: (price) =>
+    set({
+      maxPrice: price,
+      sessionId: generateSessionId(),
+      currentIndex: 0,
+      viewedIds: new Set(),
+    }),
   reset: () => set({ currentIndex: 0, viewedIds: new Set() }),
   refreshFeed: () =>
     set({

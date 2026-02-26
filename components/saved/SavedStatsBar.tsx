@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, View, Text } from 'react-native';
 import type { Destination } from '../../types/destination';
 import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
 
@@ -42,7 +42,7 @@ interface SavedStatsBarProps {
 }
 
 export function SavedStatsBar({ destinations }: SavedStatsBarProps) {
-  if (Platform.OS !== 'web' || destinations.length === 0) return null;
+  if (destinations.length === 0) return null;
 
   const continents = new Set(destinations.map((d) => getContinent(d.country)));
   const avgPrice = Math.round(
@@ -54,6 +54,25 @@ export function SavedStatsBar({ destinations }: SavedStatsBarProps) {
     { emoji: '🌎', value: `${continents.size} continent${continents.size !== 1 ? 's' : ''}` },
     { emoji: '💰', value: `avg $${avgPrice}/trip` },
   ];
+
+  if (Platform.OS !== 'web') {
+    return (
+      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: spacing['5'], paddingBottom: spacing['3'], flexWrap: 'wrap' }}>
+        {stats.map((s, i) => (
+          <View key={i} style={{
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+            paddingVertical: 6, paddingHorizontal: 12,
+            borderRadius: 9999,
+            backgroundColor: colors.surfaceElevated,
+            borderWidth: 1, borderColor: colors.border,
+          }}>
+            <Text style={{ fontSize: 13 }}>{s.emoji}</Text>
+            <Text style={{ fontSize: 12, fontWeight: '500', color: colors.text.secondary }}>{s.value}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
 
   return (
     <div style={{

@@ -33,6 +33,7 @@ function getStaticPage(
   vibeFilter: string | null,
   sortPreset: string | null,
   regionFilter: string | null,
+  maxPrice: number | null = null,
 ): DestinationFeedPage {
   let dests = [...staticDestinations];
 
@@ -43,6 +44,10 @@ function getStaticPage(
   if (vibeFilter) {
     const vibe = vibeFilter.toLowerCase();
     dests = dests.filter((d) => d.vibeTags.some((t) => t.toLowerCase() === vibe));
+  }
+
+  if (maxPrice != null) {
+    dests = dests.filter((d) => (d.livePrice ?? d.flightPrice) <= maxPrice);
   }
 
   if (sortPreset === 'cheapest') {
@@ -73,6 +78,7 @@ async function fetchPage(
   vibeFilter: string | null,
   sortPreset: string | null,
   regionFilter?: string | null,
+  maxPrice?: number | null,
 ): Promise<DestinationFeedPage> {
   try {
     const params = new URLSearchParams({ origin });
@@ -90,6 +96,9 @@ async function fetchPage(
     if (regionFilter && regionFilter !== 'all') {
       params.set('regionFilter', regionFilter);
     }
+    if (maxPrice != null) {
+      params.set('maxPrice', String(maxPrice));
+    }
 
     const authHeaders = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/api/feed?${params}`, {
@@ -100,7 +109,7 @@ async function fetchPage(
   } catch {
     // API unavailable — fall back to static data
     showToast('Showing cached destinations — prices may be estimated');
-    return getStaticPage(cursor, vibeFilter, sortPreset, regionFilter ?? null);
+    return getStaticPage(cursor, vibeFilter, sortPreset, regionFilter ?? null, maxPrice ?? null);
   }
 }
 
@@ -111,9 +120,10 @@ export function useSwipeFeed() {
   const vibeFilter = useFeedStore((s) => s.vibeFilter);
   const regionFilter = useFeedStore((s) => s.regionFilter);
   const sortPreset = useFeedStore((s) => s.sortPreset);
+  const maxPrice = useFeedStore((s) => s.maxPrice);
 
   return useInfiniteQuery({
-    queryKey: ['feed', departureCode, sessionId, vibeFilter, sortPreset, regionFilter],
+    queryKey: ['feed', departureCode, sessionId, vibeFilter, sortPreset, regionFilter, maxPrice],
     queryFn: ({ pageParam }) =>
       fetchPage(
         departureCode,
@@ -123,6 +133,7 @@ export function useSwipeFeed() {
         vibeFilter,
         sortPreset,
         regionFilter,
+        maxPrice,
       ),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
