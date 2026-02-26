@@ -77,7 +77,7 @@ export function WelcomeOverlay() {
         {/* Decorative orb */}
         <div style={{
           width: 80, height: 80, borderRadius: 40, margin: '0 auto 20px',
-          background: 'linear-gradient(135deg, #38BDF8, #818CF8, #C084FC)',
+          background: `linear-gradient(135deg, ${colors.primary}, #818CF8, #C084FC)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           animation: 'sg-welcome-float 3s ease-in-out infinite',
           boxShadow: '0 8px 32px rgba(56,189,248,0.3)',
@@ -88,7 +88,7 @@ export function WelcomeOverlay() {
         {/* Logo */}
         <div style={{
           fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: -1.5, marginBottom: 8,
-          background: 'linear-gradient(90deg, #fff 0%, #38BDF8 50%, #C084FC 100%)',
+          background: `linear-gradient(90deg, #fff 0%, ${colors.primary} 50%, #C084FC 100%)`,
           backgroundSize: '200% auto',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -178,7 +178,7 @@ export function WelcomeOverlay() {
           style={{
             width: '100%', padding: '16px 0', borderRadius: 14,
             background: selectedCode
-              ? 'linear-gradient(135deg, #38BDF8, #818CF8)'
+              ? `linear-gradient(135deg, ${colors.primary}, #818CF8)`
               : 'rgba(255,255,255,0.08)',
             border: 'none',
             color: selectedCode ? '#fff' : 'rgba(255,255,255,0.25)',

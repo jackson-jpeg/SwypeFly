@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthContext } from '../../hooks/AuthContext';
+import { colors } from '../../constants/theme';
 import { databases, DATABASE_ID, COLLECTIONS } from '../../services/appwrite';
 import { ID, Permission, Role } from 'appwrite';
 import { useUIStore } from '../../stores/uiStore';
@@ -182,7 +183,7 @@ function WebOnboarding() {
             <div key={i} style={{
               height: 8, borderRadius: 4,
               width: step === i ? 24 : 8,
-              backgroundColor: step >= i ? '#38BDF8' : 'rgba(255,255,255,0.2)',
+              backgroundColor: step >= i ? colors.primary : 'rgba(255,255,255,0.2)',
               transition: 'width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s',
             }} />
           ))}
@@ -224,7 +225,7 @@ function WebOnboarding() {
                 style={{
                   marginTop: 32, width: '100%',
                   padding: '14px 20px', borderRadius: 12,
-                  border: 'none', backgroundColor: '#38BDF8',
+                  border: 'none', backgroundColor: colors.primary,
                   color: '#fff', fontSize: 15, fontWeight: 600,
                   cursor: 'pointer', transition: 'all 0.2s',
                 }}
@@ -252,7 +253,7 @@ function WebOnboarding() {
                     style={{
                       padding: 20, borderRadius: 16,
                       border: travelerType === opt.type
-                        ? '2px solid #38BDF8'
+                        ? `2px solid ${colors.primary}`
                         : '1px solid rgba(255,255,255,0.1)',
                       backgroundColor: travelerType === opt.type
                         ? 'rgba(56,189,248,0.12)'
@@ -288,7 +289,7 @@ function WebOnboarding() {
                   style={{
                     flex: 2, padding: '14px 20px', borderRadius: 12,
                     border: 'none',
-                    backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    backgroundColor: travelerType ? colors.primary : 'rgba(255,255,255,0.1)',
                     color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)',
                     fontSize: 15, fontWeight: 600,
                     cursor: travelerType ? 'pointer' : 'default',
@@ -319,7 +320,7 @@ function WebOnboarding() {
                     style={{
                       padding: '16px 20px', borderRadius: 14,
                       border: budgetLevel === opt.level
-                        ? '2px solid #38BDF8'
+                        ? `2px solid ${colors.primary}`
                         : '1px solid rgba(255,255,255,0.1)',
                       backgroundColor: budgetLevel === opt.level
                         ? 'rgba(56,189,248,0.12)'
@@ -359,7 +360,7 @@ function WebOnboarding() {
                   style={{
                     flex: 2, padding: '14px 20px', borderRadius: 12,
                     border: 'none',
-                    backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    backgroundColor: budgetLevel ? colors.primary : 'rgba(255,255,255,0.1)',
                     color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)',
                     fontSize: 15, fontWeight: 600,
                     cursor: budgetLevel ? 'pointer' : 'default',
@@ -389,7 +390,7 @@ function WebOnboarding() {
                     style={{
                       padding: '14px 16px', borderRadius: 12,
                       border: departureCity?.code === opt.code
-                        ? '2px solid #38BDF8'
+                        ? `2px solid ${colors.primary}`
                         : '1px solid rgba(255,255,255,0.1)',
                       backgroundColor: departureCity?.code === opt.code
                         ? 'rgba(56,189,248,0.12)'
@@ -424,7 +425,7 @@ function WebOnboarding() {
                   style={{
                     flex: 2, padding: '14px 20px', borderRadius: 12,
                     border: 'none',
-                    backgroundColor: departureCity ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    backgroundColor: departureCity ? colors.primary : 'rgba(255,255,255,0.1)',
                     color: departureCity ? '#fff' : 'rgba(255,255,255,0.3)',
                     fontSize: 15, fontWeight: 600,
                     cursor: departureCity && !saving ? 'pointer' : 'default',
@@ -522,7 +523,7 @@ function NativeOnboarding() {
           <View key={i} style={{
             height: 8, borderRadius: 4,
             width: step === i ? 24 : 8,
-            backgroundColor: step >= i ? '#38BDF8' : 'rgba(255,255,255,0.2)',
+            backgroundColor: step >= i ? colors.primary : 'rgba(255,255,255,0.2)',
           }} />
         ))}
       </View>
@@ -543,7 +544,7 @@ function NativeOnboarding() {
             style={{
               marginTop: 32, width: '100%',
               paddingVertical: 14, borderRadius: 12,
-              backgroundColor: '#38BDF8', alignItems: 'center',
+              backgroundColor: colors.primary, alignItems: 'center',
             }}
           >
             <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Get Started</Text>
@@ -569,7 +570,7 @@ function NativeOnboarding() {
                 style={{
                   width: '48%', padding: 20, borderRadius: 16,
                   borderWidth: travelerType === opt.type ? 2 : 1,
-                  borderColor: travelerType === opt.type ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                  borderColor: travelerType === opt.type ? colors.primary : 'rgba(255,255,255,0.1)',
                   backgroundColor: travelerType === opt.type ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
                   alignItems: 'center', gap: 6,
                 }}
@@ -597,7 +598,7 @@ function NativeOnboarding() {
               disabled={!travelerType}
               style={{
                 flex: 2, paddingVertical: 14, borderRadius: 12,
-                backgroundColor: travelerType ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                backgroundColor: travelerType ? colors.primary : 'rgba(255,255,255,0.1)',
                 alignItems: 'center',
               }}
             >
@@ -627,7 +628,7 @@ function NativeOnboarding() {
                 style={{
                   padding: 16, borderRadius: 14,
                   borderWidth: budgetLevel === opt.level ? 2 : 1,
-                  borderColor: budgetLevel === opt.level ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                  borderColor: budgetLevel === opt.level ? colors.primary : 'rgba(255,255,255,0.1)',
                   backgroundColor: budgetLevel === opt.level ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
                   flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                 }}
@@ -659,7 +660,7 @@ function NativeOnboarding() {
               disabled={!budgetLevel}
               style={{
                 flex: 2, paddingVertical: 14, borderRadius: 12,
-                backgroundColor: budgetLevel ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                backgroundColor: budgetLevel ? colors.primary : 'rgba(255,255,255,0.1)',
                 alignItems: 'center',
               }}
             >
@@ -690,7 +691,7 @@ function NativeOnboarding() {
                   style={{
                     width: '48%', padding: 14, borderRadius: 12,
                     borderWidth: departureCity?.code === opt.code ? 2 : 1,
-                    borderColor: departureCity?.code === opt.code ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                    borderColor: departureCity?.code === opt.code ? colors.primary : 'rgba(255,255,255,0.1)',
                     backgroundColor: departureCity?.code === opt.code ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
                     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                   }}
@@ -718,7 +719,7 @@ function NativeOnboarding() {
               disabled={!departureCity || saving}
               style={{
                 flex: 2, paddingVertical: 14, borderRadius: 12,
-                backgroundColor: departureCity ? '#38BDF8' : 'rgba(255,255,255,0.1)',
+                backgroundColor: departureCity ? colors.primary : 'rgba(255,255,255,0.1)',
                 alignItems: 'center',
                 opacity: saving ? 0.7 : 1,
               }}

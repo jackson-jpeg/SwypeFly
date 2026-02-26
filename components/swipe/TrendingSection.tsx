@@ -14,13 +14,15 @@ function getCurrentMonthAbbr() {
 
 function TrendingCard({ destination, rank }: { destination: Destination; rank: number }) {
   return (
-    <div
+    <button
       onClick={() => router.push(`/destination/${destination.id}`)}
+      aria-label={`View ${destination.city}, ${destination.country}`}
       style={{
         position: 'relative', minWidth: 180, width: 180, height: 240,
         borderRadius: 16, overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
         boxShadow: shadows.web.lg,
         transition: 'transform 0.2s ease',
+        border: 'none', padding: 0, textAlign: 'left', fontFamily: 'inherit',
       }}
       onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
       onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
@@ -56,20 +58,22 @@ function TrendingCard({ destination, rank }: { destination: Destination; rank: n
           {formatFlightPrice(destination.flightPrice, destination.currency)}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
 function DropCard({ destination, dropPct }: { destination: Destination; dropPct: number }) {
   return (
-    <div
+    <button
       onClick={() => router.push(`/destination/${destination.id}`)}
+      aria-label={`${destination.city} — ${dropPct}% price drop`}
       style={{
         minWidth: 160, width: 160, padding: 14,
         borderRadius: 16, cursor: 'pointer', flexShrink: 0,
         background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))',
         border: '1px solid rgba(34,197,94,0.2)',
         transition: 'transform 0.2s ease, border-color 0.2s ease',
+        textAlign: 'left', fontFamily: 'inherit',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'scale(1.03)';
@@ -95,20 +99,22 @@ function DropCard({ destination, dropPct }: { destination: Destination; dropPct:
           {formatFlightPrice(destination.flightPrice, destination.currency)}
         </span>
       </div>
-    </div>
+    </button>
   );
 }
 
 function WeatherCard({ destination }: { destination: Destination }) {
   return (
-    <div
+    <button
       onClick={() => router.push(`/destination/${destination.id}`)}
+      aria-label={`${destination.city} — perfect weather now`}
       style={{
         minWidth: 160, width: 160, padding: 14,
         borderRadius: 16, cursor: 'pointer', flexShrink: 0,
         background: 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.02))',
         border: '1px solid rgba(251,191,36,0.2)',
         transition: 'transform 0.2s ease',
+        textAlign: 'left', fontFamily: 'inherit',
       }}
       onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
       onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
@@ -119,7 +125,7 @@ function WeatherCard({ destination }: { destination: Destination }) {
       <div style={{ color: colors.text.secondary, fontSize: 12, marginTop: 8 }}>
         {destination.averageTemp}°C · {formatFlightPrice(destination.flightPrice, destination.currency)}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -195,20 +201,22 @@ export function TrendingSection({ onClose }: TrendingSectionProps) {
           ✨ Discover
         </h2>
         {onClose && (
-          <div
+          <button
             onClick={onClose}
+            aria-label="Close discover section"
             style={{
               width: 32, height: 32, borderRadius: 16,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               backgroundColor: colors.surfaceElevated, cursor: 'pointer',
               border: `1px solid ${colors.border}`,
               transition: 'background 0.2s',
+              padding: 0, fontFamily: 'inherit',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = colors.border)}
             onMouseLeave={(e) => (e.currentTarget.style.background = colors.surfaceElevated)}
           >
             <span style={{ fontSize: 14, color: colors.text.secondary }}>✕</span>
-          </div>
+          </button>
         )}
       </div>
 
