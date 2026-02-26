@@ -1,4 +1,4 @@
-import { View, Text, Platform, Pressable, ScrollView } from 'react-native';
+import { View, Text, Platform, Pressable, ScrollView, Share } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { SavedGrid } from '../../components/saved/SavedGrid';
@@ -254,11 +254,28 @@ export default function SavedTab() {
     );
   }
 
+  const handleNativeShare = async () => {
+    if (resolved.length === 0) return;
+    const list = resolved.slice(0, 10).map(d => `${d.city}, ${d.country} — $${d.livePrice ?? d.flightPrice}`).join('\n');
+    try {
+      await Share.share({
+        message: `My SoGoJet Travel Wishlist ✈️\n\n${list}\n\nDiscover deals at sogojet.com`,
+      });
+    } catch { /* user cancelled */ }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ paddingHorizontal: spacing['5'], paddingTop: spacing['14'], paddingBottom: spacing['3'] }}>
-        <Text style={{ color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>Saved</Text>
-        <Text style={{ color: colors.text.muted, fontSize: fontSize.lg, marginTop: spacing['1'] }}>Your travel wishlist</Text>
+      <View style={{ paddingHorizontal: spacing['5'], paddingTop: spacing['14'], paddingBottom: spacing['3'], flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <View>
+          <Text style={{ color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>Saved</Text>
+          <Text style={{ color: colors.text.muted, fontSize: fontSize.lg, marginTop: spacing['1'] }}>Your travel wishlist</Text>
+        </View>
+        {resolved.length > 0 && (
+          <Pressable onPress={handleNativeShare} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 9999, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ color: colors.text.secondary, fontSize: 13, fontWeight: '600' }}>Share ✈️</Text>
+          </Pressable>
+        )}
       </View>
       <SavedStatsBar destinations={resolved} />
       {sortBar}

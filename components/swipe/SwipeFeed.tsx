@@ -160,9 +160,28 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Countries</div>
           </div>
         </div>
-        <p style={{ margin: '0 0 28px 0', color: 'rgba(255,255,255,0.4)', fontSize: 14, lineHeight: 1.5 }}>
-          Shuffle for a fresh feed, or check your saved picks.
+        <p style={{ margin: '0 0 20px 0', color: 'rgba(255,255,255,0.4)', fontSize: 14, lineHeight: 1.5 }}>
+          Shuffle for a fresh feed, or try a different vibe.
         </p>
+        {/* Quick filter chips */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
+          {VIBE_CHIPS.map(({ tag, label, emoji }) => (
+            <button
+              key={tag}
+              onClick={() => {
+                useFeedStore.getState().setVibeFilter(tag);
+              }}
+              style={{
+                padding: '6px 14px', borderRadius: 9999,
+                backgroundColor: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s',
+                fontFamily: 'inherit',
+              }}
+            >{emoji} {label}</button>
+          ))}
+        </div>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <button
             onClick={onShuffle}
@@ -171,6 +190,7 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
               border: 'none', borderRadius: 9999,
               padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
               boxShadow: '0 4px 20px rgba(56,189,248,0.3)',
+              fontFamily: 'inherit',
             }}
           >
             🔄 Shuffle Feed
@@ -181,11 +201,23 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
               background: 'transparent', color: 'rgba(255,255,255,0.7)',
               border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 9999,
               padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'inherit',
             }}
           >
             ❤️ Saved
           </button>
         </div>
+        <button
+          onClick={() => router.push('/quiz')}
+          style={{
+            marginTop: 16, padding: '10px 20px', borderRadius: 9999,
+            backgroundColor: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)',
+            color: '#C084FC', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          🧭 Take the Travel Quiz
+        </button>
       </div>
     </div>
   );
