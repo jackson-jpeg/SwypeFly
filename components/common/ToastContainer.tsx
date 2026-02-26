@@ -143,6 +143,8 @@ export function ToastContainer() {
 
   return (
     <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
       style={{
         position: 'absolute',
         top: spacing['14'],
