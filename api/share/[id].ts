@@ -1,7 +1,11 @@
 // Dynamic OG share page — returns HTML with meta tags for social crawlers,
 // redirects real users to the SPA destination page.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
+import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../../services/appwriteServer';
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query;
@@ -16,10 +20,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, destId);
-    const city = dest.city || 'Amazing Destination';
-    const country = dest.country || '';
-    const tagline = dest.tagline || 'Discover cheap flights';
-    const imageUrl = dest.image_url || 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630';
+    const city = escapeHtml(dest.city || 'Amazing Destination');
+    const country = escapeHtml(dest.country || '');
+    const tagline = escapeHtml(dest.tagline || 'Discover cheap flights');
+    const imageUrl = encodeURI(dest.image_url || 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630');
     const price = dest.flight_price || '';
     const priceText = price ? ` from $${price}` : '';
 
