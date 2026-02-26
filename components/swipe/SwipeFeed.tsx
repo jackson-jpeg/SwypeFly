@@ -413,6 +413,38 @@ export function SwipeFeed() {
     return <ErrorState message="Failed to load destinations" onRetry={() => refetch()} />;
   }
 
+  // ── Empty state when filters yield no results ──
+  if (destinations.length === 0 && !isLoading && Platform.OS === 'web') {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        height: '100vh', backgroundColor: colors.navy, padding: 32, textAlign: 'center',
+      }}>
+        <span style={{ fontSize: 56, marginBottom: 16 }}>🔍</span>
+        <span style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
+          No destinations match your filters
+        </span>
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, maxWidth: 320, marginBottom: 24 }}>
+          Try adjusting your budget, region, or vibe filter to see more results.
+        </span>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => {
+              useFeedStore.getState().setVibeFilter(null);
+              useFeedStore.getState().setMaxPrice(null);
+              useFeedStore.getState().setRegionFilter('all');
+            }}
+            style={{
+              padding: '12px 28px', borderRadius: 9999, border: 'none',
+              background: colors.primary, color: '#fff', fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >Clear All Filters</button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Web ──
   if (Platform.OS === 'web') {
     return (
