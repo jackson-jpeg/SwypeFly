@@ -1,3 +1,11 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /settings
+Disallow: /quiz
+Disallow: /budget
+Disallow: /subscribe
+
 Sitemap: https://sogojet.com/sitemap.xml
