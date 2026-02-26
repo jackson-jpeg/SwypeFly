@@ -66,21 +66,51 @@ function useWebStyles() {
     document.title = 'SoGoJet — Discover Cheap Flights to Amazing Places';
 
     // OG meta tags for social sharing
-    const ogTags: Record<string, string> = {
-      'og:title': 'SoGoJet — Discover Cheap Flights to Amazing Places',
-      'og:description': 'Swipe through stunning destinations and find the cheapest flights from your city. TikTok meets travel deals.',
-      'og:type': 'website',
-      'og:url': 'https://sogojet.com',
-      'description': 'Swipe through stunning destinations and find the cheapest flights from your city. Discover deals to 200+ destinations worldwide.',
-    };
-    for (const [property, content] of Object.entries(ogTags)) {
-      const attr = property.startsWith('og:') ? 'property' : 'name';
-      if (!document.querySelector(`meta[${attr}="${property}"]`)) {
+    const metaTags: { attr: string; key: string; content: string }[] = [
+      { attr: 'property', key: 'og:title', content: 'SoGoJet — Discover Cheap Flights to Amazing Places' },
+      { attr: 'property', key: 'og:description', content: 'Swipe through stunning destinations and find the cheapest flights from your city. TikTok meets travel deals.' },
+      { attr: 'property', key: 'og:type', content: 'website' },
+      { attr: 'property', key: 'og:url', content: 'https://sogojet.com' },
+      { attr: 'property', key: 'og:image', content: 'https://sogojet.com/api/og' },
+      { attr: 'name', key: 'description', content: 'Swipe through stunning destinations and find the cheapest flights from your city. Discover deals to 200+ destinations worldwide.' },
+      { attr: 'name', key: 'twitter:card', content: 'summary_large_image' },
+      { attr: 'name', key: 'twitter:title', content: 'SoGoJet — Discover Cheap Flights' },
+      { attr: 'name', key: 'twitter:description', content: 'Swipe through stunning destinations and find the cheapest flights from your city.' },
+      { attr: 'name', key: 'twitter:image', content: 'https://sogojet.com/api/og' },
+    ];
+    for (const { attr, key, content } of metaTags) {
+      if (!document.querySelector(`meta[${attr}="${key}"]`)) {
         const meta = document.createElement('meta');
-        meta.setAttribute(attr, property);
+        meta.setAttribute(attr, key);
         meta.setAttribute('content', content);
         document.head.appendChild(meta);
       }
+    }
+
+    // JSON-LD structured data for SEO
+    if (!document.querySelector('script[type="application/ld+json"]')) {
+      const jsonLd = document.createElement('script');
+      jsonLd.type = 'application/ld+json';
+      jsonLd.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'SoGoJet',
+        url: 'https://sogojet.com',
+        description: 'Discover cheap flights to amazing places. Swipe, save, and book your next adventure.',
+        applicationCategory: 'TravelApplication',
+        operatingSystem: 'Web, iOS, Android',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'USD',
+        },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: 'https://sogojet.com/?search={search_term_string}',
+          'query-input': 'required name=search_term_string',
+        },
+      });
+      document.head.appendChild(jsonLd);
     }
 
     // PWA: add manifest link

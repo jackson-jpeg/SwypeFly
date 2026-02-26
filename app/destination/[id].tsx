@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Pressable, Platform, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useDestination } from '../../hooks/useSwipeFeed';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
@@ -49,17 +49,84 @@ export default function DestinationDetail() {
   if (!destination || error) {
     if (Platform.OS === 'web') {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: colors.dark.background }}>
-          <span style={{ color: colors.dark.text.primary, fontSize: fontSize['3xl'] }}>Destination not found</span>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          height: '100vh', backgroundColor: colors.dark.background, gap: 16, padding: 32,
+        }}>
+          <span style={{ fontSize: 48 }}>🔍</span>
+          <span style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold }}>
+            {error ? 'Something went wrong' : 'Destination not found'}
+          </span>
+          <span style={{ color: colors.dark.text.muted, fontSize: fontSize.md, textAlign: 'center', maxWidth: 320 }}>
+            {error ? 'We couldn\'t load this destination. Check your connection and try again.' : 'This destination may have been removed or the link is invalid.'}
+          </span>
+          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+            <button
+              onClick={() => router.back()}
+              style={{
+                padding: '10px 24px', borderRadius: radii.full, border: `1px solid ${colors.dark.border}`,
+                background: 'none', color: colors.dark.text.secondary, fontSize: fontSize.md,
+                fontWeight: fontWeight.semibold, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >Go Back</button>
+            {error && (
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: '10px 24px', borderRadius: radii.full, border: 'none',
+                  background: colors.primary, color: '#fff', fontSize: fontSize.md,
+                  fontWeight: fontWeight.semibold, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >Retry</button>
+            )}
+          </div>
         </div>
       );
     }
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dark.background }}>
-        <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['3xl'] }}>Destination not found</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dark.background, padding: 32 }}>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>🔍</Text>
+        <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, textAlign: 'center', marginBottom: 8 }}>
+          {error ? 'Something went wrong' : 'Destination not found'}
+        </Text>
+        <Text style={{ color: colors.dark.text.muted, fontSize: fontSize.md, textAlign: 'center', marginBottom: 20 }}>
+          {error ? 'Check your connection and try again.' : 'This destination may have been removed.'}
+        </Text>
+        <Pressable onPress={() => router.back()} style={{ paddingHorizontal: 24, paddingVertical: 10, borderRadius: 9999, backgroundColor: colors.primary }}>
+          <Text style={{ color: '#fff', fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>Go Back</Text>
+        </Pressable>
       </View>
     );
   }
+
+  // Dynamic SEO: update page title + OG meta for this destination
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !destination) return;
+    const prevTitle = document.title;
+    const price = destination.livePrice ?? destination.flightPrice;
+    document.title = `${destination.city}, ${destination.country} — From $${price} | SoGoJet`;
+
+    const ogUpdates: Record<string, string> = {
+      'og:title': `${destination.city}, ${destination.country} — Flights from $${price}`,
+      'og:description': destination.tagline || `Discover ${destination.city} with SoGoJet`,
+      'og:image': `https://sogojet.com/api/og?id=${destination.id}`,
+      'og:url': `https://sogojet.com/destination/${destination.id}`,
+    };
+    const originals: Record<string, string> = {};
+    for (const [key, value] of Object.entries(ogUpdates)) {
+      const el = document.querySelector(`meta[property="${key}"]`);
+      if (el) {
+        originals[key] = el.getAttribute('content') || '';
+        el.setAttribute('content', value);
+      }
+    }
+    return () => {
+      document.title = prevTitle;
+      for (const [key, value] of Object.entries(originals)) {
+        document.querySelector(`meta[property="${key}"]`)?.setAttribute('content', value);
+      }
+    };
+  }, [destination]);
 
   const saved = isSaved(destination.id);
   const images = destination.imageUrls?.length ? destination.imageUrls : [destination.imageUrl];

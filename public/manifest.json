@@ -3,6 +3,7 @@
   "name": "SoGoJet — Discover Cheap Flights",
   "description": "Swipe through stunning destinations and find the cheapest flights from your city.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0F172A",
   "theme_color": "#38BDF8",
@@ -21,5 +22,20 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Explore Destinations",
+      "short_name": "Explore",
+      "url": "/",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Saved Wishlist",
+      "short_name": "Saved",
+      "url": "/saved",
+      "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
 }

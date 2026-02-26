@@ -61,6 +61,12 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
               <img
                 src={url}
                 alt={`${city} ${i + 1}`}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.style.display = 'none';
+                  target.parentElement!.style.background = 'linear-gradient(135deg, #1E293B, #334155)';
+                }}
                 style={{
                   width: '100%',
                   height: '100%',
