@@ -390,7 +390,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
-    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter } = v.data;
+    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter, maxPrice } = v.data;
     const cursor = parsedCursor ?? 0;
 
     const allDestinations = await getDestinationsWithPrices(origin);
@@ -415,6 +415,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       destinations = destinations.filter((d) =>
         d.vibe_tags.some((t) => t.toLowerCase() === vibe),
       );
+    }
+
+    if (maxPrice != null) {
+      destinations = destinations.filter((d) => (d.live_price ?? d.flight_price) <= maxPrice);
     }
 
     let scored: ScoredDest[];

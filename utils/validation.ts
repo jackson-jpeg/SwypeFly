@@ -23,6 +23,7 @@ export const feedQuerySchema = z.object({
   vibeFilter: z.string().max(50).optional(),
   sortPreset: z.enum(['default', 'cheapest', 'trending', 'topRated']).optional(),
   regionFilter: z.enum(['all', 'domestic', 'caribbean', 'latam', 'europe', 'asia', 'africa-me', 'oceania']).optional(),
+  maxPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
 });
 
 // ─── Swipe endpoint ──────────────────────────────────────────────────
