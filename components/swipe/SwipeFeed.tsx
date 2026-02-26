@@ -242,6 +242,7 @@ export function SwipeFeed() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [regionOpen, setRegionOpen] = useState(false);
   const [budgetOpen, setBudgetOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [showTrending, setShowTrending] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [vibeFilter, setVibeFilter] = useState<VibeTag | null>(null);
@@ -328,6 +329,8 @@ export function SwipeFeed() {
       } else if (e.key === '/' || e.key === 'f') {
         e.preventDefault();
         setSearchOpen(true);
+      } else if (e.key === '?') {
+        setShowShortcuts(prev => !prev);
       }
     };
     document.addEventListener('keydown', handler);
@@ -784,6 +787,69 @@ export function SwipeFeed() {
             onShuffle={() => { refreshFeed(); resetToTop(); }}
             onSaved={() => router.push('/saved')}
           />
+        )}
+
+        {/* Keyboard shortcuts overlay */}
+        {showShortcuts && (
+          <div
+            onClick={() => setShowShortcuts(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              backgroundColor: 'rgba(0,0,0,0.75)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <div onClick={e => e.stopPropagation()} style={{
+              backgroundColor: 'rgba(15,23,42,0.95)', borderRadius: 20,
+              border: '1px solid rgba(255,255,255,0.1)', padding: 28,
+              maxWidth: 360, width: '90%',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <span style={{ color: '#fff', fontSize: 18, fontWeight: 800 }}>Keyboard Shortcuts</span>
+                <button
+                  onClick={() => setShowShortcuts(false)}
+                  aria-label="Close shortcuts"
+                  style={{
+                    width: 28, height: 28, borderRadius: 14,
+                    backgroundColor: 'rgba(255,255,255,0.1)', border: 'none',
+                    color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >✕</button>
+              </div>
+              {[
+                { keys: ['↓', 'Space'], desc: 'Next destination' },
+                { keys: ['↑'], desc: 'Previous destination' },
+                { keys: ['S'], desc: 'Save / unsave' },
+                { keys: ['Enter'], desc: 'View details' },
+                { keys: ['/', 'F'], desc: 'Open search' },
+                { keys: ['?'], desc: 'Toggle shortcuts' },
+              ].map(({ keys, desc }) => (
+                <div key={desc} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{desc}</span>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {keys.map(k => (
+                      <span key={k} style={{
+                        padding: '3px 8px', borderRadius: 6,
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 600,
+                        fontFamily: 'monospace',
+                      }}>{k}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div style={{ marginTop: 16, textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>
+                Press <span style={{ fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>?</span> anywhere to toggle
+              </div>
+            </div>
+          </div>
         )}
       </div>
       </>
