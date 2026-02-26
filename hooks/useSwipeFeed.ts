@@ -7,6 +7,7 @@ import { API_BASE, getAuthHeaders } from '../services/apiHelpers';
 import { destinations as staticDestinations } from '../data/destinations';
 import { scoreFeed } from '../utils/scoreFeed';
 import type { Destination, DestinationFeedPage } from '../types/destination';
+import { showToast } from '../stores/toastStore';
 
 // ─── Static data fallback ─────────────────────────────────────
 
@@ -98,6 +99,7 @@ async function fetchPage(
     return res.json();
   } catch {
     // API unavailable — fall back to static data
+    showToast('Showing cached destinations — prices may be estimated');
     return getStaticPage(cursor, vibeFilter, sortPreset, regionFilter ?? null);
   }
 }

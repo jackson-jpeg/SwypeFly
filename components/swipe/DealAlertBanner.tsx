@@ -59,7 +59,7 @@ export function DealAlertBanner() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>🔔 Get deal alerts from {departureCode}</span>
-        <span onClick={handleDismiss} style={{ color: 'rgba(255,255,255,0.3)', fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>×</span>
+        <button onClick={handleDismiss} aria-label="Dismiss deal alerts" style={{ color: 'rgba(255,255,255,0.3)', fontSize: 18, cursor: 'pointer', lineHeight: 1, background: 'none', border: 'none', padding: 0 }}>×</button>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input

@@ -1,18 +1,8 @@
 import { View, ActivityIndicator, Platform } from 'react-native';
-import { useEffect } from 'react';
 import { colors } from '../../constants/theme';
 
-const SPIN_CSS_ID = 'sg-spin-css';
-
 export function LoadingSpinner() {
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    if (document.getElementById(SPIN_CSS_ID)) return;
-    const style = document.createElement('style');
-    style.id = SPIN_CSS_ID;
-    style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
-    document.head.appendChild(style);
-  }, []);
+  // spin keyframes defined in global.css
 
   if (Platform.OS === 'web') {
     return (

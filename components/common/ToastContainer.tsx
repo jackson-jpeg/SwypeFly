@@ -2,7 +2,6 @@
 // Rendered in app/_layout.tsx above all screens.
 
 import { View, Text, Pressable, Platform } from 'react-native';
-import { useEffect } from 'react';
 import { useToastStore, type Toast, type ToastType } from '../../stores/toastStore';
 import { colors, radii, spacing, fontSize, fontWeight, shadows, animation } from '../../constants/theme';
 
@@ -110,27 +109,15 @@ function ToastItem({ toast }: { toast: Toast }) {
 export function ToastContainer() {
   const toasts = useToastStore((s) => s.toasts);
 
-  // Inject toast animation CSS on web
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const id = 'sg-toast-css';
-    if (document.getElementById(id)) return;
-    const style = document.createElement('style');
-    style.id = id;
-    style.textContent = `
-      @keyframes sg-toast-in {
-        from { opacity: 0; transform: translateY(-12px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-    `;
-    document.head.appendChild(style);
-  }, []);
+  // sg-toast-in keyframes defined in global.css
 
   if (toasts.length === 0) return null;
 
   if (Platform.OS === 'web') {
     return (
       <div
+        role="status"
+        aria-live="polite"
         style={{
           position: 'fixed',
           top: spacing['14'],

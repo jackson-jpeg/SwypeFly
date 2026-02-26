@@ -4,10 +4,9 @@ import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services
 const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.CRON_SECRET || '';
 
 function checkAuth(req: VercelRequest): boolean {
+  if (!ADMIN_SECRET) return false;
   const auth = req.headers.authorization;
-  if (auth && auth === `Bearer ${ADMIN_SECRET}`) return true;
-  const q = (req.query.secret as string) || '';
-  return q === ADMIN_SECRET;
+  return auth === `Bearer ${ADMIN_SECRET}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -144,7 +143,7 @@ function buildAuditPage(destinations: any[]): string {
 <div class="toast" id="toast"></div>
 <script>
 const DESTINATIONS = ${dataJson};
-const SECRET = new URLSearchParams(location.search).get('secret') || '';
+const SECRET = prompt('Enter admin secret:') || '';
 let filter = 'all';
 let searchQuery = '';
 
@@ -157,9 +156,9 @@ function toast(msg) {
 
 async function updateDest(id, updates) {
   try {
-    const r = await fetch('/api/admin/audit?secret=' + SECRET, {
+    const r = await fetch('/api/admin/audit', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SECRET },
       body: JSON.stringify({ id, ...updates }),
     });
     const j = await r.json();

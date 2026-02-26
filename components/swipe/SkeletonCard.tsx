@@ -1,27 +1,10 @@
 import { View, Platform, useWindowDimensions } from 'react-native';
-import { useEffect } from 'react';
 import { colors, radii } from '../../constants/theme';
 
 export function SkeletonCard() {
   const { width, height } = useWindowDimensions();
 
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const id = 'sg-skeleton-css';
-    if (document.getElementById(id)) return;
-    const style = document.createElement('style');
-    style.id = id;
-    style.textContent = `
-      @keyframes sg-shimmer {
-        0% { opacity: 0.15; }
-        50% { opacity: 0.35; }
-        100% { opacity: 0.15; }
-      }
-      .sg-shimmer { animation: sg-shimmer 2s ease-in-out infinite; }
-    `;
-    document.head.appendChild(style);
-    return () => { document.getElementById(id)?.remove(); };
-  }, []);
+  // sg-shimmer keyframes defined in global.css
 
   const shimmerBg = colors.shimmer;
   const shimmerHi = colors.shimmerHighlight;

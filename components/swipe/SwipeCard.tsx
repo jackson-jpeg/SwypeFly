@@ -224,31 +224,13 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             : isActive ? 'scale(1)' : 'scale(0.97)',
         }}
       >
-        <style>{`
-          @keyframes sg-heart-burst {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+        {/* Dynamic Ken Burns keyframes — per-card unique variants */}
+        <style>{kenBurnsVariants.map((v, i) => `
+          @keyframes ${kbId}-${i} {
+            0% { transform: ${v.from}; }
+            100% { transform: ${v.to}; }
           }
-          @keyframes sg-city-enter {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes sg-price-enter {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes sg-meta-enter {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          ${kenBurnsVariants.map((v, i) => `
-            @keyframes ${kbId}-${i} {
-              0% { transform: ${v.from}; }
-              100% { transform: ${v.to}; }
-            }
-          `).join('')}
-        `}</style>
+        `).join('')}</style>
 
         {/* Images — stack with crossfade + Ken Burns */}
         {shouldLoadImage && imageList.map((url, idx) => {

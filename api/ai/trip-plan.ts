@@ -1,13 +1,33 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
+import { tripPlanBodySchema, validateRequest } from '../../utils/validation';
+import { logApiError } from '../../utils/apiLogger';
+import { checkRateLimit, getClientIp } from '../../utils/rateLimit';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+/** Strip control characters and excess whitespace from user-supplied strings */
+function sanitize(input: string): string {
+  return input.replace(/[\r\n\t]/g, ' ').replace(/\s{2,}/g, ' ').trim();
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { city, country, duration = 5, style = 'comfort', interests } = req.body ?? {};
-  if (!city) return res.status(400).json({ error: 'city required' });
+  // Rate limit: 10 requests per minute per IP
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`trip-plan:${ip}`, 10, 60_000);
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests, please try again later' });
+  }
+
+  const v = validateRequest(tripPlanBodySchema, req.body);
+  if (!v.success) return res.status(400).json({ error: v.error });
+
+  const { city, country, duration, style, interests } = v.data;
+  const safeCity = sanitize(city);
+  const safeCountry = sanitize(country || '');
+  const safeInterests = interests ? sanitize(interests) : '';
 
   const styleDesc: Record<string, string> = {
     budget: 'budget-friendly options, hostels, street food, free activities',
@@ -15,10 +35,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     luxury: 'high-end hotels, fine dining, premium experiences, private tours',
   };
 
-  const prompt = `Create a ${duration}-day travel itinerary for ${city}, ${country || ''}.
+  const prompt = `Create a ${duration}-day travel itinerary for ${safeCity}${safeCountry ? `, ${safeCountry}` : ''}.
 
 Travel style: ${style} (${styleDesc[style] || styleDesc.comfort})
-${interests ? `Interests: ${interests}` : ''}
+${safeInterests ? `Interests: ${safeInterests}` : ''}
 
 Format as a day-by-day plan. For each day include:
 - A theme/title for the day
@@ -49,6 +69,7 @@ Use emojis sparingly for visual appeal. No markdown headers — use plain text w
     }
     res.end();
   } catch (err: unknown) {
+    logApiError('api/ai/trip-plan', err);
     const message = err instanceof Error ? err.message : 'AI generation failed';
     if (!res.headersSent) {
       res.status(500).json({ error: message });

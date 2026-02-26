@@ -1,3 +1,127 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Shared keyframes (extracted from component inline styles) ── */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes sg-heart-burst {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+}
+
+@keyframes sg-city-enter {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sg-price-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sg-meta-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sg-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-12px); opacity: 1; }
+}
+
+@keyframes sg-fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sg-stats-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes sg-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes sg-shimmer {
+  0% { opacity: 0.15; }
+  50% { opacity: 0.35; }
+  100% { opacity: 0.15; }
+}
+
+.sg-shimmer { animation: sg-shimmer 2s ease-in-out infinite; }
+
+@keyframes sg-toast-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes sg-search-open {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sg-trending-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sg-pin-pulse {
+  0%, 100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+  50% { transform: translate(-50%, -100%) scale(1.2); opacity: 0.8; }
+}
+
+@keyframes sg-welcome-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes sg-welcome-fade {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sg-welcome-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.2); }
+  50% { box-shadow: 0 0 40px rgba(56,189,248,0.4); }
+}
+
+/* ── Feed scroll snap ── */
+
+.sg-feed {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.sg-feed::-webkit-scrollbar { display: none; }
+
+.sg-card-snap {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.sg-card-snap:first-child {
+  animation: sg-fade-in 0.6s ease-out;
+}
+
+.sg-swipe-hint {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  animation: sg-bounce 1.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 0.4s;
+}

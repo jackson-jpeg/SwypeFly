@@ -44,7 +44,7 @@ export function CompareModal({ destination, visible, onClose }: CompareModalProp
       <div style={{ maxWidth: 500, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: 0 }}>Compare</h2>
-          <span onClick={onClose} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24, cursor: 'pointer' }}>✕</span>
+          <button onClick={onClose} aria-label="Close comparison" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24, cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>✕</button>
         </div>
 
         {!compareWith ? (

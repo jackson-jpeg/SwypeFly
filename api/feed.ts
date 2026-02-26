@@ -212,6 +212,9 @@ function softShuffle<T>(items: T[], rand: () => number, windowSize = 5): T[] {
 }
 
 // ─── In-memory cache (per origin, 10-min TTL) ───────────────────────
+// NOTE: This is a best-effort cache that clears on Vercel cold starts.
+// Provides fast responses for warm instances but does not persist.
+// For shared caching across instances, consider Upstash Redis.
 
 const destCache = new Map<string, { data: ScoredDest[]; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;

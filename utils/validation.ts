@@ -84,9 +84,20 @@ export const priceCheckQuerySchema = z.object({
 });
 
 export const tripPlanBodySchema = z.object({
-  destination_id: uuid,
+  destination_id: uuid.optional(),
   city: z.string().min(1).max(100),
-  country: z.string().min(1).max(100),
+  country: z.string().max(100).optional(),
+  duration: z.number().int().min(1).max(30).optional().default(5),
+  style: z.enum(['budget', 'comfort', 'luxury']).optional().default('comfort'),
+  interests: z.string().max(500).optional(),
+});
+
+// ─── Price alert endpoint ────────────────────────────────────────────
+
+export const priceAlertBodySchema = z.object({
+  destination_id: uuid,
+  target_price: z.number().positive().max(100000),
+  email: z.string().email().max(255).optional(),
 });
 
 // ─── Validate helper ─────────────────────────────────────────────────

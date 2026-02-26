@@ -1,4 +1,5 @@
-import { Platform } from 'react-native';
+import { View, Text, FlatList, Pressable, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { destinations } from '../../data/destinations';
 import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
@@ -24,11 +25,59 @@ function getSimilar(current: Destination): Destination[] {
     .map(s => s.dest);
 }
 
+function NativeSimilarCard({ dest }: { dest: Destination }) {
+  const price = dest.livePrice ?? dest.flightPrice;
+  return (
+    <Pressable
+      onPress={() => router.push(`/destination/${dest.id}`)}
+      style={{
+        width: 180, marginRight: 12, borderRadius: 16, overflow: 'hidden',
+        backgroundColor: colors.card.background,
+      }}
+    >
+      <Image
+        source={{ uri: dest.imageUrl }}
+        style={{ width: 180, height: 120 }}
+        contentFit="cover"
+      />
+      <View style={{ padding: 10 }}>
+        <Text style={{ color: colors.card.textPrimary, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>
+          {dest.city}
+        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+          <Text style={{ color: colors.card.textSecondary, fontSize: 12 }}>{dest.country}</Text>
+          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>${price}</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export function SimilarDestinations({ current }: SimilarDestinationsProps) {
   const similar = getSimilar(current);
   if (similar.length === 0) return null;
 
-  if (Platform.OS !== 'web') return null; // TODO: native
+  if (Platform.OS !== 'web') {
+    return (
+      <View style={{ marginTop: spacing['2'] }}>
+        <Text style={{
+          color: colors.text.primary,
+          fontSize: fontSize['2xl'],
+          fontWeight: fontWeight.bold,
+          marginBottom: spacing['4'],
+        }}>
+          Similar Destinations
+        </Text>
+        <FlatList
+          data={similar}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => <NativeSimilarCard dest={item} />}
+        />
+      </View>
+    );
+  }
 
   return (
     <div style={{ marginTop: spacing['2'] }}>
@@ -44,6 +93,9 @@ export function SimilarDestinations({ current }: SimilarDestinationsProps) {
             <div
               key={dest.id}
               onClick={() => router.push(`/destination/${dest.id}`)}
+              role="link"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/destination/${dest.id}`); }}
               style={{
                 borderRadius: 16, overflow: 'hidden', cursor: 'pointer',
                 position: 'relative', aspectRatio: '3/2',
@@ -54,7 +106,7 @@ export function SimilarDestinations({ current }: SimilarDestinationsProps) {
             >
               <img
                 src={dest.imageUrl}
-                alt={dest.city}
+                alt={`${dest.city}, ${dest.country}`}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 loading="lazy"
               />

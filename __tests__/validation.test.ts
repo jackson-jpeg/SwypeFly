@@ -4,6 +4,8 @@ import {
   destinationQuerySchema,
   pricesQuerySchema,
   hotelPricesQuerySchema,
+  priceAlertBodySchema,
+  tripPlanBodySchema,
   validateRequest,
 } from '../utils/validation';
 
@@ -163,6 +165,90 @@ describe('hotelPricesQuerySchema', () => {
 
   it('rejects numeric destination', () => {
     const result = validateRequest(hotelPricesQuerySchema, { destination: '123' });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── priceAlertBodySchema ────────────────────────────────────────────
+
+describe('priceAlertBodySchema', () => {
+  const validUUID = '550e8400-e29b-41d4-a716-446655440000';
+
+  it('accepts valid alert', () => {
+    const result = validateRequest(priceAlertBodySchema, {
+      destination_id: validUUID,
+      target_price: 300,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts alert with email', () => {
+    const result = validateRequest(priceAlertBodySchema, {
+      destination_id: validUUID,
+      target_price: 300,
+      email: 'user@example.com',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects negative target_price', () => {
+    const result = validateRequest(priceAlertBodySchema, {
+      destination_id: validUUID,
+      target_price: -50,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid email', () => {
+    const result = validateRequest(priceAlertBodySchema, {
+      destination_id: validUUID,
+      target_price: 300,
+      email: 'not-an-email',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing destination_id', () => {
+    const result = validateRequest(priceAlertBodySchema, { target_price: 300 });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── tripPlanBodySchema ─────────────────────────────────────────────
+
+describe('tripPlanBodySchema', () => {
+  it('accepts valid trip plan with defaults', () => {
+    const result = validateRequest(tripPlanBodySchema, { city: 'Paris' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.duration).toBe(5);
+      expect(result.data.style).toBe('comfort');
+    }
+  });
+
+  it('accepts full trip plan', () => {
+    const result = validateRequest(tripPlanBodySchema, {
+      city: 'Tokyo',
+      country: 'Japan',
+      duration: 7,
+      style: 'luxury',
+      interests: 'sushi, temples',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects missing city', () => {
+    const result = validateRequest(tripPlanBodySchema, { country: 'France' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects duration > 30', () => {
+    const result = validateRequest(tripPlanBodySchema, { city: 'Paris', duration: 50 });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid style', () => {
+    const result = validateRequest(tripPlanBodySchema, { city: 'Paris', style: 'ultra' });
     expect(result.success).toBe(false);
   });
 });

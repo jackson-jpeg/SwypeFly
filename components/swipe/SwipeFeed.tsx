@@ -135,16 +135,7 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: `linear-gradient(135deg, ${colors.navy} 0%, #1a1a3e 50%, ${colors.navy} 100%)`,
     }}>
-      <style>{`
-        @keyframes sg-stats-pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        @keyframes sg-float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-      `}</style>
+      {/* Keyframes in global.css */}
       <div style={{ textAlign: 'center', padding: '0 32px' }}>
         <div style={{ fontSize: 56, marginBottom: 20, animation: 'sg-float 3s ease-in-out infinite' }}>🌍</div>
         <p style={{ margin: 0, color: '#fff', fontSize: 26, fontWeight: 800, letterSpacing: -0.5, marginBottom: 24 }}>
@@ -266,44 +257,7 @@ export function SwipeFeed() {
     } catch {}
   }, []);
 
-  // Scroll-snap CSS for web
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const id = 'sogojet-snap-css';
-    if (document.getElementById(id)) return;
-    const style = document.createElement('style');
-    style.id = id;
-    style.textContent = `
-      .sg-feed {
-        scroll-snap-type: y mandatory;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior-y: contain;
-      }
-      .sg-feed::-webkit-scrollbar { display: none; }
-      .sg-card-snap {
-        scroll-snap-align: start;
-        scroll-snap-stop: always;
-      }
-      @keyframes sg-bounce {
-        0%, 100% { transform: translateY(0); opacity: 0.6; }
-        50% { transform: translateY(-12px); opacity: 1; }
-      }
-      @keyframes sg-fade-in {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .sg-card-snap:first-child { animation: sg-fade-in 0.6s ease-out; }
-      .sg-swipe-hint {
-        position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-        display: flex; flex-direction: column; align-items: center; gap: 6px;
-        animation: sg-bounce 1.8s ease-in-out infinite;
-        pointer-events: none; z-index: 20;
-        transition: opacity 0.4s;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => { document.getElementById(id)?.remove(); };
-  }, []);
+  // Scroll-snap CSS now in global.css — no runtime style injection needed
 
   // Image preloading for web
   useEffect(() => {
@@ -460,8 +414,9 @@ export function SwipeFeed() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
             {/* Region filter */}
             <div style={{ position: 'relative' }}>
-              <span
+              <button
                 onClick={() => setRegionOpen(!regionOpen)}
+                aria-label="Filter by region"
                 style={{
                   color: regionFilter !== 'all' ? '#38BDF8' : 'rgba(255,255,255,0.7)',
                   fontSize: 12, fontWeight: 700, cursor: 'pointer',
@@ -476,7 +431,7 @@ export function SwipeFeed() {
                 {REGION_OPTIONS.find(r => r.key === regionFilter)?.emoji || '🌍'}{' '}
                 {REGION_OPTIONS.find(r => r.key === regionFilter)?.label || 'Everywhere'}
                 <span style={{ fontSize: 8, opacity: 0.6 }}>▼</span>
-              </span>
+              </button>
               {regionOpen && (
                 <>
                   <div
@@ -524,30 +479,35 @@ export function SwipeFeed() {
                 </>
               )}
             </div>
-            <span style={{
-              color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
-              textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-              cursor: 'pointer',
-            }}
+            <button
               onClick={() => router.push('/settings')}
+              aria-label={`Departure city: ${departureCode}`}
+              style={{
+                color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
+                textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+                cursor: 'pointer', background: 'none', border: 'none', padding: 0,
+              }}
             >
               ✈️ {departureCode}
-            </span>
-            <span
+            </button>
+            <button
               onClick={() => setShowFullMap(true)}
+              aria-label="Open map view"
               style={{
                 color: 'rgba(255,255,255,0.8)', fontSize: 16, cursor: 'pointer',
                 textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+                background: 'none', border: 'none', padding: 0,
               }}
-              title="Map view"
-            >🗺️</span>
-            <span
+            >🗺️</button>
+            <button
               onClick={() => setSearchOpen(true)}
+              aria-label="Search destinations"
               style={{
                 color: 'rgba(255,255,255,0.8)', fontSize: 18, cursor: 'pointer',
                 textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+                background: 'none', border: 'none', padding: 0,
               }}
-            >🔍</span>
+            >🔍</button>
           </div>
         </div>
 
@@ -613,26 +573,37 @@ export function SwipeFeed() {
         <DealsTicker />
         <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
 
-        {destinations.map((destination, index) => (
-          <div key={destination.id} className="sg-card-snap" style={{ height: '100vh', width: '100%', position: 'relative' }}>
-            <SwipeCard
-              destination={destination}
-              isActive={index === activeIndex}
-              isPreloaded={index >= activeIndex - PRELOAD_BEHIND && index <= activeIndex + PRELOAD_AHEAD}
-              isSaved={isSaved(destination.id)}
-              onToggleSave={() => handleToggleSave(destination.id)}
-              index={index}
-            />
-            {index === 0 && showHint && (
-              <div className="sg-swipe-hint">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 19V5M5 12l7-7 7 7" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase' as const }}>Swipe to explore</span>
-              </div>
-            )}
-          </div>
-        ))}
+        {/* Virtualized: only render cards within ±3 of active index, use spacer divs for the rest */}
+        {activeIndex > 3 && (
+          <div style={{ height: `${(activeIndex - 3) * 100}vh`, width: '100%' }} />
+        )}
+        {destinations.map((destination, index) => {
+          // Only render cards within render window
+          if (index < activeIndex - 3 || index > activeIndex + 3) return null;
+          return (
+            <div key={destination.id} className="sg-card-snap" style={{ height: '100vh', width: '100%', position: 'relative' }}>
+              <SwipeCard
+                destination={destination}
+                isActive={index === activeIndex}
+                isPreloaded={index >= activeIndex - PRELOAD_BEHIND && index <= activeIndex + PRELOAD_AHEAD}
+                isSaved={isSaved(destination.id)}
+                onToggleSave={() => handleToggleSave(destination.id)}
+                index={index}
+              />
+              {index === 0 && showHint && (
+                <div className="sg-swipe-hint">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 19V5M5 12l7-7 7 7" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase' as const }}>Swipe to explore</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {activeIndex + 3 < destinations.length - 1 && (
+          <div style={{ height: `${(destinations.length - 1 - (activeIndex + 3)) * 100}vh`, width: '100%' }} />
+        )}
 
         {/* Deal alert banner — shows after 5 cards */}
         {activeIndex >= 5 && <DealAlertBanner />}

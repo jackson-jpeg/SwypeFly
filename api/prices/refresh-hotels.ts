@@ -9,13 +9,13 @@ export const maxDuration = 60;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return res.status(503).json({ error: 'CRON_SECRET not configured' });
+  }
   const authHeader = req.headers.authorization;
-
-  if (cronSecret) {
-    const provided = authHeader?.replace('Bearer ', '') || '';
-    if (provided !== cronSecret) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  const provided = authHeader?.replace('Bearer ', '') || '';
+  if (provided !== cronSecret) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const v = validateRequest(hotelPricesQuerySchema, req.query);
