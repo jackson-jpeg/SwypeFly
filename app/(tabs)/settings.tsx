@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Platform, Pressable, Modal, FlatList } from 'react-native';
+import { View, Text, ScrollView, Platform, Pressable, Switch, Modal, FlatList } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { useUIStore } from '../../stores/uiStore';
@@ -35,6 +35,9 @@ export default function SettingsTab() {
   const departureCity = useUIStore((s) => s.departureCity);
   const departureCode = useUIStore((s) => s.departureCode);
   const setDeparture = useUIStore((s) => s.setDeparture);
+  const hapticsEnabled = useUIStore((s) => s.hapticsEnabled);
+  const theme = useUIStore((s) => s.theme);
+  const currency = useUIStore((s) => s.currency);
   const [showDepartureModal, setShowDepartureModal] = useState(false);
 
   const handleSignOut = async () => {
@@ -91,6 +94,116 @@ export default function SettingsTab() {
               </select>
             </div>
 
+            {/* Preferences */}
+            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
+              Preferences
+            </span>
+
+            {/* Haptics toggle */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: CARD, borderRadius: 14, padding: '16px 18px',
+              border: `1px solid ${BORDER}`,
+            }}>
+              <div>
+                <span style={{ color: TEXT, fontSize: 15, fontWeight: 500, display: 'block' }}>
+                  📳 Haptic Feedback
+                </span>
+                <span style={{ color: MUTED, fontSize: 12, marginTop: 2, display: 'block' }}>
+                  Vibrate on swipe actions
+                </span>
+              </div>
+              <button
+                onClick={() => useUIStore.getState().toggleHaptics()}
+                role="switch"
+                aria-checked={hapticsEnabled}
+                aria-label="Toggle haptic feedback"
+                style={{
+                  width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  backgroundColor: hapticsEnabled ? ACCENT : '#475569',
+                  position: 'relative', transition: 'background-color 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2, left: hapticsEnabled ? 22 : 2,
+                  width: 24, height: 24, borderRadius: 12,
+                  backgroundColor: '#fff', transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                }} />
+              </button>
+            </div>
+
+            {/* Theme selector */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: CARD, borderRadius: 14, padding: '16px 18px',
+              border: `1px solid ${BORDER}`,
+            }}>
+              <div>
+                <span style={{ color: TEXT, fontSize: 15, fontWeight: 500, display: 'block' }}>
+                  🎨 Theme
+                </span>
+                <span style={{ color: MUTED, fontSize: 12, marginTop: 2, display: 'block' }}>
+                  App appearance
+                </span>
+              </div>
+              <select
+                value={theme}
+                onChange={(e) => useUIStore.getState().setTheme(e.target.value as 'dark' | 'light' | 'system')}
+                aria-label="Select theme"
+                style={{
+                  background: '#334155', color: TEXT, border: `1px solid ${BORDER}`,
+                  borderRadius: 8, padding: '8px 32px 8px 12px', fontSize: 14, cursor: 'pointer',
+                  appearance: 'none', WebkitAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  textTransform: 'capitalize' as const,
+                }}
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="system">System</option>
+              </select>
+            </div>
+
+            {/* Currency */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: CARD, borderRadius: 14, padding: '16px 18px',
+              border: `1px solid ${BORDER}`,
+            }}>
+              <div>
+                <span style={{ color: TEXT, fontSize: 15, fontWeight: 500, display: 'block' }}>
+                  💵 Currency
+                </span>
+                <span style={{ color: MUTED, fontSize: 12, marginTop: 2, display: 'block' }}>
+                  Display prices in
+                </span>
+              </div>
+              <select
+                value={currency}
+                onChange={(e) => useUIStore.getState().setCurrency(e.target.value)}
+                aria-label="Select currency"
+                style={{
+                  background: '#334155', color: TEXT, border: `1px solid ${BORDER}`,
+                  borderRadius: 8, padding: '8px 32px 8px 12px', fontSize: 14, cursor: 'pointer',
+                  appearance: 'none', WebkitAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                }}
+              >
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="CAD">CAD (C$)</option>
+                <option value="AUD">AUD (A$)</option>
+                <option value="JPY">JPY (¥)</option>
+              </select>
+            </div>
+
             {/* Account */}
             <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
               Account
@@ -143,18 +256,19 @@ export default function SettingsTab() {
               { label: 'Privacy Policy', route: '/legal/privacy' },
               { label: 'Terms of Service', route: '/legal/terms' },
             ].map((item) => (
-              <div
+              <button
                 key={item.label}
                 onClick={() => router.push(item.route as any)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   backgroundColor: CARD, borderRadius: 14, padding: '16px 18px',
                   border: `1px solid ${BORDER}`, cursor: 'pointer',
+                  width: '100%', textAlign: 'left', fontFamily: 'inherit',
                 }}
               >
                 <span style={{ color: TEXT, fontSize: 15, fontWeight: 500 }}>{item.label}</span>
                 <span style={{ color: MUTED, fontSize: 14 }}>›</span>
-              </div>
+              </button>
             ))}
 
             {/* About */}
@@ -195,6 +309,45 @@ export default function SettingsTab() {
             </View>
             <Text style={{ color: MUTED, fontSize: 14 }}>Change ›</Text>
           </Pressable>
+
+          {/* Preferences */}
+          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Preferences</Text>
+
+          {/* Haptics toggle */}
+          <View style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: BORDER }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={{ color: TEXT, fontSize: 15, fontWeight: '500' }}>Haptic Feedback</Text>
+              <Text style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>Vibrate on swipe actions</Text>
+            </View>
+            <Switch
+              value={hapticsEnabled}
+              onValueChange={() => useUIStore.getState().toggleHaptics()}
+              trackColor={{ false: '#475569', true: ACCENT }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          {/* Theme */}
+          <View style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: BORDER }}>
+            <Text style={{ color: TEXT, fontSize: 15, fontWeight: '500', marginBottom: 10 }}>Theme</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {(['dark', 'light', 'system'] as const).map((t) => (
+                <Pressable
+                  key={t}
+                  onPress={() => useUIStore.getState().setTheme(t)}
+                  style={{
+                    flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
+                    backgroundColor: theme === t ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.05)',
+                    borderWidth: 1, borderColor: theme === t ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <Text style={{ color: theme === t ? ACCENT : MUTED, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' }}>
+                    {t}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
           {/* Account */}
           <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Account</Text>

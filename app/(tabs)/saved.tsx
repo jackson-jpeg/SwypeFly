@@ -30,8 +30,9 @@ async function fetchDestination(id: string, origin: string): Promise<Destination
 function SortChip({ label, icon, isActive, onPress }: { label: string; icon: string; isActive: boolean; onPress: () => void }) {
   if (Platform.OS === 'web') {
     return (
-      <div
+      <button
         onClick={onPress}
+        aria-pressed={isActive}
         style={{
           padding: '7px 16px',
           borderRadius: radii.full,
@@ -42,6 +43,7 @@ function SortChip({ label, icon, isActive, onPress }: { label: string; icon: str
           whiteSpace: 'nowrap',
           display: 'flex', alignItems: 'center', gap: 6,
           boxShadow: isActive ? shadows.web.primary : 'none',
+          fontFamily: 'inherit',
         }}
       >
         <span style={{ fontSize: 12 }}>{icon}</span>
@@ -52,7 +54,7 @@ function SortChip({ label, icon, isActive, onPress }: { label: string; icon: str
         }}>
           {label}
         </span>
-      </div>
+      </button>
     );
   }
 
@@ -134,8 +136,9 @@ function ShareWishlistButton({ count }: { count: number }) {
   }, [count]);
 
   return (
-    <div
+    <button
       onClick={handleShare}
+      aria-label="Share wishlist"
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
         padding: '10px 20px', borderRadius: radii.full,
@@ -144,6 +147,7 @@ function ShareWishlistButton({ count }: { count: number }) {
           : 'linear-gradient(135deg, #38BDF8, #0284C7)',
         cursor: 'pointer', transition: 'all 0.3s ease',
         boxShadow: shadows.web.primary,
+        border: 'none', fontFamily: 'inherit',
       }}
       onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
       onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
@@ -152,7 +156,7 @@ function ShareWishlistButton({ count }: { count: number }) {
       <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>
         {copied ? 'Copied!' : 'Share Wishlist'}
       </span>
-    </div>
+    </button>
   );
 }
 

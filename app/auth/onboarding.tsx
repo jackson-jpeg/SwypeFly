@@ -5,6 +5,7 @@ import { useAuthContext } from '../../hooks/AuthContext';
 import { databases, DATABASE_ID, COLLECTIONS } from '../../services/appwrite';
 import { ID, Permission, Role } from 'appwrite';
 import { useUIStore } from '../../stores/uiStore';
+import { Query } from 'appwrite';
 
 type TravelerType = 'beach' | 'city' | 'adventure' | 'culture';
 type BudgetLevel = 'budget' | 'comfortable' | 'luxury';
@@ -80,26 +81,48 @@ function WebOnboarding() {
     if (departureCity) {
       setDeparture(departureCity.city, departureCity.code, true);
     }
+
+    const prefData = {
+      user_id: user.id,
+      traveler_type: travelerType,
+      budget_level: budgetLevel,
+      budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
+      has_completed_onboarding: true,
+      departure_city: departureCity?.city || 'Tampa',
+      departure_code: departureCity?.code || 'TPA',
+      ...(TYPE_TO_PREFS[travelerType] || {}),
+    };
+
     try {
       await databases.createDocument(
         DATABASE_ID,
         COLLECTIONS.userPreferences,
         ID.unique(),
-        {
-          user_id: user.id,
-          traveler_type: travelerType,
-          budget_level: budgetLevel,
-          budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
-          has_completed_onboarding: true,
-          departure_city: departureCity?.city || 'Tampa',
-          departure_code: departureCity?.code || 'TPA',
-          ...(TYPE_TO_PREFS[travelerType] || {}),
-        },
+        prefData,
         [Permission.read(Role.user(user.id)), Permission.update(Role.user(user.id))],
       );
     } catch {
-      // May already exist — try update instead
+      // Document may already exist — try updating instead
+      try {
+        const existing = await databases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
+          Query.equal('user_id', user.id),
+          Query.limit(1),
+        ]);
+        if (existing.documents.length > 0) {
+          const { user_id: _, ...updates } = prefData;
+          await databases.updateDocument(
+            DATABASE_ID,
+            COLLECTIONS.userPreferences,
+            existing.documents[0].$id,
+            updates,
+          );
+        }
+      } catch {
+        // Best effort — continue to main app
+      }
     }
+
+    useUIStore.getState().setOnboarded();
     setSaving(false);
     router.replace('/(tabs)');
   };
@@ -446,26 +469,47 @@ function NativeOnboarding() {
     if (departureCity) {
       setDeparture(departureCity.city, departureCity.code, true);
     }
+
+    const prefData = {
+      user_id: user.id,
+      traveler_type: travelerType,
+      budget_level: budgetLevel,
+      budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
+      has_completed_onboarding: true,
+      departure_city: departureCity?.city || 'Tampa',
+      departure_code: departureCity?.code || 'TPA',
+      ...(TYPE_TO_PREFS[travelerType] || {}),
+    };
+
     try {
       await databases.createDocument(
         DATABASE_ID,
         COLLECTIONS.userPreferences,
         ID.unique(),
-        {
-          user_id: user.id,
-          traveler_type: travelerType,
-          budget_level: budgetLevel,
-          budget_numeric: BUDGET_TO_NUMERIC[budgetLevel] || 2,
-          has_completed_onboarding: true,
-          departure_city: departureCity?.city || 'Tampa',
-          departure_code: departureCity?.code || 'TPA',
-          ...(TYPE_TO_PREFS[travelerType] || {}),
-        },
+        prefData,
         [Permission.read(Role.user(user.id)), Permission.update(Role.user(user.id))],
       );
     } catch {
-      // May already exist — try update instead
+      try {
+        const existing = await databases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
+          Query.equal('user_id', user.id),
+          Query.limit(1),
+        ]);
+        if (existing.documents.length > 0) {
+          const { user_id: _, ...updates } = prefData;
+          await databases.updateDocument(
+            DATABASE_ID,
+            COLLECTIONS.userPreferences,
+            existing.documents[0].$id,
+            updates,
+          );
+        }
+      } catch {
+        // Best effort
+      }
     }
+
+    useUIStore.getState().setOnboarded();
     setSaving(false);
     router.replace('/(tabs)');
   };

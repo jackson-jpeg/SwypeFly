@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE, getAuthHeaders } from '../services/apiHelpers';
+import { API_BASE } from '../services/apiHelpers';
 
 // ─── Live Updates (weather/advisories) ──────────────────────────────
 
@@ -90,54 +90,5 @@ export function useDestinationGuide(city: string | undefined, country: string | 
   });
 }
 
-// ─── Price Check ────────────────────────────────────────────────────
-
-interface PriceCheckData {
-  price: number;
-  source: string;
-  url: string;
-}
-
-async function fetchPriceCheck(origin: string, destination: string): Promise<PriceCheckData> {
-  const params = new URLSearchParams({ origin, destination });
-  const res = await fetch(`${API_BASE}/api/ai/price-check?${params}`);
-  if (!res.ok) throw new Error(`Price check failed: ${res.status}`);
-  return res.json();
-}
-
-export function usePriceCheck(origin: string, destination: string) {
-  return useQuery({
-    queryKey: ['ai', 'price-check', origin, destination],
-    queryFn: () => fetchPriceCheck(origin, destination),
-    enabled: false, // On-demand only — call refetch()
-    staleTime: 30 * 60 * 1000, // 30 min
-    retry: 1,
-  });
-}
-
-// ─── Trip Plan ──────────────────────────────────────────────────────
-
-interface TripPlanData {
-  plan: string;
-}
-
-async function fetchTripPlan(destinationId: string, city: string, country: string): Promise<TripPlanData> {
-  const authHeaders = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/ai/trip-plan`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
-    body: JSON.stringify({ destination_id: destinationId, city, country }),
-  });
-  if (!res.ok) throw new Error(`Trip plan failed: ${res.status}`);
-  return res.json();
-}
-
-export function useTripPlan(destinationId: string | undefined, city: string | undefined, country: string | undefined) {
-  return useQuery({
-    queryKey: ['ai', 'trip-plan', destinationId, city, country],
-    queryFn: () => fetchTripPlan(destinationId!, city!, country!),
-    enabled: false, // On-demand — call refetch()
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours
-    retry: 1,
-  });
-}
+// NOTE: usePriceCheck and useTripPlan were removed as dead code.
+// The AiTripPlanner component uses streaming fetch directly (not React Query).

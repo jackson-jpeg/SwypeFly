@@ -13,10 +13,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id, origin } = v.data;
 
   try {
-    // Fetch destination from Appwrite
-    const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, id);
-
-    if (!dest) {
+    // Fetch destination from Appwrite (getDocument throws on 404)
+    let dest;
+    try {
+      dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, id);
+    } catch {
       return res.status(404).json({ error: 'Destination not found' });
     }
 

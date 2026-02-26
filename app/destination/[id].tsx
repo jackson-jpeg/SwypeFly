@@ -35,7 +35,6 @@ export default function DestinationDetail() {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: colors.dark.background }}>
           <div style={{ width: 24, height: 24, border: `3px solid ${colors.dark.border}`, borderTopColor: colors.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       );
     }
@@ -89,6 +88,7 @@ export default function DestinationDetail() {
         {/* Close button */}
         <button
           onClick={() => router.back()}
+          aria-label="Go back"
           style={{
             position: 'fixed', top: spacing['4'], left: spacing['4'], zIndex: 50,
             width: layout.closeBtnSize, height: layout.closeBtnSize, borderRadius: layout.closeBtnSize / 2,
@@ -200,7 +200,7 @@ export default function DestinationDetail() {
               boxShadow: shadows.web.md,
             }}>
               <div style={{
-                color: '#38BDF8', fontSize: 10, fontWeight: fontWeight.bold,
+                color: colors.primary, fontSize: 10, fontWeight: fontWeight.bold,
                 letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: spacing['2'],
               }}>
                 ✈️ FLIGHT DEAL
@@ -237,7 +237,7 @@ export default function DestinationDetail() {
                 }}
                 style={{
                   width: '100%', padding: '12px 0', borderRadius: radii.lg,
-                  backgroundColor: '#38BDF8', border: 'none',
+                  backgroundColor: colors.primary, border: 'none',
                   color: '#fff', fontSize: fontSize['2xl'], fontWeight: fontWeight.bold,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
@@ -286,7 +286,7 @@ export default function DestinationDetail() {
                   flex: 1, padding: '14px 0', borderRadius: radii.xl,
                   backgroundColor: colors.dark.surface,
                   border: `1px solid ${colors.dark.border}`,
-                  color: '#38BDF8', fontSize: fontSize.lg, fontWeight: fontWeight.bold,
+                  color: colors.primary, fontSize: fontSize.lg, fontWeight: fontWeight.bold,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
               >🛏️ Find Hotels</button>
@@ -296,7 +296,7 @@ export default function DestinationDetail() {
                   flex: 1, padding: '14px 0', borderRadius: radii.xl,
                   backgroundColor: colors.dark.surface,
                   border: `1px solid ${colors.dark.border}`,
-                  color: '#38BDF8', fontSize: fontSize.lg, fontWeight: fontWeight.bold,
+                  color: colors.primary, fontSize: fontSize.lg, fontWeight: fontWeight.bold,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
               >🥾 Browse Activities</button>
@@ -426,6 +426,7 @@ export default function DestinationDetail() {
               >{shareCopied ? '✓ Copied' : '↗ Share'}</button>
               <button
                 onClick={() => setCompareOpen(true)}
+                aria-label="Compare destinations"
                 style={{
                   padding: '14px 18px', borderRadius: radii.xl,
                   backgroundColor: colors.dark.surfaceElevated,

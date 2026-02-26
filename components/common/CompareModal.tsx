@@ -76,7 +76,7 @@ export function CompareModal({ destination, visible, onClose }: CompareModalProp
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <img src={d.imageUrl} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
+                  <img src={d.imageUrl} alt={`${d.city}, ${d.country}`} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
                   <div>
                     <div style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{d.city}</div>
                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{d.country}</div>
@@ -91,7 +91,7 @@ export function CompareModal({ destination, visible, onClose }: CompareModalProp
             <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
               {[destination, compareWith].map(d => (
                 <div key={d.id} style={{ flex: 1, position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '4/3' }}>
-                  <img src={d.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={d.imageUrl} alt={`${d.city}, ${d.country}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', padding: '24px 12px 10px' }}>
                     <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>{d.city}</div>
                     <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{d.country}</div>

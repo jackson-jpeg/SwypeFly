@@ -107,7 +107,7 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
         </Text>
       </View>
       <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.xl, fontStyle: 'italic', marginTop: spacing['2'] }}>
-        &ldquo;{destination.tagline}&rdquo;
+        {'\u201C'}{destination.tagline}{'\u201D'}
       </Text>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing['2'], marginTop: spacing['4'] }}>

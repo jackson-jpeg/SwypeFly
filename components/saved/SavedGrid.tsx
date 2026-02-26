@@ -31,6 +31,7 @@ interface SavedGridProps {
 
 export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGridProps) {
   const savedIds = useSavedStore((s) => s.savedIds);
+  const savedAt = useSavedStore((s) => s.savedAt);
   const { data } = useSwipeFeed();
   const pages = data?.pages;
   const departureCode = useUIStore((s) => s.departureCode);
@@ -133,7 +134,13 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
             const isCollapsed = collapsedRegions.has(region);
             return (
               <div key={region}>
-                <div className="sg-region-header" onClick={() => toggleRegion(region)}>
+                <button
+                  className="sg-region-header"
+                  onClick={() => toggleRegion(region)}
+                  aria-expanded={!isCollapsed}
+                  aria-label={`${region} — ${destinations.length} destinations`}
+                  style={{ background: 'none', border: 'none', width: '100%', fontFamily: 'inherit', textAlign: 'left' }}
+                >
                   <span style={{ fontSize: 20 }}>{REGION_EMOJI[region] || '🗺️'}</span>
                   <span style={{
                     fontSize: fontSize.lg, fontWeight: fontWeight.bold,
@@ -149,11 +156,11 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
                     transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
                     transition: 'transform 0.2s ease',
                   }}>▼</span>
-                </div>
+                </button>
                 {!isCollapsed && (
                   <div className="sg-saved-grid-region">
                     {destinations.map((d) => (
-                      <SavedCard key={d.id} destination={d} />
+                      <SavedCard key={d.id} destination={d} savedAt={savedAt[d.id]} />
                     ))}
                   </div>
                 )}
@@ -183,7 +190,7 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
         `}</style>
         <div className="sg-saved-grid">
           {savedDestinations.map((d) => (
-            <SavedCard key={d.id} destination={d} />
+            <SavedCard key={d.id} destination={d} savedAt={savedAt[d.id]} />
           ))}
         </div>
       </>
@@ -191,8 +198,8 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
   }
 
   const renderItem = useCallback(
-    ({ item }: { item: Destination }) => <SavedCard destination={item} />,
-    [],
+    ({ item }: { item: Destination }) => <SavedCard destination={item} savedAt={savedAt[item.id]} />,
+    [savedAt],
   );
 
   return (

@@ -15,22 +15,28 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [duration, setDuration] = useState<number>(5);
   const [style, setStyle] = useState<string>('comfort');
+  const [interests, setInterests] = useState('');
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const generatePlan = useCallback(async () => {
     setIsLoading(true);
     setResult('');
+    setCopied(false);
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
+      const body: Record<string, unknown> = { city, country, duration, style };
+      if (interests.trim()) body.interests = interests.trim();
+
       const res = await fetch('/api/ai/trip-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ city, country, duration, style }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
 
@@ -57,7 +63,44 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [city, country, duration, style]);
+  }, [city, country, duration, style, interests]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = result;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [result]);
+
+  const handleShare = useCallback(async () => {
+    const shareData = {
+      title: `${duration}-Day ${city} Trip Plan`,
+      text: result,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // User cancelled or share failed — fall back to copy
+        handleCopy();
+      }
+    } else {
+      handleCopy();
+    }
+  }, [result, duration, city, handleCopy]);
 
   if (Platform.OS !== 'web') return null;
 
@@ -133,6 +176,29 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
             </div>
           </div>
 
+          {/* Interests */}
+          <div style={{ marginBottom: 20 }}>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5 }}>Interests (optional)</span>
+            <input
+              type="text"
+              placeholder="e.g. street food, museums, hiking, nightlife..."
+              value={interests}
+              onChange={e => setInterests(e.target.value)}
+              maxLength={500}
+              style={{
+                width: '100%', marginTop: 8, padding: '12px 14px',
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 10, color: 'rgba(255,255,255,0.85)',
+                fontSize: 14, fontFamily: 'inherit', outline: 'none',
+                transition: 'border-color 0.15s',
+                boxSizing: 'border-box',
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'rgba(129,140,248,0.4)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            />
+          </div>
+
           {/* Generate button */}
           <button
             onClick={generatePlan}
@@ -151,18 +217,55 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
 
           {/* Result */}
           {result && (
-            <div style={{
-              marginTop: 16, padding: 20,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
-              maxHeight: 500, overflowY: 'auto',
-            }}>
-              <pre style={{
-                margin: 0, color: 'rgba(255,255,255,0.85)',
-                fontSize: 14, lineHeight: 1.6,
-                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-                whiteSpace: 'pre-wrap', wordWrap: 'break-word',
-              }}>{result}{isLoading ? '▊' : ''}</pre>
+            <div style={{ marginTop: 16 }}>
+              {/* Copy / Share toolbar */}
+              {!isLoading && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+                  <button
+                    onClick={handleCopy}
+                    aria-label="Copy trip plan to clipboard"
+                    style={{
+                      padding: '6px 14px', borderRadius: 8,
+                      backgroundColor: copied ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
+                      border: copied ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                      color: copied ? '#22C55E' : 'rgba(255,255,255,0.6)',
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {copied ? '✓ Copied' : '📋 Copy'}
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    aria-label="Share trip plan"
+                    style={{
+                      padding: '6px 14px', borderRadius: 8,
+                      backgroundColor: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: 'rgba(255,255,255,0.6)',
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    📤 Share
+                  </button>
+                </div>
+              )}
+              <div style={{
+                padding: 20,
+                backgroundColor: 'rgba(0,0,0,0.3)',
+                borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+                maxHeight: 500, overflowY: 'auto',
+              }}>
+                <pre style={{
+                  margin: 0, color: 'rgba(255,255,255,0.85)',
+                  fontSize: 14, lineHeight: 1.6,
+                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                  whiteSpace: 'pre-wrap', wordWrap: 'break-word',
+                }}>{result}{isLoading ? '▊' : ''}</pre>
+              </div>
             </div>
           )}
         </div>

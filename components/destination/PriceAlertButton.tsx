@@ -1,32 +1,39 @@
 import React, { useState } from 'react';
 import { Platform } from 'react-native';
-import { colors } from '../../constants/theme';
+import { getAuthHeaders } from '../../services/apiHelpers';
 
 interface PriceAlertButtonProps {
   destinationId: string;
   currentPrice: number;
-  userId?: string | null;
 }
 
-export function PriceAlertButton({ destinationId, currentPrice, userId }: PriceAlertButtonProps) {
+export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [targetPrice, setTargetPrice] = useState(Math.round(currentPrice * 0.85));
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'no-auth'>('idle');
 
   if (Platform.OS !== 'web') return null;
 
   const handleSubmit = async () => {
     setStatus('saving');
     try {
+      const authHeaders = await getAuthHeaders();
+      if (!authHeaders.Authorization) {
+        setStatus('no-auth');
+        return;
+      }
+
       const res = await fetch('/api/alerts/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
         body: JSON.stringify({
-          user_id: userId || null,
           destination_id: destinationId,
           target_price: targetPrice,
-          email: email || null,
+          email: email || undefined,
         }),
       });
       if (res.ok) {
@@ -47,7 +54,7 @@ export function PriceAlertButton({ destinationId, currentPrice, userId }: PriceA
         backgroundColor: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)',
         color: '#4ADE80', fontSize: 14, fontWeight: 600, textAlign: 'center',
       }}>
-        🔔 Price alert set! We'll notify you when it drops to ${targetPrice}.
+        Price alert set! We'll notify you when it drops to ${targetPrice}.
       </div>
     );
   }
@@ -100,26 +107,24 @@ export function PriceAlertButton({ destinationId, currentPrice, userId }: PriceA
             </div>
           </div>
 
-          {!userId && (
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
-                Email (for notification)
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                style={{
-                  width: '100%', padding: '10px 12px', borderRadius: 8, marginTop: 6,
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#fff', fontSize: 14, outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          )}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+              Email (for notification)
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 8, marginTop: 6,
+                backgroundColor: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#fff', fontSize: 14, outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
 
           <button
             onClick={handleSubmit}
@@ -132,12 +137,17 @@ export function PriceAlertButton({ destinationId, currentPrice, userId }: PriceA
               opacity: status === 'saving' ? 0.6 : 1,
             }}
           >
-            {status === 'saving' ? 'Setting alert...' : '🔔 Set Price Alert'}
+            {status === 'saving' ? 'Setting alert...' : 'Set Price Alert'}
           </button>
 
           {status === 'error' && (
             <div style={{ color: '#EF4444', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
               Failed to set alert. Try again.
+            </div>
+          )}
+          {status === 'no-auth' && (
+            <div style={{ color: '#FBBF24', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+              Sign in to set price alerts.
             </div>
           )}
         </div>

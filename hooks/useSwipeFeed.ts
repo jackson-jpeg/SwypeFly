@@ -163,7 +163,10 @@ export async function recordSwipe(
 
 async function fetchDestination(id: string, origin: string): Promise<Destination> {
   try {
-    const res = await fetch(`${API_BASE}/api/destination?id=${id}&origin=${origin}`);
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/destination?id=${id}&origin=${origin}`, {
+      headers: authHeaders,
+    });
     if (!res.ok) throw new Error(`Destination request failed: ${res.status}`);
     return res.json();
   } catch {

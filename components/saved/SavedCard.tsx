@@ -22,12 +22,17 @@ const HEART_FILLED_SM = (
   </svg>
 );
 
-function getDaysSaved(): string {
-  const days = Math.floor(Math.random() * 14) + 1; // placeholder
-  return days === 1 ? '1 day ago' : `${days}d ago`;
+function getDaysSaved(savedAt?: number): string {
+  if (!savedAt) return 'Saved';
+  const days = Math.floor((Date.now() - savedAt) / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return '1 day ago';
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
 }
 
-export function SavedCard({ destination }: SavedCardProps) {
+export function SavedCard({ destination, savedAt }: SavedCardProps) {
   const { toggle } = useSaveDestination();
   const handlePress = () => router.push(`/destination/${destination.id}`);
   const handleUnsave = () => toggle(destination.id);
@@ -85,7 +90,7 @@ export function SavedCard({ destination }: SavedCardProps) {
           <img
             className="sg-saved-img"
             src={destination.imageUrl}
-            alt={destination.city}
+            alt={`${destination.city}, ${destination.country}`}
             style={{
               width: '100%', height: '100%', objectFit: 'cover', display: 'block',
               transition: 'transform 0.4s cubic-bezier(.4,0,.2,1)',
@@ -93,12 +98,13 @@ export function SavedCard({ destination }: SavedCardProps) {
             loading="lazy"
           />
           {/* Unsave button */}
-          <div
+          <button
             className="sg-unsave-btn"
             onClick={(e) => {
               e.stopPropagation();
               handleUnsave();
             }}
+            aria-label={`Remove ${destination.city} from saved`}
             style={{
               position: 'absolute', top: 10, right: 10,
               width: 34, height: 34, borderRadius: 17,
@@ -106,11 +112,11 @@ export function SavedCard({ destination }: SavedCardProps) {
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', zIndex: 5,
+              cursor: 'pointer', zIndex: 5, border: 'none', padding: 0,
             }}
           >
             {HEART_FILLED_SM}
-          </div>
+          </button>
           {/* Top-left badges */}
           <div style={{
             position: 'absolute', top: 10, left: 10, display: 'flex', flexDirection: 'column', gap: 6, zIndex: 5,
@@ -137,7 +143,7 @@ export function SavedCard({ destination }: SavedCardProps) {
               WebkitBackdropFilter: 'blur(10px)',
             }}>
               <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
-                🕐 {getDaysSaved()}
+                🕐 {getDaysSaved(savedAt)}
               </span>
             </div>
           </div>
@@ -153,7 +159,7 @@ export function SavedCard({ destination }: SavedCardProps) {
           }}>
             <span style={{
               fontSize: 13, fontWeight: 800,
-              color: destination.priceDirection === 'down' ? colors.success : '#7DD3FC',
+              color: destination.priceDirection === 'down' ? colors.success : colors.primaryLight,
             }}>
               {formatFlightPrice(destination.flightPrice, destination.currency)}
             </span>
