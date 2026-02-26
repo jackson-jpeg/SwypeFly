@@ -55,6 +55,7 @@ export function CompareModal({ destination, visible, onClose }: CompareModalProp
             <input
               type="text"
               placeholder="Search a city..."
+              aria-label="Search city to compare"
               value={query}
               onChange={e => setQuery(e.target.value)}
               autoFocus

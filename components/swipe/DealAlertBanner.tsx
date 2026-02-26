@@ -66,6 +66,7 @@ export function DealAlertBanner() {
         <input
           type="email"
           placeholder="your@email.com"
+          aria-label="Email for deal alerts"
           value={email}
           onChange={e => setEmail(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSubmit()}

@@ -86,6 +86,7 @@ export default function SubscribePage() {
               <input
                 type="email"
                 placeholder="your@email.com"
+                aria-label="Email for weekly deals"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}

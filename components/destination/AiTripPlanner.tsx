@@ -182,6 +182,7 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
             <input
               type="text"
               placeholder="e.g. street food, museums, hiking, nightlife..."
+              aria-label="Trip interests"
               value={interests}
               onChange={e => setInterests(e.target.value)}
               maxLength={500}

@@ -200,6 +200,7 @@ function WebLogin() {
               <input
                 type="email"
                 placeholder="Email"
+                aria-label="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
@@ -217,6 +218,7 @@ function WebLogin() {
               <input
                 type="password"
                 placeholder="Password"
+                aria-label="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}

@@ -219,6 +219,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
             ref={inputRef}
             type="text"
             placeholder="Search cities, countries, vibes..."
+            aria-label="Search destinations"
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             style={{
@@ -246,6 +247,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
             max={2000}
             step={50}
             value={maxPrice}
+            aria-label="Maximum budget"
             onChange={e => setMaxPrice(Number(e.target.value))}
             style={{ flex: 1, accentColor: colors.primary }}
           />

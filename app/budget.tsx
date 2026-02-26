@@ -56,7 +56,7 @@ export default function BudgetCalculator() {
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>Total Budget</span>
               <span style={{ color: colors.primary, fontSize: 15, fontWeight: 700 }}>${budget.toLocaleString()}</span>
             </div>
-            <input type="range" min={500} max={10000} step={100} value={budget} onChange={e => setBudget(Number(e.target.value))}
+            <input type="range" min={500} max={10000} step={100} value={budget} aria-label="Total budget" onChange={e => setBudget(Number(e.target.value))}
               style={{ width: '100%', accentColor: colors.primary }} />
           </div>
           <div style={{ display: 'flex', gap: 16 }}>
@@ -65,7 +65,7 @@ export default function BudgetCalculator() {
                 <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>Nights</span>
                 <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{nights}</span>
               </div>
-              <input type="range" min={1} max={14} value={nights} onChange={e => setNights(Number(e.target.value))}
+              <input type="range" min={1} max={14} value={nights} aria-label="Number of nights" onChange={e => setNights(Number(e.target.value))}
                 style={{ width: '100%', accentColor: colors.primary }} />
             </div>
             <div style={{ flex: 1 }}>
@@ -73,7 +73,7 @@ export default function BudgetCalculator() {
                 <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>Travelers</span>
                 <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{travelers}</span>
               </div>
-              <input type="range" min={1} max={6} value={travelers} onChange={e => setTravelers(Number(e.target.value))}
+              <input type="range" min={1} max={6} value={travelers} aria-label="Number of travelers" onChange={e => setTravelers(Number(e.target.value))}
                 style={{ width: '100%', accentColor: colors.primary }} />
             </div>
           </div>

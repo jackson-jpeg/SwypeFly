@@ -92,6 +92,7 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
               <input
                 type="number"
                 value={targetPrice}
+                aria-label="Target price in dollars"
                 onChange={(e) => setTargetPrice(Number(e.target.value))}
                 style={{
                   flex: 1, padding: '10px 12px', borderRadius: 8,
@@ -114,6 +115,7 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
             <input
               type="email"
               value={email}
+              aria-label="Notification email"
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               style={{
