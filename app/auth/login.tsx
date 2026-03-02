@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthContext } from '../../hooks/AuthContext';
-import { colors } from '../../constants/theme';
+import { colors, fonts, buttons } from '../../constants/theme';
 
 function WebLogin() {
   const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, browseAsGuest } =
@@ -44,7 +44,7 @@ function WebLogin() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0A0A0A',
+        backgroundColor: '#F5ECD7',
         padding: 24,
       }}
     >
@@ -60,8 +60,20 @@ function WebLogin() {
             'url(https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'blur(20px) brightness(0.3)',
+          filter: 'blur(20px) brightness(0.8)',
           transform: 'scale(1.1)',
+        }}
+      />
+
+      {/* Warm dusk overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(232,201,160,0.6)',
         }}
       />
 
@@ -83,21 +95,23 @@ function WebLogin() {
             margin: 0,
             fontSize: 42,
             fontWeight: 800,
-            color: '#fff',
+            fontFamily: 'Syne',
+            color: '#2C1F1A',
             letterSpacing: -1,
           }}
         >
-          SoGo<span style={{ color: colors.primary }}>Jet</span>
+          SOGO<span style={{ color: '#C8DDD4' }}>JET</span>
         </h1>
         <p
           style={{
             margin: '8px 0 40px 0',
             fontSize: 15,
-            color: 'rgba(255,255,255,0.5)',
+            color: 'rgba(44,31,26,0.5)',
             fontWeight: 400,
+            fontFamily: 'Inter',
           }}
         >
-          So many places to go — So Go Jet.
+          Swipe your way to adventure
         </p>
 
         {/* Auth buttons */}
@@ -108,10 +122,10 @@ function WebLogin() {
             style={{
               width: '100%',
               padding: '14px 20px',
-              borderRadius: 12,
-              border: 'none',
-              backgroundColor: '#fff',
-              color: '#1a1a1a',
+              borderRadius: 14,
+              border: '1px solid rgba(44,31,26,0.2)',
+              backgroundColor: '#FFFDF5',
+              color: '#2C1F1A',
               fontSize: 15,
               fontWeight: 600,
               cursor: 'pointer',
@@ -148,10 +162,10 @@ function WebLogin() {
             style={{
               width: '100%',
               padding: '14px 20px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.15)',
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              color: '#fff',
+              borderRadius: 14,
+              border: 'none',
+              backgroundColor: '#2C1F1A',
+              color: '#FDEFC3',
               fontSize: 15,
               fontWeight: 600,
               cursor: 'pointer',
@@ -161,7 +175,7 @@ function WebLogin() {
               gap: 10,
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#FDEFC3">
               <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
             </svg>
             Continue with Apple
@@ -174,10 +188,10 @@ function WebLogin() {
               style={{
                 width: '100%',
                 padding: '14px 20px',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 14,
+                border: '1px solid #C9A99A',
                 backgroundColor: 'transparent',
-                color: 'rgba(255,255,255,0.7)',
+                color: 'rgba(44,31,26,0.7)',
                 fontSize: 15,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -192,9 +206,9 @@ function WebLogin() {
                 flexDirection: 'column',
                 gap: 10,
                 padding: 16,
-                borderRadius: 12,
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 14,
+                backgroundColor: '#FDEFC3',
+                border: '1px solid #E8C9A0',
               }}
             >
               <input
@@ -207,9 +221,9 @@ function WebLogin() {
                   width: '100%',
                   padding: '12px 14px',
                   borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  color: '#fff',
+                  border: '1px solid #E8C9A0',
+                  backgroundColor: '#FFFDF5',
+                  color: '#2C1F1A',
                   fontSize: 14,
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -226,16 +240,16 @@ function WebLogin() {
                   width: '100%',
                   padding: '12px 14px',
                   borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  color: '#fff',
+                  border: '1px solid #E8C9A0',
+                  backgroundColor: '#FFFDF5',
+                  color: '#2C1F1A',
                   fontSize: 14,
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
               />
               {error && (
-                <span style={{ color: '#EF4444', fontSize: 13 }}>{error}</span>
+                <span style={{ color: '#D4734A', fontSize: 13 }}>{error}</span>
               )}
               <button
                 onClick={handleEmailAuth}
@@ -243,10 +257,10 @@ function WebLogin() {
                 style={{
                   width: '100%',
                   padding: '12px 20px',
-                  borderRadius: 8,
+                  borderRadius: 14,
                   border: 'none',
-                  backgroundColor: colors.primary,
-                  color: '#fff',
+                  backgroundColor: '#2C1F1A',
+                  color: '#FDEFC3',
                   fontSize: 15,
                   fontWeight: 600,
                   cursor: loading ? 'wait' : 'pointer',
@@ -260,7 +274,7 @@ function WebLogin() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'rgba(255,255,255,0.5)',
+                  color: 'rgba(44,31,26,0.5)',
                   fontSize: 13,
                   cursor: 'pointer',
                   padding: 4,
@@ -279,8 +293,9 @@ function WebLogin() {
             marginTop: 24,
             background: 'none',
             border: 'none',
-            color: 'rgba(255,255,255,0.4)',
+            color: 'rgba(44,31,26,0.5)',
             fontSize: 14,
+            fontFamily: 'Inter',
             cursor: 'pointer',
             padding: 8,
             textDecoration: 'underline',
@@ -325,46 +340,46 @@ function NativeLogin() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', paddingHorizontal: 28 }}
+      style={{ flex: 1, backgroundColor: '#F5ECD7', justifyContent: 'center', paddingHorizontal: 28 }}
     >
       {/* Logo */}
-      <Text style={{ fontSize: 42, fontWeight: '800', color: '#fff', textAlign: 'center', letterSpacing: -1 }}>
-        SoGo<Text style={{ color: colors.primary }}>Jet</Text>
+      <Text style={{ fontSize: 42, fontWeight: '800', fontFamily: 'Syne', color: '#2C1F1A', textAlign: 'center', letterSpacing: -1 }}>
+        SOGO<Text style={{ color: '#C8DDD4' }}>JET</Text>
       </Text>
-      <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8, marginBottom: 40 }}>
-        So many places to go — So Go Jet.
+      <Text style={{ fontSize: 15, color: 'rgba(44,31,26,0.5)', textAlign: 'center', marginTop: 8, marginBottom: 40, fontFamily: 'Inter' }}>
+        Swipe your way to adventure
       </Text>
 
       {/* Google */}
       <Pressable
         onPress={() => signInWithGoogle()}
         style={{
-          backgroundColor: '#fff',
-          borderRadius: 12,
+          backgroundColor: '#FFFDF5',
+          borderRadius: 14,
           paddingVertical: 14,
           paddingHorizontal: 20,
           alignItems: 'center',
           marginBottom: 12,
+          borderWidth: 1,
+          borderColor: 'rgba(44,31,26,0.2)',
         }}
       >
-        <Text style={{ color: '#1a1a1a', fontSize: 15, fontWeight: '600' }}>Continue with Google</Text>
+        <Text style={{ color: '#2C1F1A', fontSize: 15, fontWeight: '600' }}>Continue with Google</Text>
       </Pressable>
 
       {/* Apple */}
       <Pressable
         onPress={() => signInWithApple()}
         style={{
-          borderRadius: 12,
+          borderRadius: 14,
           paddingVertical: 14,
           paddingHorizontal: 20,
           alignItems: 'center',
           marginBottom: 12,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.15)',
-          backgroundColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: '#2C1F1A',
         }}
       >
-        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Continue with Apple</Text>
+        <Text style={{ color: '#FDEFC3', fontSize: 15, fontWeight: '600' }}>Continue with Apple</Text>
       </Pressable>
 
       {/* Email */}
@@ -372,34 +387,34 @@ function NativeLogin() {
         <Pressable
           onPress={() => setShowEmail(true)}
           style={{
-            borderRadius: 12,
+            borderRadius: 14,
             paddingVertical: 14,
             paddingHorizontal: 20,
             alignItems: 'center',
             marginBottom: 12,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.15)',
+            borderColor: '#C9A99A',
           }}
         >
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, fontWeight: '600' }}>
+          <Text style={{ color: 'rgba(44,31,26,0.7)', fontSize: 15, fontWeight: '600' }}>
             Continue with Email
           </Text>
         </Pressable>
       ) : (
         <View
           style={{
-            borderRadius: 12,
+            borderRadius: 14,
             padding: 16,
-            backgroundColor: 'rgba(255,255,255,0.06)',
+            backgroundColor: '#FDEFC3',
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.1)',
+            borderColor: '#E8C9A0',
             gap: 10,
             marginBottom: 12,
           }}
         >
           <TextInput
             placeholder="Email"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor="rgba(44,31,26,0.3)"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -408,15 +423,15 @@ function NativeLogin() {
               padding: 12,
               borderRadius: 8,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.15)',
-              backgroundColor: 'rgba(255,255,255,0.06)',
-              color: '#fff',
+              borderColor: '#E8C9A0',
+              backgroundColor: '#FFFDF5',
+              color: '#2C1F1A',
               fontSize: 14,
             }}
           />
           <TextInput
             placeholder="Password"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor="rgba(44,31,26,0.3)"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -424,34 +439,34 @@ function NativeLogin() {
               padding: 12,
               borderRadius: 8,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.15)',
-              backgroundColor: 'rgba(255,255,255,0.06)',
-              color: '#fff',
+              borderColor: '#E8C9A0',
+              backgroundColor: '#FFFDF5',
+              color: '#2C1F1A',
               fontSize: 14,
             }}
           />
-          {error && <Text style={{ color: '#EF4444', fontSize: 13 }}>{error}</Text>}
+          {error && <Text style={{ color: '#D4734A', fontSize: 13 }}>{error}</Text>}
           <Pressable
             onPress={handleEmailAuth}
             disabled={loading}
             style={{
-              backgroundColor: colors.primary,
-              borderRadius: 8,
+              backgroundColor: '#2C1F1A',
+              borderRadius: 14,
               paddingVertical: 12,
               alignItems: 'center',
               opacity: loading ? 0.7 : 1,
             }}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color="#FDEFC3" size="small" />
             ) : (
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>
+              <Text style={{ color: '#FDEFC3', fontSize: 15, fontWeight: '600' }}>
                 {isSignUp ? 'Create Account' : 'Sign In'}
               </Text>
             )}
           </Pressable>
           <Pressable onPress={() => setIsSignUp(!isSignUp)} style={{ alignItems: 'center', padding: 4 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+            <Text style={{ color: 'rgba(44,31,26,0.5)', fontSize: 13 }}>
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </Text>
           </Pressable>
@@ -460,7 +475,7 @@ function NativeLogin() {
 
       {/* Guest */}
       <Pressable onPress={handleGuest} style={{ alignItems: 'center', marginTop: 24, padding: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, textDecorationLine: 'underline' }}>
+        <Text style={{ color: 'rgba(44,31,26,0.5)', fontSize: 14, textDecorationLine: 'underline' }}>
           Browse without account
         </Text>
       </Pressable>

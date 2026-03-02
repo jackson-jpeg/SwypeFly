@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthContext } from '../../hooks/AuthContext';
-import { colors } from '../../constants/theme';
+import { colors, fonts } from '../../constants/theme';
 import { databases, DATABASE_ID, COLLECTIONS } from '../../services/appwrite';
 import { ID, Permission, Role } from 'appwrite';
 import { useUIStore } from '../../stores/uiStore';
@@ -137,7 +137,7 @@ function WebOnboarding() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0A0A0A',
+        backgroundColor: '#F5ECD7',
         padding: 24,
       }}
     >
@@ -150,8 +150,16 @@ function WebOnboarding() {
             'url(https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'blur(24px) brightness(0.25)',
+          filter: 'blur(15px) brightness(0.8)',
           transform: 'scale(1.1)',
+        }}
+      />
+      {/* Warm dusk overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(232,201,160,0.6)',
         }}
       />
 
@@ -168,7 +176,7 @@ function WebOnboarding() {
             <div key={i} style={{
               height: 8, borderRadius: 4,
               width: step === i ? 24 : 8,
-              backgroundColor: step >= i ? colors.primary : 'rgba(255,255,255,0.2)',
+              backgroundColor: step >= i ? '#A8C4B8' : 'rgba(232,201,160,0.3)',
               transition: 'width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s',
             }} />
           ))}
@@ -192,13 +200,13 @@ function WebOnboarding() {
                 {'\u2708\uFE0F'}
               </div>
               <h1 style={{
-                margin: 0, color: '#fff', fontSize: 28, fontWeight: 800,
-                textAlign: 'center', letterSpacing: -0.5,
+                margin: 0, color: '#2C1F1A', fontSize: 28, fontWeight: 800,
+                textAlign: 'center', letterSpacing: -0.5, fontFamily: 'Syne',
               }}>
                 Welcome to SoGoJet
               </h1>
               <p style={{
-                margin: '12px 0 0 0', color: 'rgba(255,255,255,0.5)',
+                margin: '12px 0 0 0', color: 'rgba(44,31,26,0.5)',
                 fontSize: 15, textAlign: 'center', lineHeight: 1.6, maxWidth: 320,
               }}>
                 Discover your next adventure. We&apos;ll show you incredible destinations
@@ -209,9 +217,9 @@ function WebOnboarding() {
                 onClick={() => goForward(1)}
                 style={{
                   marginTop: 32, width: '100%',
-                  padding: '14px 20px', borderRadius: 12,
-                  border: 'none', backgroundColor: colors.primary,
-                  color: '#fff', fontSize: 15, fontWeight: 600,
+                  padding: '14px 20px', borderRadius: 14,
+                  border: 'none', backgroundColor: '#2C1F1A',
+                  color: '#FDEFC3', fontSize: 15, fontWeight: 600,
                   cursor: 'pointer', transition: 'all 0.2s',
                 }}
               >
@@ -223,10 +231,10 @@ function WebOnboarding() {
           {/* ─── Step 1: Traveler Type ─── */}
           {step === 1 && (
             <>
-              <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
+              <h2 style={{ margin: 0, color: '#2C1F1A', fontSize: 24, fontWeight: 700, textAlign: 'center' as const, fontFamily: 'Syne' }}>
                 What kind of traveler are you?
               </h2>
-              <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
+              <p style={{ margin: '8px 0 28px 0', color: 'rgba(44,31,26,0.5)', fontSize: 14, textAlign: 'center' as const }}>
                 We&apos;ll personalize your feed
               </p>
 
@@ -238,19 +246,19 @@ function WebOnboarding() {
                     style={{
                       padding: 20, borderRadius: 16,
                       border: travelerType === opt.type
-                        ? `2px solid ${colors.primary}`
-                        : '1px solid rgba(255,255,255,0.1)',
+                        ? '2px solid #2C1F1A'
+                        : '1px solid #E8C9A0',
                       backgroundColor: travelerType === opt.type
-                        ? 'rgba(56,189,248,0.12)'
-                        : 'rgba(255,255,255,0.04)',
+                        ? 'rgba(200,221,212,0.2)'
+                        : '#FDEFC3',
                       cursor: 'pointer',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                       transition: 'all 0.2s',
                     }}
                   >
                     <span style={{ fontSize: 32 }}>{opt.emoji}</span>
-                    <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{opt.label}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{opt.desc}</span>
+                    <span style={{ color: '#2C1F1A', fontSize: 15, fontWeight: 600 }}>{opt.label}</span>
+                    <span style={{ color: 'rgba(44,31,26,0.4)', fontSize: 12 }}>{opt.desc}</span>
                   </button>
                 ))}
               </div>
@@ -260,9 +268,9 @@ function WebOnboarding() {
                   onClick={() => goBack(0)}
                   style={{
                     flex: 1, padding: '14px 20px', borderRadius: 12,
-                    border: '1px solid rgba(255,255,255,0.15)',
+                    border: '1px solid #E8C9A0',
                     backgroundColor: 'transparent',
-                    color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600,
+                    color: 'rgba(44,31,26,0.6)', fontSize: 15, fontWeight: 600,
                     cursor: 'pointer',
                   }}
                 >
@@ -274,8 +282,8 @@ function WebOnboarding() {
                   style={{
                     flex: 2, padding: '14px 20px', borderRadius: 12,
                     border: 'none',
-                    backgroundColor: travelerType ? colors.primary : 'rgba(255,255,255,0.1)',
-                    color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)',
+                    backgroundColor: travelerType ? '#2C1F1A' : 'rgba(232,201,160,0.3)',
+                    color: travelerType ? '#FDEFC3' : 'rgba(44,31,26,0.3)',
                     fontSize: 15, fontWeight: 600,
                     cursor: travelerType ? 'pointer' : 'default',
                     transition: 'all 0.2s',
@@ -290,10 +298,10 @@ function WebOnboarding() {
           {/* ─── Step 2: Budget ─── */}
           {step === 2 && (
             <>
-              <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
+              <h2 style={{ margin: 0, color: '#2C1F1A', fontSize: 24, fontWeight: 700, textAlign: 'center' as const, fontFamily: 'Syne' }}>
                 What&apos;s your typical budget?
               </h2>
-              <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
+              <p style={{ margin: '8px 0 28px 0', color: 'rgba(44,31,26,0.5)', fontSize: 14, textAlign: 'center' as const }}>
                 For a round-trip flight
               </p>
 
@@ -305,21 +313,21 @@ function WebOnboarding() {
                     style={{
                       padding: '16px 20px', borderRadius: 14,
                       border: budgetLevel === opt.level
-                        ? `2px solid ${colors.primary}`
-                        : '1px solid rgba(255,255,255,0.1)',
+                        ? '2px solid #2C1F1A'
+                        : '1px solid #E8C9A0',
                       backgroundColor: budgetLevel === opt.level
-                        ? 'rgba(56,189,248,0.12)'
-                        : 'rgba(255,255,255,0.04)',
+                        ? 'rgba(200,221,212,0.2)'
+                        : '#FDEFC3',
                       cursor: 'pointer',
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       transition: 'all 0.2s',
                     }}
                   >
                     <div style={{ textAlign: 'left' as const }}>
-                      <div style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{opt.label}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>{opt.desc}</div>
+                      <div style={{ color: '#2C1F1A', fontSize: 15, fontWeight: 600 }}>{opt.label}</div>
+                      <div style={{ color: 'rgba(44,31,26,0.4)', fontSize: 12, marginTop: 2 }}>{opt.desc}</div>
                     </div>
-                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 500 }}>
+                    <span style={{ color: 'rgba(44,31,26,0.5)', fontSize: 13, fontWeight: 500 }}>
                       {opt.range}
                     </span>
                   </button>
@@ -331,9 +339,9 @@ function WebOnboarding() {
                   onClick={() => goBack(1)}
                   style={{
                     flex: 1, padding: '14px 20px', borderRadius: 12,
-                    border: '1px solid rgba(255,255,255,0.15)',
+                    border: '1px solid #E8C9A0',
                     backgroundColor: 'transparent',
-                    color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600,
+                    color: 'rgba(44,31,26,0.6)', fontSize: 15, fontWeight: 600,
                     cursor: 'pointer',
                   }}
                 >
@@ -345,8 +353,8 @@ function WebOnboarding() {
                   style={{
                     flex: 2, padding: '14px 20px', borderRadius: 12,
                     border: 'none',
-                    backgroundColor: budgetLevel ? colors.primary : 'rgba(255,255,255,0.1)',
-                    color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)',
+                    backgroundColor: budgetLevel ? '#2C1F1A' : 'rgba(232,201,160,0.3)',
+                    color: budgetLevel ? '#FDEFC3' : 'rgba(44,31,26,0.3)',
                     fontSize: 15, fontWeight: 600,
                     cursor: budgetLevel ? 'pointer' : 'default',
                   }}
@@ -360,10 +368,10 @@ function WebOnboarding() {
           {/* ─── Step 3: Departure City ─── */}
           {step === 3 && (
             <>
-              <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 700, textAlign: 'center' as const }}>
+              <h2 style={{ margin: 0, color: '#2C1F1A', fontSize: 24, fontWeight: 700, textAlign: 'center' as const, fontFamily: 'Syne' }}>
                 Where are you flying from?
               </h2>
-              <p style={{ margin: '8px 0 28px 0', color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' as const }}>
+              <p style={{ margin: '8px 0 28px 0', color: 'rgba(44,31,26,0.5)', fontSize: 14, textAlign: 'center' as const }}>
                 We&apos;ll find the best deals from your airport
               </p>
 
@@ -375,18 +383,18 @@ function WebOnboarding() {
                     style={{
                       padding: '14px 16px', borderRadius: 12,
                       border: departureCity?.code === opt.code
-                        ? `2px solid ${colors.primary}`
-                        : '1px solid rgba(255,255,255,0.1)',
+                        ? '2px solid #2C1F1A'
+                        : '1px solid #E8C9A0',
                       backgroundColor: departureCity?.code === opt.code
-                        ? 'rgba(56,189,248,0.12)'
-                        : 'rgba(255,255,255,0.04)',
+                        ? 'rgba(200,221,212,0.2)'
+                        : '#FDEFC3',
                       cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       transition: 'all 0.2s',
                     }}
                   >
-                    <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{opt.city}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: 500 }}>{opt.code}</span>
+                    <span style={{ color: '#2C1F1A', fontSize: 14, fontWeight: 600 }}>{opt.city}</span>
+                    <span style={{ color: 'rgba(44,31,26,0.35)', fontSize: 12, fontWeight: 500 }}>{opt.code}</span>
                   </button>
                 ))}
               </div>
@@ -396,9 +404,9 @@ function WebOnboarding() {
                   onClick={() => goBack(2)}
                   style={{
                     flex: 1, padding: '14px 20px', borderRadius: 12,
-                    border: '1px solid rgba(255,255,255,0.15)',
+                    border: '1px solid #E8C9A0',
                     backgroundColor: 'transparent',
-                    color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600,
+                    color: 'rgba(44,31,26,0.6)', fontSize: 15, fontWeight: 600,
                     cursor: 'pointer',
                   }}
                 >
@@ -410,8 +418,8 @@ function WebOnboarding() {
                   style={{
                     flex: 2, padding: '14px 20px', borderRadius: 12,
                     border: 'none',
-                    backgroundColor: departureCity ? colors.primary : 'rgba(255,255,255,0.1)',
-                    color: departureCity ? '#fff' : 'rgba(255,255,255,0.3)',
+                    backgroundColor: departureCity ? '#2C1F1A' : 'rgba(232,201,160,0.3)',
+                    color: departureCity ? '#FDEFC3' : 'rgba(44,31,26,0.3)',
                     fontSize: 15, fontWeight: 600,
                     cursor: departureCity && !saving ? 'pointer' : 'default',
                     opacity: saving ? 0.7 : 1,
@@ -429,7 +437,7 @@ function WebOnboarding() {
           onClick={() => router.replace('/(tabs)')}
           style={{
             marginTop: 16, background: 'none', border: 'none',
-            color: 'rgba(255,255,255,0.3)', fontSize: 13,
+            color: 'rgba(44,31,26,0.3)', fontSize: 13,
             cursor: 'pointer', padding: 8,
           }}
         >
@@ -501,14 +509,14 @@ function NativeOnboarding() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', paddingHorizontal: 28 }}>
+    <View style={{ flex: 1, backgroundColor: '#F5ECD7', justifyContent: 'center', paddingHorizontal: 28 }}>
       {/* Progress dots — animated width */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 32 }}>
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <View key={i} style={{
             height: 8, borderRadius: 4,
             width: step === i ? 24 : 8,
-            backgroundColor: step >= i ? colors.primary : 'rgba(255,255,255,0.2)',
+            backgroundColor: step >= i ? '#A8C4B8' : 'rgba(232,201,160,0.3)',
           }} />
         ))}
       </View>
@@ -517,10 +525,10 @@ function NativeOnboarding() {
       {step === 0 && (
         <View style={{ alignItems: 'center' }}>
           <Text style={{ fontSize: 56, marginBottom: 16 }}>{'\u2708\uFE0F'}</Text>
-          <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 }}>
+          <Text style={{ color: '#2C1F1A', fontSize: 28, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5, fontFamily: 'Syne' }}>
             Welcome to SoGoJet
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, textAlign: 'center', marginTop: 12, lineHeight: 24, maxWidth: 320 }}>
+          <Text style={{ color: 'rgba(44,31,26,0.5)', fontSize: 15, textAlign: 'center', marginTop: 12, lineHeight: 24, maxWidth: 320 }}>
             Discover your next adventure. We'll show you incredible destinations matched to your travel style.
           </Text>
 
@@ -528,11 +536,11 @@ function NativeOnboarding() {
             onPress={() => setStep(1)}
             style={{
               marginTop: 32, width: '100%',
-              paddingVertical: 14, borderRadius: 12,
-              backgroundColor: colors.primary, alignItems: 'center',
+              paddingVertical: 14, borderRadius: 14,
+              backgroundColor: '#2C1F1A', alignItems: 'center',
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Get Started</Text>
+            <Text style={{ color: '#FDEFC3', fontSize: 15, fontWeight: '600' }}>Get Started</Text>
           </Pressable>
         </View>
       )}
@@ -540,10 +548,10 @@ function NativeOnboarding() {
       {/* ─── Step 1: Traveler Type ─── */}
       {step === 1 && (
         <>
-          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
+          <Text style={{ color: '#2C1F1A', fontSize: 24, fontWeight: '700', textAlign: 'center', fontFamily: 'Syne' }}>
             What kind of traveler are you?
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
+          <Text style={{ color: 'rgba(44,31,26,0.5)', fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
             We'll personalize your feed
           </Text>
 
@@ -555,14 +563,14 @@ function NativeOnboarding() {
                 style={{
                   width: '48%', padding: 20, borderRadius: 16,
                   borderWidth: travelerType === opt.type ? 2 : 1,
-                  borderColor: travelerType === opt.type ? colors.primary : 'rgba(255,255,255,0.1)',
-                  backgroundColor: travelerType === opt.type ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
+                  borderColor: travelerType === opt.type ? '#2C1F1A' : '#E8C9A0',
+                  backgroundColor: travelerType === opt.type ? 'rgba(200,221,212,0.2)' : '#FDEFC3',
                   alignItems: 'center', gap: 6,
                 }}
               >
                 <Text style={{ fontSize: 32 }}>{opt.emoji}</Text>
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>{opt.label}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{opt.desc}</Text>
+                <Text style={{ color: '#2C1F1A', fontSize: 15, fontWeight: '600' }}>{opt.label}</Text>
+                <Text style={{ color: 'rgba(44,31,26,0.4)', fontSize: 12 }}>{opt.desc}</Text>
               </Pressable>
             ))}
           </View>
@@ -572,22 +580,22 @@ function NativeOnboarding() {
               onPress={() => setStep(0)}
               style={{
                 flex: 1, paddingVertical: 14, borderRadius: 12,
-                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                borderWidth: 1, borderColor: '#E8C9A0',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
+              <Text style={{ color: 'rgba(44,31,26,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
             </Pressable>
             <Pressable
               onPress={() => travelerType && setStep(2)}
               disabled={!travelerType}
               style={{
                 flex: 2, paddingVertical: 14, borderRadius: 12,
-                backgroundColor: travelerType ? colors.primary : 'rgba(255,255,255,0.1)',
+                backgroundColor: travelerType ? '#2C1F1A' : 'rgba(232,201,160,0.3)',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: travelerType ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
+              <Text style={{ color: travelerType ? '#FDEFC3' : 'rgba(44,31,26,0.3)', fontSize: 15, fontWeight: '600' }}>
                 Continue
               </Text>
             </Pressable>
@@ -598,10 +606,10 @@ function NativeOnboarding() {
       {/* ─── Step 2: Budget ─── */}
       {step === 2 && (
         <>
-          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
+          <Text style={{ color: '#2C1F1A', fontSize: 24, fontWeight: '700', textAlign: 'center', fontFamily: 'Syne' }}>
             What's your typical budget?
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
+          <Text style={{ color: 'rgba(44,31,26,0.5)', fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
             For a round-trip flight
           </Text>
 
@@ -613,16 +621,16 @@ function NativeOnboarding() {
                 style={{
                   padding: 16, borderRadius: 14,
                   borderWidth: budgetLevel === opt.level ? 2 : 1,
-                  borderColor: budgetLevel === opt.level ? colors.primary : 'rgba(255,255,255,0.1)',
-                  backgroundColor: budgetLevel === opt.level ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
+                  borderColor: budgetLevel === opt.level ? '#2C1F1A' : '#E8C9A0',
+                  backgroundColor: budgetLevel === opt.level ? 'rgba(200,221,212,0.2)' : '#FDEFC3',
                   flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                 }}
               >
                 <View>
-                  <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>{opt.label}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>{opt.desc}</Text>
+                  <Text style={{ color: '#2C1F1A', fontSize: 15, fontWeight: '600' }}>{opt.label}</Text>
+                  <Text style={{ color: 'rgba(44,31,26,0.4)', fontSize: 12, marginTop: 2 }}>{opt.desc}</Text>
                 </View>
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '500' }}>
+                <Text style={{ color: 'rgba(44,31,26,0.5)', fontSize: 13, fontWeight: '500' }}>
                   {opt.range}
                 </Text>
               </Pressable>
@@ -634,22 +642,22 @@ function NativeOnboarding() {
               onPress={() => setStep(1)}
               style={{
                 flex: 1, paddingVertical: 14, borderRadius: 12,
-                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                borderWidth: 1, borderColor: '#E8C9A0',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
+              <Text style={{ color: 'rgba(44,31,26,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
             </Pressable>
             <Pressable
               onPress={() => budgetLevel && setStep(3)}
               disabled={!budgetLevel}
               style={{
                 flex: 2, paddingVertical: 14, borderRadius: 12,
-                backgroundColor: budgetLevel ? colors.primary : 'rgba(255,255,255,0.1)',
+                backgroundColor: budgetLevel ? '#2C1F1A' : 'rgba(232,201,160,0.3)',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: budgetLevel ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
+              <Text style={{ color: budgetLevel ? '#FDEFC3' : 'rgba(44,31,26,0.3)', fontSize: 15, fontWeight: '600' }}>
                 Continue
               </Text>
             </Pressable>
@@ -660,10 +668,10 @@ function NativeOnboarding() {
       {/* ─── Step 3: Departure City ─── */}
       {step === 3 && (
         <>
-          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
+          <Text style={{ color: '#2C1F1A', fontSize: 24, fontWeight: '700', textAlign: 'center', fontFamily: 'Syne' }}>
             Where are you flying from?
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
+          <Text style={{ color: 'rgba(44,31,26,0.5)', fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
             We'll find the best deals from your airport
           </Text>
 
@@ -676,13 +684,13 @@ function NativeOnboarding() {
                   style={{
                     width: '48%', padding: 14, borderRadius: 12,
                     borderWidth: departureCity?.code === opt.code ? 2 : 1,
-                    borderColor: departureCity?.code === opt.code ? colors.primary : 'rgba(255,255,255,0.1)',
-                    backgroundColor: departureCity?.code === opt.code ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
+                    borderColor: departureCity?.code === opt.code ? '#2C1F1A' : '#E8C9A0',
+                    backgroundColor: departureCity?.code === opt.code ? 'rgba(200,221,212,0.2)' : '#FDEFC3',
                     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{opt.city}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: '500' }}>{opt.code}</Text>
+                  <Text style={{ color: '#2C1F1A', fontSize: 14, fontWeight: '600' }}>{opt.city}</Text>
+                  <Text style={{ color: 'rgba(44,31,26,0.35)', fontSize: 12, fontWeight: '500' }}>{opt.code}</Text>
                 </Pressable>
               ))}
             </View>
@@ -693,26 +701,26 @@ function NativeOnboarding() {
               onPress={() => setStep(2)}
               style={{
                 flex: 1, paddingVertical: 14, borderRadius: 12,
-                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                borderWidth: 1, borderColor: '#E8C9A0',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
+              <Text style={{ color: 'rgba(44,31,26,0.6)', fontSize: 15, fontWeight: '600' }}>Back</Text>
             </Pressable>
             <Pressable
               onPress={handleFinish}
               disabled={!departureCity || saving}
               style={{
                 flex: 2, paddingVertical: 14, borderRadius: 12,
-                backgroundColor: departureCity ? colors.primary : 'rgba(255,255,255,0.1)',
+                backgroundColor: departureCity ? '#2C1F1A' : 'rgba(232,201,160,0.3)',
                 alignItems: 'center',
                 opacity: saving ? 0.7 : 1,
               }}
             >
               {saving ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color="#FDEFC3" size="small" />
               ) : (
-                <Text style={{ color: departureCity ? '#fff' : 'rgba(255,255,255,0.3)', fontSize: 15, fontWeight: '600' }}>
+                <Text style={{ color: departureCity ? '#FDEFC3' : 'rgba(44,31,26,0.3)', fontSize: 15, fontWeight: '600' }}>
                   Let's Go
                 </Text>
               )}
@@ -723,7 +731,7 @@ function NativeOnboarding() {
 
       {/* Skip */}
       <Pressable onPress={() => router.replace('/(tabs)')} style={{ alignItems: 'center', marginTop: 16, padding: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>Skip for now</Text>
+        <Text style={{ color: 'rgba(44,31,26,0.3)', fontSize: 13 }}>Skip for now</Text>
       </Pressable>
     </View>
   );
