@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
-import { colors } from '../../constants/theme';
+import { colors, textPresets } from '../../constants/theme';
 
 interface AiTripPlannerProps {
   city: string;
@@ -112,9 +112,9 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
         style={{
           width: '100%', padding: '16px 20px',
           background: isOpen
-            ? 'linear-gradient(135deg, rgba(129,140,248,0.15), rgba(56,189,248,0.15))'
-            : 'linear-gradient(135deg, rgba(129,140,248,0.1), rgba(56,189,248,0.1))',
-          border: '1px solid rgba(129,140,248,0.25)',
+            ? 'rgba(168,196,184,0.15)'
+            : 'rgba(168,196,184,0.1)',
+          border: `1px solid rgba(168,196,184,0.25)`,
           borderRadius: 16, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           transition: 'all 0.2s',
@@ -122,22 +122,22 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 22 }}>🤖</span>
-          <span style={{ color: '#C4B5FD', fontSize: 16, fontWeight: 700 }}>Plan My Trip with AI</span>
+          <span style={{ color: colors.deepDusk, fontSize: 16, fontWeight: 700 }}>Plan My Trip with AI</span>
         </span>
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+        <span style={{ color: colors.text.muted, fontSize: 14, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
       </button>
 
       {/* Expanded panel */}
       {isOpen && (
         <div style={{
           marginTop: 12, padding: 20,
-          backgroundColor: 'rgba(15,23,42,0.6)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 16, backdropFilter: 'blur(12px)',
+          backgroundColor: colors.paleHorizon,
+          border: `1px solid ${colors.divider}`,
+          borderRadius: 16,
         }}>
           {/* Duration picker */}
           <div style={{ marginBottom: 16 }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5 }}>Duration</span>
+            <span style={{ ...textPresets.body.sectionLabel }}>Duration</span>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {DURATIONS.map(d => (
                 <button
@@ -145,9 +145,9 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
                   onClick={() => setDuration(d)}
                   style={{
                     flex: 1, padding: '10px 0', borderRadius: 10,
-                    backgroundColor: duration === d ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.05)',
-                    border: duration === d ? '1px solid rgba(56,189,248,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                    color: duration === d ? colors.primary : 'rgba(255,255,255,0.6)',
+                    backgroundColor: duration === d ? 'rgba(168,196,184,0.2)' : colors.duskSand,
+                    border: duration === d ? `1px solid rgba(168,196,184,0.4)` : `1px solid ${colors.divider}`,
+                    color: duration === d ? colors.deepDusk : colors.text.secondary,
                     fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                   }}
                 >{d} days</button>
@@ -157,7 +157,7 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
 
           {/* Style picker */}
           <div style={{ marginBottom: 20 }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5 }}>Travel Style</span>
+            <span style={{ ...textPresets.body.sectionLabel }}>Travel Style</span>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {STYLES.map(s => (
                 <button
@@ -165,9 +165,9 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
                   onClick={() => setStyle(s)}
                   style={{
                     flex: 1, padding: '10px 0', borderRadius: 10,
-                    backgroundColor: style === s ? 'rgba(129,140,248,0.2)' : 'rgba(255,255,255,0.05)',
-                    border: style === s ? '1px solid rgba(129,140,248,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                    color: style === s ? '#C4B5FD' : 'rgba(255,255,255,0.6)',
+                    backgroundColor: style === s ? 'rgba(168,196,184,0.2)' : colors.duskSand,
+                    border: style === s ? `1px solid rgba(168,196,184,0.4)` : `1px solid ${colors.divider}`,
+                    color: style === s ? colors.deepDusk : colors.text.secondary,
                     fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                     textTransform: 'capitalize' as const,
                   }}
@@ -178,7 +178,7 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
 
           {/* Interests */}
           <div style={{ marginBottom: 20 }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5 }}>Interests (optional)</span>
+            <span style={{ ...textPresets.body.sectionLabel }}>Interests (optional)</span>
             <input
               type="text"
               placeholder="e.g. street food, museums, hiking, nightlife..."
@@ -188,15 +188,15 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
               maxLength={500}
               style={{
                 width: '100%', marginTop: 8, padding: '12px 14px',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 10, color: 'rgba(255,255,255,0.85)',
+                backgroundColor: colors.duskSand,
+                border: `1px solid ${colors.divider}`,
+                borderRadius: 10, color: colors.deepDusk,
                 fontSize: 14, fontFamily: 'inherit', outline: 'none',
                 transition: 'border-color 0.15s',
                 boxSizing: 'border-box',
               }}
-              onFocus={e => { e.currentTarget.style.borderColor = 'rgba(129,140,248,0.4)'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'rgba(168,196,184,0.4)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = colors.divider; }}
             />
           </div>
 
@@ -206,10 +206,10 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
             disabled={isLoading}
             style={{
               width: '100%', padding: '14px 0',
-              background: isLoading ? 'rgba(129,140,248,0.2)' : `linear-gradient(135deg, #818CF8, ${colors.primary})`,
+              background: isLoading ? 'rgba(168,196,184,0.3)' : colors.deepDusk,
               border: 'none', borderRadius: 12,
-              color: '#fff', fontSize: 15, fontWeight: 700, cursor: isLoading ? 'default' : 'pointer',
-              boxShadow: isLoading ? 'none' : '0 4px 20px rgba(56,189,248,0.25)',
+              color: colors.paleHorizon, fontSize: 15, fontWeight: 700, cursor: isLoading ? 'default' : 'pointer',
+              boxShadow: isLoading ? 'none' : '0 4px 20px rgba(44,31,26,0.15)',
               transition: 'all 0.2s',
             }}
           >
@@ -227,9 +227,9 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
                     aria-label="Copy trip plan to clipboard"
                     style={{
                       padding: '6px 14px', borderRadius: 8,
-                      backgroundColor: copied ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
-                      border: copied ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)',
-                      color: copied ? '#22C55E' : 'rgba(255,255,255,0.6)',
+                      backgroundColor: copied ? colors.successBackground : colors.duskSand,
+                      border: copied ? `1px solid ${colors.successBorder}` : `1px solid ${colors.divider}`,
+                      color: copied ? colors.sageDrift : colors.text.secondary,
                       fontSize: 13, fontWeight: 600, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 6,
                       transition: 'all 0.15s',
@@ -242,9 +242,9 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
                     aria-label="Share trip plan"
                     style={{
                       padding: '6px 14px', borderRadius: 8,
-                      backgroundColor: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: 'rgba(255,255,255,0.6)',
+                      backgroundColor: colors.duskSand,
+                      border: `1px solid ${colors.divider}`,
+                      color: colors.text.secondary,
                       fontSize: 13, fontWeight: 600, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 6,
                       transition: 'all 0.15s',
@@ -256,12 +256,12 @@ export function AiTripPlanner({ city, country }: AiTripPlannerProps) {
               )}
               <div style={{
                 padding: 20,
-                backgroundColor: 'rgba(0,0,0,0.3)',
-                borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
+                backgroundColor: colors.duskSand,
+                borderRadius: 12, border: `1px solid ${colors.divider}`,
                 maxHeight: 500, overflowY: 'auto',
               }}>
                 <pre style={{
-                  margin: 0, color: 'rgba(255,255,255,0.85)',
+                  margin: 0, color: colors.text.body,
                   fontSize: 14, lineHeight: 1.6,
                   fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
                   whiteSpace: 'pre-wrap', wordWrap: 'break-word',

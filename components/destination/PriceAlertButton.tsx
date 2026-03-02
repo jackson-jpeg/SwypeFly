@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Platform } from 'react-native';
 import { getAuthHeaders } from '../../services/apiHelpers';
+import { colors } from '../../constants/theme';
 
 interface PriceAlertButtonProps {
   destinationId: string;
@@ -51,8 +52,8 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
     return (
       <div style={{
         padding: '12px 20px', borderRadius: 12,
-        backgroundColor: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)',
-        color: '#4ADE80', fontSize: 14, fontWeight: 600, textAlign: 'center',
+        backgroundColor: colors.successBackground, border: `1px solid ${colors.successBorder}`,
+        color: colors.sageDrift, fontSize: 14, fontWeight: 600, textAlign: 'center',
       }}>
         Price alert set! We'll notify you when it drops to ${targetPrice}.
       </div>
@@ -65,30 +66,30 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '100%', padding: '12px 16px',
-          backgroundColor: 'rgba(251,191,36,0.1)',
-          border: '1px solid rgba(251,191,36,0.25)',
+          backgroundColor: 'rgba(247,232,160,0.2)',
+          border: `1px solid rgba(247,232,160,0.4)`,
           borderRadius: 12, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           transition: 'all 0.2s',
         }}
       >
         <span style={{ fontSize: 16 }}>🔔</span>
-        <span style={{ color: '#FBBF24', fontSize: 14, fontWeight: 600 }}>Watch Price</span>
+        <span style={{ color: colors.deepDusk, fontSize: 14, fontWeight: 600 }}>Watch Price</span>
       </button>
 
       {isOpen && (
         <div style={{
           marginTop: 8, padding: 16,
-          backgroundColor: 'rgba(0,0,0,0.3)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          backgroundColor: colors.paleHorizon,
+          border: `1px solid ${colors.divider}`,
           borderRadius: 12,
         }}>
           <div style={{ marginBottom: 12 }}>
-            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+            <label style={{ color: colors.text.muted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
               Alert me when price drops to
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18 }}>$</span>
+              <span style={{ color: colors.text.secondary, fontSize: 18 }}>$</span>
               <input
                 type="number"
                 value={targetPrice}
@@ -96,20 +97,20 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
                 onChange={(e) => setTargetPrice(Number(e.target.value))}
                 style={{
                   flex: 1, padding: '10px 12px', borderRadius: 8,
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#fff', fontSize: 16, fontWeight: 600,
+                  backgroundColor: colors.duskSand,
+                  border: `1px solid ${colors.divider}`,
+                  color: colors.deepDusk, fontSize: 16, fontWeight: 600,
                   outline: 'none',
                 }}
               />
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 4 }}>
+            <div style={{ color: colors.text.muted, fontSize: 11, marginTop: 4 }}>
               Current price: ${currentPrice}
             </div>
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+            <label style={{ color: colors.text.muted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
               Email (for notification)
             </label>
             <input
@@ -120,9 +121,9 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
               placeholder="your@email.com"
               style={{
                 width: '100%', padding: '10px 12px', borderRadius: 8, marginTop: 6,
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: '#fff', fontSize: 14, outline: 'none',
+                backgroundColor: colors.duskSand,
+                border: `1px solid ${colors.divider}`,
+                color: colors.deepDusk, fontSize: 14, outline: 'none',
                 boxSizing: 'border-box',
               }}
             />
@@ -133,8 +134,8 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
             disabled={status === 'saving'}
             style={{
               width: '100%', padding: '12px 0', borderRadius: 10,
-              background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
-              border: 'none', color: '#2C1F1A', fontSize: 14, fontWeight: 700,
+              background: colors.deepDusk,
+              border: 'none', color: colors.paleHorizon, fontSize: 14, fontWeight: 700,
               cursor: status === 'saving' ? 'default' : 'pointer',
               opacity: status === 'saving' ? 0.6 : 1,
             }}
@@ -143,12 +144,12 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
           </button>
 
           {status === 'error' && (
-            <div style={{ color: '#EF4444', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+            <div style={{ color: colors.terracotta, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
               Failed to set alert. Try again.
             </div>
           )}
           {status === 'no-auth' && (
-            <div style={{ color: '#FBBF24', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+            <div style={{ color: colors.warmDusk, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
               Sign in to set price alerts.
             </div>
           )}

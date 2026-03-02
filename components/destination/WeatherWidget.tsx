@@ -54,17 +54,17 @@ export function WeatherWidget({ city, country, averageTemp }: WeatherWidgetProps
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
       padding: `${spacing['3']}px ${spacing['4']}px`,
-      backgroundColor: colors.dark.surface,
+      backgroundColor: colors.paleHorizon,
       borderRadius: radii.lg,
-      border: `1px solid ${colors.dark.border}`,
+      border: `1px solid ${colors.divider}`,
       marginTop: spacing['3'],
     }}>
       <span style={{ fontSize: 28 }}>{icon}</span>
       <div>
-        <div style={{ color: colors.dark.text.primary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>
+        <div style={{ color: colors.text.primary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>
           {displayTemp}°C / {Math.round(displayTemp * 9/5 + 32)}°F
         </div>
-        <div style={{ color: colors.dark.text.muted, fontSize: fontSize.sm, textTransform: 'capitalize' }}>
+        <div style={{ color: colors.text.muted, fontSize: fontSize.sm, textTransform: 'capitalize' }}>
           {weather ? `Currently: ${desc}` : `Average temperature`}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Platform, View, Text, ScrollView, Pressable } from 'react-native';
-import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, radii, textPresets } from '../../constants/theme';
 
 interface ItineraryItem {
   day: number;
@@ -13,7 +13,7 @@ interface ItineraryTimelineProps {
 }
 
 const TIME_SLOTS = ['MORNING', 'AFTERNOON', 'EVENING'] as const;
-const TIME_COLORS = { MORNING: colors.primary, AFTERNOON: colors.primary, EVENING: colors.primary };
+const TIME_COLORS = { MORNING: colors.sageDrift, AFTERNOON: colors.sageDrift, EVENING: colors.sageDrift };
 
 const DAY_THEMES = [
   'Arrival & First Impressions',
@@ -42,15 +42,15 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
       <div style={{ marginTop: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <h3 style={{
-            margin: 0, color: colors.dark.text.primary,
-            fontSize: 18, fontWeight: 700,
+            margin: 0,
+            ...textPresets.display.sectionHeading,
           }}>
             Suggested Itinerary
           </h3>
           {isAI && (
             <span style={{
-              fontSize: 10, fontWeight: 700, color: '#22C55E',
-              backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 4,
+              fontSize: 10, fontWeight: 700, color: colors.sageDrift,
+              backgroundColor: colors.successBackground, borderRadius: 4,
               padding: '2px 6px', letterSpacing: 0.5,
             }}>
               AI GENERATED
@@ -61,8 +61,8 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {visibleDays.map((item, dayIdx) => (
             <div key={item.day} style={{
-              backgroundColor: colors.dark.surface,
-              border: `1px solid ${colors.dark.border}`,
+              backgroundColor: colors.paleHorizon,
+              border: `1px solid ${colors.divider}`,
               borderRadius: 16,
               padding: 20,
               overflow: 'hidden',
@@ -70,8 +70,8 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
               {/* Day header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <span style={{
-                  backgroundColor: '#22C55E',
-                  color: '#fff',
+                  backgroundColor: colors.sageDrift,
+                  color: colors.paleHorizon,
                   fontSize: 11,
                   fontWeight: 700,
                   padding: '4px 10px',
@@ -81,7 +81,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                   Day {item.day}
                 </span>
                 <span style={{
-                  color: colors.dark.text.primary,
+                  color: colors.text.primary,
                   fontSize: 15,
                   fontWeight: 600,
                 }}>
@@ -98,7 +98,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                   bottom: 6,
                   left: 5,
                   width: 2,
-                  backgroundColor: 'rgba(56,189,248,0.2)',
+                  backgroundColor: 'rgba(168,196,184,0.3)',
                   borderRadius: 1,
                 }} />
 
@@ -110,7 +110,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                       marginBottom: idx < item.activities.length - 1 ? 18 : 0,
                       paddingLeft: 8,
                     }}>
-                      {/* Blue dot */}
+                      {/* Dot */}
                       <div style={{
                         position: 'absolute',
                         left: -19,
@@ -118,9 +118,9 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
                         width: 10,
                         height: 10,
                         borderRadius: 5,
-                        backgroundColor: colors.primary,
-                        border: `2px solid ${colors.dark.surface}`,
-                        boxShadow: '0 0 0 2px rgba(56,189,248,0.3)',
+                        backgroundColor: colors.sageDrift,
+                        border: `2px solid ${colors.paleHorizon}`,
+                        boxShadow: '0 0 0 2px rgba(168,196,184,0.3)',
                       }} />
 
                       {/* Time label */}
@@ -137,7 +137,7 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
 
                       {/* Activity text */}
                       <div style={{
-                        color: colors.dark.text.body,
+                        color: colors.text.body,
                         fontSize: 14,
                         lineHeight: 1.5,
                       }}>
@@ -164,9 +164,9 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
               marginTop: 12,
               padding: '10px 0',
               borderRadius: 12,
-              border: `1px solid ${colors.dark.border}`,
+              border: `1px solid ${colors.divider}`,
               backgroundColor: 'transparent',
-              color: colors.primary,
+              color: colors.sageDrift,
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
@@ -186,12 +186,12 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
   return (
     <View style={{ marginTop: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: colors.dark.text.primary, fontSize: 18, fontWeight: '700' }}>
+        <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: '700' }}>
           Suggested Itinerary
         </Text>
         {isAI && (
-          <View style={{ backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: '#22C55E', letterSpacing: 0.5 }}>AI GENERATED</Text>
+          <View style={{ backgroundColor: colors.successBackground, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.sageDrift, letterSpacing: 0.5 }}>AI GENERATED</Text>
           </View>
         )}
       </View>
@@ -210,10 +210,10 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
               onPress={() => setActiveDay(idx)}
               style={{
                 borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6,
-                backgroundColor: isActive ? colors.primary : colors.dark.surfaceElevated,
+                backgroundColor: isActive ? colors.deepDusk : colors.paleHorizon,
               }}
             >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? '#FFFFFF' : colors.dark.text.muted }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? colors.paleHorizon : colors.text.muted }}>
                 Day {item.day}
               </Text>
             </Pressable>
@@ -224,20 +224,20 @@ export default function ItineraryTimeline({ itinerary, isAI }: ItineraryTimeline
       <View style={{ marginTop: 16, paddingLeft: 20, position: 'relative' }}>
         <View style={{
           position: 'absolute', top: 0, bottom: 0, left: 8,
-          width: 2, backgroundColor: colors.dark.border, borderRadius: 1,
+          width: 2, backgroundColor: colors.divider, borderRadius: 1,
         }} />
         {currentDay.activities.map((activity, idx) => (
           <View key={idx} style={{ position: 'relative', marginBottom: idx < currentDay.activities.length - 1 ? 12 : 0 }}>
             <View style={{
               position: 'absolute', left: -16, top: 14,
               width: 10, height: 10, borderRadius: 5,
-              backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.dark.surface,
+              backgroundColor: colors.sageDrift, borderWidth: 2, borderColor: colors.paleHorizon,
             }} />
             <View style={{
-              backgroundColor: colors.dark.surface, borderWidth: 1, borderColor: colors.dark.border,
+              backgroundColor: colors.paleHorizon, borderWidth: 1, borderColor: colors.divider,
               borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
             }}>
-              <Text style={{ color: colors.dark.text.body, fontSize: 14, lineHeight: 21 }}>{activity}</Text>
+              <Text style={{ color: colors.text.body, fontSize: 14, lineHeight: 21 }}>{activity}</Text>
             </View>
           </View>
         ))}

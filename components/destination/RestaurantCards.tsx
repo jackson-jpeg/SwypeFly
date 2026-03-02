@@ -1,5 +1,5 @@
 import { Platform, View, Text, ScrollView, Pressable, Linking } from 'react-native';
-import { colors } from '../../constants/theme';
+import { colors, textPresets } from '../../constants/theme';
 
 interface Restaurant {
   name: string;
@@ -33,17 +33,15 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
           <h3
             style={{
               margin: 0,
-              color: colors.dark.text.primary,
-              fontSize: 18,
-              fontWeight: 700,
+              ...textPresets.display.sectionHeading,
             }}
           >
             Local Bites
           </h3>
           {isAI && (
             <span style={{
-              fontSize: 10, fontWeight: 700, color: '#22C55E',
-              backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 4,
+              fontSize: 10, fontWeight: 700, color: colors.sageDrift,
+              backgroundColor: colors.successBackground, borderRadius: 4,
               padding: '2px 6px', letterSpacing: 0.5,
             }}>
               AI GENERATED
@@ -68,8 +66,8 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
                 style={{
                   minWidth: 140,
                   maxWidth: 140,
-                  backgroundColor: colors.dark.surface,
-                  border: `1px solid ${colors.dark.border}`,
+                  backgroundColor: colors.paleHorizon,
+                  border: `1px solid ${colors.divider}`,
                   borderRadius: 12,
                   padding: 14,
                   flexShrink: 0,
@@ -82,7 +80,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               >
                 <span
                   style={{
-                    color: colors.dark.text.primary,
+                    color: colors.text.primary,
                     fontSize: 14,
                     fontWeight: 600,
                     lineHeight: 1.3,
@@ -95,7 +93,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
                 </span>
                 <span
                   style={{
-                    color: colors.dark.text.muted,
+                    color: colors.text.muted,
                     fontSize: 12,
                     textTransform: 'capitalize',
                   }}
@@ -128,12 +126,12 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
   return (
     <View style={{ marginTop: 24 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: colors.dark.text.primary, fontSize: 18, fontWeight: '700' }}>
+        <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: '700' }}>
           Local Bites
         </Text>
         {isAI && (
-          <View style={{ backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: '#22C55E', letterSpacing: 0.5 }}>AI GENERATED</Text>
+          <View style={{ backgroundColor: colors.successBackground, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.sageDrift, letterSpacing: 0.5 }}>AI GENERATED</Text>
           </View>
         )}
       </View>
@@ -149,7 +147,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               <Text
                 numberOfLines={1}
                 style={{
-                  color: colors.dark.text.primary,
+                  color: colors.text.primary,
                   fontSize: 14,
                   fontWeight: '600',
                 }}
@@ -158,7 +156,7 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               </Text>
               <Text
                 style={{
-                  color: colors.dark.text.muted,
+                  color: colors.text.muted,
                   fontSize: 12,
                   textTransform: 'capitalize',
                 }}
@@ -182,9 +180,9 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               onPress={() => Linking.openURL(r.mapsUrl!)}
               style={{
                 width: 140,
-                backgroundColor: colors.dark.surface,
+                backgroundColor: colors.paleHorizon,
                 borderWidth: 1,
-                borderColor: colors.dark.border,
+                borderColor: colors.divider,
                 borderRadius: 12,
                 padding: 14,
                 gap: 4,
@@ -197,9 +195,9 @@ export default function RestaurantCards({ restaurants, isAI }: RestaurantCardsPr
               key={idx}
               style={{
                 width: 140,
-                backgroundColor: colors.dark.surface,
+                backgroundColor: colors.paleHorizon,
                 borderWidth: 1,
-                borderColor: colors.dark.border,
+                borderColor: colors.divider,
                 borderRadius: 12,
                 padding: 14,
                 gap: 4,

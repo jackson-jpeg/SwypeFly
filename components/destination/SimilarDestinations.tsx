@@ -32,7 +32,7 @@ function NativeSimilarCard({ dest }: { dest: Destination }) {
       onPress={() => router.push(`/destination/${dest.id}`)}
       style={{
         width: 180, marginRight: 12, borderRadius: 16, overflow: 'hidden',
-        backgroundColor: colors.card.background,
+        backgroundColor: colors.paleHorizon,
       }}
     >
       <Image
@@ -41,12 +41,12 @@ function NativeSimilarCard({ dest }: { dest: Destination }) {
         contentFit="cover"
       />
       <View style={{ padding: 10 }}>
-        <Text style={{ color: colors.card.textPrimary, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>
+        <Text style={{ color: colors.text.primary, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>
           {dest.city}
         </Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-          <Text style={{ color: colors.card.textSecondary, fontSize: 12 }}>{dest.country}</Text>
-          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>${price}</Text>
+          <Text style={{ color: colors.detailSubtitle, fontSize: 12 }}>{dest.country}</Text>
+          <Text style={{ color: colors.sageDrift, fontSize: 13, fontWeight: '700' }}>${price}</Text>
         </View>
       </View>
     </Pressable>
@@ -118,7 +118,7 @@ export function SimilarDestinations({ current }: SimilarDestinationsProps) {
                 <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>{dest.city}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
                   <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{dest.country}</span>
-                  <span style={{ color: colors.primary, fontSize: 13, fontWeight: 700 }}>${price}</span>
+                  <span style={{ color: colors.sunriseButter, fontSize: 13, fontWeight: 700 }}>${price}</span>
                 </div>
               </div>
             </div>

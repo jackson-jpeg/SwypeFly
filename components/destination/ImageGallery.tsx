@@ -65,7 +65,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
                 onError={(e) => {
                   const target = e.currentTarget;
                   target.style.display = 'none';
-                  target.parentElement!.style.background = 'linear-gradient(135deg, #1E293B, #334155)';
+                  target.parentElement!.style.background = `linear-gradient(135deg, ${colors.warmDusk}, ${colors.duskSand})`;
                 }}
                 style={{
                   width: '100%',
@@ -77,7 +77,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
             </div>
           ))}
         </div>
-        {/* Gradient fade to light bg */}
+        {/* Gradient fade to warm bg */}
         <div
           style={{
             position: 'absolute',
@@ -85,7 +85,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
             left: 0,
             right: 0,
             height: 80,
-            background: 'linear-gradient(transparent, #2C1F1A)',
+            background: `linear-gradient(transparent, ${colors.duskSand})`,
             pointerEvents: 'none',
           }}
         />
@@ -116,7 +116,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
                   height: 6,
                   borderRadius: 3,
                   backgroundColor:
-                    i === activeIndex ? colors.primary : 'rgba(255,255,255,0.4)',
+                    i === activeIndex ? colors.deepDusk : 'rgba(44,31,26,0.3)',
                   transition: 'all 0.2s ease',
                   cursor: 'pointer',
                   border: 'none', padding: 0,
@@ -175,7 +175,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
                 height: 6,
                 borderRadius: 3,
                 backgroundColor:
-                  i === activeIndex ? colors.primary : 'rgba(0,0,0,0.25)',
+                  i === activeIndex ? colors.deepDusk : 'rgba(44,31,26,0.25)',
               }}
             />
           ))}

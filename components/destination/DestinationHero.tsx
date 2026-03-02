@@ -1,6 +1,6 @@
 // ─── Destination Hero ────────────────────────────────────────────────────────
 import { View, Text, Platform } from 'react-native';
-import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, radii, textPresets } from '../../constants/theme';
 import type { Destination, VibeTag } from '../../types/destination';
 
 interface DestinationHeroProps {
@@ -27,9 +27,9 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
             style={{
               position: 'absolute', top: 0, right: 0,
               width: 40, height: 40, borderRadius: 20,
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              backgroundColor: colors.overlay.glass,
               backdropFilter: 'blur(8px)',
-              border: `1px solid ${colors.dark.borderLight}`,
+              border: `1px solid ${colors.borderLight}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', fontSize: 20,
             }}
@@ -39,16 +39,15 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
         )}
 
         <h1 style={{
-          margin: 0, color: colors.dark.text.primary, fontSize: fontSize['7xl'], fontWeight: fontWeight.extrabold,
-          letterSpacing: -0.5, lineHeight: 1.1,
+          ...textPresets.display.detailTitle,
+          margin: 0,
         }}>
           {destination.city}, {destination.country}
         </h1>
 
         {/* Tagline */}
         <p style={{
-          margin: `${spacing['2']}px 0 0 0`, color: colors.dark.text.secondary, fontSize: fontSize.xl,
-          fontStyle: 'italic',
+          margin: `${spacing['2']}px 0 0 0`, color: colors.detailSubtitle, fontSize: fontSize.xl,
         }}>
           &ldquo;{destination.tagline}&rdquo;
         </p>
@@ -57,7 +56,7 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing['4'], marginTop: spacing['3'], flexWrap: 'wrap' }}>
           {destination.vibeTags.slice(0, 4).map((tag) => (
             <span key={tag} style={{
-              color: colors.dark.text.secondary, fontSize: fontSize.lg, fontWeight: fontWeight.medium,
+              color: colors.detailSubtitle, fontSize: fontSize.lg, fontWeight: fontWeight.medium,
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
               {VIBE_EMOJIS[tag] || '🏷️'} {tag.charAt(0).toUpperCase() + tag.slice(1)}
@@ -67,7 +66,7 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
 
         {/* Flight duration */}
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
-          <span style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
+          <span style={{ color: colors.detailSubtitle, fontSize: fontSize.lg }}>
             ✈ {destination.flightDuration} flight
           </span>
         </div>
@@ -78,15 +77,15 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
   // ─── Native ──────────────────────────────────────────────────────
   return (
     <View>
-      <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>
+      <Text style={{ color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5, textTransform: 'uppercase' }}>
         {destination.city}, {destination.country}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
-        <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
+        <Text style={{ color: colors.detailSubtitle, fontSize: fontSize.lg }}>
           ✈ {destination.flightDuration} flight
         </Text>
       </View>
-      <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.xl, fontStyle: 'italic', marginTop: spacing['2'] }}>
+      <Text style={{ color: colors.detailSubtitle, fontSize: fontSize.xl, marginTop: spacing['2'] }}>
         {'\u201C'}{destination.tagline}{'\u201D'}
       </Text>
 

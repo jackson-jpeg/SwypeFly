@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, radii, textPresets } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 interface TravelTipsProps {
@@ -37,28 +37,28 @@ export function TravelTips({ destination }: TravelTipsProps) {
             flex: '1 1 calc(50% - 4px)', minWidth: 150,
             display: 'flex', alignItems: 'center', gap: 10,
             padding: `${spacing['3']}px ${spacing['4']}px`,
-            backgroundColor: colors.dark.surface,
+            backgroundColor: colors.paleHorizon,
             borderRadius: radii.lg,
-            border: `1px solid ${colors.dark.border}`,
+            border: `1px solid ${colors.divider}`,
           }}>
             <span style={{ fontSize: 18 }}>{icon}</span>
             <div>
-              <div style={{ color: colors.dark.text.muted, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{label}</div>
-              <div style={{ color: colors.dark.text.primary, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>{value}</div>
+              <div style={{ color: colors.text.muted, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{label}</div>
+              <div style={{ color: colors.text.primary, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>{value}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Pro Tips section */}
-      <div style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginBottom: spacing['3'] }}>
+      <div style={{ ...textPresets.display.sectionHeading, fontSize: fontSize['2xl'], marginBottom: spacing['3'] }}>
         Pro Tips
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {proTips.map((tip, idx) => (
           <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>💡</span>
-            <span style={{ color: colors.dark.text.body, fontSize: fontSize.lg, lineHeight: 1.5 }}>{tip}</span>
+            <span style={{ color: colors.text.body, fontSize: fontSize.lg, lineHeight: 1.5 }}>{tip}</span>
           </div>
         ))}
       </div>
@@ -66,12 +66,12 @@ export function TravelTips({ destination }: TravelTipsProps) {
       {/* Best for tags */}
       {tips.bestFor && tips.bestFor.length > 0 && (
         <div style={{ marginTop: spacing['3'], display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ color: colors.dark.text.muted, fontSize: fontSize.sm, marginRight: 4 }}>Best for:</span>
+          <span style={{ color: colors.text.muted, fontSize: fontSize.sm, marginRight: 4 }}>Best for:</span>
           {tips.bestFor.map(tag => (
             <span key={tag} style={{
               padding: '3px 10px', borderRadius: 9999,
-              backgroundColor: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.15)',
-              color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.medium,
+              backgroundColor: 'rgba(168,196,184,0.15)', border: '1px solid rgba(168,196,184,0.25)',
+              color: colors.sageDrift, fontSize: fontSize.sm, fontWeight: fontWeight.medium,
               textTransform: 'capitalize',
             }}>{tag}</span>
           ))}

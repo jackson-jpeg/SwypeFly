@@ -1,5 +1,5 @@
 // ─── Quick Stats Strip ───────────────────────────────────────────────────────
-// Temp, flight time, rating — horizontal strip.
+// Temp, flight time, best months — horizontal strip.
 
 import { View, Text, Platform } from 'react-native';
 import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
@@ -14,11 +14,11 @@ function StatBox({ label, value, isWeb }: { label: string; value: string; isWeb:
     return (
       <div style={{
         flex: '1 1 0', minWidth: 100,
-        backgroundColor: colors.dark.surface, border: `1px solid ${colors.dark.border}`,
+        backgroundColor: colors.paleHorizon, border: `1px solid ${colors.divider}`,
         borderRadius: radii.lg, padding: `${spacing['3']}px ${spacing['4']}px`, textAlign: 'center',
       }}>
-        <div style={{ color: colors.dark.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium }}>{label}</div>
-        <div style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginTop: 2 }}>
+        <div style={{ color: colors.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium }}>{label}</div>
+        <div style={{ color: colors.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginTop: 2 }}>
           {value}
         </div>
       </div>
@@ -27,11 +27,11 @@ function StatBox({ label, value, isWeb }: { label: string; value: string; isWeb:
 
   return (
     <View style={{
-      flex: 1, backgroundColor: colors.dark.surface, borderWidth: 1, borderColor: colors.dark.border,
+      flex: 1, backgroundColor: colors.paleHorizon, borderWidth: 1, borderColor: colors.divider,
       borderRadius: radii.lg, padding: spacing['3'], alignItems: 'center',
     }}>
-      <Text style={{ color: colors.dark.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium }}>{label}</Text>
-      <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginTop: 2 }}>
+      <Text style={{ color: colors.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium }}>{label}</Text>
+      <Text style={{ color: colors.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginTop: 2 }}>
         {value}
       </Text>
     </View>

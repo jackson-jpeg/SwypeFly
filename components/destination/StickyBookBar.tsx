@@ -26,10 +26,10 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
           position: 'fixed',
           bottom: 0, left: 0, right: 0,
           zIndex: 50,
-          backgroundColor: 'rgba(15,23,42,0.85)',
+          backgroundColor: 'rgba(245,236,215,0.9)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderTop: `1px solid ${colors.dark.border}`,
+          borderTop: `1px solid ${colors.divider}`,
           padding: `${spacing['3']}px ${spacing['5']}px`,
           display: 'flex',
           alignItems: 'center',
@@ -38,13 +38,13 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
       >
         <div style={{ maxWidth: layout.maxContentWidth, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ color: colors.dark.text.muted, fontSize: fontSize.md }}>Flights from</div>
-            <div style={{ color: colors.dark.text.primary, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</div>
+            <div style={{ color: colors.text.muted, fontSize: fontSize.md }}>Flights from</div>
+            <div style={{ color: colors.deepDusk, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</div>
           </div>
           <button
             onClick={() => window.open(url, '_blank')}
             style={{
-              background: colors.primary, color: '#fff', border: 'none',
+              background: colors.deepDusk, color: colors.paleHorizon, border: 'none',
               borderRadius: radii.lg, padding: `${spacing['3']}px ${spacing['6']}px`,
               fontSize: fontSize.xl, fontWeight: fontWeight.bold, cursor: 'pointer',
               boxShadow: shadows.web.primary,
@@ -62,9 +62,9 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
       style={{
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
-        backgroundColor: 'rgba(15,23,42,0.85)',
+        backgroundColor: 'rgba(245,236,215,0.9)',
         borderTopWidth: 1,
-        borderTopColor: colors.dark.border,
+        borderTopColor: colors.divider,
         paddingHorizontal: spacing['5'],
         paddingVertical: spacing['3'],
         flexDirection: 'row',
@@ -74,17 +74,17 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
       }}
     >
       <View>
-        <Text style={{ color: colors.dark.text.muted, fontSize: fontSize.md }}>Flights from</Text>
-        <Text style={{ color: colors.dark.text.primary, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</Text>
+        <Text style={{ color: colors.text.muted, fontSize: fontSize.md }}>Flights from</Text>
+        <Text style={{ color: colors.deepDusk, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</Text>
       </View>
       <Pressable
         onPress={() => Linking.openURL(url)}
         style={{
-          backgroundColor: colors.primary, borderRadius: radii.lg,
+          backgroundColor: colors.deepDusk, borderRadius: radii.lg,
           paddingHorizontal: spacing['6'], paddingVertical: spacing['3'],
         }}
       >
-        <Text style={{ color: '#fff', fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>Check Flights {'\u2197'}</Text>
+        <Text style={{ color: colors.paleHorizon, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>Check Flights {'\u2197'}</Text>
       </Pressable>
     </View>
   );
