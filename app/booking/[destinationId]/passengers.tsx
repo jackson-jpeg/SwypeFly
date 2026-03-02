@@ -68,7 +68,7 @@ function PassengerForm({
               style={{
                 fontFamily: 'Inter_500Medium',
                 fontSize: 13,
-                color: passenger.title === t ? '#FFFFFF' : colors.text.secondary,
+                color: passenger.title === t ? colors.paleHorizon : colors.text.secondary,
                 textTransform: 'capitalize',
               }}
             >
@@ -122,7 +122,7 @@ function PassengerForm({
               style={{
                 fontFamily: 'Inter_500Medium',
                 fontSize: 14,
-                color: passenger.gender === g.value ? '#FFFFFF' : colors.text.primary,
+                color: passenger.gender === g.value ? colors.paleHorizon : colors.text.primary,
               }}
             >
               {g.label}
@@ -224,12 +224,13 @@ export default function Passengers() {
         disabled={!isValid}
         style={{
           backgroundColor: isValid ? colors.deepDusk : colors.border,
-          borderRadius: radii.lg,
-          paddingVertical: spacing['4'],
+          height: 52,
+          borderRadius: 14,
+          justifyContent: 'center',
           alignItems: 'center',
         }}
       >
-        <Text style={{ fontFamily: 'Syne_600SemiBold', fontSize: 16, color: '#FFFFFF' }}>
+        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: isValid ? colors.paleHorizon : '#FFFFFF' }}>
           Continue to Seat Selection
         </Text>
       </Pressable>

@@ -47,7 +47,7 @@ function SeatButton({
 
   const bgColor =
     seat.status === 'occupied'
-      ? 'rgba(44,31,26,0.15)'
+      ? 'rgba(44,31,26,0.20)'
       : isSelected
         ? colors.sageDrift
         : seat.status === 'extra_legroom'
@@ -71,7 +71,7 @@ function SeatButton({
         }}
       >
         {isSelected ? (
-          <Text style={{ fontSize: 14, color: '#FFFFFF' }}>✓</Text>
+          <Text style={{ fontSize: 14, color: colors.deepDusk }}>✓</Text>
         ) : (
           <Text
             style={{
@@ -261,60 +261,62 @@ export default function SeatSelection() {
       {currentSeat && (
         <View
           style={{
-            backgroundColor: colors.sageDrift,
+            backgroundColor: colors.paleHorizon,
             borderRadius: radii.lg,
             padding: spacing['4'],
             marginTop: spacing['4'],
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
           }}
         >
-          <Text style={{ fontFamily: 'Syne_600SemiBold', fontSize: 16, color: '#FFFFFF' }}>
-            Seat {currentSeat.designation}
-          </Text>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: '#FFFFFF' }}>
-            Window
-          </Text>
+          <View>
+            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: colors.deepDusk }}>
+              Seat {currentSeat.designation} — Window
+            </Text>
+            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.muted, marginTop: 2 }}>
+              Standard seat · No extra charge
+            </Text>
+          </View>
+          <Text style={{ fontSize: 18, color: colors.sageDrift }}>✓</Text>
         </View>
       )}
 
       {/* Navigation buttons */}
-      <View style={{ flexDirection: 'row', gap: spacing['3'], marginTop: spacing['6'] }}>
+      <View style={{ marginTop: spacing['6'], gap: spacing['3'] }}>
         <Pressable
           onPress={() => router.push(`/booking/${destinationId}/extras`)}
-          style={{ flex: 1 }}
         >
           <View
             style={{
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: radii.lg,
-              paddingVertical: spacing['4'],
+              backgroundColor: colors.deepDusk,
+              height: 52,
+              borderRadius: 14,
+              justifyContent: 'center',
               alignItems: 'center',
             }}
           >
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: colors.text.secondary }}>
-              Skip seat selection
+            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.paleHorizon }}>
+              Continue to Bags & Extras
             </Text>
           </View>
         </Pressable>
         <Pressable
           onPress={() => router.push(`/booking/${destinationId}/extras`)}
-          style={{ flex: 2 }}
         >
-          <View
+          <Text
             style={{
-              backgroundColor: colors.deepDusk,
-              borderRadius: radii.lg,
-              paddingVertical: spacing['4'],
-              alignItems: 'center',
+              fontFamily: 'Inter_500Medium',
+              fontSize: 15,
+              color: colors.text.muted,
+              textAlign: 'center',
+              paddingVertical: spacing['2'],
             }}
           >
-            <Text style={{ fontFamily: 'Syne_600SemiBold', fontSize: 16, color: '#FFFFFF' }}>
-              Continue
-            </Text>
-          </View>
+            Skip seat selection
+          </Text>
         </Pressable>
       </View>
     </ScrollView>

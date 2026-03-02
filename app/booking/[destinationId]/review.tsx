@@ -243,16 +243,17 @@ export default function Review() {
         disabled={processing}
         style={{
           backgroundColor: colors.deepDusk,
-          borderRadius: radii.lg,
-          paddingVertical: spacing['4'],
+          height: 52,
+          borderRadius: 14,
+          justifyContent: 'center',
           alignItems: 'center',
           opacity: processing ? 0.7 : 1,
         }}
       >
         {processing ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={colors.paleHorizon} />
         ) : (
-          <Text style={{ fontFamily: 'Syne_700Bold', fontSize: 18, color: '#FFFFFF' }}>
+          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.paleHorizon }}>
             Pay ${total.toFixed(2)}
           </Text>
         )}

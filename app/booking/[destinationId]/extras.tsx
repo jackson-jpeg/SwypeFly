@@ -167,12 +167,13 @@ export default function Extras() {
         onPress={() => router.push(`/booking/${destinationId}/review`)}
         style={{
           backgroundColor: colors.deepDusk,
-          borderRadius: radii.lg,
-          paddingVertical: spacing['4'],
+          height: 52,
+          borderRadius: 14,
+          justifyContent: 'center',
           alignItems: 'center',
         }}
       >
-        <Text style={{ fontFamily: 'Syne_600SemiBold', fontSize: 16, color: '#FFFFFF' }}>
+        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.paleHorizon }}>
           Continue to Review
         </Text>
       </Pressable>

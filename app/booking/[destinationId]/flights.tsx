@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, fonts, spacing, radii, textPresets } from '../../../constants/theme';
+import { colors, spacing, radii, textPresets } from '../../../constants/theme';
 import { useBookingStore } from '../../../stores/bookingStore';
 import { StepBar } from './_layout';
 
@@ -90,7 +90,7 @@ export default function FlightSelection() {
               style={{
                 fontFamily: 'Inter_500Medium',
                 fontSize: 14,
-                color: cabinClass === opt.value ? '#FFFFFF' : colors.text.primary,
+                color: cabinClass === opt.value ? colors.paleHorizon : colors.text.primary,
               }}
             >
               {opt.label}
@@ -123,7 +123,7 @@ export default function FlightSelection() {
         >
           <Text style={{ fontSize: 18, color: colors.text.primary }}>−</Text>
         </Pressable>
-        <Text style={{ ...textPresets.display.price, fontSize: 20, minWidth: 24, textAlign: 'center' }}>
+        <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.deepDusk, minWidth: 24, textAlign: 'center' }}>
           {passengerCount}
         </Text>
         <Pressable
@@ -149,17 +149,18 @@ export default function FlightSelection() {
           disabled={loading}
           style={{
             backgroundColor: colors.deepDusk,
-            borderRadius: radii.lg,
-            paddingVertical: spacing['4'],
+            height: 52,
+            borderRadius: 14,
+            justifyContent: 'center',
             alignItems: 'center',
             marginBottom: spacing['6'],
             opacity: loading ? 0.7 : 1,
           }}
         >
           {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={colors.paleHorizon} />
           ) : (
-            <Text style={{ fontFamily: 'Syne_600SemiBold', fontSize: 16, color: '#FFFFFF' }}>
+            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.paleHorizon }}>
               Search Flights
             </Text>
           )}
@@ -204,13 +205,14 @@ export default function FlightSelection() {
           onPress={() => router.push(`/booking/${destinationId}/passengers`)}
           style={{
             backgroundColor: colors.deepDusk,
-            borderRadius: radii.lg,
-            paddingVertical: spacing['4'],
+            height: 52,
+            borderRadius: 14,
+            justifyContent: 'center',
             alignItems: 'center',
             marginTop: spacing['4'],
           }}
         >
-          <Text style={{ fontFamily: 'Syne_600SemiBold', fontSize: 16, color: '#FFFFFF' }}>
+          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.paleHorizon }}>
             Lock This Deal
           </Text>
         </Pressable>

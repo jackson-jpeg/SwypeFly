@@ -82,13 +82,13 @@ export default function Confirmation() {
               width: 72,
               height: 72,
               borderRadius: 36,
-              backgroundColor: colors.sageDrift,
+              backgroundColor: 'rgba(168,196,184,0.25)',
               alignItems: 'center',
               justifyContent: 'center',
             },
           ]}
         >
-          <Text style={{ fontSize: 32, color: '#FFFFFF' }}>✓</Text>
+          <Text style={{ fontSize: 32, color: colors.sageDrift }}>✓</Text>
         </Animated.View>
 
         {/* Title */}
@@ -136,13 +136,18 @@ export default function Confirmation() {
             borderStyle: 'dashed',
           }}
         >
-          {/* SOGOJET wordmark */}
-          <View style={{ flexDirection: 'row', marginBottom: spacing['6'] }}>
-            <Text style={{ fontFamily: 'Syne_800ExtraBold', fontSize: 16, color: colors.deepDusk }}>
-              SOGO
-            </Text>
-            <Text style={{ fontFamily: 'Syne_800ExtraBold', fontSize: 16, color: colors.seafoamMist }}>
-              JET
+          {/* SOGOJET wordmark + BOARDING PASS */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing['6'] }}>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={{ fontFamily: 'Syne_800ExtraBold', fontSize: 16, color: colors.deepDusk }}>
+                SOGO
+              </Text>
+              <Text style={{ fontFamily: 'Syne_800ExtraBold', fontSize: 16, color: colors.seafoamMist }}>
+                JET
+              </Text>
+            </View>
+            <Text style={{ ...textPresets.body.sectionLabel, fontSize: 10, letterSpacing: 2 }}>
+              BOARDING PASS
             </Text>
           </View>
 
@@ -245,12 +250,13 @@ export default function Confirmation() {
         <Pressable
           style={{
             backgroundColor: colors.deepDusk,
-            borderRadius: radii.lg,
-            paddingVertical: spacing['4'],
+            height: 52,
+            borderRadius: 14,
+            justifyContent: 'center',
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontFamily: 'Syne_600SemiBold', fontSize: 16, color: '#FFFFFF' }}>
+          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.paleHorizon }}>
             Add to Apple Wallet
           </Text>
         </Pressable>
