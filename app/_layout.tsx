@@ -194,11 +194,15 @@ function useAuthGuard() {
   const segments = useSegments();
   const router = useRouter();
 
+  // Serialize segments to a stable string — useSegments() returns a new array
+  // reference every render, which would cause an infinite re-render loop if used
+  // directly in the dependency array (React Error #310).
+  const segmentKey = segments.join('/');
+
   useEffect(() => {
     if (isLoading) return;
 
-    const segs = segments as string[];
-    const inAuthGroup = segs[0] === 'auth';
+    const inAuthGroup = segmentKey.startsWith('auth');
     const hasAccess = session !== null || isGuest;
 
     if (!hasAccess && !inAuthGroup) {
@@ -207,7 +211,7 @@ function useAuthGuard() {
     } else if (session && hasCompletedOnboarding && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [session, isLoading, isGuest, hasCompletedOnboarding, segments, browseAsGuest]);
+  }, [session, isLoading, isGuest, hasCompletedOnboarding, segmentKey, browseAsGuest]);
 }
 
 function AuthGatedLayout() {
