@@ -58,10 +58,10 @@ export function WelcomeOverlay() {
         {/* Decorative orb */}
         <div style={{
           width: 80, height: 80, borderRadius: 40, margin: '0 auto 20px',
-          background: `linear-gradient(135deg, ${colors.primary}, #818CF8, #C084FC)`,
+          background: `linear-gradient(135deg, ${colors.primary}, ${colors.sageDrift})`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           animation: 'sg-welcome-float 3s ease-in-out infinite',
-          boxShadow: '0 8px 32px rgba(56,189,248,0.3)',
+          boxShadow: '0 8px 32px rgba(168,196,184,0.3)',
         }}>
           <span style={{ fontSize: 36 }}>✈️</span>
         </div>
@@ -69,7 +69,7 @@ export function WelcomeOverlay() {
         {/* Logo */}
         <div style={{
           fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: -1.5, marginBottom: 8,
-          background: `linear-gradient(90deg, #fff 0%, ${colors.primary} 50%, #C084FC 100%)`,
+          background: `linear-gradient(90deg, #fff 0%, ${colors.primary} 50%, ${colors.warmDusk} 100%)`,
           backgroundSize: '200% auto',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -116,8 +116,8 @@ export function WelcomeOverlay() {
               style={{
                 padding: '10px 8px', borderRadius: 12, cursor: 'pointer',
                 textAlign: 'center', transition: 'all 0.2s', fontFamily: 'inherit',
-                backgroundColor: selectedCode === airport.code ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)',
-                border: selectedCode === airport.code ? '1.5px solid rgba(56,189,248,0.5)' : '1.5px solid rgba(255,255,255,0.06)',
+                backgroundColor: selectedCode === airport.code ? 'rgba(168,196,184,0.15)' : 'rgba(255,255,255,0.04)',
+                border: selectedCode === airport.code ? '1.5px solid rgba(168,196,184,0.5)' : '1.5px solid rgba(255,255,255,0.06)',
                 animation: selectedCode === airport.code ? 'sg-welcome-glow 2s ease-in-out infinite' : 'none',
               }}
             >
@@ -159,13 +159,13 @@ export function WelcomeOverlay() {
           style={{
             width: '100%', padding: '16px 0', borderRadius: 14,
             background: selectedCode
-              ? `linear-gradient(135deg, ${colors.primary}, #818CF8)`
+              ? colors.deepDusk
               : 'rgba(255,255,255,0.08)',
             border: 'none',
             color: selectedCode ? '#fff' : 'rgba(255,255,255,0.25)',
             fontSize: 18, fontWeight: 700, cursor: selectedCode ? 'pointer' : 'default',
             transition: 'all 0.3s',
-            boxShadow: selectedCode ? '0 8px 24px rgba(56,189,248,0.25)' : 'none',
+            boxShadow: selectedCode ? '0 8px 24px rgba(168,196,184,0.25)' : 'none',
             letterSpacing: -0.3,
           }}
         >

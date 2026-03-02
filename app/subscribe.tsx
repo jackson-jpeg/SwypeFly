@@ -102,7 +102,7 @@ export default function SubscribePage() {
                 disabled={loading}
                 style={{
                   padding: '14px 24px', borderRadius: 14,
-                  backgroundColor: loading ? 'rgba(56,189,248,0.5)' : colors.primary, border: 'none',
+                  backgroundColor: loading ? 'rgba(168,196,184,0.5)' : colors.primary, border: 'none',
                   color: '#2C1F1A', fontSize: 16, fontWeight: 700,
                   cursor: loading ? 'default' : 'pointer',
                   whiteSpace: 'nowrap',

@@ -117,8 +117,8 @@ export function MapView({ destinations, onClose }: MapViewProps) {
           {/* Grid lines */}
           {[0.2, 0.4, 0.6, 0.8].map(v => (
             <React.Fragment key={v}>
-              <div style={{ position: 'absolute', top: `${v * 100}%`, left: 0, right: 0, height: 1, backgroundColor: 'rgba(56,189,248,0.04)' }} />
-              <div style={{ position: 'absolute', left: `${v * 100}%`, top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(56,189,248,0.04)' }} />
+              <div style={{ position: 'absolute', top: `${v * 100}%`, left: 0, right: 0, height: 1, backgroundColor: 'rgba(168,196,184,0.04)' }} />
+              <div style={{ position: 'absolute', left: `${v * 100}%`, top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(168,196,184,0.04)' }} />
             </React.Fragment>
           ))}
 
@@ -133,7 +133,7 @@ export function MapView({ destinations, onClose }: MapViewProps) {
           ].map(({ label, x, y }) => (
             <div key={label} style={{
               position: 'absolute', left: `${x}%`, top: `${y}%`,
-              color: 'rgba(56,189,248,0.12)', fontSize: 14, fontWeight: 700,
+              color: 'rgba(168,196,184,0.12)', fontSize: 14, fontWeight: 700,
               letterSpacing: 3, textTransform: 'uppercase', pointerEvents: 'none',
               transform: 'translate(-50%, -50%)',
             }}>{label}</div>
@@ -160,10 +160,10 @@ export function MapView({ destinations, onClose }: MapViewProps) {
                 <div style={{
                   width: isHovered ? 14 : 8, height: isHovered ? 14 : 8,
                   borderRadius: '50%',
-                  backgroundColor: isHovered ? colors.primary : 'rgba(56,189,248,0.8)',
+                  backgroundColor: isHovered ? colors.primary : 'rgba(168,196,184,0.8)',
                   boxShadow: isHovered
-                    ? '0 0 12px rgba(56,189,248,0.6), 0 0 24px rgba(56,189,248,0.3)'
-                    : '0 0 6px rgba(56,189,248,0.4)',
+                    ? '0 0 12px rgba(168,196,184,0.6), 0 0 24px rgba(168,196,184,0.3)'
+                    : '0 0 6px rgba(168,196,184,0.4)',
                   transition: 'all 0.15s',
                   border: '2px solid rgba(255,255,255,0.3)',
                 }} />
@@ -173,7 +173,7 @@ export function MapView({ destinations, onClose }: MapViewProps) {
                   transform: 'translateX(-50%)',
                   marginTop: 4, whiteSpace: 'nowrap',
                   padding: '2px 6px', borderRadius: 6,
-                  backgroundColor: isHovered ? 'rgba(56,189,248,0.2)' : 'rgba(0,0,0,0.5)',
+                  backgroundColor: isHovered ? 'rgba(168,196,184,0.2)' : 'rgba(44,31,26,0.5)',
                   fontSize: 9, fontWeight: 700,
                   color: isHovered ? colors.primary : 'rgba(255,255,255,0.5)',
                   transition: 'all 0.15s',
@@ -187,9 +187,9 @@ export function MapView({ destinations, onClose }: MapViewProps) {
                     transform: 'translateX(-50%)',
                     marginBottom: 12, whiteSpace: 'nowrap',
                     padding: '10px 14px', borderRadius: 12,
-                    backgroundColor: 'rgba(15,23,42,0.95)',
-                    border: '1px solid rgba(56,189,248,0.3)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                    backgroundColor: 'rgba(44,31,26,0.95)',
+                    border: '1px solid rgba(168,196,184,0.3)',
+                    boxShadow: '0 8px 24px rgba(44,31,26,0.5)',
                     backdropFilter: 'blur(12px)',
                     minWidth: 140,
                   }}>
@@ -198,7 +198,7 @@ export function MapView({ destinations, onClose }: MapViewProps) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
                       <span style={{
                         padding: '3px 8px', borderRadius: 999,
-                        background: 'rgba(56,189,248,0.2)', color: colors.primary,
+                        background: 'rgba(168,196,184,0.2)', color: colors.primary,
                         fontSize: 12, fontWeight: 700,
                       }}>✈️ ${price}</span>
                       {dest.rating && (

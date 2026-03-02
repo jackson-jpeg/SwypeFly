@@ -75,7 +75,7 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
     return (
       <Modal visible={visible} animationType="slide" transparent>
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.95)' }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(44,31,26,0.95)' }}>
             {/* Header */}
             <View style={{
               flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -182,8 +182,8 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                   }}
                   style={{
                     padding: spacing['4'], borderRadius: radii.lg,
-                    backgroundColor: 'rgba(56,189,248,0.12)',
-                    borderWidth: 1, borderColor: 'rgba(56,189,248,0.2)',
+                    backgroundColor: 'rgba(168,196,184,0.12)',
+                    borderWidth: 1, borderColor: 'rgba(168,196,184,0.2)',
                     alignItems: 'center',
                   }}
                 >
@@ -356,8 +356,8 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                 }}
                 style={{
                   flex: 1, padding: '14px 0', borderRadius: 14,
-                  background: 'linear-gradient(135deg, rgba(56,189,248,0.15) 0%, rgba(168,85,247,0.15) 100%)',
-                  border: '1px solid rgba(56,189,248,0.2)',
+                  background: 'linear-gradient(135deg, rgba(168,196,184,0.15) 0%, rgba(232,201,160,0.15) 100%)',
+                  border: '1px solid rgba(168,196,184,0.2)',
                   color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}
@@ -414,8 +414,8 @@ export function SearchOverlay({ visible, onClose }: SearchOverlayProps) {
                     fontFamily: 'inherit',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(56,189,248,0.15)';
-                    e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)';
+                    e.currentTarget.style.backgroundColor = 'rgba(168,196,184,0.15)';
+                    e.currentTarget.style.borderColor = 'rgba(168,196,184,0.3)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';

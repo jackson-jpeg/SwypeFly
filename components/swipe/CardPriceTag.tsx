@@ -18,12 +18,12 @@ export function CardPriceTag({ flightPrice, hotelPricePerNight, currency, priceS
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: 'rgba(56,189,248,0.15)',
+          backgroundColor: 'rgba(168,196,184,0.15)',
           borderRadius: 8,
           paddingHorizontal: 10,
           paddingVertical: 6,
           borderWidth: 1,
-          borderColor: 'rgba(56,189,248,0.25)',
+          borderColor: 'rgba(168,196,184,0.25)',
         }}
       >
         <Text style={{ fontSize: 13 }}>{'\u2708\uFE0F'}</Text>

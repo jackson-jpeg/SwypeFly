@@ -65,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       <div style="font-size:72px;font-weight:800;line-height:1;letter-spacing:-2px;text-shadow:0 2px 20px rgba(0,0,0,0.5)">${cityStr}</div>
       ${tagline ? `<div style="font-size:22px;font-weight:400;font-style:italic;color:rgba(255,255,255,0.6);margin-top:8px;text-shadow:0 1px 8px rgba(0,0,0,0.4)">${tagline}</div>` : ''}
       ${metaRow ? `<div style="font-size:18px;font-weight:500;color:rgba(255,255,255,0.7);margin-top:8px;letter-spacing:0.5px">${metaRow}</div>` : ''}
-      ${priceStr ? `<div style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;padding:10px 28px;border-radius:999px;background:linear-gradient(135deg,rgba(168,196,184,0.9),rgba(129,140,248,0.9));font-size:28px;font-weight:700;box-shadow:0 4px 20px rgba(168,196,184,0.3)">✈️ From ${priceStr}</div>` : ''}
+      ${priceStr ? `<div style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;padding:10px 28px;border-radius:999px;background:linear-gradient(135deg,rgba(168,196,184,0.9),rgba(168,196,184,0.9));font-size:28px;font-weight:700;box-shadow:0 4px 20px rgba(168,196,184,0.3)">✈️ From ${priceStr}</div>` : ''}
     </div>
   </div>
 </body>

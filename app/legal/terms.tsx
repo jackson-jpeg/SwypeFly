@@ -7,14 +7,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   if (Platform.OS === 'web') {
     return (
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: '0 0 8px', color: '#1E293B', fontSize: 18, fontWeight: 700 }}>{title}</h2>
+        <h2 style={{ margin: '0 0 8px', color: '#2C1F1A', fontSize: 18, fontWeight: 700 }}>{title}</h2>
         {children}
       </div>
     );
   }
   return (
     <View style={{ marginBottom: 24 }}>
-      <Text style={{ color: '#1E293B', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>{title}</Text>
+      <Text style={{ color: '#2C1F1A', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>{title}</Text>
       {children}
     </View>
   );
@@ -42,7 +42,7 @@ export default function TermsOfService() {
             &larr; Back
           </button>
 
-          <h1 style={{ margin: '0 0 4px', color: '#1E293B', fontSize: 28, fontWeight: 800 }}>Terms of Service</h1>
+          <h1 style={{ margin: '0 0 4px', color: '#2C1F1A', fontSize: 28, fontWeight: 800 }}>Terms of Service</h1>
           <p style={{ margin: '0 0 24px', color: '#94A3B8', fontSize: 13 }}>Last updated: {LAST_UPDATED}</p>
 
           <Section title="Service Description">
@@ -98,7 +98,7 @@ export default function TermsOfService() {
           <Text style={{ color: '#A8C4B8', fontSize: 15, fontWeight: '600' }}>&larr; Back</Text>
         </Pressable>
 
-        <Text style={{ color: '#1E293B', fontSize: 28, fontWeight: '800', marginBottom: 4 }}>Terms of Service</Text>
+        <Text style={{ color: '#2C1F1A', fontSize: 28, fontWeight: '800', marginBottom: 4 }}>Terms of Service</Text>
         <Text style={{ color: '#94A3B8', fontSize: 13, marginBottom: 24 }}>Last updated: {LAST_UPDATED}</Text>
 
         <Section title="Service Description">

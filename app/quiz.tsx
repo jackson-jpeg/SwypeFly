@@ -211,8 +211,8 @@ export default function QuizPage() {
                 transition: 'all 0.15s',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = 'rgba(56,189,248,0.1)';
-                e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)';
+                e.currentTarget.style.backgroundColor = 'rgba(168,196,184,0.1)';
+                e.currentTarget.style.borderColor = 'rgba(168,196,184,0.3)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
