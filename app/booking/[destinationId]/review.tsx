@@ -86,7 +86,8 @@ export default function Review() {
       } else {
         setBookingResult('failed');
       }
-    } catch {
+    } catch (err) {
+      console.error('[review] Payment/booking failed:', err);
       setBookingResult('failed');
     } finally {
       setProcessing(false);

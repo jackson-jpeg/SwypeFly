@@ -23,6 +23,7 @@ export default function FlightSelection() {
   const [offers, setOffers] = useState<Record<string, unknown>[]>([]);
   const [passengerCount, setPassengerCount] = useState(1);
   const [searched, setSearched] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -43,8 +44,9 @@ export default function FlightSelection() {
       const data = await res.json();
       setOffers(data.offers || []);
       setSearched(true);
-    } catch {
-      // Handle error
+    } catch (err) {
+      console.error('[flights] Failed to search flights:', err);
+      setSearchError('Failed to search flights. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -193,7 +195,13 @@ export default function FlightSelection() {
         );
       })}
 
-      {searched && offers.length === 0 && (
+      {searchError && (
+        <Text style={{ ...textPresets.body.default, color: colors.error || '#DC2626', textAlign: 'center', marginTop: spacing['4'] }}>
+          {searchError}
+        </Text>
+      )}
+
+      {searched && !searchError && offers.length === 0 && (
         <Text style={{ ...textPresets.body.default, textAlign: 'center', marginTop: spacing['10'] }}>
           No flights found for these dates. Try different dates or cabin class.
         </Text>

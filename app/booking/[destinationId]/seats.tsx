@@ -105,7 +105,10 @@ export default function SeatSelection() {
         setSeatMap(data.seatMap || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error('[seats] Failed to load seat map:', err);
+        setLoading(false);
+      });
   }, [selectedOffer]);
 
   const currentPassengerId = passengers[0]?.id;

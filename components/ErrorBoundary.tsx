@@ -21,6 +21,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[ErrorBoundary]', error, errorInfo.componentStack);
     captureException(error, {
       componentStack: errorInfo.componentStack ?? undefined,
     });
@@ -30,7 +31,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       return (
         <ErrorState
-          message="Something unexpected happened"
+          message="The app encountered an error. Please try refreshing the page."
           onRetry={() => this.setState({ hasError: false })}
         />
       );
