@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useUIStore } from '../../stores/uiStore';
 import { useSavedStore } from '../../stores/savedStore';
 import { useAuthContext } from '../../hooks/AuthContext';
-import { colors } from '../../constants/theme';
+import { colors, fonts } from '../../constants/theme';
 import { showToast } from '../../stores/toastStore';
 
 const DEPARTURE_OPTIONS = [
@@ -42,13 +42,13 @@ const DEPARTURE_OPTIONS = [
   { city: 'Dubai', code: 'DXB', region: 'Other' },
 ];
 
-const BG = '#2C1F1A';
-const CARD = '#3D2E24';
-const BORDER = '#334155';
-const TEXT = '#F5ECD7';
-const MUTED = '#94A3B8';
-const ACCENT = colors.primary;
-const DANGER = '#EF4444';
+const BG = '#F5ECD7';
+const CARD = '#FDEFC3';
+const BORDER = '#E8C9A0';
+const TEXT = '#2C1F1A';
+const MUTED = '#8A7F72';
+const ACCENT = '#A8C4B8';
+const DANGER = '#D4734A';
 
 export default function SettingsTab() {
   const { user, signOut, isGuest } = useAuthContext();
@@ -72,14 +72,14 @@ export default function SettingsTab() {
       <div style={{ backgroundColor: BG, minHeight: '100vh', overflowY: 'auto', paddingBottom: 100 }}>
         <div style={{ maxWidth: 480, margin: '0 auto', width: '100%' }}>
           <div style={{ padding: '56px 20px 24px 20px' }}>
-            <h1 style={{ margin: 0, color: TEXT, fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
+            <h1 style={{ margin: 0, color: TEXT, fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em', fontFamily: fonts.display, textTransform: 'uppercase' }}>
               Settings
             </h1>
           </div>
 
           <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* Flying From */}
-            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginBottom: -4 }}>
+            <span style={{ color: ACCENT, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginBottom: -4 }}>
               Flying From
             </span>
             <div style={{
@@ -102,10 +102,10 @@ export default function SettingsTab() {
                   if (opt) setDeparture(opt.city, opt.code, true);
                 }}
                 style={{
-                  background: '#334155', color: TEXT, border: `1px solid ${BORDER}`,
+                  background: '#FFFDF5', color: TEXT, border: `1px solid ${BORDER}`,
                   borderRadius: 8, padding: '8px 32px 8px 12px', fontSize: 14, cursor: 'pointer',
                   appearance: 'none', WebkitAppearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A7F72' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 8px center',
                 }}
@@ -117,7 +117,7 @@ export default function SettingsTab() {
             </div>
 
             {/* Preferences */}
-            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
+            <span style={{ color: ACCENT, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
               Preferences
             </span>
 
@@ -142,7 +142,7 @@ export default function SettingsTab() {
                 aria-label="Toggle haptic feedback"
                 style={{
                   width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                  backgroundColor: hapticsEnabled ? ACCENT : '#475569',
+                  backgroundColor: hapticsEnabled ? ACCENT : '#E8C9A0',
                   position: 'relative', transition: 'background-color 0.2s',
                   flexShrink: 0,
                 }}
@@ -175,10 +175,10 @@ export default function SettingsTab() {
                 onChange={(e) => useUIStore.getState().setTheme(e.target.value as 'dark' | 'light' | 'system')}
                 aria-label="Select theme"
                 style={{
-                  background: '#334155', color: TEXT, border: `1px solid ${BORDER}`,
+                  background: '#FFFDF5', color: TEXT, border: `1px solid ${BORDER}`,
                   borderRadius: 8, padding: '8px 32px 8px 12px', fontSize: 14, cursor: 'pointer',
                   appearance: 'none', WebkitAppearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A7F72' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 8px center',
                   textTransform: 'capitalize' as const,
@@ -209,10 +209,10 @@ export default function SettingsTab() {
                 onChange={(e) => useUIStore.getState().setCurrency(e.target.value)}
                 aria-label="Select currency"
                 style={{
-                  background: '#334155', color: TEXT, border: `1px solid ${BORDER}`,
+                  background: '#FFFDF5', color: TEXT, border: `1px solid ${BORDER}`,
                   borderRadius: 8, padding: '8px 32px 8px 12px', fontSize: 14, cursor: 'pointer',
                   appearance: 'none', WebkitAppearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A7F72' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 8px center',
                 }}
@@ -227,7 +227,7 @@ export default function SettingsTab() {
             </div>
 
             {/* Account */}
-            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
+            <span style={{ color: ACCENT, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
               Account
             </span>
             <div style={{
@@ -271,7 +271,7 @@ export default function SettingsTab() {
             </div>
 
             {/* Data */}
-            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
+            <span style={{ color: ACCENT, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
               Data
             </span>
             <div style={{
@@ -307,7 +307,7 @@ export default function SettingsTab() {
             </div>
 
             {/* Legal */}
-            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
+            <span style={{ color: ACCENT, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
               Legal
             </span>
             {[
@@ -330,7 +330,7 @@ export default function SettingsTab() {
             ))}
 
             {/* About */}
-            <span style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
+            <span style={{ color: ACCENT, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, marginTop: 12, marginBottom: -4 }}>
               About
             </span>
             <div style={{
@@ -338,8 +338,7 @@ export default function SettingsTab() {
               border: `1px solid ${BORDER}`,
             }}>
               <span style={{ color: TEXT, fontSize: 15, fontWeight: 500, display: 'block' }}>SoGoJet</span>
-              <span style={{ color: MUTED, fontSize: 13, marginTop: 4, display: 'block' }}>Version 1.0.0</span>
-              <span style={{ color: MUTED, fontSize: 12, marginTop: 2, display: 'block' }}>Find cheap flights to amazing places ✈️</span>
+              <span style={{ color: MUTED, fontSize: 13, marginTop: 4, display: 'block' }}>SoGoJet v2.0 · Made with love</span>
             </div>
           </div>
         </div>
@@ -352,11 +351,11 @@ export default function SettingsTab() {
     <View style={{ flex: 1, backgroundColor: BG }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ paddingHorizontal: 20, paddingTop: 56, paddingBottom: 12 }}>
-          <Text style={{ color: TEXT, fontSize: 28, fontWeight: '800' }}>Settings</Text>
+          <Text style={{ color: TEXT, fontSize: 28, fontWeight: '800', fontFamily: fonts.display, textTransform: 'uppercase', letterSpacing: -0.5 }}>Settings</Text>
         </View>
         <View style={{ paddingHorizontal: 20, gap: 12 }}>
           {/* Flying From */}
-          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5 }}>Flying From</Text>
+          <Text style={{ color: ACCENT, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5 }}>Flying From</Text>
           <Pressable
             onPress={() => setShowDepartureModal(true)}
             style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: BORDER }}
@@ -369,7 +368,7 @@ export default function SettingsTab() {
           </Pressable>
 
           {/* Preferences */}
-          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Preferences</Text>
+          <Text style={{ color: ACCENT, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Preferences</Text>
 
           {/* Haptics toggle */}
           <View style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: BORDER }}>
@@ -380,7 +379,7 @@ export default function SettingsTab() {
             <Switch
               value={hapticsEnabled}
               onValueChange={() => useUIStore.getState().toggleHaptics()}
-              trackColor={{ false: '#475569', true: ACCENT }}
+              trackColor={{ false: '#E8C9A0', true: ACCENT }}
               thumbColor="#fff"
             />
           </View>
@@ -395,8 +394,8 @@ export default function SettingsTab() {
                   onPress={() => useUIStore.getState().setTheme(t)}
                   style={{
                     flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
-                    backgroundColor: theme === t ? 'rgba(168,196,184,0.15)' : 'rgba(255,255,255,0.05)',
-                    borderWidth: 1, borderColor: theme === t ? 'rgba(168,196,184,0.4)' : 'rgba(255,255,255,0.08)',
+                    backgroundColor: theme === t ? 'rgba(168,196,184,0.2)' : '#FFFDF5',
+                    borderWidth: 1, borderColor: theme === t ? ACCENT : BORDER,
                   }}
                 >
                   <Text style={{ color: theme === t ? ACCENT : MUTED, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' }}>
@@ -408,7 +407,7 @@ export default function SettingsTab() {
           </View>
 
           {/* Account */}
-          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Account</Text>
+          <Text style={{ color: ACCENT, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Account</Text>
           <View style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: BORDER }}>
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={{ color: TEXT, fontSize: 15, fontWeight: '500' }} numberOfLines={1}>
@@ -430,7 +429,7 @@ export default function SettingsTab() {
           </View>
 
           {/* Data */}
-          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Data</Text>
+          <Text style={{ color: ACCENT, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Data</Text>
           <View style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: BORDER }}>
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={{ color: TEXT, fontSize: 15, fontWeight: '500' }}>Saved Destinations</Text>
@@ -447,7 +446,7 @@ export default function SettingsTab() {
           </View>
 
           {/* Legal */}
-          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Legal</Text>
+          <Text style={{ color: ACCENT, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>Legal</Text>
           <Pressable onPress={() => router.push('/legal/privacy')} style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: BORDER }}>
             <Text style={{ color: TEXT, fontSize: 15, fontWeight: '500' }}>Privacy Policy</Text>
             <Text style={{ color: MUTED, fontSize: 14 }}>›</Text>
@@ -458,11 +457,10 @@ export default function SettingsTab() {
           </Pressable>
 
           {/* About */}
-          <Text style={{ color: MUTED, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>About</Text>
+          <Text style={{ color: ACCENT, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12 }}>About</Text>
           <View style={{ backgroundColor: CARD, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: BORDER }}>
             <Text style={{ color: TEXT, fontSize: 15, fontWeight: '500' }}>SoGoJet</Text>
-            <Text style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>Version 1.0.0</Text>
-            <Text style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>Find cheap flights to amazing places ✈️</Text>
+            <Text style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>SoGoJet v2.0 · Made with love</Text>
           </View>
 
           <View style={{ height: 120 }} />
@@ -488,7 +486,7 @@ export default function SettingsTab() {
                   style={{
                     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                     paddingVertical: 14, paddingHorizontal: 20,
-                    backgroundColor: item.code === departureCode ? 'rgba(168,196,184,0.08)' : 'transparent',
+                    backgroundColor: item.code === departureCode ? 'rgba(168,196,184,0.15)' : 'transparent',
                   }}
                 >
                   <Text style={{ color: item.code === departureCode ? ACCENT : TEXT, fontSize: 15, fontWeight: item.code === departureCode ? '600' : '400' }}>
