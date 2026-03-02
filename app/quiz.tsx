@@ -102,7 +102,7 @@ export default function QuizPage() {
   if (results) {
     return (
       <div style={{
-        minHeight: '100vh', backgroundColor: '#0F172A', padding: '60px 20px 40px',
+        minHeight: '100vh', backgroundColor: '#F5ECD7', padding: '60px 20px 40px',
       }}>
         <div style={{ maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🎯</div>
@@ -152,7 +152,7 @@ export default function QuizPage() {
               style={{
                 padding: '12px 24px', borderRadius: 9999,
                 backgroundColor: colors.primary, border: 'none',
-                color: '#0F172A', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                color: '#2C1F1A', fontSize: 14, fontWeight: 700, cursor: 'pointer',
               }}
             >View Your Feed</button>
           </div>
@@ -165,7 +165,7 @@ export default function QuizPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', backgroundColor: '#0F172A',
+      minHeight: '100vh', backgroundColor: '#F5ECD7',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: 24,
     }}>

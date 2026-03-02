@@ -1,7 +1,7 @@
 export function formatFlightPrice(
   price: number,
   currency = 'USD',
-  priceSource?: 'travelpayouts' | 'amadeus' | 'estimate',
+  priceSource?: 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate',
 ): string {
   const formatted = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -10,7 +10,7 @@ export function formatFlightPrice(
     maximumFractionDigits: 0,
   }).format(price);
 
-  const isLive = priceSource === 'travelpayouts' || priceSource === 'amadeus';
+  const isLive = priceSource === 'travelpayouts' || priceSource === 'amadeus' || priceSource === 'duffel';
   return isLive ? `From ${formatted}` : `From ~${formatted}`;
 }
 

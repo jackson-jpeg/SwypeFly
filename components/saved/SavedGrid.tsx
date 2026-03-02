@@ -70,7 +70,7 @@ export function SavedGrid({ sortBy = 'recent', groupByRegion = true }: SavedGrid
       if (dest) results.push(dest);
     });
     if (sortBy === 'price') results.sort((a, b) => (a.livePrice ?? a.flightPrice) - (b.livePrice ?? b.flightPrice));
-    else if (sortBy === 'rating') results.sort((a, b) => b.rating - a.rating);
+    else if (sortBy === 'rating') results.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     return results;
   }, [savedIds, cached, missingIds, missingQueries, sortBy]);
 

@@ -29,7 +29,7 @@ export default function BudgetCalculator() {
   if (Platform.OS !== 'web') return null;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0F172A', padding: '60px 20px 40px' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#F5ECD7', padding: '60px 20px 40px' }}>
       <button
         onClick={() => router.back()}
         style={{

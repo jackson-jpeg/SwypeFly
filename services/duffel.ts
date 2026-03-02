@@ -70,8 +70,8 @@ export async function searchFlights(params: FlightSearchParams) {
   }
 
   const response = await client.offerRequests.create({
-    slices,
-    passengers: params.passengers,
+    slices: slices as any,
+    passengers: params.passengers as any,
     cabin_class: params.cabinClass || 'economy',
     return_offers: true,
   });

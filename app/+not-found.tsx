@@ -7,7 +7,7 @@ export default function NotFound() {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', backgroundColor: '#0F172A', padding: 32, textAlign: 'center',
+        height: '100vh', backgroundColor: '#F5ECD7', padding: 32, textAlign: 'center',
       }}>
         <div style={{ fontSize: 64, marginBottom: 16 }}>🌎</div>
         <h1 style={{ color: '#fff', fontSize: 32, fontWeight: 800, margin: '0 0 8px 0' }}>
@@ -23,7 +23,7 @@ export default function NotFound() {
             style={{
               padding: '14px 28px', borderRadius: 9999,
               backgroundColor: colors.primary, border: 'none',
-              color: '#0F172A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+              color: '#2C1F1A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
             }}
           >Explore Destinations</button>
           <button
@@ -40,14 +40,14 @@ export default function NotFound() {
   }
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F172A', padding: 32 }}>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5ECD7', padding: 32 }}>
       <Text style={{ fontSize: 64, marginBottom: 16 }}>🌎</Text>
       <Text style={{ color: '#fff', fontSize: 32, fontWeight: '800', textAlign: 'center' }}>Lost in transit</Text>
       <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginTop: 8, marginBottom: 32 }}>
         This destination doesn't exist... yet.
       </Text>
       <Pressable onPress={() => router.replace('/')} style={{ backgroundColor: colors.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 9999 }}>
-        <Text style={{ color: '#0F172A', fontSize: 16, fontWeight: '700' }}>Explore Destinations</Text>
+        <Text style={{ color: '#2C1F1A', fontSize: 16, fontWeight: '700' }}>Explore Destinations</Text>
       </Pressable>
     </View>
   );

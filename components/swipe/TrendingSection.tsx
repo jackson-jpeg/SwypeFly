@@ -37,7 +37,7 @@ function TrendingCard({ destination, rank }: { destination: Destination; rank: n
       <div style={{
         position: 'absolute', top: 8, left: 8,
         width: 28, height: 28, borderRadius: 14,
-        background: `linear-gradient(135deg, ${colors.primary}, #0284C7)`,
+        background: `linear-gradient(135deg, ${colors.primary}, ${colors.sageDrift})`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
       }}>
@@ -53,7 +53,7 @@ function TrendingCard({ destination, rank }: { destination: Destination; rank: n
           {destination.country}
         </div>
         <div style={{
-          color: '#7DD3FC', fontSize: 13, fontWeight: 700, marginTop: 4,
+          color: colors.sunriseButter, fontSize: 13, fontWeight: 700, marginTop: 4,
         }}>
           {formatFlightPrice(destination.flightPrice, destination.currency)}
         </div>
@@ -156,7 +156,7 @@ export function TrendingSection({ onClose }: TrendingSectionProps) {
   const currentMonth = getCurrentMonthAbbr();
 
   const trending = useMemo(
-    () => [...destinations].sort((a, b) => b.rating * b.reviewCount - a.rating * a.reviewCount).slice(0, 6),
+    () => [...destinations].sort((a, b) => (b.flightPrice ?? 0) - (a.flightPrice ?? 0)).slice(0, 6),
     [destinations],
   );
 

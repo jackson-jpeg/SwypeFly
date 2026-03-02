@@ -42,10 +42,10 @@ const DEPARTURE_OPTIONS = [
   { city: 'Dubai', code: 'DXB', region: 'Other' },
 ];
 
-const BG = '#0F172A';
-const CARD = '#1E293B';
+const BG = '#2C1F1A';
+const CARD = '#3D2E24';
 const BORDER = '#334155';
-const TEXT = '#F8FAFC';
+const TEXT = '#F5ECD7';
 const MUTED = '#94A3B8';
 const ACCENT = colors.primary;
 const DANGER = '#EF4444';
@@ -260,7 +260,7 @@ export default function SettingsTab() {
                 <button
                   onClick={() => router.replace('/auth/login')}
                   style={{
-                    background: 'rgba(56,189,248,0.1)', border: `1px solid rgba(56,189,248,0.3)`,
+                    background: 'rgba(168,196,184,0.1)', border: `1px solid rgba(168,196,184,0.3)`,
                     borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600,
                     color: ACCENT, cursor: 'pointer',
                   }}
@@ -395,8 +395,8 @@ export default function SettingsTab() {
                   onPress={() => useUIStore.getState().setTheme(t)}
                   style={{
                     flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
-                    backgroundColor: theme === t ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.05)',
-                    borderWidth: 1, borderColor: theme === t ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.08)',
+                    backgroundColor: theme === t ? 'rgba(168,196,184,0.15)' : 'rgba(255,255,255,0.05)',
+                    borderWidth: 1, borderColor: theme === t ? 'rgba(168,196,184,0.4)' : 'rgba(255,255,255,0.08)',
                   }}
                 >
                   <Text style={{ color: theme === t ? ACCENT : MUTED, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' }}>
@@ -423,7 +423,7 @@ export default function SettingsTab() {
                 <Text style={{ color: DANGER, fontSize: 13, fontWeight: '600' }}>Sign Out</Text>
               </Pressable>
             ) : (
-              <Pressable onPress={() => router.replace('/auth/login')} style={{ backgroundColor: 'rgba(56,189,248,0.1)', borderWidth: 1, borderColor: 'rgba(56,189,248,0.3)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 }}>
+              <Pressable onPress={() => router.replace('/auth/login')} style={{ backgroundColor: 'rgba(168,196,184,0.1)', borderWidth: 1, borderColor: 'rgba(168,196,184,0.3)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 }}>
                 <Text style={{ color: ACCENT, fontSize: 13, fontWeight: '600' }}>Sign In</Text>
               </Pressable>
             )}
@@ -471,7 +471,7 @@ export default function SettingsTab() {
 
       {/* Departure City Modal */}
       <Modal visible={showDepartureModal} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.7)', justifyContent: 'flex-end' }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(44,31,26,0.7)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: CARD, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '60%' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: BORDER }}>
               <Text style={{ color: TEXT, fontSize: 18, fontWeight: '700' }}>Departure City</Text>
@@ -488,7 +488,7 @@ export default function SettingsTab() {
                   style={{
                     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                     paddingVertical: 14, paddingHorizontal: 20,
-                    backgroundColor: item.code === departureCode ? 'rgba(56,189,248,0.08)' : 'transparent',
+                    backgroundColor: item.code === departureCode ? 'rgba(168,196,184,0.08)' : 'transparent',
                   }}
                 >
                   <Text style={{ color: item.code === departureCode ? ACCENT : TEXT, fontSize: 15, fontWeight: item.code === departureCode ? '600' : '400' }}>

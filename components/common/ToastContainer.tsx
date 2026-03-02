@@ -8,7 +8,7 @@ import { colors, radii, spacing, fontSize, fontWeight, shadows, animation } from
 const TYPE_COLORS: Record<ToastType, { bg: string; border: string; text: string }> = {
   success: { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', text: colors.successDark },
   error: { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', text: colors.error },
-  info: { bg: 'rgba(56,189,248,0.12)', border: 'rgba(56,189,248,0.3)', text: colors.primaryDarker },
+  info: { bg: 'rgba(168,196,184,0.12)', border: 'rgba(168,196,184,0.3)', text: colors.primaryDark },
 };
 
 function ToastItem({ toast }: { toast: Toast }) {

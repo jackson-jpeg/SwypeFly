@@ -4,7 +4,7 @@ function generateSessionId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export type SortPreset = 'default' | 'cheapest' | 'trending' | 'topRated';
+export type SortPreset = 'default' | 'cheapest' | 'trending';
 export type RegionFilter = 'all' | 'domestic' | 'caribbean' | 'latam' | 'europe' | 'asia' | 'africa-me' | 'oceania';
 
 export const REGION_OPTIONS: { key: RegionFilter; label: string; emoji: string }[] = [

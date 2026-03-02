@@ -9,7 +9,7 @@ import { colors, spacing, fontSize, fontWeight, radii, shadows, layout } from '.
 interface StickyBookBarProps {
   flightPrice: number;
   currency: string;
-  priceSource?: 'travelpayouts' | 'amadeus' | 'estimate';
+  priceSource?: 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate';
   departureCode: string;
   iataCode: string;
   marker: string;

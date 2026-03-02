@@ -54,7 +54,7 @@ export function DealAlertBanner() {
     <div style={{
       position: 'fixed', bottom: 80, left: 16, right: 16, zIndex: 40,
       padding: '14px 16px', borderRadius: 16,
-      backgroundColor: 'rgba(15,23,42,0.9)',
+      backgroundColor: 'rgba(44,31,26,0.9)',
       border: '1px solid rgba(255,255,255,0.1)',
       backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
     }}>
@@ -83,7 +83,7 @@ export function DealAlertBanner() {
           style={{
             padding: '10px 18px', borderRadius: 10,
             backgroundColor: colors.primary, border: 'none',
-            color: '#0F172A', fontSize: 14, fontWeight: 700,
+            color: '#2C1F1A', fontSize: 14, fontWeight: 700,
             cursor: 'pointer', whiteSpace: 'nowrap',
           }}
         >Notify Me</button>

@@ -87,8 +87,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hotelPricePerNight: dest.hotel_price_per_night,
       currency: dest.currency,
       vibeTags: dest.vibe_tags,
-      rating: dest.rating,
-      reviewCount: dest.review_count,
       bestMonths: dest.best_months,
       averageTemp: dest.average_temp,
       flightDuration: (price?.duration as string) || dest.flight_duration,

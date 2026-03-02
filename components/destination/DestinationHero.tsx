@@ -65,20 +65,10 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
           ))}
         </div>
 
-        {/* Rating row */}
+        {/* Flight duration */}
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing['1'] }}>
-            <span style={{ color: colors.warning, fontSize: fontSize.lg }}>&#9733;</span>
-            <span style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
-              {destination.rating.toFixed(1)}
-            </span>
-            <span style={{ color: colors.dark.text.muted, fontSize: fontSize.base }}>
-              ({destination.reviewCount.toLocaleString()})
-            </span>
-          </div>
-          <span style={{ color: colors.dark.border }}>|</span>
           <span style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
-            {destination.flightDuration} flight
+            ✈ {destination.flightDuration} flight
           </span>
         </div>
       </div>
@@ -92,18 +82,8 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
         {destination.city}, {destination.country}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing['3'], marginTop: spacing['2'] }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing['1'] }}>
-          <Text style={{ color: colors.warning, fontSize: fontSize.lg }}>{'\u2733'}</Text>
-          <Text style={{ color: colors.dark.text.primary, fontSize: fontSize.lg, fontWeight: fontWeight.semibold }}>
-            {destination.rating.toFixed(1)}
-          </Text>
-          <Text style={{ color: colors.dark.text.muted, fontSize: fontSize.base }}>
-            ({destination.reviewCount.toLocaleString()})
-          </Text>
-        </View>
-        <Text style={{ color: colors.dark.border }}>|</Text>
         <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.lg }}>
-          {destination.flightDuration} flight
+          ✈ {destination.flightDuration} flight
         </Text>
       </View>
       <Text style={{ color: colors.dark.text.secondary, fontSize: fontSize.xl, fontStyle: 'italic', marginTop: spacing['2'] }}>
@@ -117,7 +97,7 @@ export function DestinationHero({ destination, saved, onToggleSave }: Destinatio
             paddingHorizontal: spacing['4'], paddingVertical: 5,
             borderWidth: 1, borderColor: colors.primaryBorder,
           }}>
-            <Text style={{ color: colors.primaryDarker, fontSize: fontSize.base, fontWeight: fontWeight.semibold, textTransform: 'capitalize' }}>
+            <Text style={{ color: colors.sageDrift, fontSize: fontSize.base, fontWeight: fontWeight.semibold, textTransform: 'capitalize' }}>
               {tag}
             </Text>
           </View>

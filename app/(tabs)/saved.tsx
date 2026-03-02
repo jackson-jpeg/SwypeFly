@@ -145,7 +145,7 @@ function ShareWishlistButton({ count }: { count: number }) {
         padding: '10px 20px', borderRadius: radii.full,
         background: copied
           ? 'linear-gradient(135deg, #22C55E, #16A34A)'
-          : `linear-gradient(135deg, ${colors.primary}, #0284C7)`,
+          : `linear-gradient(135deg, ${colors.primary}, ${colors.sageDrift})`,
         cursor: 'pointer', transition: 'all 0.3s ease',
         boxShadow: shadows.web.primary,
         border: 'none', fontFamily: 'inherit',

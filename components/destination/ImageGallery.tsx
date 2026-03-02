@@ -85,7 +85,7 @@ export default function ImageGallery({ images, city }: ImageGalleryProps) {
             left: 0,
             right: 0,
             height: 80,
-            background: 'linear-gradient(transparent, #0F172A)',
+            background: 'linear-gradient(transparent, #2C1F1A)',
             pointerEvents: 'none',
           }}
         />

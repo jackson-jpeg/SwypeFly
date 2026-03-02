@@ -21,7 +21,7 @@ export const feedQuerySchema = z.object({
   sessionId: z.string().max(64).optional(),
   excludeIds: z.string().max(5000).optional(),
   vibeFilter: z.string().max(50).optional(),
-  sortPreset: z.enum(['default', 'cheapest', 'trending', 'topRated']).optional(),
+  sortPreset: z.enum(['default', 'cheapest', 'trending']).optional(),
   regionFilter: z.enum(['all', 'domestic', 'caribbean', 'latam', 'europe', 'asia', 'africa-me', 'oceania']).optional(),
   maxPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
 });

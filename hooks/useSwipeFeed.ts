@@ -52,10 +52,8 @@ function getStaticPage(
 
   if (sortPreset === 'cheapest') {
     dests.sort((a, b) => a.flightPrice - b.flightPrice);
-  } else if (sortPreset === 'topRated') {
-    dests.sort((a, b) => b.rating - a.rating);
   } else if (sortPreset === 'trending') {
-    dests.sort((a, b) => b.reviewCount - a.reviewCount);
+    // No client-side trending sort — server handles it via popularity_score
   } else {
     dests = scoreFeed(dests);
   }

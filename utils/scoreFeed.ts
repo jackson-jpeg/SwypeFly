@@ -73,8 +73,8 @@ export function scoreFeed(destinations: Destination[], savedVibeTags?: string[])
   const WINDOW = 4;
 
   remaining.sort((a, b) => {
-    const scoreA = a.rating / (a.flightPrice / 1000);
-    const scoreB = b.rating / (b.flightPrice / 1000);
+    const scoreA = 1 / (a.flightPrice / 1000);
+    const scoreB = 1 / (b.flightPrice / 1000);
     return scoreB - scoreA;
   });
 
@@ -108,8 +108,6 @@ export function scoreFeed(destinations: Destination[], savedVibeTags?: string[])
         }
       }
 
-      const ratingScore = (d.rating - 4.0) / 1.0;
-
       // Preference boost: overlap between destination vibes and user's saved vibes
       let preferenceBoost = 0;
       if (savedVibeTags && savedVibeTags.length > 0) {
@@ -118,11 +116,10 @@ export function scoreFeed(destinations: Destination[], savedVibeTags?: string[])
       }
 
       const score =
-        priceScore * 0.25 +
-        ratingScore * 0.15 +
+        priceScore * 0.35 +
         -regionPenalty * 0.30 +
         -vibePenalty * 0.10 +
-        preferenceBoost * 0.20;
+        preferenceBoost * 0.25;
 
       if (score > bestScore) {
         bestScore = score;

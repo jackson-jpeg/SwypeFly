@@ -28,7 +28,7 @@ export function Footer() {
 
   const topDestinations = useMemo(() =>
     [...destinations]
-      .sort((a, b) => b.rating * b.reviewCount - a.rating * a.reviewCount)
+      .sort((a, b) => (b.flightPrice ?? 0) - (a.flightPrice ?? 0))
       .slice(0, 6)
       .map(d => ({
         label: `${REGION_EMOJI[d.country] || '✈️'} ${d.city}`,

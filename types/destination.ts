@@ -26,14 +26,18 @@ export interface Destination {
   hotelPricePerNight: number;
   currency: string;
   vibeTags: VibeTag[];
-  rating: number;
-  reviewCount: number;
+  /** @deprecated Ratings removed in V4 — field retained for DB compat but not served to frontend */
+  rating?: number;
+  /** @deprecated Review counts removed in V4 */
+  reviewCount?: number;
   bestMonths: string[];
   averageTemp: number;
   flightDuration: string;
   livePrice?: number | null;
   imageUrls?: string[];
-  priceSource?: 'travelpayouts' | 'amadeus' | 'estimate';
+  priceSource?: 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate';
+  /** Price at time user saved this destination — for price-drop tracking */
+  priceAtSave?: number;
   priceFetchedAt?: string;
   liveHotelPrice?: number | null;
   hotelPriceSource?: 'liteapi' | 'estimate';

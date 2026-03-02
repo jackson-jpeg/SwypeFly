@@ -30,12 +30,12 @@ function P({ children }: { children: string }) {
 export default function TermsOfService() {
   if (Platform.OS === 'web') {
     return (
-      <div style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', overflowY: 'auto' }}>
+      <div style={{ backgroundColor: '#F5ECD7', minHeight: '100vh', overflowY: 'auto' }}>
         <div style={{ maxWidth: 680, margin: '0 auto', padding: '20px 20px 100px' }}>
           <button
             onClick={() => router.back()}
             style={{
-              background: 'none', border: 'none', color: '#0EA5E9', fontSize: 15,
+              background: 'none', border: 'none', color: '#A8C4B8', fontSize: 15,
               fontWeight: 600, cursor: 'pointer', padding: '12px 0', marginBottom: 8,
             }}
           >
@@ -92,10 +92,10 @@ export default function TermsOfService() {
 
   // Native
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <View style={{ flex: 1, backgroundColor: '#F5ECD7' }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <Pressable onPress={() => router.back()} style={{ paddingVertical: 12, marginBottom: 8 }}>
-          <Text style={{ color: '#0EA5E9', fontSize: 15, fontWeight: '600' }}>&larr; Back</Text>
+          <Text style={{ color: '#A8C4B8', fontSize: 15, fontWeight: '600' }}>&larr; Back</Text>
         </Pressable>
 
         <Text style={{ color: '#1E293B', fontSize: 28, fontWeight: '800', marginBottom: 4 }}>Terms of Service</Text>

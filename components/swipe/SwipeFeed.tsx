@@ -619,7 +619,7 @@ export function SwipeFeed() {
           {([
             { key: 'default' as SortPreset, label: '✨ For You' },
             { key: 'cheapest' as SortPreset, label: '💰 Cheapest' },
-            { key: 'topRated' as SortPreset, label: '⭐ Top Rated' },
+            { key: 'trending' as SortPreset, label: '🔥 Trending' },
           ]).map(({ key, label }) => (
             <button
               key={key}

@@ -148,7 +148,7 @@ function scoreFeedGeneric(
   remaining.sort((a, b) => {
     const pa = a.live_price ?? a.flight_price;
     const pb = b.live_price ?? b.flight_price;
-    return b.rating / (pb / 1000) - a.rating / (pa / 1000);
+    return (pb / 1000) - (pa / 1000);
   });
 
   const seed = remaining.shift()!;
@@ -175,11 +175,9 @@ function scoreFeedGeneric(
       for (let j = 0; j < recentVibes.length; j++) {
         if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
-      const ratingScore = (d.rating - 4.0) / 1.0;
-
       const jitter = rand() * 0.15;
       const score =
-        priceScore * 0.25 + ratingScore * 0.2 - regionPenalty * 0.3 - vibePenalty * 0.15 + jitter;
+        priceScore * 0.35 - regionPenalty * 0.35 - vibePenalty * 0.2 + jitter;
 
       if (score > bestScore) {
         bestScore = score;
@@ -354,14 +352,12 @@ function toFrontend(d: ScoredDest) {
     hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
     currency: d.currency,
     vibeTags: d.vibe_tags,
-    rating: d.rating,
-    reviewCount: d.review_count,
     bestMonths: d.best_months,
     averageTemp: d.average_temp,
     flightDuration: d.live_duration || d.flight_duration,
     livePrice: d.live_price,
     priceSource: d.live_price != null
-      ? (d.price_source as 'travelpayouts' | 'amadeus' | 'estimate')
+      ? (d.price_source as 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate')
       : 'estimate',
     priceFetchedAt: d.price_fetched_at || undefined,
     liveHotelPrice: d.live_hotel_price ?? null,
@@ -433,8 +429,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       scored = [...destinations].sort(
         (a, b) => (b.popularity_score ?? 0) - (a.popularity_score ?? 0),
       );
-    } else if (sortPreset === 'topRated') {
-      scored = [...destinations].sort((a, b) => b.rating - a.rating);
     } else {
       scored = scoreFeedGeneric(destinations, rand);
       scored = softShuffle(scored, rand, 5);

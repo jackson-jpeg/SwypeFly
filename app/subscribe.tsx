@@ -42,7 +42,7 @@ export default function SubscribePage() {
 
   return (
     <div style={{
-      minHeight: '100vh', backgroundColor: '#0F172A',
+      minHeight: '100vh', backgroundColor: '#F5ECD7',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
     }}>
       <button
@@ -69,7 +69,7 @@ export default function SubscribePage() {
               style={{
                 padding: '14px 28px', borderRadius: 9999,
                 backgroundColor: colors.primary, border: 'none',
-                color: '#0F172A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+                color: '#2C1F1A', fontSize: 16, fontWeight: 700, cursor: 'pointer',
               }}
             >Back to Exploring</button>
           </>
@@ -103,7 +103,7 @@ export default function SubscribePage() {
                 style={{
                   padding: '14px 24px', borderRadius: 14,
                   backgroundColor: loading ? 'rgba(56,189,248,0.5)' : colors.primary, border: 'none',
-                  color: '#0F172A', fontSize: 16, fontWeight: 700,
+                  color: '#2C1F1A', fontSize: 16, fontWeight: 700,
                   cursor: loading ? 'default' : 'pointer',
                   whiteSpace: 'nowrap',
                   opacity: loading ? 0.7 : 1,

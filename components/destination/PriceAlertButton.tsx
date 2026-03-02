@@ -134,7 +134,7 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
             style={{
               width: '100%', padding: '12px 0', borderRadius: 10,
               background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
-              border: 'none', color: '#0F172A', fontSize: 14, fontWeight: 700,
+              border: 'none', color: '#2C1F1A', fontSize: 14, fontWeight: 700,
               cursor: status === 'saving' ? 'default' : 'pointer',
               opacity: status === 'saving' ? 0.6 : 1,
             }}

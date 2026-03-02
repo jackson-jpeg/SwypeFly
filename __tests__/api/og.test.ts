@@ -105,7 +105,6 @@ describe('GET /api/og', () => {
     expect(html).toContain('Tokyo');
     expect(html).toContain('Japan');
     expect(html).toContain('$650');
-    expect(html).toContain('★ 4.8');
   });
 
   it('uses live_price over flight_price when available', async () => {
