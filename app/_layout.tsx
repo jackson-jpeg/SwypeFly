@@ -19,6 +19,11 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import {
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_400Regular_Italic,
+} from '@expo-google-fonts/playfair-display';
+import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuthContext } from '../hooks/AuthContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -271,6 +276,9 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_400Regular_Italic,
+    BebasNeue_400Regular,
   });
 
   const onLayoutRootView = useCallback(async () => {

@@ -19,7 +19,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
     "@duffel/api": "^4.21.5",
+    "@expo-google-fonts/bebas-neue": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/playfair-display": "^0.4.2",
     "@expo-google-fonts/syne": "^0.4.2",
     "@google/genai": "^1.40.0",
     "@sentry/react": "^10.38.0",

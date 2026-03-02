@@ -13,6 +13,15 @@ export const colors = {
   deepDusk: '#2C1F1A',         // text, primary buttons
   terracotta: '#D4734A',       // ERRORS ONLY — never use for non-error contexts
 
+  // ─── Paper-Specific Tokens ────────────────────────────────────────────────
+  livePriceGreen: '#7BAF8E',   // "LIVE PRICE" badge text (NOT sageDrift)
+  pricePillFrom: '#C9A99A',    // "From" label on price pill
+  bylineText: '#8A7F72',       // Attributions, subtle labels
+  detailSubtitle: '#5C4F4A',   // Metadata on light backgrounds
+  pullQuoteBody: '#5C4033',    // Editorial italic text
+  successBorder: '#7BAF8E',    // Confirm/success button border
+  secondaryBorder: '#C9A99A',  // Ghost/secondary button border
+
   // ─── Semantic Aliases ───────────────────────────────────────────────────────
   background: '#F5ECD7',       // duskSand
   accent: '#F7E8A0',           // sunriseButter
@@ -129,8 +138,10 @@ export const colors = {
 
 // ─── Fonts ──────────────────────────────────────────────────────────────────
 export const fonts = {
-  display: 'Syne',             // headlines, destination names, prices
+  display: 'Syne',             // headlines, destination names
   body: 'Inter',               // UI labels, body text, forms
+  editorial: 'Playfair Display', // pull quotes (italic)
+  impact: 'Bebas Neue',        // 404 page numerals
 } as const;
 
 // ─── Spacing (8px base scale) ───────────────────────────────────────────────
@@ -210,30 +221,70 @@ export const textPresets = {
   display: {
     hero: {
       fontFamily: 'Syne_800ExtraBold',
-      fontSize: 36,
+      fontSize: 60,
+      fontWeight: '800' as const,
+      lineHeight: 58,
+      letterSpacing: -0.6, // -0.01em at 60px
+      textTransform: 'uppercase' as const,
+      color: '#FFFFFF',
+    },
+    title: {
+      fontFamily: 'Syne_800ExtraBold',
+      fontSize: 28,
       fontWeight: '800' as const,
       color: '#2C1F1A',
     },
-    title: {
-      fontFamily: 'Syne_700Bold',
-      fontSize: 28,
-      fontWeight: '700' as const,
+    detailTitle: {
+      fontFamily: 'Syne_800ExtraBold',
+      fontSize: 34,
+      fontWeight: '800' as const,
+      lineHeight: 34,
+      letterSpacing: -0.34, // -0.01em at 34px
+      textTransform: 'uppercase' as const,
+      color: '#2C1F1A',
+    },
+    sectionHeading: {
+      fontFamily: 'Syne_800ExtraBold',
+      fontSize: 24,
+      fontWeight: '800' as const,
+      lineHeight: 28,
+      letterSpacing: -0.24, // -0.01em at 24px
+      textTransform: 'uppercase' as const,
       color: '#2C1F1A',
     },
     price: {
-      fontFamily: 'Syne_600SemiBold',
-      fontSize: 24,
-      fontWeight: '600' as const,
-      color: '#2C1F1A',
+      fontFamily: 'Inter_700Bold',
+      fontSize: 22,
+      fontWeight: '700' as const,
+      lineHeight: 28,
+      letterSpacing: -0.44, // -0.02em at 22px
+      color: '#F7E8A0',
     },
   },
   body: {
     default: {
       fontFamily: 'Inter_400Regular',
-      fontSize: 17,
+      fontSize: 16,
       fontWeight: '400' as const,
+      lineHeight: 20,
       color: '#4A3B2E',
-      lineHeight: 26,
+    },
+    pullQuote: {
+      fontFamily: 'PlayfairDisplay_400Regular_Italic',
+      fontSize: 20,
+      fontWeight: '400' as const,
+      lineHeight: 30,
+      fontStyle: 'italic' as const,
+      color: '#5C4033',
+    },
+    metadata: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 11,
+      fontWeight: '400' as const,
+      lineHeight: 14,
+      letterSpacing: 0.88, // 0.08em at 11px
+      textTransform: 'uppercase' as const,
+      color: 'rgba(255,255,255,0.45)',
     },
     caption: {
       fontFamily: 'Inter_400Regular',
@@ -255,7 +306,23 @@ export const textPresets = {
       textTransform: 'uppercase' as const,
       letterSpacing: 1.5,
     },
+    byline: {
+      fontFamily: 'Syne_600SemiBold',
+      fontSize: 13,
+      fontWeight: '600' as const,
+      lineHeight: 16,
+      letterSpacing: 1.3, // 0.1em at 13px
+      color: '#8A7F72',
+    },
   },
+} as const;
+
+// ─── Button Specs (from Paper design system) ────────────────────────────────
+export const buttons = {
+  primary: { height: 52, borderRadius: 14, backgroundColor: '#2C1F1A' },
+  success: { height: 48, borderRadius: 14, borderWidth: 1.5, borderColor: '#7BAF8E' },
+  secondary: { height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: '#C9A99A' },
+  destructive: { height: 44, borderRadius: 12, backgroundColor: '#D4734A' },
 } as const;
 
 // ─── Shadows ─────────────────────────────────────────────────────────────────
@@ -330,7 +397,7 @@ export const layout = {
   cardPaddingBottomNative: 100,
   headerPaddingTop: 56,
   closeBtnSize: 40,
-  actionBtnSize: 48,
+  actionBtnSize: 52,
   actionBtnGap: 14,
   badgeCountMin: 16,
   savedGridColumns: 2,
