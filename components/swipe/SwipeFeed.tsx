@@ -67,7 +67,7 @@ function MiniMap({ cities, onClose }: { cities: string[]; onClose: () => void })
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 150,
-        backgroundColor: 'rgba(0,0,0,0.85)',
+        backgroundColor: 'rgba(44,31,26,0.85)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         animation: 'sg-fade-in 0.3s ease-out',
@@ -76,8 +76,8 @@ function MiniMap({ cities, onClose }: { cities: string[]; onClose: () => void })
       <div onClick={e => e.stopPropagation()} style={{
         width: '90%', maxWidth: 600, aspectRatio: '2/1', position: 'relative',
         borderRadius: 20, overflow: 'hidden',
-        background: 'linear-gradient(135deg, #0c1929 0%, #1a2744 100%)',
-        border: '1px solid rgba(56,189,248,0.2)',
+        background: `linear-gradient(135deg, ${colors.deepDusk} 0%, #3D2E24 100%)`,
+        border: `1px solid rgba(168,196,184,0.2)`,
         boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
       }}>
         {/* Simple world outline hint */}
@@ -86,10 +86,10 @@ function MiniMap({ cities, onClose }: { cities: string[]; onClose: () => void })
         </div>
         {/* Grid lines */}
         {[0.25, 0.5, 0.75].map(y => (
-          <div key={`h${y}`} style={{ position: 'absolute', top: `${y*100}%`, left: 0, right: 0, height: 1, backgroundColor: 'rgba(56,189,248,0.06)' }} />
+          <div key={`h${y}`} style={{ position: 'absolute', top: `${y*100}%`, left: 0, right: 0, height: 1, backgroundColor: 'rgba(168,196,184,0.06)' }} />
         ))}
         {[0.25, 0.5, 0.75].map(x => (
-          <div key={`v${x}`} style={{ position: 'absolute', left: `${x*100}%`, top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(56,189,248,0.06)' }} />
+          <div key={`v${x}`} style={{ position: 'absolute', left: `${x*100}%`, top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(168,196,184,0.06)' }} />
         ))}
         {/* City dots */}
         {cities.map(city => {
@@ -102,8 +102,8 @@ function MiniMap({ cities, onClose }: { cities: string[]; onClose: () => void })
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             }}>
               <div style={{
-                width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary,
-                boxShadow: '0 0 8px rgba(56,189,248,0.6), 0 0 16px rgba(56,189,248,0.3)',
+                width: 8, height: 8, borderRadius: 4, backgroundColor: colors.sageDrift,
+                boxShadow: `0 0 8px rgba(168,196,184,0.6), 0 0 16px rgba(168,196,184,0.3)`,
               }} />
               <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: 600, whiteSpace: 'nowrap' }}>{city}</span>
             </div>
@@ -133,34 +133,37 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
     <div className="sg-card-snap" style={{
       height: '100vh', width: '100%',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: `linear-gradient(135deg, ${colors.navy} 0%, #1a1a3e 50%, ${colors.navy} 100%)`,
+      backgroundColor: colors.duskSand,
     }}>
-      {/* Keyframes in global.css */}
       <div style={{ textAlign: 'center', padding: '0 32px' }}>
         <div style={{ fontSize: 56, marginBottom: 20, animation: 'sg-float 3s ease-in-out infinite' }}>🌍</div>
-        <p style={{ margin: 0, color: '#fff', fontSize: 26, fontWeight: 800, letterSpacing: -0.5, marginBottom: 24 }}>
+        <p style={{
+          margin: 0, color: colors.deepDusk, fontSize: 26, fontWeight: 800,
+          letterSpacing: -0.5, marginBottom: 24,
+          fontFamily: `${fonts.display}, sans-serif`,
+        }}>
           Journey Complete!
         </p>
-        {/* Stats row */}
+        {/* Stats row — V4 warm palette */}
         <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginBottom: 32 }}>
           <div style={{
-            background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)',
+            background: colors.paleHorizon, border: `1px solid ${colors.warmDusk}`,
             borderRadius: 16, padding: '20px 28px', textAlign: 'center',
             animation: 'sg-stats-pulse 2s ease-in-out infinite',
           }}>
-            <div style={{ color: colors.primary, fontSize: 36, fontWeight: 800 }}>{animatedDest}</div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Destinations</div>
+            <div style={{ color: colors.deepDusk, fontSize: 36, fontWeight: 800, fontFamily: `${fonts.display}, sans-serif` }}>{animatedDest}</div>
+            <div style={{ color: colors.text.muted, fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Destinations</div>
           </div>
           <div style={{
-            background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)',
+            background: colors.seafoamMist, border: `1px solid ${colors.sageDrift}`,
             borderRadius: 16, padding: '20px 28px', textAlign: 'center',
             animation: 'sg-stats-pulse 2s 0.3s ease-in-out infinite',
           }}>
-            <div style={{ color: '#C084FC', fontSize: 36, fontWeight: 800 }}>{animatedCountries}</div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Countries</div>
+            <div style={{ color: colors.deepDusk, fontSize: 36, fontWeight: 800, fontFamily: `${fonts.display}, sans-serif` }}>{animatedCountries}</div>
+            <div style={{ color: colors.text.muted, fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Countries</div>
           </div>
         </div>
-        <p style={{ margin: '0 0 20px 0', color: 'rgba(255,255,255,0.4)', fontSize: 14, lineHeight: 1.5 }}>
+        <p style={{ margin: '0 0 20px 0', color: colors.text.muted, fontSize: 14, lineHeight: 1.5 }}>
           Shuffle for a fresh feed, or try a different vibe.
         </p>
         {/* Quick filter chips */}
@@ -173,9 +176,9 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
               }}
               style={{
                 padding: '6px 14px', borderRadius: 9999,
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600,
+                backgroundColor: colors.paleHorizon,
+                border: `1px solid ${colors.warmDusk}`,
+                color: colors.deepDusk, fontSize: 12, fontWeight: 600,
                 cursor: 'pointer', transition: 'all 0.2s',
                 fontFamily: 'inherit',
               }}
@@ -186,37 +189,36 @@ function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
           <button
             onClick={onShuffle}
             style={{
-              background: `linear-gradient(135deg, ${colors.primary}, #818CF8)`, color: '#fff',
-              border: 'none', borderRadius: 9999,
+              background: colors.deepDusk, color: colors.paleHorizon,
+              border: 'none', borderRadius: 14,
               padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(56,189,248,0.3)',
-              fontFamily: 'inherit',
+              fontFamily: `${fonts.body}, sans-serif`,
             }}
           >
-            🔄 Shuffle Feed
+            Shuffle Feed
           </button>
           <button
             onClick={onSaved}
             style={{
-              background: 'transparent', color: 'rgba(255,255,255,0.7)',
-              border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 9999,
+              background: 'transparent', color: colors.deepDusk,
+              border: `1.5px solid ${colors.secondaryBorder}`, borderRadius: 12,
               padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'inherit',
+              fontFamily: `${fonts.body}, sans-serif`,
             }}
           >
-            ❤️ Saved
+            Saved
           </button>
         </div>
         <button
           onClick={() => router.push('/quiz')}
           style={{
             marginTop: 16, padding: '10px 20px', borderRadius: 9999,
-            backgroundColor: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)',
-            color: '#C084FC', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            backgroundColor: 'rgba(168,196,184,0.15)', border: `1px solid ${colors.sageDrift}`,
+            color: colors.deepDusk, fontSize: 13, fontWeight: 600, cursor: 'pointer',
             fontFamily: 'inherit',
           }}
         >
-          🧭 Take the Travel Quiz
+          Take the Travel Quiz
         </button>
       </div>
     </div>
@@ -510,20 +512,20 @@ export function SwipeFeed() {
             }}
           >
             <div onClick={e => e.stopPropagation()} style={{
-              backgroundColor: 'rgba(15,23,42,0.95)', borderRadius: 20,
-              border: '1px solid rgba(255,255,255,0.1)', padding: 28,
+              backgroundColor: colors.paleHorizon, borderRadius: 20,
+              border: `1px solid ${colors.warmDusk}`, padding: 28,
               maxWidth: 360, width: '90%',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+              boxShadow: '0 16px 48px rgba(44,31,26,0.3)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <span style={{ color: '#fff', fontSize: 18, fontWeight: 800 }}>Keyboard Shortcuts</span>
+                <span style={{ color: colors.deepDusk, fontSize: 18, fontWeight: 800, fontFamily: `${fonts.display}, sans-serif` }}>Keyboard Shortcuts</span>
                 <button
                   onClick={() => setShowShortcuts(false)}
                   aria-label="Close shortcuts"
                   style={{
                     width: 28, height: 28, borderRadius: 14,
-                    backgroundColor: 'rgba(255,255,255,0.1)', border: 'none',
-                    color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer',
+                    backgroundColor: 'rgba(44,31,26,0.08)', border: 'none',
+                    color: colors.text.muted, fontSize: 14, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >✕</button>
@@ -538,24 +540,24 @@ export function SwipeFeed() {
               ].map(({ keys, desc }) => (
                 <div key={desc} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  padding: '8px 0', borderBottom: `1px solid ${colors.borderLight}`,
                 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{desc}</span>
+                  <span style={{ color: colors.text.secondary, fontSize: 13 }}>{desc}</span>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {keys.map(k => (
                       <span key={k} style={{
                         padding: '3px 8px', borderRadius: 6,
-                        backgroundColor: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 600,
+                        backgroundColor: 'rgba(44,31,26,0.06)',
+                        border: `1px solid ${colors.border}`,
+                        color: colors.deepDusk, fontSize: 12, fontWeight: 600,
                         fontFamily: 'monospace',
                       }}>{k}</span>
                     ))}
                   </div>
                 </div>
               ))}
-              <div style={{ marginTop: 16, textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>
-                Press <span style={{ fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>?</span> anywhere to toggle
+              <div style={{ marginTop: 16, textAlign: 'center', color: colors.text.muted, fontSize: 11 }}>
+                Press <span style={{ fontFamily: 'monospace', color: colors.text.secondary }}>?</span> anywhere to toggle
               </div>
             </div>
           </div>
@@ -568,12 +570,12 @@ export function SwipeFeed() {
   // ── Native empty state when filters yield no results ──
   if (destinations.length === 0 && !isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.navy, padding: 32 }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.duskSand, padding: 32 }}>
         <Text style={{ fontSize: 56, marginBottom: 16 }}>🔍</Text>
-        <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
+        <Text style={{ color: colors.deepDusk, fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
           No destinations match
         </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24, maxWidth: 280 }}>
+        <Text style={{ color: colors.text.muted, fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24, maxWidth: 280 }}>
           Try adjusting your filters to see more results.
         </Text>
         <Pressable
@@ -582,9 +584,9 @@ export function SwipeFeed() {
             useFeedStore.getState().setMaxPrice(null);
             useFeedStore.getState().setRegionFilter('all');
           }}
-          style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: 9999, backgroundColor: colors.primary }}
+          style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: 14, backgroundColor: colors.deepDusk }}
         >
-          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Clear All Filters</Text>
+          <Text style={{ color: colors.paleHorizon, fontSize: 15, fontWeight: '700' }}>Clear All Filters</Text>
         </Pressable>
       </View>
     );

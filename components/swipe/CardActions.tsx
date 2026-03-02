@@ -90,10 +90,11 @@ function ActionButton({
     onPress();
   };
 
-  const activeBg = colors.primaryActiveBorder;
-  const activeBorder = colors.primaryBorderStrong;
-  const inactiveBg = colors.overlay.glass;
-  const inactiveBorder = colors.overlay.white;
+  // Paper spec: white 8% bg, white 12% border (inactive); sageDrift tint (active)
+  const activeBg = 'rgba(168,196,184,0.25)';
+  const activeBorder = 'rgba(168,196,184,0.4)';
+  const inactiveBg = 'rgba(255,255,255,0.08)';
+  const inactiveBorder = 'rgba(255,255,255,0.12)';
 
   if (Platform.OS === 'web') {
     return (
@@ -185,10 +186,11 @@ function HeartButton({
     onToggleSave();
   };
 
-  const activeBg = colors.primaryActiveBorder;
-  const activeBorder = colors.primaryBorderStrong;
-  const inactiveBg = colors.overlay.glass;
-  const inactiveBorder = colors.overlay.white;
+  // Paper spec: white 8% bg, white 12% border (inactive); sageDrift tint (active/saved)
+  const savedBg = 'rgba(168,196,184,0.25)';
+  const savedBorder = 'rgba(168,196,184,0.4)';
+  const unsavedBg = 'rgba(255,255,255,0.08)';
+  const unsavedBorder = 'rgba(255,255,255,0.12)';
 
   if (Platform.OS === 'web') {
     return (
@@ -203,7 +205,7 @@ function HeartButton({
             width: BTN_SIZE,
             height: BTN_SIZE,
             borderRadius: BTN_RADIUS,
-            backgroundColor: isSaved ? activeBg : inactiveBg,
+            backgroundColor: isSaved ? savedBg : unsavedBg,
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             display: 'flex',
@@ -211,7 +213,7 @@ function HeartButton({
             justifyContent: 'center',
             cursor: 'pointer',
             transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease',
-            border: `1px solid ${isSaved ? activeBorder : inactiveBorder}`,
+            border: `1px solid ${isSaved ? savedBorder : unsavedBorder}`,
             padding: 0, fontFamily: 'inherit',
           }}
         >
@@ -231,11 +233,11 @@ function HeartButton({
             width: BTN_SIZE,
             height: BTN_SIZE,
             borderRadius: BTN_RADIUS,
-            backgroundColor: isSaved ? activeBg : inactiveBg,
+            backgroundColor: isSaved ? savedBg : unsavedBg,
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 1,
-            borderColor: isSaved ? activeBorder : inactiveBorder,
+            borderColor: isSaved ? savedBorder : unsavedBorder,
           }}
           hitSlop={12}
         >

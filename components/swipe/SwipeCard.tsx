@@ -152,8 +152,6 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const effectivePrice = destination.livePrice ?? destination.flightPrice;
   const isDeal = destination.livePrice != null && destination.livePrice < destination.flightPrice * 0.85;
   const savings = isDeal ? Math.round(((destination.flightPrice - destination.livePrice!) / destination.flightPrice) * 100) : 0;
-  const isNew = parseInt(destination.id) >= 147; // batch3 destinations
-
   // ── Ken Burns effect — cycle through different pan/zoom combos ──
   const kenBurnsVariants = [
     { from: 'scale(1) translate(0%, 0%)', to: 'scale(1.15) translate(-2%, -1%)' },
@@ -257,32 +255,21 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           );
         })}
 
-        {/* Vignette overlay for cinematic feel */}
+        {/* Vignette overlay — linear gradient per Paper (bottom-heavy, 500px tall) */}
         <div style={{
-          position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.45) 100%)',
+          position: 'absolute', left: 0, right: 0, bottom: 0, height: 500, zIndex: 2, pointerEvents: 'none',
+          background: 'linear-gradient(to top, rgba(44,31,26,0.95) 0%, rgba(44,31,26,0.7) 30%, rgba(44,31,26,0.3) 60%, transparent 100%)',
         }} />
 
-        {/* New badge */}
-        {isNew && (
-          <div style={{
-            position: 'absolute', top: 56, left: 20, zIndex: 5,
-            padding: '3px 8px', borderRadius: 6,
-            backgroundColor: 'rgba(168,85,247,0.3)', border: '1px solid rgba(168,85,247,0.4)',
-          }}>
-            <span style={{ color: '#C084FC', fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>NEW</span>
-          </div>
-        )}
-
-        {/* Image indicator dots */}
+        {/* Image indicator dots — bottom of photo area, small circles per Paper */}
         {hasMultipleImages && (
           <div style={{
-            position: 'absolute', top: 52, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', gap: 4, zIndex: 5, pointerEvents: 'none',
+            position: 'absolute', bottom: 270, left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', gap: 6, zIndex: 5, pointerEvents: 'none',
           }}>
             {imageList.map((_, i) => (
               <div key={i} style={{
-                width: i === activeImageIndex ? 16 : 6, height: 4, borderRadius: 2,
+                width: i === activeImageIndex ? 8 : 3, height: 3, borderRadius: 1.5,
                 backgroundColor: i === activeImageIndex ? '#fff' : 'rgba(255,255,255,0.3)',
                 transition: 'all 0.3s ease',
               }} />
@@ -321,11 +308,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </div>
         )}
 
-        {/* Right side: action column — deepDusk-translucent circles */}
+        {/* Right side: action column — Paper spec: right 16, top 340, white 8% bg */}
         <div
           style={{
-            position: 'absolute', bottom: 140, right: 16, zIndex: 10,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+            position: 'absolute', right: 16, top: 340, zIndex: 10,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -335,12 +322,12 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             aria-label={isSaved ? 'Unsave destination' : 'Save destination'}
             style={{
               width: 52, height: 52, borderRadius: 26,
-              backgroundColor: 'rgba(44,31,26,0.35)',
+              backgroundColor: 'rgba(255,255,255,0.08)',
               backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
               transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
               padding: 0, fontFamily: 'inherit',
             }}
           >
@@ -352,11 +339,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             aria-label="Share destination"
             style={{
               width: 52, height: 52, borderRadius: 26,
-              backgroundColor: 'rgba(44,31,26,0.35)',
+              backgroundColor: 'rgba(255,255,255,0.08)',
               backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
               padding: 0, fontFamily: 'inherit',
             }}
           >
@@ -364,19 +351,19 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </button>
         </div>
 
-        {/* Bottom-left: content stack matching Paper design */}
+        {/* Hero text container — Paper: absolute, bottom 160, left 24, width 280 */}
         <div
           style={{
-            position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
-            padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom + 8}px ${layout.cardPaddingHorizontal}px`,
+            position: 'absolute', bottom: 160, left: 24, width: 280, zIndex: 5,
+            display: 'flex', flexDirection: 'column', gap: 8,
           }}
         >
-          {/* City — Syne ExtraBold, ALL CAPS */}
+          {/* City — Syne 800, 60px, -0.01em, uppercase */}
           <h1
             style={{
               margin: 0, color: '#fff',
               fontFamily: `${fonts.display}, sans-serif`, fontWeight: 800,
-              fontSize: 48, letterSpacing: -1, lineHeight: 0.95,
+              fontSize: 60, letterSpacing: '-0.01em', lineHeight: '58px',
               textTransform: 'uppercase' as const,
               textShadow: '0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)',
               animation: isActive ? 'sg-city-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both' : 'none',
@@ -385,11 +372,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             {destination.city}
           </h1>
 
-          {/* Tagline — Inter Regular, NOT italic */}
+          {/* Tagline — Inter 400, 16px, lineHeight 20px, white 70% */}
           <p style={{
-            margin: '8px 0 0 0',
+            margin: 0,
             fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
-            fontSize: 15, lineHeight: 1.3,
+            fontSize: 16, lineHeight: '20px',
             color: 'rgba(255,255,255,0.7)',
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
             animation: isActive ? 'sg-meta-enter 0.5s 0.15s ease-out both' : 'none',
@@ -397,64 +384,65 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             {destination.tagline}
           </p>
 
-          {/* Metadata strip: COUNTRY · FLIGHT_DURATION · VIBE — all caps */}
+          {/* Metadata strip — Inter 400, 11px, 0.08em, uppercase, white 45% */}
           <p style={{
-            margin: '6px 0 0 0', fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center',
-            fontFamily: `${fonts.body}, sans-serif`, fontWeight: 500,
-            textTransform: 'uppercase' as const, letterSpacing: 1.5,
-            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+            margin: 0, fontSize: 11, lineHeight: '14px', display: 'flex', alignItems: 'center',
+            fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
+            textTransform: 'uppercase' as const, letterSpacing: '0.08em',
             animation: isActive ? 'sg-meta-enter 0.4s 0.2s ease-out both' : 'none',
           }}>
-            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{destination.country}</span>
-            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px' }}>•</span>
-            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{destination.flightDuration?.replace(/\s/g, '') || 'Direct'}</span>
-            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px' }}>•</span>
-            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{destination.vibeTags?.[0] || 'Travel'}</span>
+            <span style={{ color: 'rgba(255,255,255,0.45)' }}>{destination.country}</span>
+            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px', fontSize: 3, lineHeight: '3px' }}>●</span>
+            <span style={{ color: 'rgba(255,255,255,0.45)' }}>{destination.flightDuration?.replace(/\s/g, '') || 'Direct'}</span>
+            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px', fontSize: 3, lineHeight: '3px' }}>●</span>
+            <span style={{ color: 'rgba(255,255,255,0.45)' }}>{destination.vibeTags?.[0] || 'Travel'}</span>
           </p>
+        </div>
 
-          {/* Price pill — deepDusk bg, Syne SemiBold price, LIVE PRICE in sageDrift */}
+        {/* Price pill — Paper: absolute, bottom 100, left 24, deepDusk 90%, blur */}
+        <div style={{
+          position: 'absolute', bottom: 100, left: 24, zIndex: 5,
+          display: 'flex', alignItems: 'center', gap: 8,
+          animation: isActive ? 'sg-price-enter 0.5s 0.3s ease-out both' : 'none',
+        }}>
           <div style={{
-            marginTop: 14, display: 'flex', alignItems: 'center', gap: 8,
-            animation: isActive ? 'sg-price-enter 0.5s 0.3s ease-out both' : 'none',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '12px 22px', borderRadius: 24,
+            backgroundColor: '#2C1F1AE6',
+            border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
           }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '10px 18px', borderRadius: 9999,
-              backgroundColor: colors.deepDusk,
-              border: `1px solid rgba(255,255,255,0.08)`,
+            <span style={{
+              fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
+              color: '#C9A99A', fontSize: 12,
+            }}>From</span>
+            <span style={{
+              fontFamily: `${fonts.body}, sans-serif`, fontWeight: 700,
+              color: '#F7E8A0', fontSize: 22, letterSpacing: '-0.02em',
             }}>
+              ${effectivePrice}
+            </span>
+            {destination.priceSource && destination.priceSource !== 'estimate' && (
               <span style={{
-                fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
-                color: 'rgba(255,255,255,0.6)', fontSize: 13,
-              }}>From</span>
-              <span style={{
-                fontFamily: `${fonts.display}, sans-serif`, fontWeight: 700,
-                color: '#fff', fontSize: 20,
+                fontFamily: `${fonts.body}, sans-serif`, fontWeight: 700,
+                fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+                color: '#7BAF8E',
               }}>
-                ${effectivePrice}
-              </span>
-              {destination.priceSource && destination.priceSource !== 'estimate' && (
-                <span style={{
-                  fontFamily: `${fonts.body}, sans-serif`, fontWeight: 700,
-                  fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase' as const,
-                  color: colors.sageDrift,
-                }}>
-                  LIVE PRICE
-                </span>
-              )}
-            </div>
-            {isDeal && (
-              <span style={{
-                padding: '6px 12px', borderRadius: 9999,
-                backgroundColor: colors.sunriseButter,
-                color: colors.deepDusk,
-                fontFamily: `${fonts.display}, sans-serif`,
-                fontSize: 12, fontWeight: 700,
-              }}>
-                {savings}% OFF
+                LIVE PRICE
               </span>
             )}
           </div>
+          {isDeal && (
+            <span style={{
+              padding: '6px 12px', borderRadius: 9999,
+              backgroundColor: colors.sunriseButter,
+              color: colors.deepDusk,
+              fontFamily: `${fonts.display}, sans-serif`,
+              fontSize: 12, fontWeight: 700,
+            }}>
+              {savings}% OFF
+            </span>
+          )}
         </div>
       </div>
     );
@@ -509,26 +497,26 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           <Text style={{ fontSize: 64, textAlign: 'center' }}>❤️</Text>
         </Animated.View>
 
-        {/* Right side: action column */}
+        {/* Right side: action column — Paper: right 16, top 340, 52×52, white 8% */}
         <Animated.View style={[{
-          position: 'absolute', bottom: 120, right: 16, zIndex: 10,
-          alignItems: 'center', gap: 20,
+          position: 'absolute', right: 16, top: 340, zIndex: 10,
+          alignItems: 'center', gap: 14,
         }, actionsAnimStyle]}>
           <Pressable onPress={onToggleSave} hitSlop={12}
             style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
+              width: 52, height: 52, borderRadius: 26,
+              backgroundColor: 'rgba(255,255,255,0.08)',
               alignItems: 'center', justifyContent: 'center',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
             }}>
             <Text style={{ fontSize: 24 }}>{isSaved ? '❤️' : '🤍'}</Text>
           </Pressable>
           <Pressable onPress={handleShare} hitSlop={12}
             style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
+              width: 52, height: 52, borderRadius: 26,
+              backgroundColor: 'rgba(255,255,255,0.08)',
               alignItems: 'center', justifyContent: 'center',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
             }}>
             <Text style={{ fontSize: 22 }}>↗</Text>
           </Pressable>
