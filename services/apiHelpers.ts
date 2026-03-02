@@ -17,10 +17,16 @@ export const API_BASE = getApiBase();
 
 /**
  * Get Authorization header with current Appwrite JWT.
- * Returns empty object if no session is available.
+ * Returns empty object if no session is available (guest users).
+ * Checks for an active session before attempting JWT creation to
+ * avoid noisy 401 errors in the console for guest/anonymous users.
  */
 export async function getAuthHeaders(): Promise<Record<string, string>> {
   try {
+    // Verify a real session exists before creating a JWT
+    const user = await account.get();
+    if (!user?.$id) return {};
+
     const jwt = await account.createJWT();
     if (jwt?.jwt) {
       return { Authorization: `Bearer ${jwt.jwt}` };
