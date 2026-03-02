@@ -1,122 +1,145 @@
 // ─── Design Tokens ───────────────────────────────────────────────────────────
 // Single source of truth for all visual constants in the app.
+// V4 Design System: Warm earth-tone palette with Syne + Inter typography.
 
 export const colors = {
-  // Brand
-  primary: '#38BDF8',         // sky-400
-  primaryLight: '#7DD3FC',    // sky-300
-  primaryDark: '#0284C7',     // sky-600
-  primaryDarker: '#0EA5E9',   // sky-500
+  // ─── Brand Palette ──────────────────────────────────────────────────────────
+  duskSand: '#F5ECD7',         // background
+  sunriseButter: '#F7E8A0',    // primary accent
+  paleHorizon: '#FDEFC3',      // card surfaces
+  seafoamMist: '#C8DDD4',      // selected/active states
+  sageDrift: '#A8C4B8',        // deep selected, success, CTAs
+  warmDusk: '#E8C9A0',         // secondary surfaces
+  deepDusk: '#2C1F1A',         // text, primary buttons
+  terracotta: '#D4734A',       // ERRORS ONLY — never use for non-error contexts
 
-  // Backgrounds
-  background: '#F8FAFC',      // slate-50
-  surface: '#FFFFFF',
-  surfaceElevated: '#F1F5F9', // slate-100
-  navy: '#0F172A',            // slate-900
+  // ─── Semantic Aliases ───────────────────────────────────────────────────────
+  background: '#F5ECD7',       // duskSand
+  accent: '#F7E8A0',           // sunriseButter
+  surface: '#FDEFC3',          // paleHorizon
+  surfaceElevated: '#FDEFC3',  // paleHorizon
+  selected: '#C8DDD4',         // seafoamMist
+  success: '#A8C4B8',          // sageDrift
+  error: '#D4734A',            // terracotta — errors only
+  warning: '#E8C9A0',          // warmDusk
 
-  // Aliases
-  secondary: '#0F172A',       // navy
+  // Primary / secondary (button-centric aliases)
+  primary: '#2C1F1A',          // deepDusk — primary buttons
+  primaryLight: '#A8C4B8',     // sageDrift — lighter CTA
+  primaryDark: '#1A120E',      // darker deepDusk
+  secondary: '#A8C4B8',        // sageDrift
 
-  // Text
+  // ─── Text ───────────────────────────────────────────────────────────────────
   text: {
-    primary: '#1E293B',       // slate-800
-    secondary: '#64748B',     // slate-500
-    muted: '#94A3B8',         // slate-400
-    dark: '#334155',          // slate-700
-    body: '#475569',          // slate-600
+    primary: '#2C1F1A',        // deepDusk
+    secondary: '#5C4A3A',      // warm mid-brown
+    muted: '#8A7A6A',          // warm gray
+    dark: '#3D2E24',           // slightly lighter than deepDusk
+    body: '#4A3B2E',           // warm brown for body text
   },
 
-  // Card (dark background context)
+  // ─── Card (dark background context — photo overlay) ─────────────────────────
   card: {
-    background: '#0F172A',
+    background: '#2C1F1A',     // deepDusk
     textPrimary: '#FFFFFF',
-    textSecondary: 'rgba(255,255,255,0.6)',
-    textMuted: 'rgba(255,255,255,0.4)',
+    textSecondary: 'rgba(255,255,255,0.7)',
+    textMuted: 'rgba(255,255,255,0.5)',
     textFaint: 'rgba(255,255,255,0.3)',
     textDot: 'rgba(255,255,255,0.15)',
-    textTag: 'rgba(255,255,255,0.2)',
-    priceTint: '#7DD3FC',     // sky-300
+    textTag: 'rgba(255,255,255,0.25)',
+    priceTint: '#F7E8A0',      // sunriseButter
   },
 
-  // Borders
-  border: '#E2E8F0',         // slate-200
-  borderLight: 'rgba(0,0,0,0.06)',
-  borderSoft: '#CBD5E1',     // slate-300
-  divider: '#F1F5F9',        // slate-100
+  // ─── Borders ────────────────────────────────────────────────────────────────
+  border: '#D9CEB8',           // warm border
+  borderLight: 'rgba(44,31,26,0.08)',
+  borderSoft: '#C8B99A',       // slightly darker warm border
+  divider: '#EDE4D0',          // subtle warm divider
 
-  // Tab bar
+  // ─── Tab Bar ────────────────────────────────────────────────────────────────
   tabBar: {
-    active: '#38BDF8',
-    inactive: '#94A3B8',
-    background: '#FFFFFF',
-    border: '#E2E8F0',
+    active: '#A8C4B8',         // sageDrift
+    inactive: '#8A7A6A',       // warm gray
+    background: '#F5ECD7',     // duskSand
+    border: '#D9CEB8',         // warm border
   },
 
-  // Overlays
+  // ─── Overlays ───────────────────────────────────────────────────────────────
   overlay: {
-    light: 'rgba(15,23,42,0.3)',
-    medium: 'rgba(15,23,42,0.5)',
-    heavy: 'rgba(15,23,42,0.7)',
-    modal: 'rgba(15,23,42,0.4)',
-    card: 'rgba(0,0,0,0.4)',
+    light: 'rgba(44,31,26,0.2)',
+    medium: 'rgba(44,31,26,0.4)',
+    heavy: 'rgba(44,31,26,0.6)',
+    modal: 'rgba(44,31,26,0.4)',
+    card: 'rgba(0,0,0,0.35)',
     cardStrong: 'rgba(0,0,0,0.45)',
-    glass: 'rgba(0,0,0,0.25)',
-    white: 'rgba(255,255,255,0.08)',
-    whiteMedium: 'rgba(255,255,255,0.1)',
+    glass: 'rgba(245,236,215,0.7)',  // duskSand glass
+    white: 'rgba(255,255,255,0.12)',
+    whiteMedium: 'rgba(255,255,255,0.15)',
     whiteStrong: 'rgba(255,255,255,0.85)',
-    whiteTab: 'rgba(255,255,255,0.88)',
-    whiteTabNative: 'rgba(255,255,255,0.92)',
+    whiteTab: 'rgba(245,236,215,0.88)',  // duskSand tint
+    whiteTabNative: 'rgba(245,236,215,0.92)',
+    warmDusk: 'rgba(232,201,160,0.6)',   // warmDusk 60% — onboarding overlay
   },
 
-  // Dark theme (detail page, settings)
+  // ─── Dark theme (destination detail, settings) ──────────────────────────────
   dark: {
-    background: '#0F172A',
-    surface: '#1E293B',
-    surfaceElevated: '#334155',
+    background: '#2C1F1A',     // deepDusk
+    surface: '#3D2E24',        // warm dark surface
+    surfaceElevated: '#4A3B2E',
     text: {
-      primary: '#F1F5F9',
-      secondary: '#94A3B8',
-      muted: '#64748B',
-      body: '#CBD5E1',
+      primary: '#F5ECD7',      // duskSand
+      secondary: '#C8B99A',    // warm light
+      muted: '#8A7A6A',        // warm gray
+      body: '#D9CEB8',         // warm light body
     },
-    border: '#334155',
+    border: '#4A3B2E',
     borderLight: 'rgba(255,255,255,0.08)',
   },
 
-  // Semantic
-  success: '#4ADE80',         // green-400
-  successDark: '#22C55E',     // green-500
-  error: '#EF4444',           // red-500
-  warning: '#F59E0B',         // amber-500
-  warningLight: '#FBBF24',    // amber-400
-  info: '#818CF8',            // indigo-400
+  // ─── Semantic Status ────────────────────────────────────────────────────────
+  successDark: '#8AB4A4',      // deeper sageDrift
+  warningLight: '#F7E8A0',     // sunriseButter
+  info: '#A8C4B8',             // sageDrift for info
 
-  // AI / special
-  ai: '#818CF8',              // indigo-400
-  aiBackground: 'rgba(129,140,248,0.1)',
-  primaryTint: 'rgba(56,189,248,0.1)',
-  primaryBorder: 'rgba(56,189,248,0.2)',
-  primaryBorderStrong: 'rgba(56,189,248,0.3)',
-  primaryBackground: 'rgba(56,189,248,0.06)',
-  primaryActiveBackground: 'rgba(56,189,248,0.08)',
-  primaryActiveBorder: 'rgba(56,189,248,0.18)',
-  errorBorder: 'rgba(239,68,68,0.3)',
-  successBackground: 'rgba(34,197,94,0.1)',
+  // ─── AI / Special ───────────────────────────────────────────────────────────
+  ai: '#A8C4B8',               // sageDrift
+  aiBackground: 'rgba(168,196,184,0.15)',
 
-  // Skeleton / shimmer
-  shimmer: 'rgba(255,255,255,0.06)',
-  shimmerHighlight: 'rgba(255,255,255,0.08)',
+  // Tints (used for subtle backgrounds/borders referencing primary/accent)
+  primaryTint: 'rgba(44,31,26,0.06)',
+  primaryBorder: 'rgba(44,31,26,0.12)',
+  primaryBorderStrong: 'rgba(44,31,26,0.2)',
+  primaryBackground: 'rgba(44,31,26,0.04)',
+  primaryActiveBackground: 'rgba(168,196,184,0.12)',
+  primaryActiveBorder: 'rgba(168,196,184,0.25)',
+  errorBorder: 'rgba(212,115,74,0.3)',
+  successBackground: 'rgba(168,196,184,0.15)',
 
-  // Toggle
-  toggleOff: '#CBD5E1',
+  // ─── Skeleton / shimmer ─────────────────────────────────────────────────────
+  shimmer: 'rgba(44,31,26,0.04)',
+  shimmerHighlight: 'rgba(44,31,26,0.08)',
+
+  // ─── Toggle ─────────────────────────────────────────────────────────────────
+  toggleOn: '#A8C4B8',         // sageDrift
+  toggleOff: '#E8C9A0',        // warmDusk
+
+  // ─── Navy (legacy alias — kept for gradient compatibility) ──────────────────
+  navy: '#2C1F1A',             // mapped to deepDusk
 } as const;
 
-// ─── Spacing (4px-based scale) ───────────────────────────────────────────────
+// ─── Fonts ──────────────────────────────────────────────────────────────────
+export const fonts = {
+  display: 'Syne',             // headlines, destination names, prices
+  body: 'Inter',               // UI labels, body text, forms
+} as const;
+
+// ─── Spacing (8px base scale) ───────────────────────────────────────────────
 export const spacing = {
   '0': 0,
+  '0.5': 2,
   '1': 4,
-  '2': 8,
   '1.5': 6,
+  '2': 8,
   '3': 12,
   '4': 16,
   '5': 20,
@@ -135,12 +158,12 @@ export const spacing = {
 
 // ─── Border Radii ────────────────────────────────────────────────────────────
 export const radii = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 14,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 16,
   '2xl': 16,
-  '3xl': 20,
+  '3xl': 24,
   full: 9999,
 } as const;
 
@@ -181,41 +204,95 @@ export const lineHeight = {
   fixed24: 24,
 } as const;
 
+// ─── Text Style Presets ──────────────────────────────────────────────────────
+// Composite text styles combining font family, size, weight.
+export const textPresets = {
+  display: {
+    hero: {
+      fontFamily: 'Syne_800ExtraBold',
+      fontSize: 36,
+      fontWeight: '800' as const,
+      color: '#2C1F1A',
+    },
+    title: {
+      fontFamily: 'Syne_700Bold',
+      fontSize: 28,
+      fontWeight: '700' as const,
+      color: '#2C1F1A',
+    },
+    price: {
+      fontFamily: 'Syne_600SemiBold',
+      fontSize: 24,
+      fontWeight: '600' as const,
+      color: '#2C1F1A',
+    },
+  },
+  body: {
+    default: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 17,
+      fontWeight: '400' as const,
+      color: '#4A3B2E',
+      lineHeight: 26,
+    },
+    caption: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 13,
+      fontWeight: '400' as const,
+      color: '#8A7A6A',
+    },
+    label: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 14,
+      fontWeight: '500' as const,
+      color: '#5C4A3A',
+    },
+    sectionLabel: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 11,
+      fontWeight: '600' as const,
+      color: '#8A7A6A',
+      textTransform: 'uppercase' as const,
+      letterSpacing: 1.5,
+    },
+  },
+} as const;
+
 // ─── Shadows ─────────────────────────────────────────────────────────────────
 export const shadows = {
   web: {
-    sm: '0 1px 2px rgba(0,0,0,0.04)',
-    md: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-    lg: '0 2px 8px rgba(0,0,0,0.08)',
-    xl: '0 8px 24px rgba(0,0,0,0.08)',
-    primary: '0 2px 8px rgba(56,189,248,0.3)',
-    primaryDark: '0 2px 8px rgba(14,165,233,0.25)',
-    toggle: '0 1px 3px rgba(0,0,0,0.1)',
+    sm: '0 1px 2px rgba(44,31,26,0.04)',
+    md: '0 1px 3px rgba(44,31,26,0.06), 0 1px 2px rgba(44,31,26,0.04)',
+    lg: '0 2px 8px rgba(44,31,26,0.08)',
+    xl: '0 8px 24px rgba(44,31,26,0.08)',
+    primary: '0 2px 8px rgba(44,31,26,0.15)',
+    primaryDark: '0 2px 8px rgba(44,31,26,0.2)',
+    toggle: '0 1px 3px rgba(44,31,26,0.1)',
   },
   native: {
     sm: {
-      shadowColor: '#000',
+      shadowColor: '#2C1F1A',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.04,
       shadowRadius: 2,
       elevation: 1,
     },
     md: {
-      shadowColor: '#000',
+      shadowColor: '#2C1F1A',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.06,
       shadowRadius: 4,
       elevation: 2,
     },
     lg: {
-      shadowColor: '#000',
+      shadowColor: '#2C1F1A',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 8,
       elevation: 4,
     },
     xl: {
-      shadowColor: '#000',
+      shadowColor: '#2C1F1A',
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.08,
       shadowRadius: 24,
@@ -259,6 +336,10 @@ export const layout = {
   savedGridColumns: 2,
   savedGridGap: 12,
   stickyBarHeight: 72,
+  // V4 spacing rhythm
+  elementGap: 16,       // gap between sibling elements
+  sectionPadding: 24,   // padding within sections
+  sectionGap: 40,       // gap between sections
 } as const;
 
 // ─── Gradient stops for card overlay ─────────────────────────────────────────
@@ -266,13 +347,13 @@ export const gradientStops = {
   colors: [
     'transparent',
     'transparent',
-    'rgba(15,23,42,0.15)',
-    'rgba(15,23,42,0.40)',
-    'rgba(15,23,42,0.65)',
-    'rgba(15,23,42,0.82)',
-    'rgba(15,23,42,0.92)',
-    'rgba(15,23,42,0.97)',
-    'rgba(15,23,42,0.99)',
+    'rgba(44,31,26,0.15)',
+    'rgba(44,31,26,0.40)',
+    'rgba(44,31,26,0.65)',
+    'rgba(44,31,26,0.82)',
+    'rgba(44,31,26,0.92)',
+    'rgba(44,31,26,0.97)',
+    'rgba(44,31,26,0.99)',
   ],
   locations: [0, 0.25, 0.38, 0.48, 0.58, 0.68, 0.78, 0.88, 1] as readonly number[],
 } as const;

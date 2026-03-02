@@ -46,5 +46,18 @@ module.exports = [
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
+  // Terracotta guard: #D4734A may only appear in theme.ts and error-related contexts
+  {
+    files: ['components/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'Literal[value=/#[Dd]4734[Aa]/]',
+          message: 'Terracotta (#D4734A) is reserved for errors only. Use colors.error from theme.ts.',
+        },
+      ],
+    },
+  },
   prettierConfig,
 ];

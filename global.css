@@ -88,8 +88,8 @@
 }
 
 @keyframes sg-welcome-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.1); }
-  50% { box-shadow: 0 0 40px rgba(56,189,248,0.2); }
+  0%, 100% { box-shadow: 0 0 20px rgba(168,196,184,0.15); }
+  50% { box-shadow: 0 0 40px rgba(168,196,184,0.25); }
 }
 
 @keyframes sg-onboard-slide-left {

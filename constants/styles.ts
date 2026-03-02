@@ -2,7 +2,7 @@
 // Composite styles built from design tokens for reuse across components.
 
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, fontSize, fontWeight, shadows } from './theme';
+import { colors, radii, spacing, fontSize, fontWeight, shadows, textPresets } from './theme';
 
 // ─── Card Styles ─────────────────────────────────────────────────────────────
 export const cardStyles = StyleSheet.create({
@@ -75,17 +75,20 @@ export const textStyles = StyleSheet.create({
   pageTitle: {
     color: colors.text.primary,
     fontSize: fontSize['6xl'],
+    fontFamily: textPresets.display.title.fontFamily,
     fontWeight: fontWeight.extrabold,
     letterSpacing: -0.5,
   },
   sectionTitle: {
     color: colors.text.primary,
     fontSize: fontSize['3xl'],
+    fontFamily: textPresets.display.title.fontFamily,
     fontWeight: fontWeight.bold,
   },
   sectionLabel: {
     color: colors.text.muted,
     fontSize: fontSize.sm,
+    fontFamily: textPresets.body.sectionLabel.fontFamily,
     fontWeight: fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
@@ -93,15 +96,18 @@ export const textStyles = StyleSheet.create({
   body: {
     color: colors.text.body,
     fontSize: fontSize.xl,
+    fontFamily: textPresets.body.default.fontFamily,
     lineHeight: 24,
   },
   caption: {
     color: colors.text.muted,
     fontSize: fontSize.md,
+    fontFamily: textPresets.body.caption.fontFamily,
   },
   settingsRow: {
     color: colors.text.primary,
     fontSize: fontSize.xl,
+    fontFamily: textPresets.body.label.fontFamily,
     fontWeight: fontWeight.medium,
   },
 });
@@ -119,7 +125,7 @@ export const buttonStyles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   primaryDark: {
-    backgroundColor: colors.primaryDarker,
+    backgroundColor: colors.primaryDark,
   },
   secondary: {
     backgroundColor: colors.surfaceElevated,

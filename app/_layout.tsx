@@ -1,10 +1,25 @@
 import '../global.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Platform, View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
+import {
+  Syne_400Regular,
+  Syne_500Medium,
+  Syne_600SemiBold,
+  Syne_700Bold,
+  Syne_800ExtraBold,
+} from '@expo-google-fonts/syne';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuthContext } from '../hooks/AuthContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { initSentry } from '../utils/sentry';
@@ -12,6 +27,9 @@ import { queryClient } from '../services/queryClient';
 import { colors } from '../constants/theme';
 import { ToastContainer } from '../components/common/ToastContainer';
 import { useGeolocation } from '../hooks/useGeolocation';
+
+// Keep splash screen visible while we load fonts
+SplashScreen.preventAutoHideAsync();
 
 function useWebStyles() {
   useEffect(() => {
@@ -31,12 +49,12 @@ function useWebStyles() {
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: #0F172A;
+        background-color: #F5ECD7;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         overscroll-behavior: none;
       }
       /* Kill all scrollbars globally */
@@ -61,7 +79,7 @@ function useWebStyles() {
       themeColor.setAttribute('name', 'theme-color');
       document.head.appendChild(themeColor);
     }
-    themeColor.setAttribute('content', '#F8FAFC');
+    themeColor.setAttribute('content', '#F5ECD7');
 
     document.title = 'SoGoJet — Discover Cheap Flights to Amazing Places';
 
@@ -231,6 +249,10 @@ function AuthGatedLayout() {
         name="subscribe"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen
+        name="booking/[destinationId]"
+        options={{ animation: 'slide_from_right' }}
+      />
     </Stack>
   );
 }
@@ -239,11 +261,29 @@ export default function RootLayout() {
   useWebStyles();
   const [mounted, setMounted] = useState(false);
 
+  const [fontsLoaded] = useFonts({
+    Syne_400Regular,
+    Syne_500Medium,
+    Syne_600SemiBold,
+    Syne_700Bold,
+    Syne_800ExtraBold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted && Platform.OS === 'web') {
+  if ((!mounted && Platform.OS === 'web') || !fontsLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -255,7 +295,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
             <StatusBar style="dark" />
             <AuthGatedLayout />
             <ToastContainer />
