@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatFlightPrice } from '../../utils/formatPrice';
 import { useSaveDestination } from '../../hooks/useSaveDestination';
-import { colors, radii, spacing, fontSize, fontWeight, shadows } from '../../constants/theme';
+import { colors, radii, spacing, fontSize, fontWeight, shadows, fonts } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 interface SavedCardProps {
@@ -53,7 +53,7 @@ export function SavedCard({ destination, savedAt }: SavedCardProps) {
           }
           .sg-saved-card:hover {
             transform: translateY(-4px) scale(1.01);
-            box-shadow: ${shadows.web.xl}, 0 0 0 1px rgba(56,189,248,0.15);
+            box-shadow: ${shadows.web.xl};
           }
           .sg-saved-card:hover .sg-saved-img {
             transform: scale(1.05);
@@ -99,7 +99,7 @@ export function SavedCard({ destination, savedAt }: SavedCardProps) {
             onError={(e) => {
               const target = e.currentTarget;
               target.style.display = 'none';
-              target.parentElement!.style.background = 'linear-gradient(135deg, #1E293B, #334155)';
+              target.parentElement!.style.background = `linear-gradient(135deg, ${colors.warmDusk}, ${colors.deepDusk})`;
             }}
           />
           {/* Unsave button */}
@@ -155,7 +155,7 @@ export function SavedCard({ destination, savedAt }: SavedCardProps) {
           {/* Price overlay pill */}
           <div style={{
             position: 'absolute', top: 10, right: 52,
-            backgroundColor: 'rgba(15,23,42,0.75)',
+            backgroundColor: 'rgba(44,31,26,0.85)',
             borderRadius: radii.full,
             padding: '5px 12px',
             backdropFilter: 'blur(10px)',
@@ -189,7 +189,8 @@ export function SavedCard({ destination, savedAt }: SavedCardProps) {
             )}
             <div style={{
               color: '#fff', fontSize: 20, fontWeight: 800,
-              lineHeight: 1.2, letterSpacing: -0.3,
+              lineHeight: 1.2, letterSpacing: '-0.01em',
+              fontFamily: fonts.display, textTransform: 'uppercase',
             }}>
               {destination.city}
             </div>
@@ -198,9 +199,6 @@ export function SavedCard({ destination, savedAt }: SavedCardProps) {
             }}>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 500 }}>
                 {destination.country}
-              </span>
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                {destination.rating}★
               </span>
             </div>
           </div>
@@ -248,13 +246,12 @@ export function SavedCard({ destination, savedAt }: SavedCardProps) {
             ))}
           </View>
         )}
-        <Text style={{ color: colors.card.textPrimary, fontSize: fontSize.xl, fontWeight: fontWeight.bold }}>{destination.city}</Text>
+        <Text style={{ color: colors.card.textPrimary, fontSize: fontSize.xl, fontWeight: fontWeight.extrabold, fontFamily: fonts.display, textTransform: 'uppercase' }}>{destination.city}</Text>
         <Text style={{ color: colors.card.textSecondary, fontSize: fontSize.md, marginTop: 2 }}>{destination.country}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing['1'] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing['1'] }}>
           <Text style={{ color: destination.priceDirection === 'down' ? colors.success : colors.card.priceTint, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
             {formatFlightPrice(destination.flightPrice, destination.currency)}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: fontSize.sm }}>{destination.rating}★</Text>
         </View>
       </LinearGradient>
     </Pressable>

@@ -9,7 +9,7 @@ import { Footer } from '../../components/common/Footer';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSwipeFeed, getDestinationById } from '../../hooks/useSwipeFeed';
 import { useUIStore } from '../../stores/uiStore';
-import { colors, spacing, fontSize, fontWeight, radii, shadows } from '../../constants/theme';
+import { colors, spacing, fontSize, fontWeight, radii, shadows, fonts, buttons } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 type SortOption = 'recent' | 'price' | 'rating';
@@ -37,13 +37,13 @@ function SortChip({ label, icon, isActive, onPress }: { label: string; icon: str
         style={{
           padding: '7px 16px',
           borderRadius: radii.full,
-          backgroundColor: isActive ? colors.primary : colors.surface,
+          backgroundColor: isActive ? colors.deepDusk : colors.surface,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
-          border: `1px solid ${isActive ? colors.primary : colors.border}`,
+          border: `1px solid ${isActive ? colors.deepDusk : colors.border}`,
           whiteSpace: 'nowrap',
           display: 'flex', alignItems: 'center', gap: 6,
-          boxShadow: isActive ? shadows.web.primary : 'none',
+          boxShadow: 'none',
           fontFamily: 'inherit',
         }}
       >
@@ -51,7 +51,7 @@ function SortChip({ label, icon, isActive, onPress }: { label: string; icon: str
         <span style={{
           fontSize: fontSize.md,
           fontWeight: isActive ? fontWeight.bold : fontWeight.medium,
-          color: isActive ? '#fff' : colors.text.secondary,
+          color: isActive ? colors.paleHorizon : colors.text.secondary,
         }}>
           {label}
         </span>
@@ -66,9 +66,9 @@ function SortChip({ label, icon, isActive, onPress }: { label: string; icon: str
         paddingVertical: spacing['2'],
         paddingHorizontal: spacing['4'],
         borderRadius: radii.full,
-        backgroundColor: isActive ? colors.primary : colors.surfaceElevated,
+        backgroundColor: isActive ? colors.deepDusk : colors.surfaceElevated,
         borderWidth: 1,
-        borderColor: isActive ? colors.primary : colors.border,
+        borderColor: isActive ? colors.deepDusk : colors.border,
         flexDirection: 'row', alignItems: 'center', gap: 4,
       }}
     >
@@ -76,7 +76,7 @@ function SortChip({ label, icon, isActive, onPress }: { label: string; icon: str
       <Text style={{
         fontSize: fontSize.md,
         fontWeight: isActive ? fontWeight.bold : fontWeight.medium,
-        color: isActive ? '#fff' : colors.text.secondary,
+        color: isActive ? colors.paleHorizon : colors.text.secondary,
       }}>
         {label}
       </Text>
@@ -144,17 +144,17 @@ function ShareWishlistButton({ count }: { count: number }) {
         display: 'inline-flex', alignItems: 'center', gap: 8,
         padding: '10px 20px', borderRadius: radii.full,
         background: copied
-          ? 'linear-gradient(135deg, #22C55E, #16A34A)'
-          : `linear-gradient(135deg, ${colors.primary}, ${colors.sageDrift})`,
+          ? colors.sageDrift
+          : colors.deepDusk,
         cursor: 'pointer', transition: 'all 0.3s ease',
-        boxShadow: shadows.web.primary,
+        boxShadow: 'none',
         border: 'none', fontFamily: 'inherit',
       }}
       onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
       onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
     >
       <span style={{ fontSize: 14 }}>{copied ? '✅' : '🔗'}</span>
-      <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>
+      <span style={{ color: colors.paleHorizon, fontSize: 13, fontWeight: 700 }}>
         {copied ? 'Copied!' : 'Share Wishlist'}
       </span>
     </button>
@@ -226,9 +226,10 @@ export default function SavedTab() {
         <div style={{ padding: `${spacing['14']}px ${spacing['5']}px ${spacing['2']}px ${spacing['5']}px` }}>
           <h1 style={{
             margin: 0, color: colors.text.primary,
-            fontSize: 32, fontWeight: 800, letterSpacing: -0.5,
+            fontSize: 32, fontWeight: 800, letterSpacing: '-0.01em',
+            fontFamily: fonts.display, textTransform: 'uppercase',
           }}>
-            ❤️ Saved
+            MY WISHLIST
           </h1>
           <p style={{
             margin: `${spacing['1']}px 0 ${spacing['3']}px 0`,
@@ -250,10 +251,10 @@ export default function SavedTab() {
             <button
               onClick={() => router.push('/')}
               style={{
-                padding: '12px 28px', borderRadius: 9999,
-                background: `linear-gradient(135deg, ${colors.primary}, #818CF8)`,
-                border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
-                cursor: 'pointer', boxShadow: '0 4px 16px rgba(56,189,248,0.25)',
+                padding: '12px 28px', borderRadius: buttons.primary.borderRadius,
+                background: colors.deepDusk,
+                border: 'none', color: colors.paleHorizon, fontSize: 15, fontWeight: 700,
+                cursor: 'pointer', boxShadow: 'none',
                 fontFamily: 'inherit',
               }}
             >Explore Destinations</button>
@@ -292,7 +293,7 @@ export default function SavedTab() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ paddingHorizontal: spacing['5'], paddingTop: spacing['14'], paddingBottom: spacing['3'], flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <View>
-          <Text style={{ color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5 }}>Saved</Text>
+          <Text style={{ color: colors.text.primary, fontSize: fontSize['6xl'], fontWeight: fontWeight.extrabold, letterSpacing: -0.5, fontFamily: fonts.display, textTransform: 'uppercase' }}>My Wishlist</Text>
           <Text style={{ color: colors.text.muted, fontSize: fontSize.lg, marginTop: spacing['1'] }}>Your travel wishlist</Text>
         </View>
         {resolved.length > 0 && (
@@ -310,9 +311,9 @@ export default function SavedTab() {
           </Text>
           <Pressable
             onPress={() => router.push('/')}
-            style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: 9999, backgroundColor: colors.primary }}
+            style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: buttons.primary.borderRadius, backgroundColor: colors.deepDusk }}
           >
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Explore Destinations</Text>
+            <Text style={{ color: colors.paleHorizon, fontSize: 15, fontWeight: '700' }}>Explore Destinations</Text>
           </Pressable>
         </View>
       ) : (
