@@ -15,7 +15,7 @@ import Animated, {
 import { CardGradient } from './CardGradient';
 import { shareDestination } from '../../utils/share';
 import { successHaptic } from '../../utils/haptics';
-import { colors, layout } from '../../constants/theme';
+import { colors, layout, fonts } from '../../constants/theme';
 import type { Destination } from '../../types/destination';
 
 interface SwipeCardProps {
@@ -152,10 +152,7 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
   const effectivePrice = destination.livePrice ?? destination.flightPrice;
   const isDeal = destination.livePrice != null && destination.livePrice < destination.flightPrice * 0.85;
   const savings = isDeal ? Math.round(((destination.flightPrice - destination.livePrice!) / destination.flightPrice) * 100) : 0;
-  const currentMonth = new Date().toLocaleString('en', { month: 'short' });
-  const isGoodTime = destination.bestMonths?.includes(currentMonth);
   const isNew = parseInt(destination.id) >= 147; // batch3 destinations
-  const costLevel = destination.hotelPricePerNight <= 60 ? '$' : destination.hotelPricePerNight <= 120 ? '$$' : destination.hotelPricePerNight <= 200 ? '$$$' : '$$$$';
 
   // ── Ken Burns effect — cycle through different pan/zoom combos ──
   const kenBurnsVariants = [
@@ -324,11 +321,11 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </div>
         )}
 
-        {/* Right side: action column (TikTok-style) — just save + share */}
+        {/* Right side: action column — deepDusk-translucent circles */}
         <div
           style={{
-            position: 'absolute', bottom: 120, right: 16, zIndex: 10,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
+            position: 'absolute', bottom: 140, right: 16, zIndex: 10,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -337,13 +334,13 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             onClick={() => onToggleSave()}
             aria-label={isSaved ? 'Unsave destination' : 'Save destination'}
             style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
+              width: 52, height: 52, borderRadius: 26,
+              backgroundColor: 'rgba(44,31,26,0.35)',
               backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
               transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.08)',
               padding: 0, fontFamily: 'inherit',
             }}
           >
@@ -354,12 +351,12 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             onClick={handleShare}
             aria-label="Share destination"
             style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: 'rgba(0,0,0,0.3)',
+              width: 52, height: 52, borderRadius: 26,
+              backgroundColor: 'rgba(44,31,26,0.35)',
               backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.08)',
               padding: 0, fontFamily: 'inherit',
             }}
           >
@@ -367,18 +364,20 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
           </button>
         </div>
 
-        {/* Bottom-left: minimal content stack with animated entry */}
+        {/* Bottom-left: content stack matching Paper design */}
         <div
           style={{
             position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
-            padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom}px ${layout.cardPaddingHorizontal}px`,
+            padding: `0 ${layout.cardPaddingHorizontal}px ${layout.cardPaddingBottom + 8}px ${layout.cardPaddingHorizontal}px`,
           }}
         >
-          {/* City — slides up */}
+          {/* City — Syne ExtraBold, ALL CAPS */}
           <h1
             style={{
-              margin: 0, color: '#fff', fontSize: 40, fontWeight: 800,
-              letterSpacing: -0.5, lineHeight: 1,
+              margin: 0, color: '#fff',
+              fontFamily: `${fonts.display}, sans-serif`, fontWeight: 800,
+              fontSize: 48, letterSpacing: -1, lineHeight: 0.95,
+              textTransform: 'uppercase' as const,
               textShadow: '0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)',
               animation: isActive ? 'sg-city-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both' : 'none',
             }}
@@ -386,66 +385,73 @@ function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleS
             {destination.city}
           </h1>
 
-          {/* Tagline */}
+          {/* Tagline — Inter Regular, NOT italic */}
           <p style={{
-            margin: '6px 0 0 0', fontSize: 15, fontWeight: 400, fontStyle: 'italic',
-            color: 'rgba(255,255,255,0.6)', lineHeight: 1.3,
+            margin: '8px 0 0 0',
+            fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
+            fontSize: 15, lineHeight: 1.3,
+            color: 'rgba(255,255,255,0.7)',
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
             animation: isActive ? 'sg-meta-enter 0.5s 0.15s ease-out both' : 'none',
           }}>
             {destination.tagline}
           </p>
 
-          {/* Country · Flight duration */}
+          {/* Metadata strip: COUNTRY · FLIGHT_DURATION · VIBE — all caps */}
           <p style={{
-            margin: '6px 0 0 0', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center',
+            margin: '6px 0 0 0', fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center',
+            fontFamily: `${fonts.body}, sans-serif`, fontWeight: 500,
+            textTransform: 'uppercase' as const, letterSpacing: 1.5,
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
             animation: isActive ? 'sg-meta-enter 0.4s 0.2s ease-out both' : 'none',
           }}>
-            <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>{destination.country}</span>
-            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>{destination.flightDuration}</span>
-            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400, fontSize: 12 }}>{costLevel}</span>
-            {isGoodTime && (
-              <>
-                <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 10px' }}>·</span>
-                <span style={{ color: '#4ADE80', fontWeight: 500, fontSize: 12 }}>☀️ Great time to go</span>
-              </>
-            )}
+            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{destination.country}</span>
+            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px' }}>•</span>
+            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{destination.flightDuration?.replace(/\s/g, '') || 'Direct'}</span>
+            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px' }}>•</span>
+            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{destination.vibeTags?.[0] || 'Travel'}</span>
           </p>
 
-          {/* Price pill — fades in with delay */}
+          {/* Price pill — deepDusk bg, Syne SemiBold price, LIVE PRICE in sageDrift */}
           <div style={{
             marginTop: 14, display: 'flex', alignItems: 'center', gap: 8,
             animation: isActive ? 'sg-price-enter 0.5s 0.3s ease-out both' : 'none',
           }}>
             <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '8px 16px', borderRadius: 9999,
-              backgroundColor: isDeal ? 'rgba(34,197,94,0.25)' : 'rgba(0,0,0,0.3)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              border: isDeal ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.1)',
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 18px', borderRadius: 9999,
+              backgroundColor: colors.deepDusk,
+              border: `1px solid rgba(255,255,255,0.08)`,
             }}>
-              <span style={{ fontSize: 14 }}>{isDeal ? '🔥' : '✈️'}</span>
-              <span style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>
-                From ${effectivePrice}
+              <span style={{
+                fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
+                color: 'rgba(255,255,255,0.6)', fontSize: 13,
+              }}>From</span>
+              <span style={{
+                fontFamily: `${fonts.display}, sans-serif`, fontWeight: 700,
+                color: '#fff', fontSize: 20,
+              }}>
+                ${effectivePrice}
               </span>
               {destination.priceSource && destination.priceSource !== 'estimate' && (
                 <span style={{
-                  width: 6, height: 6, borderRadius: 3,
-                  backgroundColor: '#22C55E', display: 'inline-block',
-                  boxShadow: '0 0 4px rgba(34,197,94,0.5)',
-                }} title="Live price" />
+                  fontFamily: `${fonts.body}, sans-serif`, fontWeight: 700,
+                  fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase' as const,
+                  color: colors.sageDrift,
+                }}>
+                  LIVE PRICE
+                </span>
               )}
             </div>
             {isDeal && (
               <span style={{
-                padding: '4px 10px', borderRadius: 9999,
-                backgroundColor: 'rgba(34,197,94,0.3)',
-                color: '#4ADE80', fontSize: 12, fontWeight: 700,
+                padding: '6px 12px', borderRadius: 9999,
+                backgroundColor: colors.sunriseButter,
+                color: colors.deepDusk,
+                fontFamily: `${fonts.display}, sans-serif`,
+                fontSize: 12, fontWeight: 700,
               }}>
-                {savings}% off
+                {savings}% OFF
               </span>
             )}
           </div>

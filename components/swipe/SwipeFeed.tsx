@@ -15,7 +15,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { mediumHaptic } from '../../utils/haptics';
 import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
 import { ErrorState } from '../common/ErrorState';
-import { colors } from '../../constants/theme';
+import { colors, fonts } from '../../constants/theme';
 import { MapView } from './MapView';
 import type { VibeTag } from '../../types/destination';
 
@@ -399,13 +399,16 @@ export function SwipeFeed() {
       return (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          height: '100vh', backgroundColor: colors.navy, flexDirection: 'column', gap: 16,
+          height: '100vh', backgroundColor: colors.duskSand, flexDirection: 'column', gap: 16,
         }}>
           <span style={{ fontSize: 48 }}>😵</span>
-          <span style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>Failed to load destinations</span>
+          <span style={{ color: colors.deepDusk, fontSize: 18, fontWeight: '600', fontFamily: `${fonts.display}, sans-serif` }}>
+            Something unexpected happened
+          </span>
           <button onClick={() => refetch()} style={{
-            background: colors.primary, color: '#fff', border: 'none', borderRadius: 12,
+            background: colors.deepDusk, color: '#fff', border: 'none', borderRadius: 12,
             padding: '12px 32px', fontSize: 16, fontWeight: '700', cursor: 'pointer',
+            fontFamily: `${fonts.display}, sans-serif`,
           }}>Try Again</button>
         </div>
       );
@@ -418,14 +421,14 @@ export function SwipeFeed() {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', backgroundColor: colors.navy, padding: 32, textAlign: 'center',
+        height: '100vh', backgroundColor: colors.duskSand, padding: 32, textAlign: 'center',
       }}>
         <span style={{ fontSize: 56, marginBottom: 16 }}>🔍</span>
-        <span style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
-          No destinations match your filters
+        <span style={{ color: colors.deepDusk, fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: `${fonts.display}, sans-serif` }}>
+          No destinations found
         </span>
-        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, maxWidth: 320, marginBottom: 24 }}>
-          Try adjusting your budget, region, or vibe filter to see more results.
+        <span style={{ color: colors.text.muted, fontSize: 14, lineHeight: 1.6, maxWidth: 320, marginBottom: 24, fontFamily: `${fonts.body}, sans-serif` }}>
+          Try adjusting your filters to see more results.
         </span>
         <div style={{ display: 'flex', gap: 12 }}>
           <button
@@ -436,8 +439,8 @@ export function SwipeFeed() {
             }}
             style={{
               padding: '12px 28px', borderRadius: 9999, border: 'none',
-              background: colors.primary, color: '#fff', fontSize: 15, fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit',
+              background: colors.deepDusk, color: '#fff', fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', fontFamily: `${fonts.display}, sans-serif`,
             }}
           >Clear All Filters</button>
         </div>
@@ -458,247 +461,6 @@ export function SwipeFeed() {
         style={{ height: '100vh', width: '100%', overflowY: 'scroll', scrollbarWidth: 'none', position: 'relative' }}
         onScroll={handleWebScroll}
       >
-        {/* Scroll progress bar */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, zIndex: 31,
-          height: 2, backgroundColor: colors.primary,
-          width: `${destinations.length > 0 ? ((activeIndex + 1) / destinations.length) * 100 : 0}%`,
-          transition: 'width 0.3s ease',
-        }} />
-
-        {/* Floating header — logo + departure city */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 30,
-          padding: '14px 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)',
-          pointerEvents: 'none',
-          paddingBottom: 56,
-        }}>
-          <span style={{
-            color: '#fff', fontSize: 20, fontWeight: 800, letterSpacing: -0.5,
-            textShadow: '0 2px 12px rgba(0,0,0,0.5)',
-          }}>
-            SoGo<span style={{ color: colors.primary }}>Jet</span>
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
-            {/* Region filter */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setRegionOpen(!regionOpen)}
-                aria-label="Filter by region"
-                style={{
-                  color: regionFilter !== 'all' ? colors.primary : 'rgba(255,255,255,0.7)',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  padding: '4px 10px', borderRadius: 9999,
-                  backgroundColor: regionFilter !== 'all' ? 'rgba(56,189,248,0.2)' : 'rgba(0,0,0,0.3)',
-                  border: regionFilter !== 'all' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-                  textShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                  display: 'flex', alignItems: 'center', gap: 4,
-                }}
-              >
-                {REGION_OPTIONS.find(r => r.key === regionFilter)?.emoji || '🌍'}{' '}
-                {REGION_OPTIONS.find(r => r.key === regionFilter)?.label || 'Everywhere'}
-                <span style={{ fontSize: 8, opacity: 0.6 }}>▼</span>
-              </button>
-              {regionOpen && (
-                <>
-                  <div
-                    onClick={() => setRegionOpen(false)}
-                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 98 }}
-                  />
-                  <div style={{
-                    position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 99,
-                    backgroundColor: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                    borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)', overflow: 'hidden',
-                    minWidth: 200,
-                  }}>
-                    <div style={{ padding: '10px 14px 6px', color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1.5 }}>
-                      Destination Region
-                    </div>
-                    {REGION_OPTIONS.map(({ key, label, emoji }) => (
-                      <div
-                        key={key}
-                        onClick={() => {
-                          setRegionFilter(key);
-                          setRegionOpen(false);
-                          webScrollRef.current?.scrollTo({ top: 0 });
-                          setActiveIndex(0);
-                          activeIndexRef.current = 0;
-                        }}
-                        style={{
-                          padding: '10px 14px', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          backgroundColor: regionFilter === key ? 'rgba(56,189,248,0.1)' : 'transparent',
-                          transition: 'background-color 0.15s',
-                        }}
-                        onMouseEnter={(e) => { if (regionFilter !== key) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
-                        onMouseLeave={(e) => { if (regionFilter !== key) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
-                      >
-                        <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>{emoji}</span>
-                        <span style={{
-                          color: regionFilter === key ? colors.primary : 'rgba(255,255,255,0.8)',
-                          fontSize: 14, fontWeight: regionFilter === key ? 700 : 500,
-                        }}>{label}</span>
-                        {regionFilter === key && <span style={{ marginLeft: 'auto', color: colors.primary, fontSize: 14 }}>✓</span>}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-            <button
-              onClick={() => router.push('/settings')}
-              aria-label={`Departure city: ${departureCode}`}
-              style={{
-                color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
-                textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-                cursor: 'pointer', background: 'none', border: 'none', padding: 0,
-              }}
-            >
-              ✈️ {departureCode}
-            </button>
-            <button
-              onClick={() => setShowFullMap(true)}
-              aria-label="Open map view"
-              style={{
-                color: 'rgba(255,255,255,0.8)', fontSize: 16, cursor: 'pointer',
-                textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-                background: 'none', border: 'none', padding: 0,
-              }}
-            >🗺️</button>
-            <button
-              onClick={() => setSearchOpen(true)}
-              aria-label="Search destinations"
-              style={{
-                color: 'rgba(255,255,255,0.8)', fontSize: 18, cursor: 'pointer',
-                textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-                background: 'none', border: 'none', padding: 0,
-              }}
-            >🔍</button>
-          </div>
-        </div>
-
-        {/* Category quick-filter chips */}
-        <div style={{
-          position: 'fixed', top: 48, left: 0, right: 0, zIndex: 29,
-          display: 'flex', justifyContent: 'center', gap: 4,
-          pointerEvents: 'auto', padding: '0 12px', flexWrap: 'nowrap',
-          overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-          msOverflowStyle: 'none', scrollbarWidth: 'none',
-        }}>
-          {VIBE_CHIPS.map(({ tag, label, emoji }) => (
-            <button
-              key={tag}
-              onClick={() => {
-                setVibeFilter(vibeFilter === tag ? null : tag);
-                resetToTop();
-              }}
-              style={{
-                padding: '4px 10px', borderRadius: 9999,
-                fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                backgroundColor: vibeFilter === tag ? 'rgba(56,189,248,0.3)' : 'rgba(0,0,0,0.25)',
-                color: vibeFilter === tag ? colors.primary : 'rgba(255,255,255,0.5)',
-                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-                transition: 'all 0.2s',
-                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
-                border: vibeFilter === tag ? '1px solid rgba(56,189,248,0.3)' : '1px solid transparent',
-              }}
-            >{emoji} {label}</button>
-          ))}
-        </div>
-
-        {/* Sort pills */}
-        <div style={{
-          position: 'fixed', top: 74, left: 0, right: 0, zIndex: 29,
-          display: 'flex', justifyContent: 'center', gap: 6,
-          pointerEvents: 'auto', padding: '0 20px',
-        }}>
-          {([
-            { key: 'default' as SortPreset, label: '✨ For You' },
-            { key: 'cheapest' as SortPreset, label: '💰 Cheapest' },
-            { key: 'trending' as SortPreset, label: '🔥 Trending' },
-          ]).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => {
-                setSortPreset(key);
-                resetToTop();
-              }}
-              style={{
-                padding: '5px 12px', borderRadius: 9999, border: 'none',
-                fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                backgroundColor: sortPreset === key ? 'rgba(56,189,248,0.25)' : 'rgba(0,0,0,0.3)',
-                color: sortPreset === key ? colors.primary : 'rgba(255,255,255,0.6)',
-                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-                transition: 'all 0.2s',
-                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
-              }}
-            >{label}</button>
-          ))}
-          {/* Budget filter */}
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setBudgetOpen(!budgetOpen)}
-              aria-label="Filter by budget"
-              style={{
-                padding: '5px 12px', borderRadius: 9999,
-                border: maxPrice ? '1px solid rgba(34,197,94,0.3)' : 'none',
-                fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                backgroundColor: maxPrice ? 'rgba(34,197,94,0.2)' : 'rgba(0,0,0,0.3)',
-                color: maxPrice ? '#4ADE80' : 'rgba(255,255,255,0.6)',
-                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-                transition: 'all 0.2s',
-                textShadow: '0 1px 4px rgba(0,0,0,0.3)',
-              }}
-            >{maxPrice ? `≤$${maxPrice}` : '💵 Budget'}</button>
-            {budgetOpen && (
-              <>
-                <div onClick={() => setBudgetOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
-                <div style={{
-                  position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 99,
-                  backgroundColor: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                  borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: 12,
-                  minWidth: 180,
-                }}>
-                  {[
-                    { label: 'Any Price', value: null },
-                    { label: 'Under $200', value: 200 },
-                    { label: 'Under $400', value: 400 },
-                    { label: 'Under $600', value: 600 },
-                    { label: 'Under $1000', value: 1000 },
-                  ].map(({ label, value }) => (
-                    <button
-                      key={label}
-                      onClick={() => {
-                        setMaxPrice(value);
-                        setBudgetOpen(false);
-                        resetToTop();
-                      }}
-                      style={{
-                        display: 'block', width: '100%', padding: '8px 12px',
-                        borderRadius: 8, border: 'none', cursor: 'pointer',
-                        textAlign: 'left', fontSize: 13, fontFamily: 'inherit',
-                        color: maxPrice === value ? '#4ADE80' : 'rgba(255,255,255,0.8)',
-                        fontWeight: maxPrice === value ? 700 : 500,
-                        backgroundColor: maxPrice === value ? 'rgba(34,197,94,0.15)' : 'transparent',
-                        transition: 'background-color 0.15s',
-                      }}
-                    >
-                      {label}
-                      {maxPrice === value && <span style={{ marginLeft: 'auto', float: 'right', color: '#4ADE80' }}>✓</span>}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        <DealsTicker />
         <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
 
         {/* Virtualized: only render cards within ±3 of active index, use spacer divs for the rest */}
@@ -718,98 +480,13 @@ export function SwipeFeed() {
                 onToggleSave={() => handleToggleSave(destination.id)}
                 index={index}
               />
-              {index === 0 && showHint && (
-                <div className="sg-swipe-hint">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 19V5M5 12l7-7 7 7" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase' as const }}>Swipe to explore</span>
-                </div>
-              )}
+              {/* Swipe hint removed per V4 design — clean immersive cards */}
             </div>
           );
         })}
         {activeIndex + 3 < destinations.length - 1 && (
           <div style={{ height: `${(destinations.length - 1 - (activeIndex + 3)) * 100}vh`, width: '100%' }} />
         )}
-
-        {/* Deal alert banner — shows after 5 cards */}
-        {activeIndex >= 5 && <DealAlertBanner />}
-
-        {/* Trending overlay */}
-        {showTrending && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 50,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-          }} onClick={() => setShowTrending(false)}>
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                width: '100%', maxWidth: 680, maxHeight: '80vh',
-                overflowY: 'auto', borderRadius: '24px 24px 0 0',
-                boxShadow: '0 -8px 32px rgba(0,0,0,0.3)',
-              }}
-            >
-              <TrendingSection onClose={() => setShowTrending(false)} />
-            </div>
-          </div>
-        )}
-
-        {/* Floating left-side buttons — stacked vertically with safe spacing */}
-        <div style={{
-          position: 'fixed', bottom: 24, left: 12, zIndex: 30,
-          display: 'flex', flexDirection: 'column', gap: 8,
-          alignItems: 'center',
-        }}>
-          {activeIndex >= 10 && (
-            <button
-              onClick={resetToTop}
-              style={{
-                width: 34, height: 34, borderRadius: 17,
-                backgroundColor: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.12)',
-                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-                color: 'rgba(255,255,255,0.7)', fontSize: 14, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-              title="Back to top"
-            >↑</button>
-          )}
-          <button
-            onClick={() => setShowTrending(true)}
-            style={{
-              width: 34, height: 34, borderRadius: 17,
-              backgroundColor: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              color: '#fff', fontSize: 14, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-            title="Discover trending"
-          >✨</button>
-          <button
-            onClick={() => setShowMiniMap(true)}
-            style={{
-              width: 34, height: 34, borderRadius: 17,
-              backgroundColor: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              color: '#fff', fontSize: 14, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-            title="Explore map"
-          >🌐</button>
-        </div>
-
-        {/* Card counter — bottom right */}
-        <div style={{
-          position: 'fixed', bottom: 16, right: 16, zIndex: 30,
-          pointerEvents: 'none',
-          color: 'rgba(255,255,255,0.25)', fontSize: 10, fontWeight: 600,
-          textShadow: '0 1px 4px rgba(0,0,0,0.5)',
-          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2,
-        }}>
-          <span>{activeIndex + 1} / {destinations.length}</span>
-        </div>
 
         {/* End-of-feed card with stats */}
         {!hasNextPage && destinations.length > 0 && (
