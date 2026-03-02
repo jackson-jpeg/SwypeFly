@@ -42,14 +42,14 @@ jest.mock('../../services/appwriteServer', () => ({
   COLLECTIONS: { priceAlerts: 'price_alerts' },
 }));
 
-import handler from '../../api/alerts/create';
+import handler from '../../api/alerts';
 
 function makeReq(overrides: Partial<VercelRequest> = {}): VercelRequest {
   return {
     method: 'POST',
     headers: {},
     body: {},
-    query: {},
+    query: { action: 'create' },
     ...overrides,
   } as unknown as VercelRequest;
 }

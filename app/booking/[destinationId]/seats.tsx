@@ -99,7 +99,7 @@ export default function SeatSelection() {
     if (!selectedOffer) return;
     const offerId = (selectedOffer as Record<string, unknown>).id as string;
 
-    fetch(`/api/booking/offer?offerId=${offerId}`)
+    fetch(`/api/booking?action=offer&offerId=${offerId}`)
       .then((res) => res.json())
       .then((data) => {
         setSeatMap(data.seatMap || []);

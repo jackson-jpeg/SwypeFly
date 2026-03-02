@@ -29,7 +29,7 @@ export default function FlightSelection() {
     try {
       // TODO: Wire up to real departure date selection + user's origin
       const passengers = Array.from({ length: passengerCount }, () => ({ type: 'adult' as const }));
-      const res = await fetch('/api/booking/search', {
+      const res = await fetch('/api/booking?action=search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

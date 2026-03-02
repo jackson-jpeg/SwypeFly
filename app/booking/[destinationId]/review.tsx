@@ -38,7 +38,7 @@ export default function Review() {
     setProcessing(true);
     try {
       // 1. Create payment intent
-      const piRes = await fetch('/api/booking/payment-intent', {
+      const piRes = await fetch('/api/booking?action=payment-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ export default function Review() {
       // For now, proceed directly to order creation (assumes test mode).
 
       // 3. Create Duffel order
-      const orderRes = await fetch('/api/booking/create-order', {
+      const orderRes = await fetch('/api/booking?action=create-order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

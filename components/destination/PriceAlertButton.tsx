@@ -24,7 +24,7 @@ export function PriceAlertButton({ destinationId, currentPrice }: PriceAlertButt
         return;
       }
 
-      const res = await fetch('/api/alerts/create', {
+      const res = await fetch('/api/alerts?action=create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
