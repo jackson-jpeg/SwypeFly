@@ -10,11 +10,10 @@ import {
   bookingOrderSchema,
   validateRequest,
 } from '../utils/validation';
-import { searchFlights, getOffer, getSeatMap, createOrder, getOrder } from '../services/duffel';
-import { createPaymentIntent, getPaymentIntent, constructWebhookEvent } from '../services/stripe';
 import { logApiError } from '../utils/apiLogger';
 
 const DATABASE_ID = 'sogojet';
+const STUB_MODE = !process.env.DUFFEL_API_KEY;
 
 // ─── Auth helper ─────────────────────────────────────────────────────────────
 
@@ -41,7 +40,151 @@ function getServerDatabases() {
   return new Databases(serverClient);
 }
 
-// ─── Action handlers ─────────────────────────────────────────────────────────
+// ─── Stub data for when Duffel/Stripe keys are not configured ───────────────
+
+function stubSearch(origin: string, destination: string, cabinClass: string) {
+  const basePrices: Record<string, number> = {
+    economy: 287,
+    premium_economy: 549,
+    business: 1450,
+    first: 3200,
+  };
+  const base = basePrices[cabinClass] || 287;
+
+  return {
+    offers: [
+      {
+        id: 'stub_offer_1',
+        total_amount: String(base),
+        total_currency: 'USD',
+        owner: { name: 'Delta Air Lines', iata_code: 'DL' },
+        slices: [
+          {
+            origin: { iata_code: origin },
+            destination: { iata_code: destination },
+            duration: 'PT4H35M',
+            segments: [
+              {
+                operating_carrier: { name: 'Delta Air Lines', iata_code: 'DL' },
+                operating_carrier_flight_number: '1842',
+                departing_at: '2026-04-15T08:15:00',
+                arriving_at: '2026-04-15T12:50:00',
+                origin: { iata_code: origin },
+                destination: { iata_code: destination },
+                cabin_class: cabinClass,
+              },
+            ],
+          },
+        ],
+        passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+      },
+      {
+        id: 'stub_offer_2',
+        total_amount: String(base + 43),
+        total_currency: 'USD',
+        owner: { name: 'United Airlines', iata_code: 'UA' },
+        slices: [
+          {
+            origin: { iata_code: origin },
+            destination: { iata_code: destination },
+            duration: 'PT5H10M',
+            segments: [
+              {
+                operating_carrier: { name: 'United Airlines', iata_code: 'UA' },
+                operating_carrier_flight_number: '923',
+                departing_at: '2026-04-15T10:30:00',
+                arriving_at: '2026-04-15T15:40:00',
+                origin: { iata_code: origin },
+                destination: { iata_code: destination },
+                cabin_class: cabinClass,
+              },
+            ],
+          },
+        ],
+        passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+      },
+      {
+        id: 'stub_offer_3',
+        total_amount: String(base + 91),
+        total_currency: 'USD',
+        owner: { name: 'American Airlines', iata_code: 'AA' },
+        slices: [
+          {
+            origin: { iata_code: origin },
+            destination: { iata_code: destination },
+            duration: 'PT3H55M',
+            segments: [
+              {
+                operating_carrier: { name: 'American Airlines', iata_code: 'AA' },
+                operating_carrier_flight_number: '407',
+                departing_at: '2026-04-15T14:00:00',
+                arriving_at: '2026-04-15T17:55:00',
+                origin: { iata_code: origin },
+                destination: { iata_code: destination },
+                cabin_class: cabinClass,
+              },
+            ],
+          },
+        ],
+        passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+      },
+    ],
+    slices: [],
+    passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+  };
+}
+
+function stubOffer(offerId: string) {
+  return {
+    offer: {
+      id: offerId,
+      total_amount: '287.00',
+      total_currency: 'USD',
+      available_services: [
+        {
+          id: 'stub_svc_bag_1',
+          type: 'baggage',
+          total_amount: '35.00',
+          total_currency: 'USD',
+          metadata: { type: 'checked', weight_kg: 23, maximum_quantity: 2 },
+        },
+      ],
+    },
+    seatMap: null,
+  };
+}
+
+function stubPaymentIntent() {
+  return {
+    clientSecret: 'stub_pi_secret_' + Date.now(),
+    paymentIntentId: 'stub_pi_' + Date.now(),
+  };
+}
+
+function stubCreateOrder() {
+  const pnr = 'SGJ' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  return {
+    bookingId: 'stub_booking_' + Date.now(),
+    duffelOrderId: 'stub_ord_' + Date.now(),
+    status: 'confirmed',
+    bookingReference: pnr,
+  };
+}
+
+function stubGetOrder(orderId: string) {
+  return {
+    order: {
+      id: orderId,
+      status: 'confirmed',
+      booking_reference: 'SGJDEMO1',
+      total_amount: '287.00',
+      total_currency: 'USD',
+      created_at: new Date().toISOString(),
+    },
+  };
+}
+
+// ─── Live action handlers ───────────────────────────────────────────────────
 
 async function handleSearch(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -49,7 +192,14 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(bookingSearchSchema, req.body);
   if (!v.success) return res.status(400).json({ error: v.error });
 
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — Duffel API key not configured');
+    const data = stubSearch(v.data.origin, v.data.destination, v.data.cabinClass || 'economy');
+    return res.status(200).json(data);
+  }
+
   try {
+    const { searchFlights } = await import('../services/duffel');
     const result = await searchFlights({
       origin: v.data.origin,
       destination: v.data.destination,
@@ -78,7 +228,13 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(bookingOfferSchema, req.query);
   if (!v.success) return res.status(400).json({ error: v.error });
 
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — Duffel API key not configured');
+    return res.status(200).json(stubOffer(v.data.offerId));
+  }
+
   try {
+    const { getOffer, getSeatMap } = await import('../services/duffel');
     const [offer, seatMap] = await Promise.all([
       getOffer(v.data.offerId),
       getSeatMap(v.data.offerId).catch(() => null),
@@ -96,11 +252,17 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
   const jwt = getJwt(req);
   if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
 
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — Stripe/Duffel API keys not configured');
+    return res.status(200).json(stubPaymentIntent());
+  }
+
   try {
     const user = await verifyUser(jwt);
     const v = validateRequest(paymentIntentSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
+    const { createPaymentIntent } = await import('../services/stripe');
     const result = await createPaymentIntent(v.data.amount, v.data.currency, {
       userId: user.$id,
       offerId: v.data.offerId,
@@ -118,16 +280,23 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
   const jwt = getJwt(req);
   if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
 
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — Duffel API key not configured');
+    return res.status(200).json(stubCreateOrder());
+  }
+
   try {
     const user = await verifyUser(jwt);
     const v = validateRequest(createOrderSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
+    const { getPaymentIntent } = await import('../services/stripe');
     const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
     if (paymentIntent.status !== 'succeeded') {
       return res.status(400).json({ error: 'Payment not completed' });
     }
 
+    const { createOrder } = await import('../services/duffel');
     const duffelOrder = await createOrder({
       offerId: v.data.offerId,
       passengers: v.data.passengers,
@@ -192,11 +361,18 @@ async function handleGetOrder(req: VercelRequest, res: VercelResponse) {
   const jwt = getJwt(req);
   if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
 
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — Duffel API key not configured');
+    const orderId = String(req.query.orderId || 'stub_ord');
+    return res.status(200).json(stubGetOrder(orderId));
+  }
+
   try {
     await verifyUser(jwt);
     const v = validateRequest(bookingOrderSchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
 
+    const { getOrder } = await import('../services/duffel');
     const order = await getOrder(v.data.orderId);
     return res.status(200).json({ order });
   } catch (err) {
@@ -207,6 +383,11 @@ async function handleGetOrder(req: VercelRequest, res: VercelResponse) {
 
 async function handleWebhook(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — webhook ignored, Stripe not configured');
+    return res.status(200).json({ received: true });
+  }
 
   const signature = req.headers['stripe-signature'];
   if (!signature || typeof signature !== 'string') {
@@ -221,6 +402,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
       req.on('error', reject);
     });
 
+    const { constructWebhookEvent } = await import('../services/stripe');
     const event = constructWebhookEvent(rawBody, signature);
     const databases = getServerDatabases();
 
