@@ -15,7 +15,6 @@ import RestaurantCards from '../../components/destination/RestaurantCards';
 import { TravelTips } from '../../components/destination/TravelTips';
 import { WeatherWidget } from '../../components/destination/WeatherWidget';
 import { SimilarDestinations } from '../../components/destination/SimilarDestinations';
-import { hotelLink, activitiesLink } from '../../utils/affiliateLinks';
 import { CompareModal } from '../../components/common/CompareModal';
 import { Footer } from '../../components/common/Footer';
 import { AiTripPlanner } from '../../components/destination/AiTripPlanner';
@@ -132,9 +131,6 @@ export default function DestinationDetail() {
   const images = destination.imageUrls?.length ? destination.imageUrls : [destination.imageUrl];
   const effectivePrice = destination.livePrice ?? destination.flightPrice;
 
-  const marker = typeof process !== 'undefined'
-    ? (process.env.EXPO_PUBLIC_TRAVELPAYOUTS_MARKER || '')
-    : '';
 
   const handleShare = async () => {
     const { shareDestination } = await import('../../utils/share');
@@ -317,10 +313,7 @@ export default function DestinationDetail() {
                 </div>
               )}
               <button
-                onClick={() => {
-                  const url = `https://www.aviasales.com/search/${departureCode || 'TPA'}01${destination.iataCode}01?marker=${marker}`;
-                  window.open(url, '_blank');
-                }}
+                onClick={() => router.push(`/booking/${destination.id}/flights`)}
                 style={{
                   width: '100%', height: buttons.primary.height, borderRadius: buttons.primary.borderRadius,
                   backgroundColor: colors.deepDusk, border: 'none',
@@ -368,7 +361,7 @@ export default function DestinationDetail() {
             {/* Action buttons */}
             <div style={{ display: 'flex', gap: 12, marginTop: spacing['4'] }}>
               <button
-                onClick={() => window.open(hotelLink(destination.city, destination.country, marker), '_blank')}
+                onClick={() => router.push(`/booking/${destination.id}/flights`)}
                 style={{
                   flex: 1, height: buttons.secondary.height, borderRadius: buttons.secondary.borderRadius,
                   backgroundColor: 'transparent',
@@ -379,7 +372,7 @@ export default function DestinationDetail() {
                 }}
               >Find Hotels</button>
               <button
-                onClick={() => window.open(activitiesLink(destination.city, destination.country, marker), '_blank')}
+                onClick={() => router.push(`/booking/${destination.id}/flights`)}
                 style={{
                   flex: 1, height: buttons.secondary.height, borderRadius: buttons.secondary.borderRadius,
                   backgroundColor: 'transparent',
@@ -390,21 +383,6 @@ export default function DestinationDetail() {
                 }}
               >Browse Activities</button>
             </div>
-
-            {/* Travel insurance link */}
-            <button
-              onClick={() => window.open(`https://www.worldnomads.com/travel-insurance/?utm_source=sogojet&utm_medium=web`, '_blank')}
-              style={{
-                width: '100%', marginTop: spacing['2'],
-                padding: '12px 0', borderRadius: radii.md,
-                background: 'transparent',
-                border: `1px solid ${colors.borderLight}`,
-                color: colors.detailSubtitle,
-                fontSize: fontSize.md, fontWeight: fontWeight.medium, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                fontFamily: 'inherit',
-              }}
-            >Get Travel Insurance</button>
 
             {/* Price Alert */}
             <PriceAlertButton
@@ -450,7 +428,7 @@ export default function DestinationDetail() {
                   </div>
                 </div>
                 <button
-                  onClick={() => window.open(hotelLink(destination.city, destination.country, marker), '_blank')}
+                  onClick={() => router.push(`/booking/${destination.id}/flights`)}
                   style={{
                     background: 'transparent', border: `1.5px solid ${colors.secondaryBorder}`,
                     color: colors.deepDusk, borderRadius: radii.lg,
@@ -552,8 +530,7 @@ export default function DestinationDetail() {
           currency={destination.currency}
           priceSource={destination.priceSource}
           departureCode={departureCode}
-          iataCode={destination.iataCode}
-          marker={marker}
+          destinationId={destination.id}
         />
       </div>
     );
@@ -650,8 +627,7 @@ export default function DestinationDetail() {
         currency={destination.currency}
         priceSource={destination.priceSource}
         departureCode={departureCode}
-        iataCode={destination.iataCode}
-        marker={marker}
+        destinationId={destination.id}
       />
     </View>
   );

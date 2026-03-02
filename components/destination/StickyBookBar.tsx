@@ -1,9 +1,9 @@
 // ─── Sticky Bottom CTA Bar ───────────────────────────────────────────────────
 // "Check Flights $XXX" button fixed at bottom after scrolling past hero.
 
-import { View, Text, Pressable, Platform, Linking } from 'react-native';
+import { View, Text, Pressable, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { formatFlightPrice } from '../../utils/formatPrice';
-import { flightLink } from '../../utils/affiliateLinks';
 import { colors, spacing, fontSize, fontWeight, radii, shadows, layout } from '../../constants/theme';
 
 interface StickyBookBarProps {
@@ -11,13 +11,16 @@ interface StickyBookBarProps {
   currency: string;
   priceSource?: 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate';
   departureCode: string;
-  iataCode: string;
-  marker: string;
+  destinationId: string;
 }
 
-export function StickyBookBar({ flightPrice, currency, priceSource, departureCode, iataCode, marker }: StickyBookBarProps) {
+export function StickyBookBar({ flightPrice, currency, priceSource, destinationId }: StickyBookBarProps) {
+  const router = useRouter();
   const priceText = formatFlightPrice(flightPrice, currency, priceSource);
-  const url = flightLink(departureCode, iataCode, marker);
+
+  const handlePress = () => {
+    router.push(`/booking/${destinationId}/flights`);
+  };
 
   if (Platform.OS === 'web') {
     return (
@@ -42,7 +45,7 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
             <div style={{ color: colors.deepDusk, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</div>
           </div>
           <button
-            onClick={() => window.open(url, '_blank')}
+            onClick={handlePress}
             style={{
               background: colors.deepDusk, color: colors.paleHorizon, border: 'none',
               borderRadius: radii.lg, padding: `${spacing['3']}px ${spacing['6']}px`,
@@ -78,7 +81,7 @@ export function StickyBookBar({ flightPrice, currency, priceSource, departureCod
         <Text style={{ color: colors.deepDusk, fontSize: fontSize['4xl'], fontWeight: fontWeight.extrabold }}>{priceText}</Text>
       </View>
       <Pressable
-        onPress={() => Linking.openURL(url)}
+        onPress={handlePress}
         style={{
           backgroundColor: colors.deepDusk, borderRadius: radii.lg,
           paddingHorizontal: spacing['6'], paddingVertical: spacing['3'],
