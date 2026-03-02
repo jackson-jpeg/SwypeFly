@@ -45,3 +45,6 @@ coverage/
 /android
 .vercel
 .env.vercel
+
+# worktrees
+.worktrees/
