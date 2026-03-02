@@ -18,12 +18,14 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
+    "@duffel/api": "^4.21.5",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/syne": "^0.4.2",
     "@google/genai": "^1.40.0",
     "@sentry/react": "^10.38.0",
     "@sentry/react-native": "~7.2.0",
     "@shopify/flash-list": "2.0.2",
+    "@stripe/stripe-js": "^8.8.0",
     "@tanstack/react-query": "^5.90.20",
     "appwrite": "^22.4.0",
     "babel-preset-expo": "~54.0.10",
@@ -49,6 +51,7 @@
     "react-native-screens": "~4.16.0",
     "react-native-web": "^0.21.0",
     "resend": "^6.9.2",
+    "stripe": "^20.4.0",
     "web-vitals": "^5.1.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"

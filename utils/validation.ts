@@ -108,6 +108,55 @@ export const subscribeBodySchema = z.object({
   airport: iataCode.default('TPA'),
 });
 
+// ─── Booking flow schemas ───────────────────────────────────────────
+
+export const passengerSchema = z.object({
+  given_name: z.string().min(1).max(100),
+  family_name: z.string().min(1).max(100),
+  born_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  gender: z.enum(['f', 'm']),
+  title: z.enum(['mr', 'mrs', 'ms', 'miss', 'dr']),
+  email: z.string().email().max(255),
+  phone_number: z.string().min(5).max(20),
+});
+
+export const bookingSearchSchema = z.object({
+  origin: iataCode,
+  destination: iataCode,
+  departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD').optional(),
+  passengers: z.array(z.object({
+    type: z.enum(['adult', 'child', 'infant_without_seat']),
+  })).min(1).max(9),
+  cabinClass: z.enum(['economy', 'premium_economy', 'business', 'first']).optional(),
+});
+
+export const bookingOfferSchema = z.object({
+  offerId: z.string().min(1).max(200),
+});
+
+export const paymentIntentSchema = z.object({
+  offerId: z.string().min(1).max(200),
+  amount: z.number().int().positive(),
+  currency: z.string().length(3),
+});
+
+export const createOrderSchema = z.object({
+  offerId: z.string().min(1).max(200),
+  passengers: z.array(passengerSchema.extend({
+    id: z.string().min(1),
+  })).min(1).max(9),
+  selectedServices: z.array(z.object({
+    id: z.string().min(1),
+    quantity: z.number().int().min(1).max(10),
+  })).optional(),
+  paymentIntentId: z.string().min(1).max(200),
+});
+
+export const bookingOrderSchema = z.object({
+  orderId: z.string().min(1).max(200),
+});
+
 // ─── Validate helper ─────────────────────────────────────────────────
 
 type ValidationSuccess<T> = { success: true; data: T; error?: undefined };
