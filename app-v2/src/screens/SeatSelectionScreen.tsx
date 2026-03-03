@@ -60,7 +60,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
+            backgroundImage: `url(${bgImage || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -147,7 +147,7 @@ export default function SeatSelectionScreen() {
   const navigate = useNavigate();
   const booking = useBookingStore();
   const storeSeat = booking.setSeat;
-  const dest = getStubDestination(booking.destinationId ?? 'dest-santorini');
+  const dest = getStubDestination(booking.destinationId ?? '2');
   const [selectedSeat, setSelectedSeat] = useState<string | null>('14-C');
 
   const handleSeatClick = (row: number, col: string) => {

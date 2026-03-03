@@ -65,7 +65,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
+            backgroundImage: `url(${bgImage || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -156,7 +156,7 @@ export default function PassengerDetailsScreen() {
   const { user } = useAuthContext();
   const bookingStore = useBookingStore();
   const { addPassenger, updatePassenger, passengers } = bookingStore;
-  const dest = getStubDestination(bookingStore.destinationId ?? 'dest-santorini');
+  const dest = getStubDestination(bookingStore.destinationId ?? '2');
   const nameParts = (user?.name ?? '').split(' ');
   const [firstName, setFirstName] = useState(nameParts[0] ?? '');
   const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') ?? '');

@@ -31,7 +31,7 @@ export default function OnboardingScreen() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(/images/login-bg.jpg)',
+          backgroundImage: 'url(https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750)',
           backgroundSize: 'cover',
           backgroundPosition: 'center 40%',
           opacity: 0.1,

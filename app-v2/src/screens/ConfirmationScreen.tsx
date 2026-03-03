@@ -9,7 +9,7 @@ export default function ConfirmationScreen() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const booking = useBookingStore();
-  const dest = getStubDestination(booking.destinationId ?? 'dest-santorini');
+  const dest = getStubDestination(booking.destinationId ?? '2');
   const confirmEmail = user?.email || 'your email';
   const seatDesignator = booking.selectedSeat ?? '14C';
   const destCity = dest?.city ?? 'Santorini';
@@ -30,7 +30,7 @@ export default function ConfirmationScreen() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(/images/santorini.jpg)',
+          backgroundImage: 'url(https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.08,
@@ -284,7 +284,7 @@ export default function ConfirmationScreen() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: 'url(/images/santorini.jpg)',
+                backgroundImage: 'url(https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 opacity: 0.06,

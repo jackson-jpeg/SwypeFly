@@ -61,7 +61,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
+            backgroundImage: `url(${bgImage || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -230,7 +230,7 @@ const mealOptions: { key: MealOption; label: string; price: string; amount: numb
 export default function BagsExtrasScreen() {
   const navigate = useNavigate();
   const { selectedOffer, destinationId, setBaggage, setInsurance: storeSetInsurance, setMeal: storeSetMeal } = useBookingStore();
-  const dest = getStubDestination(destinationId ?? 'dest-santorini');
+  const dest = getStubDestination(destinationId ?? '2');
   const [selectedBag, setSelectedBag] = useState<BagOption>('one');
   const [insurance, setInsurance] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealOption>('pasta');

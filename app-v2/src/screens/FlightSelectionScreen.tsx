@@ -111,7 +111,7 @@ export function BookingHeader({
           left: 0,
           right: 0,
           height: 60,
-          backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
+          backgroundImage: `url(${bgImage || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.15,
@@ -126,7 +126,7 @@ export function BookingHeader({
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
   const { destinationId, setOffer } = useBookingStore();
-  const dest = getStubDestination(destinationId ?? 'dest-santorini');
+  const dest = getStubDestination(destinationId ?? '2');
   const offers = STUB_BOOKING_OFFERS;
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
   const [selectedCabin, setSelectedCabin] = useState(0);
@@ -141,7 +141,7 @@ export default function FlightSelectionScreen() {
 
   const data = {
     destination: dest?.city ?? 'Santorini',
-    destinationImage: dest?.imageUrl ?? '/images/santorini.jpg',
+    destinationImage: dest?.imageUrl ?? 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600',
     route: `JFK \u2192 ${dest?.iataCode ?? 'JTR'} \u00b7 1 stop`,
     price: adjustedPrice,
     strikethrough,
