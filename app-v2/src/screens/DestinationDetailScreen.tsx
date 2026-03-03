@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
-import { STUB_TRIP_PLAN, STUB_DESTINATIONS } from '@/api/stubs';
+import { STUB_DESTINATIONS } from '@/api/stubs';
 import { useDestination } from '@/hooks/useDestination';
 import { useSavedStore } from '@/stores/savedStore';
 import { useBookingStore } from '@/stores/bookingStore';
@@ -319,9 +319,32 @@ export default function DestinationDetailScreen() {
 
   const handleGeneratePlan = async () => {
     setTripPlanLoading(true);
-    // Simulate API call delay, then use stub
     await new Promise((r) => setTimeout(r, 1500));
-    setTripPlan(STUB_TRIP_PLAN);
+    // Generate plan from destination's itinerary data
+    const itinerary = stubDest.itinerary ?? [];
+    const restaurants = stubDest.restaurants ?? [];
+    const plan: TripPlan = {
+      days: itinerary.length > 0
+        ? itinerary.map((item) => ({
+            day: item.day,
+            title: item.activities[0] ?? `Day ${item.day}`,
+            activities: item.activities.map((a, i) => ({
+              time: i === 0 ? 'Morning' : i === 1 ? 'Afternoon' : 'Evening',
+              activity: a,
+            })),
+          }))
+        : [
+            { day: 1, title: `Arrive in ${stubDest.city}`, activities: [{ time: 'Morning', activity: `Arrive and settle in` }, { time: 'Afternoon', activity: `Explore the city center` }, { time: 'Evening', activity: restaurants[0] ? `Dinner at ${restaurants[0].name}` : 'Local dinner' }] },
+            { day: 2, title: 'Local Highlights', activities: [{ time: 'Morning', activity: `Visit top attractions` }, { time: 'Afternoon', activity: stubDest.vibeTags.includes('beach') ? 'Beach afternoon' : 'Cultural exploration' }, { time: 'Evening', activity: restaurants[1] ? `Try ${restaurants[1].name}` : 'Evening stroll' }] },
+            { day: 3, title: 'Hidden Gems & Departure', activities: [{ time: 'Morning', activity: 'Off-the-beaten-path exploration' }, { time: 'Afternoon', activity: 'Souvenir shopping & last bites' }, { time: 'Evening', activity: `Depart ${stubDest.city}` }] },
+          ],
+      estimatedBudget: {
+        min: Math.round(stubDest.flightPrice * 1.5),
+        max: Math.round(stubDest.flightPrice * 3),
+        currency: 'USD',
+      },
+    };
+    setTripPlan(plan);
     setTripPlanLoading(false);
   };
 
