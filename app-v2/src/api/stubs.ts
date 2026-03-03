@@ -5,6 +5,7 @@ import type {
   SeatMap,
   PaymentIntentResponse,
   CreateOrderResponse,
+  TripPlan,
 } from './types';
 
 // ─── Feed Destinations ──────────────────────────────────────────────
@@ -426,6 +427,41 @@ export const STUB_PAYMENT_INTENT: PaymentIntentResponse = {
 };
 
 // ─── Order Confirmation ─────────────────────────────────────────────
+
+// ─── Trip Plan ──────────────────────────────────────────────────────
+
+export const STUB_TRIP_PLAN: TripPlan = {
+  days: [
+    {
+      day: 1,
+      title: 'Arrival & Oia Sunset',
+      activities: [
+        { time: 'Morning', activity: 'Arrive at JTR, transfer to Oia hotel' },
+        { time: 'Afternoon', activity: "Wander Oia's marble lanes, browse boutiques" },
+        { time: 'Evening', activity: 'Legendary sunset from the Castle of Oia, dinner at Ammoudi Bay' },
+      ],
+    },
+    {
+      day: 2,
+      title: 'Beaches & Wine',
+      activities: [
+        { time: 'Morning', activity: 'Red Beach and Akrotiri archaeological site' },
+        { time: 'Afternoon', activity: 'Wine tasting in Megalochori — try the local Assyrtiko' },
+        { time: 'Evening', activity: 'Seafood dinner at Selene restaurant in Fira' },
+      ],
+    },
+    {
+      day: 3,
+      title: 'Caldera Cruise & Departure',
+      activities: [
+        { time: 'Morning', activity: 'Catamaran cruise around the caldera, swim at hot springs' },
+        { time: 'Afternoon', activity: 'Snorkeling near volcanic crater, lunch on board' },
+        { time: 'Evening', activity: 'Transfer to airport, depart JTR' },
+      ],
+    },
+  ],
+  estimatedBudget: { min: 1200, max: 2400, currency: 'USD' },
+};
 
 export const STUB_ORDER: CreateOrderResponse = {
   orderId: 'ord_SGJT_2026_001',

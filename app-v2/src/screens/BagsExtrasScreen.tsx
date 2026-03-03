@@ -57,7 +57,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url(https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=60)',
+            backgroundImage: 'url(/images/santorini.jpg)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -295,7 +295,7 @@ export default function BagsExtrasScreen() {
                   <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.mutedText }}>
                     {opt.sub}
                   </span>
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 600, color: opt.amount > 0 ? colors.terracotta : colors.mutedText }}>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 600, color: opt.amount > 0 ? colors.deepDusk : colors.mutedText }}>
                     {opt.price}
                   </span>
                 </button>
@@ -323,7 +323,7 @@ export default function BagsExtrasScreen() {
                 <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.deepDusk }}>
                   Trip Protection
                 </span>
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 700, color: colors.terracotta }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 700, color: colors.deepDusk }}>
                   +$29
                 </span>
               </div>
@@ -365,7 +365,7 @@ export default function BagsExtrasScreen() {
                   <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.deepDusk }}>
                     {opt.label}
                   </span>
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 600, color: colors.terracotta }}>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 600, color: colors.deepDusk }}>
                     {opt.price}
                   </span>
                 </button>

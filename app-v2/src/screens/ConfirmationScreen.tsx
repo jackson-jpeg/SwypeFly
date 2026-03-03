@@ -1,9 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useAuthContext } from '@/hooks/AuthContext';
 
 /* ───── screen ───── */
 export default function ConfirmationScreen() {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
+  const confirmEmail = user?.email || 'your email';
 
   return (
     <div
@@ -20,7 +23,7 @@ export default function ConfirmationScreen() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=60)',
+          backgroundImage: 'url(/images/santorini.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.08,
@@ -115,7 +118,7 @@ export default function ConfirmationScreen() {
               color: colors.borderTint,
             }}
           >
-            Confirmation sent to sarah@email.com
+            Confirmation sent to {confirmEmail}
           </span>
         </div>
 
@@ -274,7 +277,7 @@ export default function ConfirmationScreen() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: 'url(https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&q=40)',
+                backgroundImage: 'url(/images/santorini.jpg)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 opacity: 0.06,

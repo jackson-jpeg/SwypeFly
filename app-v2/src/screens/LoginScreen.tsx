@@ -1,10 +1,35 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
-  const { signInWithGoogle, signInWithApple, browseAsGuest } = useAuthContext();
+  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, browseAsGuest } = useAuthContext();
+  const [showEmail, setShowEmail] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  const handleEmailSubmit = async () => {
+    if (!email || !password) {
+      setEmailError('Please enter both email and password');
+      return;
+    }
+    setEmailLoading(true);
+    setEmailError(null);
+    const result = isSignUp
+      ? await signUpWithEmail(email, password)
+      : await signInWithEmail(email, password);
+    setEmailLoading(false);
+    if (result.error) {
+      setEmailError(result.error);
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <div className="screen" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
@@ -136,37 +161,150 @@ export default function LoginScreen() {
           </button>
 
           {/* Email */}
-          <button
-            onClick={() => console.log('Email auth')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 12,
-              height: 56,
-              borderRadius: 14,
-              backgroundColor: colors.offWhite,
-              border: '1px solid #C9A99A40',
-              cursor: 'pointer',
-              width: '100%',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-            <span
+          {!showEmail ? (
+            <button
+              onClick={() => setShowEmail(true)}
               style={{
-                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                fontSize: 15,
-                fontWeight: 600,
-                lineHeight: '18px',
-                color: colors.deepDusk,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+                height: 56,
+                borderRadius: 14,
+                backgroundColor: colors.offWhite,
+                border: '1px solid #C9A99A40',
+                cursor: 'pointer',
+                width: '100%',
               }}
             >
-              Continue with Email
-            </span>
-          </button>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  lineHeight: '18px',
+                  color: colors.deepDusk,
+                }}
+              >
+                Continue with Email
+              </span>
+            </button>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                backgroundColor: colors.offWhite,
+                border: '1px solid #C9A99A40',
+                borderRadius: 14,
+                padding: 16,
+                width: '100%',
+              }}
+            >
+              <input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: 44,
+                  borderRadius: 10,
+                  border: '1px solid #C9A99A60',
+                  paddingInline: 14,
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 15,
+                  color: colors.deepDusk,
+                  outline: 'none',
+                  backgroundColor: colors.duskSand,
+                  boxSizing: 'border-box',
+                }}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
+                style={{
+                  width: '100%',
+                  height: 44,
+                  borderRadius: 10,
+                  border: '1px solid #C9A99A60',
+                  paddingInline: 14,
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 15,
+                  color: colors.deepDusk,
+                  outline: 'none',
+                  backgroundColor: colors.duskSand,
+                  boxSizing: 'border-box',
+                }}
+              />
+              {emailError && (
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 13,
+                    color: colors.terracotta,
+                  }}
+                >
+                  {emailError}
+                </span>
+              )}
+              <button
+                onClick={handleEmailSubmit}
+                disabled={emailLoading}
+                style={{
+                  width: '100%',
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor: colors.deepDusk,
+                  border: 'none',
+                  cursor: emailLoading ? 'wait' : 'pointer',
+                  opacity: emailLoading ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: colors.paleHorizon,
+                  }}
+                >
+                  {emailLoading ? 'Signing in...' : isSignUp ? 'Create Account' : 'Sign In'}
+                </span>
+              </button>
+              <button
+                onClick={() => setIsSignUp(!isSignUp)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 4,
+                  alignSelf: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 13,
+                    color: colors.sageDrift,
+                  }}
+                >
+                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { STUB_TRIP_PLAN } from '@/api/stubs';
+import type { TripPlan } from '@/api/types';
 
 /* ── stub data ─────────────────────────────────────────────────── */
 const DEST = {
@@ -110,6 +113,16 @@ export default function DestinationDetailScreen() {
   const navigate = useNavigate();
   const { id: _id } = useParams<{ id: string }>();
   const dest = DEST; // later: look up by id
+  const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
+  const [tripPlanLoading, setTripPlanLoading] = useState(false);
+
+  const handleGeneratePlan = async () => {
+    setTripPlanLoading(true);
+    // Simulate API call delay, then use stub
+    await new Promise((r) => setTimeout(r, 1500));
+    setTripPlan(STUB_TRIP_PLAN);
+    setTripPlanLoading(false);
+  };
 
   return (
     <div
@@ -476,7 +489,7 @@ export default function DestinationDetailScreen() {
                     width: `${w.pct}%`,
                     height: 8,
                     borderRadius: 4,
-                    background: 'linear-gradient(90deg, #4A8B7A 0%, #D4734A 100%)',
+                    background: `linear-gradient(90deg, #4A8B7A 0%, ${colors.warmDusk} 100%)`,
                   }}
                 />
               </div>
@@ -666,6 +679,8 @@ export default function DestinationDetailScreen() {
           </p>
 
           <button
+            onClick={handleGeneratePlan}
+            disabled={tripPlanLoading}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -674,6 +689,8 @@ export default function DestinationDetailScreen() {
               borderRadius: 10,
               backgroundColor: colors.confirmGreen,
               flexShrink: 0,
+              opacity: tripPlanLoading ? 0.7 : 1,
+              cursor: tripPlanLoading ? 'wait' : 'pointer',
             }}
           >
             <span
@@ -685,9 +702,74 @@ export default function DestinationDetailScreen() {
                 color: '#FFFFFF',
               }}
             >
-              Generate My Trip Plan
+              {tripPlanLoading ? 'Generating...' : tripPlan ? 'Regenerate Plan' : 'Generate My Trip Plan'}
             </span>
           </button>
+
+          {/* Trip Plan Result */}
+          {tripPlan && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 4 }}>
+              {tripPlan.days.map((day) => (
+                <div key={day.day} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span
+                    style={{
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: colors.confirmGreen,
+                    }}
+                  >
+                    Day {day.day} — {day.title}
+                  </span>
+                  {day.activities.map((act, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10 }}>
+                      <span
+                        style={{
+                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: colors.sageDrift,
+                          width: 60,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {act.time}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                          fontSize: 13,
+                          lineHeight: '20px',
+                          color: colors.bodyText,
+                        }}
+                      >
+                        {act.activity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: '#7BAF8E15',
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                }}
+              >
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.mutedText }}>
+                  Est. budget
+                </span>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.deepDusk }}>
+                  ${tripPlan.estimatedBudget.min}–${tripPlan.estimatedBudget.max}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -60,7 +60,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url(https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=60)',
+            backgroundImage: 'url(/images/santorini.jpg)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,

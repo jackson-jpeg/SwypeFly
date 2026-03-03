@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useAuthContext } from '@/hooks/AuthContext';
+import BottomNav from '@/components/BottomNav';
 
 function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
   return (
@@ -77,6 +80,16 @@ const rowValueStyle: React.CSSProperties = {
 };
 
 export default function SettingsScreen() {
+  const navigate = useNavigate();
+  const { signOut, user, isGuest } = useAuthContext();
+  const displayName = user?.name || (isGuest ? 'Guest' : 'User');
+  const displayEmail = user?.email || (isGuest ? 'Browsing as guest' : '');
+  const initials = displayName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'G';
   const [haptics, setHaptics] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [priceAlerts, setPriceAlerts] = useState(false);
@@ -128,7 +141,7 @@ export default function SettingsScreen() {
               width: 52,
               height: 52,
               borderRadius: 26,
-              backgroundImage: 'linear-gradient(135deg, #D4734A 0%, #A8553A 100%)',
+              backgroundImage: `linear-gradient(135deg, ${colors.warmDusk} 0%, ${colors.seafoamMist} 100%)`,
               flexShrink: 0,
             }}
           >
@@ -141,15 +154,15 @@ export default function SettingsScreen() {
                 color: '#FFFFFF',
               }}
             >
-              SM
+              {initials}
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 500, lineHeight: '20px', color: colors.deepDusk }}>
-              Sarah Mitchell
+              {displayName}
             </span>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, lineHeight: '16px', color: colors.borderTint }}>
-              sarah@email.com
+              {displayEmail}
             </span>
           </div>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="1.8" strokeLinecap="round">
@@ -230,20 +243,24 @@ export default function SettingsScreen() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={sectionLabelStyle}>About</span>
           <div style={{ borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 1, overflow: 'clip' }}>
-            <div style={rowStyle}>
+            <button onClick={() => navigate('/legal/privacy')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <span style={rowTitleStyle}>Privacy Policy</span>
               <ChevronRight />
-            </div>
-            <div style={rowStyle}>
+            </button>
+            <button onClick={() => navigate('/legal/terms')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <span style={rowTitleStyle}>Terms of Service</span>
               <ChevronRight />
-            </div>
+            </button>
+            <a href="mailto:support@sogojet.com" style={{ ...rowStyle, cursor: 'pointer', textDecoration: 'none' }}>
+              <span style={rowTitleStyle}>Contact Support</span>
+              <ChevronRight />
+            </a>
           </div>
         </div>
 
         {/* Log Out */}
         <button
-          onClick={() => console.log('Log out')}
+          onClick={() => { signOut(); navigate('/login'); }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -283,6 +300,8 @@ export default function SettingsScreen() {
           </span>
         </div>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

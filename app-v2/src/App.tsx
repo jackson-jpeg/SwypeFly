@@ -17,6 +17,7 @@ const ConfirmationScreen = lazy(() => import('@/screens/ConfirmationScreen'));
 const WishlistScreen = lazy(() => import('@/screens/WishlistScreen'));
 const SettingsScreen = lazy(() => import('@/screens/SettingsScreen'));
 const QuizScreen = lazy(() => import('@/screens/QuizScreen'));
+const LegalScreen = lazy(() => import('@/screens/LegalScreen'));
 const NotFoundScreen = lazy(() => import('@/screens/NotFoundScreen'));
 
 function LoadingScreen() {
@@ -55,6 +56,9 @@ export default function App() {
         <Route path="/booking/confirmation" element={needsAuth ? <Navigate to="/login" /> : <ConfirmationScreen />} />
         <Route path="/wishlist" element={needsAuth ? <Navigate to="/login" /> : <WishlistScreen />} />
         <Route path="/settings" element={needsAuth ? <Navigate to="/login" /> : <SettingsScreen />} />
+        <Route path="/legal/:type" element={<LegalScreen />} />
+        <Route path="/saved" element={<Navigate to="/wishlist" replace />} />
+        <Route path="/auth" element={<Navigate to="/login" replace />} />
         <Route path="/quiz" element={<QuizScreen />} />
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>

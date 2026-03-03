@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, animate, type PanInfo } from 'framer-motion';
 import { colors, fonts, motion as motionTokens } from '@/tokens';
+import BottomNav from '@/components/BottomNav';
 
 // Stub data — will be replaced by API
 const STUB_DESTINATIONS = [
@@ -149,16 +150,19 @@ function FeedCard({
       </div>
 
       {/* Destination info */}
-      <div style={{ position: 'absolute', bottom: 160, left: 24, width: 280, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ position: 'absolute', bottom: 160, left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div
           style={{
             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
             fontWeight: 800,
-            fontSize: 60,
-            lineHeight: '58px',
-            letterSpacing: '-0.01em',
+            fontSize: 'clamp(36px, 10vw, 60px)',
+            lineHeight: 0.97,
+            letterSpacing: '-0.02em',
             textTransform: 'uppercase',
             color: '#FFFFFF',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
         >
           {destination.city}
@@ -253,19 +257,22 @@ export default function FeedScreen() {
   }, [navigate, currentIndex]);
 
   return (
-    <div className="screen" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden' }}>
-      {STUB_DESTINATIONS.slice(currentIndex, currentIndex + 2)
-        .reverse()
-        .map((dest, i, arr) => (
-          <FeedCard
-            key={dest.id}
-            destination={dest}
-            onSwipe={handleSwipe}
-            onTap={handleTap}
-            index={currentIndex + (arr.length - 1 - i)}
-            total={STUB_DESTINATIONS.length}
-          />
-        ))}
+    <div className="screen" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, position: 'relative' }}>
+        {STUB_DESTINATIONS.slice(currentIndex, currentIndex + 2)
+          .reverse()
+          .map((dest, i, arr) => (
+            <FeedCard
+              key={dest.id}
+              destination={dest}
+              onSwipe={handleSwipe}
+              onTap={handleTap}
+              index={currentIndex + (arr.length - 1 - i)}
+              total={STUB_DESTINATIONS.length}
+            />
+          ))}
+      </div>
+      <BottomNav />
     </div>
   );
 }
