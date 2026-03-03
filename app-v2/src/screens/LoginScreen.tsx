@@ -359,7 +359,10 @@ export default function LoginScreen() {
             margin: 0,
           }}
         >
-          By continuing, you agree to our Terms & Privacy Policy
+          By continuing, you agree to our{' '}
+          <a href="/legal/terms" style={{ color: colors.sageDrift, textDecoration: 'underline' }}>Terms</a>
+          {' & '}
+          <a href="/legal/privacy" style={{ color: colors.sageDrift, textDecoration: 'underline' }}>Privacy Policy</a>
         </p>
       </div>
     </div>

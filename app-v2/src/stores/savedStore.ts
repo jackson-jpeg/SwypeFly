@@ -24,6 +24,15 @@ export const useSavedStore = create<SavedState>()(
     {
       name: 'sogojet-saved',
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const p = persisted as Partial<SavedState> | undefined;
+        const ids = p?.savedIds;
+        return {
+          ...current,
+          ...p,
+          savedIds: Array.isArray(ids) ? ids : [],
+        };
+      },
     },
   ),
 );

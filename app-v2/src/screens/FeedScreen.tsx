@@ -25,6 +25,7 @@ function FeedCard({
   const opacity = useTransform(x, [-300, -100, 0, 100, 300], [0.5, 1, 1, 1, 0.5]);
   const { isSaved, toggle } = useSavedStore();
   const saved = isSaved(destination.id);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const { velocity, offset } = info;
@@ -43,6 +44,7 @@ function FeedCard({
         damping: 20,
       });
     }
+    setTimeout(() => setIsDragging(false), 50);
   };
 
   const glassButton: React.CSSProperties = {
@@ -76,8 +78,9 @@ function FeedCard({
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.8}
+      onDragStart={() => setIsDragging(true)}
       onDragEnd={handleDragEnd}
-      onClick={onTap}
+      onClick={() => { if (!isDragging) onTap(); }}
     >
       {/* Full-bleed photo */}
       <div
@@ -135,7 +138,7 @@ function FeedCard({
           onClick={(e) => {
             e.stopPropagation();
             if (navigator.share) {
-              navigator.share({ title: `${destination.city} — SoGoJet`, text: destination.tagline, url: `${window.location.origin}/destination/${destination.id}` });
+              navigator.share({ title: `${destination.city} — SoGoJet`, text: destination.tagline, url: `${window.location.origin}/destination/${destination.id}` }).catch(() => {});
             }
           }}
         >

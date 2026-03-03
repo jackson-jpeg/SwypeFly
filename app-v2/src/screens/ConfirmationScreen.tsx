@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
 import { useBookingStore } from '@/stores/bookingStore';
+import { useUIStore } from '@/stores/uiStore';
 import { getStubDestination } from '@/api/stubs';
 
 /* ───── screen ───── */
@@ -9,11 +10,15 @@ export default function ConfirmationScreen() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const booking = useBookingStore();
+  const { departureCode, departureCity } = useUIStore();
   const dest = getStubDestination(booking.destinationId ?? '2');
-  const confirmEmail = user?.email || 'your email';
-  const seatDesignator = booking.selectedSeat ?? '14C';
+  const confirmEmail = user?.email || (booking.passengers[0]?.email) || 'your email';
+  const seatDesignator = booking.selectedSeat ?? '—';
   const destCity = dest?.city ?? 'Santorini';
   const destIata = dest?.iataCode ?? 'JTR';
+  const paxName = booking.passengers[0]
+    ? `${booking.passengers[0].given_name} ${booking.passengers[0].family_name}`
+    : user?.name ?? 'Guest';
 
   return (
     <div
@@ -142,6 +147,10 @@ export default function ConfirmationScreen() {
         >
           {/* top section */}
           <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* passenger name */}
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 500, color: colors.sageDrift, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {paxName}
+            </span>
             {/* header row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span
@@ -185,10 +194,10 @@ export default function ConfirmationScreen() {
                     lineHeight: '40px',
                   }}
                 >
-                  JFK
+                  {departureCode}
                 </span>
                 <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.borderTint }}>
-                  New York
+                  {departureCity}
                 </span>
               </div>
 
@@ -226,10 +235,20 @@ export default function ConfirmationScreen() {
             {/* details grid */}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               {[
-                { label: 'Date', value: 'Jun 16,\n2026' },
-                { label: 'Gate', value: 'B42' },
+                { label: 'Date', value: (() => {
+                  const dep = booking.selectedOffer?.slices?.[0]?.departureTime;
+                  if (!dep) return 'TBD';
+                  const d = new Date(dep);
+                  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })},\n${d.getFullYear()}`;
+                })() },
+                { label: 'Gate', value: 'TBD' },
                 { label: 'Seat', value: seatDesignator },
-                { label: 'Board', value: '08:15' },
+                { label: 'Board', value: (() => {
+                  const dep = booking.selectedOffer?.slices?.[0]?.departureTime;
+                  if (!dep) return 'TBD';
+                  const d = new Date(dep);
+                  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                })() },
               ].map((item) => (
                 <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <span
@@ -330,7 +349,7 @@ export default function ConfirmationScreen() {
                 letterSpacing: '0.02em',
               }}
             >
-              SGJET-2026-0616
+              SGJET-{destIata}-{Math.random().toString(36).slice(2, 6).toUpperCase()}
             </span>
           </div>
         </div>

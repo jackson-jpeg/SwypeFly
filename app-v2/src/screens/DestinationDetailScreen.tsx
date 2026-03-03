@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
-import { STUB_TRIP_PLAN, getStubDestination } from '@/api/stubs';
+import { STUB_TRIP_PLAN, STUB_DESTINATIONS, getStubDestination } from '@/api/stubs';
 import { useSavedStore } from '@/stores/savedStore';
 import { useBookingStore } from '@/stores/bookingStore';
+import { useUIStore } from '@/stores/uiStore';
 import type { TripPlan } from '@/api/types';
 
 /* ── detail enrichment (supplements stub Destination data) ────── */
@@ -270,6 +271,7 @@ export default function DestinationDetailScreen() {
   const detail = DETAIL_DATA[id ?? ''] ?? getDefaultDetail(stubDest?.city ?? 'Unknown', stubDest?.country ?? '');
   const { isSaved, toggle } = useSavedStore();
   const setBookingDestination = useBookingStore((s) => s.setDestination);
+  const { departureCode } = useUIStore();
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [tripPlanLoading, setTripPlanLoading] = useState(false);
 
@@ -381,7 +383,7 @@ export default function DestinationDetailScreen() {
             <button
               onClick={() => {
                 if (navigator.share) {
-                  navigator.share({ title: `${dest.city} — SoGoJet`, text: dest.tagline, url: window.location.href });
+                  navigator.share({ title: `${dest.city} — SoGoJet`, text: dest.tagline, url: window.location.href }).catch(() => {});
                 }
               }}
               style={{
@@ -956,7 +958,14 @@ export default function DestinationDetailScreen() {
         <h2 style={sectionTitle}>Similar Destinations</h2>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto' }}>
           {dest.similar.map((s) => (
-            <div key={s.city} style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 140, flexShrink: 0 }}>
+            <div
+              key={s.city}
+              onClick={() => {
+                const found = STUB_DESTINATIONS.find((d) => d.city === s.city);
+                if (found) navigate(`/destination/${found.id}`);
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 140, flexShrink: 0, cursor: 'pointer' }}
+            >
               <div
                 style={{
                   width: 140,
@@ -1039,7 +1048,7 @@ export default function DestinationDetailScreen() {
               color: colors.borderTint,
             }}
           >
-            Round trip from JFK
+            Round trip from {departureCode}
           </span>
           <span
             style={{

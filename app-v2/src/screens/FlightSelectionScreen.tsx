@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { STUB_BOOKING_OFFERS, getStubDestination } from '@/api/stubs';
 import { useBookingStore } from '@/stores/bookingStore';
+import { useUIStore } from '@/stores/uiStore';
 
 /* ── Shared BookingHeader ──────────────────────────────────────── */
 export function BookingHeader({
@@ -126,6 +127,7 @@ export function BookingHeader({
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
   const { destinationId, setOffer } = useBookingStore();
+  const { departureCode } = useUIStore();
   const dest = getStubDestination(destinationId ?? '2');
   const offers = STUB_BOOKING_OFFERS;
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
@@ -142,7 +144,7 @@ export default function FlightSelectionScreen() {
   const data = {
     destination: dest?.city ?? 'Santorini',
     destinationImage: dest?.imageUrl ?? 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600',
-    route: `JFK \u2192 ${dest?.iataCode ?? 'JTR'} \u00b7 1 stop`,
+    route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'} \u00b7 1 stop`,
     price: adjustedPrice,
     strikethrough,
     discountPct,
