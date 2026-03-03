@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiFetch, USE_STUBS } from '@/api/client';
 import {
-  STUB_BOOKING_OFFERS,
+  getStubBookingOffers,
+  getStubDestination,
   STUB_SEAT_MAP,
   STUB_PAYMENT_INTENT,
-  STUB_ORDER,
 } from '@/api/stubs';
 import type {
   BookingOffer,
@@ -18,7 +18,10 @@ export function useBookingSearch(params: BookingSearchRequest | null) {
   return useQuery({
     queryKey: ['booking', 'search', params],
     queryFn: async () => {
-      if (USE_STUBS) return STUB_BOOKING_OFFERS;
+      if (USE_STUBS) {
+        const dest = getStubDestination(params?.destination ?? '');
+        return getStubBookingOffers(dest, params?.origin);
+      }
       return apiFetch<BookingOffer[]>('/api/booking?action=search', {
         method: 'POST',
         body: JSON.stringify(params),
@@ -28,13 +31,15 @@ export function useBookingSearch(params: BookingSearchRequest | null) {
   });
 }
 
-export function useOfferDetail(offerId: string | null) {
+export function useOfferDetail(offerId: string | null, destId?: string, origin?: string) {
   return useQuery({
     queryKey: ['booking', 'offer', offerId],
     queryFn: async () => {
       if (USE_STUBS) {
-        const offer = STUB_BOOKING_OFFERS.find((o) => o.id === offerId);
-        return { offer: offer!, seatMap: STUB_SEAT_MAP };
+        const dest = getStubDestination(destId ?? '');
+        const offers = getStubBookingOffers(dest, origin);
+        const offer = offers.find((o) => o.id === offerId) ?? offers[0]!;
+        return { offer, seatMap: STUB_SEAT_MAP };
       }
       return apiFetch<{ offer: BookingOffer; seatMap: SeatMap }>(
         `/api/booking?action=offer&offerId=${offerId}`,
@@ -64,7 +69,20 @@ export function useCreateOrder() {
       selectedServices?: { id: string; quantity: number }[];
       paymentIntentId: string;
     }) => {
-      if (USE_STUBS) return STUB_ORDER;
+      if (USE_STUBS) {
+        return {
+          orderId: `ord_SGJT_${Date.now()}`,
+          bookingReference: `SGJT${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
+          status: 'confirmed' as const,
+          passengers: params.passengers.map((p) => ({
+            id: p.id,
+            name: `${p.given_name} ${p.family_name}`,
+          })),
+          slices: [],
+          totalPaid: params.selectedServices?.length ? 0 : 0,
+          currency: 'USD',
+        } satisfies CreateOrderResponse;
+      }
       return apiFetch<CreateOrderResponse>('/api/booking?action=create-order', {
         method: 'POST',
         body: JSON.stringify(params),

@@ -35,7 +35,7 @@ export default function ConfirmationScreen() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600)',
+          backgroundImage: `url(${dest?.imageUrl || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.08,
@@ -303,7 +303,7 @@ export default function ConfirmationScreen() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: 'url(https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600)',
+                backgroundImage: `url(${dest?.imageUrl || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 opacity: 0.06,

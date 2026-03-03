@@ -4,7 +4,6 @@ import type {
   BookingOffer,
   SeatMap,
   PaymentIntentResponse,
-  CreateOrderResponse,
   TripPlan,
 } from './types';
 
@@ -35,126 +34,83 @@ export function getStubDestination(id: string): Destination | undefined {
   return STUB_DESTINATIONS.find((d) => d.id === id);
 }
 
-// ─── Booking Search ─────────────────────────────────────────────────
+// ─── Booking Search (dynamic per destination) ───────────────────────
 
-export const STUB_BOOKING_OFFERS: BookingOffer[] = [
-  {
-    id: 'offer-delta-387',
-    totalAmount: 387,
-    totalCurrency: 'USD',
-    baseAmount: 312,
-    taxAmount: 75,
-    slices: [
-      {
-        origin: 'JFK',
-        destination: 'JTR',
-        departureTime: '2026-06-15T18:30:00',
-        arrivalTime: '2026-06-16T10:45:00',
-        duration: '10h 15m',
-        stops: 1,
-        airline: 'Delta Air Lines',
-        flightNumber: 'DL 478',
-        aircraft: 'Airbus A330-300',
-      },
-      {
-        origin: 'JTR',
-        destination: 'JFK',
-        departureTime: '2026-06-22T14:20:00',
-        arrivalTime: '2026-06-22T20:05:00',
-        duration: '11h 45m',
-        stops: 1,
-        airline: 'Delta Air Lines',
-        flightNumber: 'DL 479',
-        aircraft: 'Airbus A330-300',
-      },
-    ],
-    cabinClass: 'economy',
-    passengers: [{ id: 'pax-1', type: 'adult' }],
-    expiresAt: '2026-06-10T23:59:59Z',
-    availableServices: [
-      { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
-      { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
-      { id: 'meal-pasta', type: 'meal', name: 'Pasta Primavera', amount: 12, currency: 'USD' },
-      { id: 'meal-salad', type: 'meal', name: 'Garden Salad', amount: 10, currency: 'USD' },
-      { id: 'meal-asian', type: 'meal', name: 'Asian Noodles', amount: 14, currency: 'USD' },
-    ],
-  },
-  {
-    id: 'offer-united-412',
-    totalAmount: 412,
-    totalCurrency: 'USD',
-    baseAmount: 334,
-    taxAmount: 78,
-    slices: [
-      {
-        origin: 'JFK',
-        destination: 'JTR',
-        departureTime: '2026-06-22T21:15:00',
-        arrivalTime: '2026-06-23T13:30:00',
-        duration: '10h 15m',
-        stops: 1,
-        airline: 'United Airlines',
-        flightNumber: 'UA 834',
-        aircraft: 'Boeing 787-9',
-      },
-      {
-        origin: 'JTR',
-        destination: 'JFK',
-        departureTime: '2026-06-29T15:00:00',
-        arrivalTime: '2026-06-29T21:30:00',
-        duration: '11h 30m',
-        stops: 1,
-        airline: 'United Airlines',
-        flightNumber: 'UA 835',
-        aircraft: 'Boeing 787-9',
-      },
-    ],
-    cabinClass: 'economy',
-    passengers: [{ id: 'pax-1', type: 'adult' }],
-    expiresAt: '2026-06-17T23:59:59Z',
-    availableServices: [
-      { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
-      { id: 'meal-pasta', type: 'meal', name: 'Pasta Primavera', amount: 12, currency: 'USD' },
-    ],
-  },
-  {
-    id: 'offer-american-509',
-    totalAmount: 509,
-    totalCurrency: 'USD',
-    baseAmount: 421,
-    taxAmount: 88,
-    slices: [
-      {
-        origin: 'JFK',
-        destination: 'JTR',
-        departureTime: '2026-07-01T08:00:00',
-        arrivalTime: '2026-07-01T22:45:00',
-        duration: '10h 45m',
-        stops: 1,
-        airline: 'American Airlines',
-        flightNumber: 'AA 612',
-        aircraft: 'Boeing 777-300ER',
-      },
-      {
-        origin: 'JTR',
-        destination: 'JFK',
-        departureTime: '2026-07-08T16:00:00',
-        arrivalTime: '2026-07-08T22:15:00',
-        duration: '11h 15m',
-        stops: 1,
-        airline: 'American Airlines',
-        flightNumber: 'AA 613',
-        aircraft: 'Boeing 777-300ER',
-      },
-    ],
-    cabinClass: 'economy',
-    passengers: [{ id: 'pax-1', type: 'adult' }],
-    expiresAt: '2026-06-25T23:59:59Z',
-    availableServices: [
-      { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 40, currency: 'USD' },
-    ],
-  },
+const AIRLINES = [
+  { name: 'Delta Air Lines', code: 'DL', aircraft: 'Airbus A330-300' },
+  { name: 'United Airlines', code: 'UA', aircraft: 'Boeing 787-9' },
+  { name: 'American Airlines', code: 'AA', aircraft: 'Boeing 777-300ER' },
 ];
+
+const DEP_TIMES = ['18:30', '21:15', '08:00'];
+const ARR_TIMES = ['10:45', '13:30', '22:45'];
+const RET_DEP_TIMES = ['14:20', '15:00', '16:00'];
+const RET_ARR_TIMES = ['20:05', '21:30', '22:15'];
+
+/** Generate realistic booking offers for any destination + origin pair */
+export function getStubBookingOffers(
+  dest: Destination | undefined,
+  origin = 'JFK',
+): BookingOffer[] {
+  if (!dest) return [];
+  const basePrice = dest.flightPrice;
+  const iata = dest.iataCode || dest.city.slice(0, 3).toUpperCase();
+  const duration = dest.flightDuration || '9h 30m';
+
+  return AIRLINES.map((airline, i) => {
+    // Stagger prices: cheapest, +7%, +32%
+    const multiplier = i === 0 ? 1 : i === 1 ? 1.07 : 1.32;
+    const total = Math.round(basePrice * multiplier);
+    const tax = Math.round(total * 0.19);
+    const base = total - tax;
+    // Stagger departure dates: 1 week apart
+    const depDate = new Date(2026, 5, 15 + i * 7);
+    const retDate = new Date(depDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const flightNum = `${airline.code} ${400 + i * 200 + Math.floor(basePrice % 100)}`;
+
+    return {
+      id: `offer-${airline.code.toLowerCase()}-${total}`,
+      totalAmount: total,
+      totalCurrency: 'USD',
+      baseAmount: base,
+      taxAmount: tax,
+      slices: [
+        {
+          origin,
+          destination: iata,
+          departureTime: `${depDate.toISOString().slice(0, 10)}T${DEP_TIMES[i]}:00`,
+          arrivalTime: `${new Date(depDate.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}T${ARR_TIMES[i]}:00`,
+          duration,
+          stops: 1,
+          airline: airline.name,
+          flightNumber: flightNum,
+          aircraft: airline.aircraft,
+        },
+        {
+          origin: iata,
+          destination: origin,
+          departureTime: `${retDate.toISOString().slice(0, 10)}T${RET_DEP_TIMES[i]}:00`,
+          arrivalTime: `${retDate.toISOString().slice(0, 10)}T${RET_ARR_TIMES[i]}:00`,
+          duration,
+          stops: 1,
+          airline: airline.name,
+          flightNumber: `${airline.code} ${401 + i * 200 + Math.floor(basePrice % 100)}`,
+          aircraft: airline.aircraft,
+        },
+      ],
+      cabinClass: 'economy',
+      passengers: [{ id: 'pax-1', type: 'adult' }],
+      expiresAt: new Date(depDate.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      availableServices: [
+        { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
+        { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
+        { id: 'meal-pasta', type: 'meal', name: 'Pasta Primavera', amount: 12, currency: 'USD' },
+        { id: 'meal-salad', type: 'meal', name: 'Garden Salad', amount: 10, currency: 'USD' },
+        { id: 'meal-asian', type: 'meal', name: 'Asian Noodles', amount: 14, currency: 'USD' },
+      ],
+    };
+  });
+}
 
 // ─── Seat Map ───────────────────────────────────────────────────────
 
@@ -167,7 +123,6 @@ export const STUB_SEAT_MAP: SeatMap = {
     return {
       rowNumber: rowNum,
       seats: ['A', 'B', 'C', 'D', 'E', 'F'].map((col) => {
-        // Deterministic occupied pattern
         const occupied =
           (rowNum === 12 && (col === 'A' || col === 'C' || col === 'F')) ||
           (rowNum === 13 && (col === 'B' || col === 'D')) ||
@@ -216,8 +171,6 @@ export const STUB_PAYMENT_INTENT: PaymentIntentResponse = {
   currency: 'usd',
 };
 
-// ─── Order Confirmation ─────────────────────────────────────────────
-
 // ─── Trip Plan ──────────────────────────────────────────────────────
 
 export const STUB_TRIP_PLAN: TripPlan = {
@@ -251,16 +204,4 @@ export const STUB_TRIP_PLAN: TripPlan = {
     },
   ],
   estimatedBudget: { min: 1200, max: 2400, currency: 'USD' },
-};
-
-export const STUB_ORDER: CreateOrderResponse = {
-  orderId: 'ord_SGJT_2026_001',
-  bookingReference: 'SGJT7X',
-  status: 'confirmed',
-  passengers: [
-    { id: 'pax-1', name: 'John Doe', seatDesignator: '14C' },
-  ],
-  slices: STUB_BOOKING_OFFERS[0]!.slices,
-  totalPaid: 463,
-  currency: 'USD',
 };
