@@ -30,8 +30,8 @@ const DETAIL_DATA: Record<string, {
     flightRoute: 'JFK \u2192 JTR \u00b7 Round trip',
     flightDates: 'Jun 15 \u2013 Jun 22 \u00b7 Economy \u00b7 1 stop via ATH',
     hotels: [
-      { name: 'Canaves Oia', price: '$289/nt', image: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { name: 'Astra Suites', price: '$196/nt', image: 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { name: 'Canaves Oia', price: '$289/nt', image: '/images/santorini.jpg' },
+      { name: 'Astra Suites', price: '$196/nt', image: '/images/mykonos.jpg' },
     ],
     weather: [
       { month: 'Jun', temp: 82, pct: 85 },
@@ -50,9 +50,9 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 5\u20137', title: 'Hidden Gems & Departure', desc: 'Akrotiri archaeological site, catamaran cruise, farewell dinner at Ammoudi Bay.' },
     ],
     similar: [
-      { city: 'Mykonos', price: 560, image: 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Amalfi Coast', price: 750, image: 'https://images.pexels.com/photos/2440024/pexels-photo-2440024.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Dubrovnik', price: 680, image: 'https://images.pexels.com/photos/2044434/pexels-photo-2044434.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Mykonos', price: 560, image: '/images/mykonos.jpg' },
+      { city: 'Amalfi Coast', price: 750, image: '/images/amalfi.jpg' },
+      { city: 'Dubrovnik', price: 680, image: '/images/dubrovnik.jpg' },
     ],
   },
   '1': {
@@ -63,8 +63,8 @@ const DETAIL_DATA: Record<string, {
     flightRoute: 'JFK \u2192 DPS \u00b7 Round trip',
     flightDates: 'Jul 10 \u2013 Jul 20 \u00b7 Economy \u00b7 1 stop via SIN',
     hotels: [
-      { name: 'Four Seasons Sayan', price: '$450/nt', image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { name: 'Alila Seminyak', price: '$185/nt', image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { name: 'Four Seasons Sayan', price: '$450/nt', image: '/images/bali.jpg' },
+      { name: 'Alila Seminyak', price: '$185/nt', image: '/images/bali.jpg' },
     ],
     weather: [
       { month: 'May', temp: 84, pct: 60 },
@@ -83,9 +83,9 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 7\u201310', title: 'Island Hopping', desc: 'Day trip to Nusa Penida, Kelingking Beach, manta ray snorkeling.' },
     ],
     similar: [
-      { city: 'Maldives', price: 1100, image: 'https://images.pexels.com/photos/1287460/pexels-photo-1287460.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Kyoto', price: 980, image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Santorini', price: 820, image: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Maldives', price: 1100, image: '/images/maldives.jpg' },
+      { city: 'Kyoto', price: 980, image: '/images/kyoto.jpg' },
+      { city: 'Santorini', price: 820, image: '/images/santorini.jpg' },
     ],
   },
   '9': {
@@ -96,8 +96,8 @@ const DETAIL_DATA: Record<string, {
     flightRoute: 'JFK \u2192 KIX \u00b7 Round trip',
     flightDates: 'Apr 1 \u2013 Apr 10 \u00b7 Economy \u00b7 1 stop via NRT',
     hotels: [
-      { name: 'The Ritz-Carlton', price: '$380/nt', image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { name: 'Hoshinoya Kyoto', price: '$520/nt', image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { name: 'The Ritz-Carlton', price: '$380/nt', image: '/images/kyoto.jpg' },
+      { name: 'Hoshinoya Kyoto', price: '$520/nt', image: '/images/kyoto.jpg' },
     ],
     weather: [
       { month: 'Mar', temp: 54, pct: 55 },
@@ -116,9 +116,9 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 6\u20138', title: 'Day Trips', desc: 'Nara deer park, Osaka street food tour, sake tasting in Fushimi.' },
     ],
     similar: [
-      { city: 'Tokyo', price: 950, image: 'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Bali', price: 650, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Marrakech', price: 490, image: 'https://images.pexels.com/photos/3889843/pexels-photo-3889843.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Tokyo', price: 950, image: '/images/tokyo.jpg' },
+      { city: 'Bali', price: 650, image: '/images/bali.jpg' },
+      { city: 'Marrakech', price: 490, image: '/images/marrakech.jpg' },
     ],
   },
   '3': {
@@ -129,8 +129,8 @@ const DETAIL_DATA: Record<string, {
     flightRoute: 'JFK \u2192 NRT \u00b7 Round trip',
     flightDates: 'May 5 \u2013 May 14 \u00b7 Economy \u00b7 Nonstop',
     hotels: [
-      { name: 'Park Hyatt Tokyo', price: '$410/nt', image: 'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { name: 'Aman Tokyo', price: '$680/nt', image: 'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { name: 'Park Hyatt Tokyo', price: '$410/nt', image: '/images/tokyo.jpg' },
+      { name: 'Aman Tokyo', price: '$680/nt', image: '/images/tokyo.jpg' },
     ],
     weather: [
       { month: 'Mar', temp: 56, pct: 70 },
@@ -149,9 +149,9 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 7\u20139', title: 'Day Trips', desc: 'Mt. Fuji viewing at Hakone, Kamakura Great Buddha, onsen experience.' },
     ],
     similar: [
-      { city: 'Kyoto', price: 980, image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Bali', price: 650, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Reykjavik', price: 420, image: 'https://images.pexels.com/photos/2113566/pexels-photo-2113566.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Kyoto', price: 980, image: '/images/kyoto.jpg' },
+      { city: 'Bali', price: 650, image: '/images/bali.jpg' },
+      { city: 'Reykjavik', price: 420, image: '/images/iceland.jpg' },
     ],
   },
   '11': {
@@ -162,8 +162,8 @@ const DETAIL_DATA: Record<string, {
     flightRoute: 'JFK \u2192 MLE \u00b7 Round trip',
     flightDates: 'Dec 20 \u2013 Dec 28 \u00b7 Economy \u00b7 1 stop via DXB',
     hotels: [
-      { name: 'Soneva Fushi', price: '$1,200/nt', image: 'https://images.pexels.com/photos/1287460/pexels-photo-1287460.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { name: 'W Maldives', price: '$680/nt', image: 'https://images.pexels.com/photos/1287460/pexels-photo-1287460.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { name: 'Soneva Fushi', price: '$1,200/nt', image: '/images/maldives.jpg' },
+      { name: 'W Maldives', price: '$680/nt', image: '/images/maldives.jpg' },
     ],
     weather: [
       { month: 'Dec', temp: 84, pct: 70 },
@@ -182,9 +182,9 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 6\u20138', title: 'Relaxation', desc: 'Spa treatments, private beach dinner, whale shark excursion.' },
     ],
     similar: [
-      { city: 'Bali', price: 650, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Santorini', price: 820, image: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Amalfi Coast', price: 750, image: 'https://images.pexels.com/photos/2440024/pexels-photo-2440024.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Bali', price: 650, image: '/images/bali.jpg' },
+      { city: 'Santorini', price: 820, image: '/images/santorini.jpg' },
+      { city: 'Amalfi Coast', price: 750, image: '/images/amalfi.jpg' },
     ],
   },
 };

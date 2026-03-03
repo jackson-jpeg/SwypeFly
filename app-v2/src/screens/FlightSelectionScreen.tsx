@@ -28,7 +28,7 @@ export default function FlightSelectionScreen() {
 
   const data = {
     destination: dest?.city ?? 'Santorini',
-    destinationImage: dest?.imageUrl ?? 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600',
+    destinationImage: dest?.imageUrl ?? '/images/santorini.jpg',
     route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'} \u00b7 1 stop`,
     price: adjustedPrice,
     strikethrough,
