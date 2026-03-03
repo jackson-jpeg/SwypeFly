@@ -298,26 +298,7 @@ export default function PassengerDetailsScreen() {
           )}
         </div>
 
-        {/* add another passenger — disabled for MVP */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            paddingBlock: 12,
-            width: '100%',
-            opacity: 0.4,
-            cursor: 'not-allowed',
-          }}
-        >
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.borderTint }}>
-            + Add Another Passenger
-          </span>
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.mutedText }}>
-            (Coming soon)
-          </span>
-        </div>
+        {/* Multi-passenger support coming later */}
       </div>
 
       {/* CTA */}

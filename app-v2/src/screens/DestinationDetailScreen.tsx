@@ -644,11 +644,10 @@ export default function DestinationDetailScreen() {
                 borderRadius: 12,
                 padding: 14,
                 gap: 8,
-                backgroundColor: '#111827',
-                border: '1px solid #FFFFFF0F',
+                backgroundColor: colors.offWhite,
+                border: `1px solid ${colors.borderTint}40`,
               }}
             >
-              {/* Image placeholder */}
               <div
                 style={{
                   width: '100%',
@@ -657,7 +656,7 @@ export default function DestinationDetailScreen() {
                   backgroundImage: `url(${hotel.image})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  backgroundColor: '#1F2937',
+                  backgroundColor: colors.duskSand,
                 }}
               />
               <span
@@ -665,7 +664,7 @@ export default function DestinationDetailScreen() {
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 12,
                   lineHeight: '16px',
-                  color: '#D1D5DB',
+                  color: colors.specText,
                 }}
               >
                 {hotel.name}
@@ -676,7 +675,7 @@ export default function DestinationDetailScreen() {
                   fontSize: 14,
                   fontWeight: 700,
                   lineHeight: '18px',
-                  color: '#F9FAFB',
+                  color: colors.deepDusk,
                 }}
               >
                 {hotel.price}
