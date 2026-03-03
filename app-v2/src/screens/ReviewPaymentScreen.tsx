@@ -128,6 +128,7 @@ export default function ReviewPaymentScreen() {
   const total = booking.getTotal();
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [paying, setPaying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
   const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
   const [expiry, setExpiry] = useState('');
@@ -418,15 +419,21 @@ export default function ReviewPaymentScreen() {
       {/* CTA */}
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
         <button
-          onClick={() => navigate('/booking/confirmation')}
+          disabled={paying}
+          onClick={() => {
+            setPaying(true);
+            setTimeout(() => navigate('/booking/confirmation'), 1500);
+          }}
           style={{
             width: '100%',
             height: 52,
             borderRadius: 14,
-            backgroundColor: colors.deepDusk,
+            backgroundColor: paying ? colors.sageDrift : colors.deepDusk,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            opacity: paying ? 0.8 : 1,
+            transition: 'background-color 0.3s, opacity 0.3s',
           }}
         >
           <span
@@ -437,7 +444,7 @@ export default function ReviewPaymentScreen() {
               color: colors.paleHorizon,
             }}
           >
-            Pay ${total}
+            {paying ? 'Processing...' : `Pay $${total}`}
           </span>
         </button>
       </div>

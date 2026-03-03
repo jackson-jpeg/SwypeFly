@@ -136,10 +136,10 @@ export default function QuizScreen() {
 
               {/* Label */}
               <div style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontFamily: 'system-ui, sans-serif', fontSize: 16, lineHeight: '20px', color: '#FFFFFF' }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, lineHeight: '20px', color: '#FFFFFF' }}>
                   {opt.label}
                 </span>
-                <span style={{ fontFamily: 'system-ui, sans-serif', fontSize: 11, lineHeight: '14px', color: '#FFFFFFB3' }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, lineHeight: '14px', color: '#FFFFFFB3' }}>
                   {opt.subtitle}
                 </span>
               </div>

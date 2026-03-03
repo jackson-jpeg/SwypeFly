@@ -432,10 +432,11 @@ export default function PassengerDetailsScreen() {
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
         <button
           onClick={() => {
+            if (!firstName.trim() || !lastName.trim()) return;
             const paxData = {
               id: 'pax-1',
-              given_name: firstName,
-              family_name: lastName,
+              given_name: firstName.trim(),
+              family_name: lastName.trim(),
               born_on: dob,
               gender: (gender === 'Male' ? 'm' : 'f') as 'f' | 'm',
               title: (gender === 'Male' ? 'mr' : 'ms') as 'mr' | 'ms',
