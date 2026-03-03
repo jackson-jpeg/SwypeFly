@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useBookingStore } from '@/stores/bookingStore';
+import { getStubDestination } from '@/api/stubs';
 
 /* ───── shared booking header ───── */
 function BookingHeader({
   step,
   stepName,
+  bgImage,
   onBack,
   onClose,
 }: {
   step: number;
   stepName: string;
+  bgImage?: string;
   onBack: () => void;
   onClose: () => void;
 }) {
@@ -56,7 +60,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url(/images/santorini.jpg)',
+            backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -141,6 +145,9 @@ function seatBorder(state: SeatState, selected: boolean): string {
 /* ───── screen ───── */
 export default function SeatSelectionScreen() {
   const navigate = useNavigate();
+  const booking = useBookingStore();
+  const storeSeat = booking.setSeat;
+  const dest = getStubDestination(booking.destinationId ?? 'dest-santorini');
   const [selectedSeat, setSelectedSeat] = useState<string | null>('14-C');
 
   const handleSeatClick = (row: number, col: string) => {
@@ -162,6 +169,7 @@ export default function SeatSelectionScreen() {
       <BookingHeader
         step={3}
         stepName="Seat Selection"
+        bgImage={dest?.imageUrl}
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}
       />
@@ -356,7 +364,7 @@ export default function SeatSelectionScreen() {
                   color: colors.deepDusk,
                 }}
               >
-                Seat {selectedSeat.replace('-', '')} — Window
+                Seat {selectedSeat.replace('-', '')} — {(() => { const col = selectedSeat.split('-')[1]; return col === 'A' || col === 'F' ? 'Window' : col === 'C' || col === 'D' ? 'Aisle' : 'Middle'; })()}
               </span>
               <span
                 style={{
@@ -378,7 +386,7 @@ export default function SeatSelectionScreen() {
       {/* CTA area */}
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
         <button
-          onClick={() => navigate('/booking/extras')}
+          onClick={() => { storeSeat(selectedSeat ? selectedSeat.replace('-', '') : null); navigate('/booking/extras'); }}
           style={{
             width: '100%',
             height: 52,
@@ -401,7 +409,7 @@ export default function SeatSelectionScreen() {
           </span>
         </button>
         <button
-          onClick={() => navigate('/booking/extras')}
+          onClick={() => { storeSeat(null); navigate('/booking/extras'); }}
           style={{ padding: 8 }}
         >
           <span

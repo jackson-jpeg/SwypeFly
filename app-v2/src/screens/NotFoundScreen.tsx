@@ -168,8 +168,8 @@ export default function NotFoundScreen() {
         </button>
 
         {/* Secondary button */}
-        <button
-          onClick={() => console.log('Contact support')}
+        <a
+          href="mailto:support@sogojet.com"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -180,6 +180,7 @@ export default function NotFoundScreen() {
             border: 'none',
             cursor: 'pointer',
             width: 260,
+            textDecoration: 'none',
           }}
         >
           <span
@@ -193,7 +194,7 @@ export default function NotFoundScreen() {
           >
             Contact Support
           </span>
-        </button>
+        </a>
       </div>
     </div>
   );

@@ -2,15 +2,10 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, animate, type PanInfo } from 'framer-motion';
 import { colors, fonts, motion as motionTokens } from '@/tokens';
+import { STUB_DESTINATIONS } from '@/api/stubs';
+import { useSavedStore } from '@/stores/savedStore';
+import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
-
-// Stub data — will be replaced by API
-const STUB_DESTINATIONS = [
-  { id: 'santorini', city: 'Santorini', country: 'Greece', tagline: 'Whitewashed cliffs above endless blue', tags: ['Islands', 'Romantic'], price: 387, image: '/images/santorini.jpg' },
-  { id: 'bali', city: 'Bali', country: 'Indonesia', tagline: 'Emerald rice terraces meet sacred temples', tags: ['Tropical', 'Cultural'], price: 479, image: '/images/bali.jpg' },
-  { id: 'kyoto', city: 'Kyoto', country: 'Japan', tagline: 'Ancient temples in a sea of cherry blossoms', tags: ['Cultural', 'Historic'], price: 612, image: '/images/kyoto.jpg' },
-  { id: 'maldives', city: 'Maldives', country: 'Maldives', tagline: 'Overwater villas on crystal-clear lagoons', tags: ['Beach', 'Luxury'], price: 892, image: '/images/maldives.jpg' },
-];
 
 function FeedCard({
   destination,
@@ -19,7 +14,7 @@ function FeedCard({
   index,
   total,
 }: {
-  destination: (typeof STUB_DESTINATIONS)[0];
+  destination: Destination;
   onSwipe: (dir: 'left' | 'right') => void;
   onTap: () => void;
   index: number;
@@ -28,7 +23,8 @@ function FeedCard({
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-15, 0, 15]);
   const opacity = useTransform(x, [-300, -100, 0, 100, 300], [0.5, 1, 1, 1, 0.5]);
-  const [saved, setSaved] = useState(false);
+  const { isSaved, toggle } = useSavedStore();
+  const saved = isSaved(destination.id);
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const { velocity, offset } = info;
@@ -88,7 +84,7 @@ function FeedCard({
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: `url(${destination.image})`,
+          backgroundImage: `url(${destination.imageUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundColor: '#0A0F1E',
@@ -127,7 +123,7 @@ function FeedCard({
           style={glassButton}
           onClick={(e) => {
             e.stopPropagation();
-            setSaved(!saved);
+            toggle(destination.id);
           }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill={saved ? '#FFFFFF' : 'none'} stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -138,7 +134,9 @@ function FeedCard({
           style={glassButton}
           onClick={(e) => {
             e.stopPropagation();
-            console.log('share');
+            if (navigator.share) {
+              navigator.share({ title: `${destination.city} — SoGoJet`, text: destination.tagline, url: `${window.location.origin}/destination/${destination.id}` });
+            }
           }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -182,7 +180,7 @@ function FeedCard({
           <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: '#FFFFFF73' }}>
             {destination.country}
           </span>
-          {destination.tags.map((tag) => (
+          {destination.vibeTags.map((tag) => (
             <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFFFFF40', flexShrink: 0 }} />
               <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: '#FFFFFF73' }}>
@@ -225,7 +223,7 @@ function FeedCard({
             width: 60,
           }}
         >
-          ${destination.price}
+          ${destination.flightPrice}
         </span>
         <span
           style={{
@@ -253,7 +251,8 @@ export default function FeedScreen() {
   }, []);
 
   const handleTap = useCallback(() => {
-    navigate(`/destination/${STUB_DESTINATIONS[currentIndex]?.id}`);
+    const dest = STUB_DESTINATIONS[currentIndex];
+    if (dest) navigate(`/destination/${dest.id}`);
   }, [navigate, currentIndex]);
 
   return (

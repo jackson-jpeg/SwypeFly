@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useBookingStore } from '@/stores/bookingStore';
+import { getStubDestination } from '@/api/stubs';
+import { useAuthContext } from '@/hooks/AuthContext';
 
 /* ───── shared booking header ───── */
 function BookingHeader({
   step,
   stepName,
+  bgImage,
   onBack,
   onClose,
 }: {
   step: number;
   stepName: string;
+  bgImage?: string;
   onBack: () => void;
   onClose: () => void;
 }) {
@@ -60,7 +65,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url(/images/santorini.jpg)',
+            backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -148,8 +153,13 @@ const accordionStyle: React.CSSProperties = {
 /* ───── screen ───── */
 export default function PassengerDetailsScreen() {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState('Sarah');
-  const [lastName, setLastName] = useState('Mitchell');
+  const { user } = useAuthContext();
+  const bookingStore = useBookingStore();
+  const { addPassenger, updatePassenger, passengers } = bookingStore;
+  const dest = getStubDestination(bookingStore.destinationId ?? 'dest-santorini');
+  const nameParts = (user?.name ?? '').split(' ');
+  const [firstName, setFirstName] = useState(nameParts[0] ?? '');
+  const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') ?? '');
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState('Female');
   const [passportOpen, setPassportOpen] = useState(false);
@@ -169,6 +179,7 @@ export default function PassengerDetailsScreen() {
       <BookingHeader
         step={2}
         stepName="Passenger Details"
+        bgImage={dest?.imageUrl}
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}
       />
@@ -415,7 +426,25 @@ export default function PassengerDetailsScreen() {
       {/* CTA */}
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
         <button
-          onClick={() => navigate('/booking/seats')}
+          onClick={() => {
+            const paxData = {
+              id: 'pax-1',
+              given_name: firstName,
+              family_name: lastName,
+              born_on: dob,
+              gender: (gender === 'Male' ? 'm' : 'f') as 'f' | 'm',
+              title: (gender === 'Male' ? 'mr' : 'ms') as 'mr' | 'ms',
+              email: user?.email ?? '',
+              phone_number: '',
+            };
+            const existingIdx = passengers.findIndex((p) => p.id === 'pax-1');
+            if (existingIdx >= 0) {
+              updatePassenger(existingIdx, paxData);
+            } else {
+              addPassenger(paxData);
+            }
+            navigate('/booking/seats');
+          }}
           style={{
             width: '100%',
             height: 52,

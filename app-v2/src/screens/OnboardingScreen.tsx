@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useUIStore } from '@/stores/uiStore';
 
 const AIRPORTS = [
   { code: 'JFK', city: 'New York' },
@@ -17,6 +18,7 @@ const AIRPORTS = [
 
 export default function OnboardingScreen() {
   const navigate = useNavigate();
+  const { setDeparture, setOnboarded } = useUIStore();
   const [selectedAirport, setSelectedAirport] = useState(AIRPORTS[0]!);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const currentStep = 1;
@@ -190,7 +192,7 @@ export default function OnboardingScreen() {
       {/* Continue button */}
       <div style={{ position: 'relative', zIndex: 10, padding: '0 20px 40px', marginTop: 'auto' }}>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => { setDeparture(selectedAirport.city, selectedAirport.code); setOnboarded(); navigate('/'); }}
           style={{
             display: 'flex',
             alignItems: 'center',

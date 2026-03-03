@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
+import { useUIStore } from '@/stores/uiStore';
 import BottomNav from '@/components/BottomNav';
 
 function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
@@ -90,7 +91,7 @@ export default function SettingsScreen() {
     .join('')
     .toUpperCase()
     .slice(0, 2) || 'G';
-  const [haptics, setHaptics] = useState(true);
+  const { hapticsEnabled, toggleHaptics, departureCity, departureCode, currency } = useUIStore();
   const [notifications, setNotifications] = useState(true);
   const [priceAlerts, setPriceAlerts] = useState(false);
 
@@ -185,10 +186,7 @@ export default function SettingsScreen() {
                 </svg>
                 <span style={rowTitleStyle}>Departure City</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={rowValueStyle}>New York (JFK)</span>
-                <ChevronRight />
-              </div>
+              <span style={rowValueStyle}>{departureCity} ({departureCode})</span>
             </div>
             {/* Currency */}
             <div style={rowStyle}>
@@ -199,10 +197,7 @@ export default function SettingsScreen() {
                 </svg>
                 <span style={rowTitleStyle}>Currency</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={rowValueStyle}>USD ($)</span>
-                <ChevronRight />
-              </div>
+              <span style={rowValueStyle}>{currency}</span>
             </div>
             {/* Temperature */}
             <div style={rowStyle}>
@@ -212,10 +207,7 @@ export default function SettingsScreen() {
                 </svg>
                 <span style={rowTitleStyle}>Temperature</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={rowValueStyle}>°F</span>
-                <ChevronRight />
-              </div>
+              <span style={rowValueStyle}>°F</span>
             </div>
           </div>
         </div>
@@ -226,7 +218,7 @@ export default function SettingsScreen() {
           <div style={{ borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 1, overflow: 'clip' }}>
             <div style={rowStyle}>
               <span style={rowTitleStyle}>Haptic Feedback</span>
-              <Toggle on={haptics} onToggle={() => setHaptics((v) => !v)} />
+              <Toggle on={hapticsEnabled} onToggle={toggleHaptics} />
             </div>
             <div style={rowStyle}>
               <span style={rowTitleStyle}>Push Notifications</span>

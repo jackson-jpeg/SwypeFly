@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
+import { useBookingStore } from '@/stores/bookingStore';
+import { getStubDestination } from '@/api/stubs';
 
 /* ───── screen ───── */
 export default function ConfirmationScreen() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const booking = useBookingStore();
+  const dest = getStubDestination(booking.destinationId ?? 'dest-santorini');
   const confirmEmail = user?.email || 'your email';
+  const seatDesignator = booking.selectedSeat ?? '14C';
+  const destCity = dest?.city ?? 'Santorini';
+  const destIata = dest?.iataCode ?? 'JTR';
 
   return (
     <div
@@ -109,7 +116,7 @@ export default function ConfirmationScreen() {
               margin: 0,
             }}
           >
-            You're Going to Santorini!
+            You're Going to {destCity}!
           </h1>
           <span
             style={{
@@ -208,10 +215,10 @@ export default function ConfirmationScreen() {
                     lineHeight: '40px',
                   }}
                 >
-                  JTR
+                  {destIata}
                 </span>
                 <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.borderTint }}>
-                  Santorini
+                  {destCity}
                 </span>
               </div>
             </div>
@@ -221,7 +228,7 @@ export default function ConfirmationScreen() {
               {[
                 { label: 'Date', value: 'Jun 16,\n2026' },
                 { label: 'Gate', value: 'B42' },
-                { label: 'Seat', value: '14C' },
+                { label: 'Seat', value: seatDesignator },
                 { label: 'Board', value: '08:15' },
               ].map((item) => (
                 <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -332,7 +339,7 @@ export default function ConfirmationScreen() {
       {/* CTA */}
       <div style={{ position: 'relative', paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => { booking.reset(); navigate('/'); }}
           style={{
             width: '100%',
             height: 52,

@@ -1,12 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useSavedStore } from '@/stores/savedStore';
+import { STUB_DESTINATIONS } from '@/api/stubs';
 import BottomNav from '@/components/BottomNav';
-
-const WISHLIST_DATA = [
-  { city: 'Santorini', country: 'Greece', vibe: 'Romance', price: 387, image: '/images/santorini.jpg', priceDrop: 23 },
-  { city: 'Bali', country: 'Indonesia', vibe: 'Tropical', price: 479, image: '/images/bali.jpg' },
-  { city: 'Kyoto', country: 'Japan', vibe: 'Culture', price: 612, image: '/images/kyoto.jpg' },
-  { city: 'Maldives', country: 'Maldives', vibe: 'Luxury', price: 892, image: '/images/maldives.jpg' },
-];
 
 function HeartFilled({ size = 16 }: { size?: number }) {
   return (
@@ -17,6 +13,21 @@ function HeartFilled({ size = 16 }: { size?: number }) {
 }
 
 export default function WishlistScreen() {
+  const navigate = useNavigate();
+  const { savedIds, toggle } = useSavedStore();
+  const WISHLIST_DATA = savedIds
+    .map((id) => STUB_DESTINATIONS.find((d) => d.id === id))
+    .filter(Boolean)
+    .map((d) => ({
+      id: d!.id,
+      city: d!.city,
+      country: d!.country,
+      vibe: d!.vibeTags[0] ?? 'Travel',
+      price: d!.flightPrice,
+      image: d!.imageUrl,
+      priceDrop: d!.previousPrice ? d!.previousPrice - d!.flightPrice : undefined,
+    }));
+
   return (
     <div
       className="screen"
@@ -46,40 +57,42 @@ export default function WishlistScreen() {
         </h1>
 
         {/* Stats pills */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              backgroundColor: '#F2CEBC40',
-              border: '1px solid #C9A99A40',
-              borderRadius: 16,
-              paddingBlock: 6,
-              paddingInline: 12,
-            }}
-          >
-            <HeartFilled size={14} />
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.borderTint }}>
-              {WISHLIST_DATA.length} saved
-            </span>
+        {WISHLIST_DATA.length > 0 && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: '#F2CEBC40',
+                border: '1px solid #C9A99A40',
+                borderRadius: 16,
+                paddingBlock: 6,
+                paddingInline: 12,
+              }}
+            >
+              <HeartFilled size={14} />
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.borderTint }}>
+                {WISHLIST_DATA.length} saved
+              </span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: '#F2CEBC40',
+                border: '1px solid #C9A99A40',
+                borderRadius: 16,
+                paddingBlock: 6,
+                paddingInline: 12,
+              }}
+            >
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.borderTint }}>
+                Avg ${Math.round(WISHLIST_DATA.reduce((s, d) => s + d.price, 0) / WISHLIST_DATA.length)}
+              </span>
+            </div>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: '#F2CEBC40',
-              border: '1px solid #C9A99A40',
-              borderRadius: 16,
-              paddingBlock: 6,
-              paddingInline: 12,
-            }}
-          >
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.borderTint }}>
-              Avg ${Math.round(WISHLIST_DATA.reduce((s, d) => s + d.price, 0) / WISHLIST_DATA.length)}
-            </span>
-          </div>
-        </div>
+        )}
 
         {/* Filter chips */}
         <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
@@ -135,10 +148,18 @@ export default function WishlistScreen() {
 
       {/* Card grid */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, padding: '20px 24px', flex: 1 }}>
+        {WISHLIST_DATA.length === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, paddingTop: 60, width: '100%' }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: colors.mutedText }}>No saved destinations yet</span>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.borderTint }}>Swipe right on destinations you love</span>
+          </div>
+        )}
         {WISHLIST_DATA.map((dest) => (
           <div
-            key={dest.city}
+            key={dest.id}
+            onClick={() => navigate(`/destination/${dest.id}`)}
             style={{
+              cursor: 'pointer',
               borderRadius: 14,
               display: 'flex',
               flexDirection: 'column',
@@ -187,10 +208,13 @@ export default function WishlistScreen() {
               >
                 {dest.city}
               </span>
-              {/* Heart icon */}
-              <div style={{ position: 'absolute', right: 8, top: 8 }}>
+              {/* Heart icon — tap to unsave */}
+              <button
+                onClick={(e) => { e.stopPropagation(); toggle(dest.id); }}
+                style={{ position: 'absolute', right: 8, top: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
                 <HeartFilled />
-              </div>
+              </button>
               {/* Price drop badge */}
               {dest.priceDrop && (
                 <div

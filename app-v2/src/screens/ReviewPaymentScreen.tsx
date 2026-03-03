@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useBookingStore } from '@/stores/bookingStore';
+import { getStubDestination } from '@/api/stubs';
 
 /* ───── shared booking header ───── */
 function BookingHeader({
   step,
   stepName,
+  bgImage,
   onBack,
   onClose,
 }: {
   step: number;
   stepName: string;
+  bgImage?: string;
   onBack: () => void;
   onClose: () => void;
 }) {
@@ -56,7 +60,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url(/images/santorini.jpg)',
+            backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -117,18 +121,32 @@ const fieldLabel: React.CSSProperties = {
 /* ───── screen ───── */
 export default function ReviewPaymentScreen() {
   const navigate = useNavigate();
+  const booking = useBookingStore();
+  const dest = getStubDestination(booking.destinationId ?? 'dest-santorini');
+  const total = booking.getTotal();
   const [promoCode, setPromoCode] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
   const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
 
+  // Derive dynamic baggage label and price
+  const bagLabel = booking.selectedBaggage === 'bag-2x23kg' ? '2 checked bags (23 kg each)' : '1 checked bag (23 kg)';
+  const bagSvc = booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedBaggage);
+  const bagPrice = bagSvc?.amount ?? (booking.selectedBaggage === 'bag-2x23kg' ? 60 : 35);
+
+  // Derive dynamic meal label and price
+  const mealName = booking.selectedMeal?.replace('meal-', '') ?? '';
+  const mealLabel = `In-flight meal (${mealName.charAt(0).toUpperCase() + mealName.slice(1)})`;
+  const mealSvc = booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedMeal);
+  const mealPrice = mealSvc?.amount ?? ({ 'meal-pasta': 12, 'meal-salad': 10, 'meal-asian': 14 }[booking.selectedMeal ?? ''] ?? 12);
+
   const lineItems = [
-    { label: 'Flight (Economy, 1 adult)', price: '$387', color: colors.bodyText },
-    { label: 'Seat 14C (Window)', price: 'Free', color: colors.confirmGreen },
-    { label: '1 checked bag (23 kg)', price: '$35', color: colors.bodyText },
-    { label: 'Trip Protection', price: '$29', color: colors.bodyText },
-    { label: 'In-flight meal (Pasta)', price: '$12', color: colors.bodyText },
+    { label: `Flight (${booking.selectedOffer?.cabinClass ?? 'Economy'}, 1 adult)`, price: `$${booking.selectedOffer?.totalAmount ?? 387}`, color: colors.bodyText },
+    { label: `Seat ${booking.selectedSeat ?? 'None'}`, price: booking.selectedSeat ? 'Free' : '—', color: booking.selectedSeat ? colors.confirmGreen : colors.bodyText },
+    ...(booking.selectedBaggage ? [{ label: bagLabel, price: `$${bagPrice}`, color: colors.bodyText }] : []),
+    ...(booking.hasInsurance ? [{ label: 'Trip Protection', price: '$29', color: colors.bodyText }] : []),
+    ...(booking.selectedMeal ? [{ label: mealLabel, price: `$${mealPrice}`, color: colors.bodyText }] : []),
   ];
 
   return (
@@ -143,6 +161,7 @@ export default function ReviewPaymentScreen() {
       <BookingHeader
         step={5}
         stepName="Review & Payment"
+        bgImage={dest?.imageUrl}
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}
       />
@@ -184,7 +203,7 @@ export default function ReviewPaymentScreen() {
                 color: colors.deepDusk,
               }}
             >
-              JFK → Santorini
+              JFK → {dest?.city ?? 'Santorini'}
             </span>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.borderTint }}>
               Round trip
@@ -213,7 +232,7 @@ export default function ReviewPaymentScreen() {
               Total
             </span>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 20, fontWeight: 800, color: colors.deepDusk }}>
-              $463
+              ${total}
             </span>
           </div>
         </div>
@@ -294,8 +313,8 @@ export default function ReviewPaymentScreen() {
           })}
         </div>
 
-        {/* card form */}
-        <div
+        {/* card form — only shown for card payment */}
+        {paymentMethod === 'card' && <div
           style={{
             backgroundColor: colors.offWhite,
             border: '1px solid #C9A99A20',
@@ -346,7 +365,30 @@ export default function ReviewPaymentScreen() {
               />
             </div>
           </div>
-        </div>
+        </div>}
+
+        {/* Apple/Google Pay confirmation */}
+        {paymentMethod !== 'card' && (
+          <div
+            style={{
+              backgroundColor: colors.offWhite,
+              border: '1px solid #C9A99A20',
+              borderRadius: 16,
+              padding: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.bodyText }}>
+              {paymentMethod === 'apple' ? 'Apple Pay' : 'Google Pay'} ready — tap Pay to continue
+            </span>
+          </div>
+        )}
 
         {/* security note */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBlock: 4 }}>
@@ -382,7 +424,7 @@ export default function ReviewPaymentScreen() {
               color: colors.paleHorizon,
             }}
           >
-            Pay $463
+            Pay ${total}
           </span>
         </button>
       </div>

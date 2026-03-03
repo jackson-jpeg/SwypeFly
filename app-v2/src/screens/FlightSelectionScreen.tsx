@@ -1,17 +1,22 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { STUB_BOOKING_OFFERS, getStubDestination } from '@/api/stubs';
+import { useBookingStore } from '@/stores/bookingStore';
 
 /* ── Shared BookingHeader ──────────────────────────────────────── */
 export function BookingHeader({
   step,
   totalSteps = 6,
   stepLabel,
+  bgImage,
   onBack,
   onClose,
 }: {
   step: number;
   totalSteps?: number;
   stepLabel: string;
+  bgImage?: string;
   onBack: () => void;
   onClose: () => void;
 }) {
@@ -106,7 +111,7 @@ export function BookingHeader({
           left: 0,
           right: 0,
           height: 60,
-          backgroundImage: 'url(/images/santorini.jpg)',
+          backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.15,
@@ -117,28 +122,47 @@ export function BookingHeader({
   );
 }
 
-/* ── stub data ─────────────────────────────────────────────────── */
-const FLIGHT_DATA = {
-  destination: 'Santorini',
-  destinationImage: '/images/santorini.jpg',
-  route: 'JFK \u2192 JTR \u00b7 1 stop via ATH',
-  price: 387,
-  strikethrough: 542,
-  discountPct: 29,
-  dates: [
-    { range: 'Jun 15 \u2013 Jun 22', nights: 7, note: 'Cheapest option', price: 387, selected: true },
-    { range: 'Jun 22 \u2013 Jun 29', nights: 7, note: undefined, price: 412, selected: false },
-    { range: 'Jul 1 \u2013 Jul 8', nights: 7, note: 'Peak season', price: 509, selected: false },
-  ],
-  cabinClasses: ['Economy', 'Business', 'First'] as const,
-  selectedCabin: 0,
-  passengers: 1,
-};
-
 /* ── component ─────────────────────────────────────────────────── */
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
-  const data = FLIGHT_DATA;
+  const { destinationId, setOffer } = useBookingStore();
+  const dest = getStubDestination(destinationId ?? 'dest-santorini');
+  const offers = STUB_BOOKING_OFFERS;
+  const [selectedDateIdx, setSelectedDateIdx] = useState(0);
+  const [selectedCabin, setSelectedCabin] = useState(0);
+  const [passengers, setPassengers] = useState(1);
+
+  const selectedOffer = offers[selectedDateIdx]!;
+  const cabinMultiplier = selectedCabin === 1 ? 2.8 : selectedCabin === 2 ? 5.2 : 1;
+  const cheapest = Math.min(...offers.map((o) => o.totalAmount));
+  const strikethrough = Math.round(cheapest * 1.4 * cabinMultiplier);
+  const adjustedPrice = Math.round(selectedOffer.totalAmount * cabinMultiplier);
+  const discountPct = Math.round(((strikethrough - Math.round(cheapest * cabinMultiplier)) / strikethrough) * 100);
+
+  const data = {
+    destination: dest?.city ?? 'Santorini',
+    destinationImage: dest?.imageUrl ?? '/images/santorini.jpg',
+    route: `JFK \u2192 ${dest?.iataCode ?? 'JTR'} \u00b7 1 stop`,
+    price: adjustedPrice,
+    strikethrough,
+    discountPct,
+    dates: offers.map((o, i) => {
+      const dep = new Date(o.slices[0]!.departureTime);
+      const ret = new Date(o.slices[1]!.departureTime);
+      const nights = Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24));
+      const range = `${dep.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} \u2013 ${ret.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      return {
+        range,
+        nights,
+        note: i === 0 ? 'Cheapest option' : o.totalAmount > 500 ? 'Peak season' : undefined,
+        price: o.totalAmount,
+        selected: i === selectedDateIdx,
+      };
+    }),
+    cabinClasses: ['Economy', 'Business', 'First'] as const,
+    selectedCabin,
+    passengers,
+  };
 
   return (
     <div
@@ -155,6 +179,7 @@ export default function FlightSelectionScreen() {
       <BookingHeader
         step={1}
         stepLabel="Flight Selection"
+        bgImage={dest?.imageUrl}
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}
       />
@@ -279,7 +304,7 @@ export default function FlightSelectionScreen() {
             marginTop: 4,
           }}
         >
-          Round trip &middot; Economy &middot; per person
+          Round trip &middot; {data.cabinClasses[selectedCabin]} &middot; per person
         </span>
       </div>
 
@@ -302,7 +327,9 @@ export default function FlightSelectionScreen() {
         {data.dates.map((d, i) => (
           <div
             key={i}
+            onClick={() => setSelectedDateIdx(i)}
             style={{
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               borderRadius: 12,
@@ -407,6 +434,7 @@ export default function FlightSelectionScreen() {
           {data.cabinClasses.map((cls, i) => (
             <button
               key={cls}
+              onClick={() => setSelectedCabin(i)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -475,6 +503,7 @@ export default function FlightSelectionScreen() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {/* Minus */}
             <button
+              onClick={() => setPassengers((p) => Math.max(1, p - 1))}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -484,6 +513,7 @@ export default function FlightSelectionScreen() {
                 borderRadius: 8,
                 backgroundColor: '#E8C9A060',
                 flexShrink: 0,
+                cursor: 'pointer',
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2.5" strokeLinecap="round">
@@ -504,6 +534,7 @@ export default function FlightSelectionScreen() {
             </span>
             {/* Plus */}
             <button
+              onClick={() => setPassengers((p) => Math.min(9, p + 1))}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -513,6 +544,7 @@ export default function FlightSelectionScreen() {
                 borderRadius: 8,
                 backgroundColor: '#A8C4B830',
                 flexShrink: 0,
+                cursor: 'pointer',
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2.5" strokeLinecap="round">
@@ -536,7 +568,7 @@ export default function FlightSelectionScreen() {
               color: colors.borderTint,
             }}
           >
-            Estimated total
+            {passengers > 1 ? `Total (${passengers} passengers)` : 'Estimated total'}
           </span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
             <span
@@ -548,9 +580,9 @@ export default function FlightSelectionScreen() {
                 color: colors.deepDusk,
               }}
             >
-              ${data.price}
+              ${data.price * passengers}
             </span>
-            <span
+            {passengers === 1 && <span
               style={{
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 12,
@@ -559,13 +591,13 @@ export default function FlightSelectionScreen() {
               }}
             >
               per person
-            </span>
+            </span>}
           </div>
         </div>
 
         {/* Lock This Deal */}
         <button
-          onClick={() => navigate('/booking/passengers')}
+          onClick={() => { setOffer(selectedOffer); navigate('/booking/passengers'); }}
           style={{
             display: 'flex',
             alignItems: 'center',

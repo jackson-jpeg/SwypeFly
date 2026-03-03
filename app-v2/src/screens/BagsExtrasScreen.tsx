@@ -2,16 +2,20 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useBookingStore } from '@/stores/bookingStore';
+import { getStubDestination } from '@/api/stubs';
 
 /* ───── shared booking header ───── */
 function BookingHeader({
   step,
   stepName,
+  bgImage,
   onBack,
   onClose,
 }: {
   step: number;
   stepName: string;
+  bgImage?: string;
   onBack: () => void;
   onClose: () => void;
 }) {
@@ -57,7 +61,7 @@ function BookingHeader({
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'url(/images/santorini.jpg)',
+            backgroundImage: `url(${bgImage || '/images/santorini.jpg'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             opacity: 0.15,
@@ -225,11 +229,13 @@ const mealOptions: { key: MealOption; label: string; price: string; amount: numb
 /* ───── screen ───── */
 export default function BagsExtrasScreen() {
   const navigate = useNavigate();
+  const { selectedOffer, destinationId, setBaggage, setInsurance: storeSetInsurance, setMeal: storeSetMeal } = useBookingStore();
+  const dest = getStubDestination(destinationId ?? 'dest-santorini');
   const [selectedBag, setSelectedBag] = useState<BagOption>('one');
   const [insurance, setInsurance] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealOption>('pasta');
 
-  const flightPrice = 387;
+  const flightPrice = selectedOffer?.totalAmount ?? 387;
   const bagPrice = bagOptions.find((b) => b.key === selectedBag)?.amount ?? 0;
   const insurancePrice = insurance ? 29 : 0;
   const mealPrice = mealOptions.find((m) => m.key === selectedMeal)?.amount ?? 0;
@@ -247,6 +253,7 @@ export default function BagsExtrasScreen() {
       <BookingHeader
         step={4}
         stepName="Bags & Extras"
+        bgImage={dest?.imageUrl}
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}
       />
@@ -386,7 +393,7 @@ export default function BagsExtrasScreen() {
             gap: 8,
           }}
         >
-          <LineItem label="Flight" price="$387" />
+          <LineItem label="Flight" price={`$${flightPrice}`} />
           {bagPrice > 0 && <LineItem label="1 checked bag" price={`$${bagPrice}`} />}
           {insurancePrice > 0 && <LineItem label="Insurance" price={`$${insurancePrice}`} />}
           <LineItem label={`Meal (${selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)})`} price={`$${mealPrice}`} />
@@ -405,7 +412,14 @@ export default function BagsExtrasScreen() {
       {/* CTA */}
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
         <button
-          onClick={() => navigate('/booking/review')}
+          onClick={() => {
+            const bagId = selectedBag === 'one' ? 'bag-23kg' : selectedBag === 'two' ? 'bag-2x23kg' : null;
+            setBaggage(bagId);
+            storeSetInsurance(insurance);
+            const mealId = selectedMeal ? `meal-${selectedMeal}` : null;
+            storeSetMeal(mealId);
+            navigate('/booking/review');
+          }}
           style={{
             width: '100%',
             height: 52,
