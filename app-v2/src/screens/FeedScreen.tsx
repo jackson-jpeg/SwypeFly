@@ -1,7 +1,7 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
-import { STUB_DESTINATIONS } from '@/api/stubs';
+import { useFeed } from '@/hooks/useFeed';
 import { useSavedStore } from '@/stores/savedStore';
 import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
@@ -201,17 +201,36 @@ function FeedCard({ destination }: { destination: Destination }) {
 export default function FeedScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useFeed();
 
+  const destinations = useMemo(
+    () => data?.pages.flatMap((p) => p.destinations) ?? [],
+    [data],
+  );
+
+  // Track scroll position + prefetch next page when near end
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const handleScroll = () => {
       const idx = Math.round(el.scrollTop / el.clientHeight);
       setCurrentIndex(idx);
+      // Prefetch when within 3 items of the end
+      if (idx >= destinations.length - 3 && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
     };
     el.addEventListener('scroll', handleScroll, { passive: true });
     return () => el.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [destinations.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  if (isLoading) {
+    return (
+      <div className="screen" style={{ background: '#0A0F1E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF60' }}>Loading destinations...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="screen" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -225,14 +244,14 @@ export default function FeedScreen() {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        {STUB_DESTINATIONS.map((dest) => (
+        {destinations.map((dest) => (
           <FeedCard key={dest.id} destination={dest} />
         ))}
       </div>
 
       {/* Scroll progress indicator */}
       <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 3, zIndex: 20 }}>
-        {Array.from({ length: Math.min(STUB_DESTINATIONS.length, 8) }).map((_, i) => {
+        {Array.from({ length: Math.min(destinations.length, 8) }).map((_, i) => {
           const isActive = i === currentIndex % 8;
           return (
             <div

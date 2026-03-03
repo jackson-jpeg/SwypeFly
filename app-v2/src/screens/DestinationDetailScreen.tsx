@@ -5,7 +5,7 @@ import { STUB_TRIP_PLAN, STUB_DESTINATIONS, getStubDestination } from '@/api/stu
 import { useSavedStore } from '@/stores/savedStore';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
-import type { TripPlan } from '@/api/types';
+import type { TripPlan, Destination } from '@/api/types';
 
 /* ── detail enrichment (supplements stub Destination data) ────── */
 const DETAIL_DATA: Record<string, {
@@ -188,19 +188,36 @@ const DETAIL_DATA: Record<string, {
   },
 };
 
-function getDefaultDetail(city: string, country: string) {
+function getDefaultDetail(dest: Destination) {
+  // Build itinerary from destination data if available
+  const itinerary = (dest.itinerary ?? []).map((item) => ({
+    days: `Day ${item.day}`,
+    title: item.activities[0] ?? 'Explore',
+    desc: item.activities.slice(1).join('. ') || item.activities[0] || '',
+  }));
+
+  // Find similar destinations from the same country or vibe
+  const similarDests = STUB_DESTINATIONS
+    .filter((d) => d.id !== dest.id && (d.country === dest.country || d.vibeTags[0] === dest.vibeTags[0]))
+    .slice(0, 3)
+    .map((d) => ({ city: d.city, price: d.flightPrice, image: d.imageUrl }));
+
   return {
-    region: country,
-    vibe: 'Adventure',
-    quote: `Discover the magic of ${city}.`,
-    flightStrikethrough: undefined,
-    flightRoute: `JFK \u2192 ${city}`,
-    flightDates: 'Flexible dates \u00b7 Economy',
-    hotels: [],
+    region: dest.country,
+    vibe: dest.vibeTags[0] ?? 'Adventure',
+    quote: dest.tagline ?? `Discover the magic of ${dest.city}.`,
+    flightStrikethrough: dest.previousPrice ?? undefined,
+    flightRoute: `JFK → ${dest.iataCode ?? dest.city}`,
+    flightDates: 'Flexible dates · Economy',
+    hotels: (dest.imageUrls ?? []).slice(0, 2).map((img, i) => ({
+      name: i === 0 ? `Top Stay in ${dest.city}` : `Hotel Pick ${i + 1}`,
+      price: `$${Math.round(dest.flightPrice * 0.4 + i * 30)}/nt`,
+      image: img,
+    })),
     weather: [],
-    aboutParas: [`${city} awaits with incredible experiences and unforgettable moments.`],
-    itinerary: [],
-    similar: [],
+    aboutParas: [dest.tagline ?? `${dest.city} awaits with incredible experiences and unforgettable moments.`],
+    itinerary,
+    similar: similarDests,
   };
 }
 
@@ -268,7 +285,6 @@ export default function DestinationDetailScreen() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const stubDest = getStubDestination(id ?? '');
-  const detail = DETAIL_DATA[id ?? ''] ?? getDefaultDetail(stubDest?.city ?? 'Unknown', stubDest?.country ?? '');
   const { isSaved, toggle } = useSavedStore();
   const setBookingDestination = useBookingStore((s) => s.setDestination);
   const { departureCode } = useUIStore();
@@ -282,6 +298,8 @@ export default function DestinationDetailScreen() {
       </div>
     );
   }
+
+  const detail = DETAIL_DATA[id ?? ''] ?? getDefaultDetail(stubDest);
 
   const dest = {
     ...stubDest,
