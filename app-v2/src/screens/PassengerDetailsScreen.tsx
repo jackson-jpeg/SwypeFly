@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
-import { getStubDestination } from '@/api/stubs';
+import { useDestination } from '@/hooks/useDestination';
 import { useAuthContext } from '@/hooks/AuthContext';
 
 /* ───── shared booking header ───── */
@@ -156,7 +156,7 @@ export default function PassengerDetailsScreen() {
   const { user } = useAuthContext();
   const bookingStore = useBookingStore();
   const { addPassenger, updatePassenger, passengers } = bookingStore;
-  const dest = getStubDestination(bookingStore.destinationId ?? '2');
+  const { data: dest } = useDestination(bookingStore.destinationId ?? undefined);
   const nameParts = (user?.name ?? '').split(' ');
   const [firstName, setFirstName] = useState(nameParts[0] ?? '');
   const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') ?? '');

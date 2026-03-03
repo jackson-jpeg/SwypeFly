@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
-import { STUB_TRIP_PLAN, STUB_DESTINATIONS, getStubDestination } from '@/api/stubs';
+import { STUB_TRIP_PLAN, STUB_DESTINATIONS } from '@/api/stubs';
+import { useDestination } from '@/hooks/useDestination';
 import { useSavedStore } from '@/stores/savedStore';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -284,12 +285,20 @@ const sectionTitle: React.CSSProperties = {
 export default function DestinationDetailScreen() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const stubDest = getStubDestination(id ?? '');
+  const { data: stubDest, isLoading } = useDestination(id);
   const { isSaved, toggle } = useSavedStore();
   const setBookingDestination = useBookingStore((s) => s.setDestination);
   const { departureCode } = useUIStore();
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [tripPlanLoading, setTripPlanLoading] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="screen" style={{ background: colors.duskSand, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF60' }}>Loading...</span>
+      </div>
+    );
+  }
 
   if (!stubDest) {
     return (

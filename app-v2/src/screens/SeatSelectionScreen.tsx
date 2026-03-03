@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
-import { getStubDestination } from '@/api/stubs';
+import { useDestination } from '@/hooks/useDestination';
 
 /* ───── shared booking header ───── */
 function BookingHeader({
@@ -147,7 +147,7 @@ export default function SeatSelectionScreen() {
   const navigate = useNavigate();
   const booking = useBookingStore();
   const storeSeat = booking.setSeat;
-  const dest = getStubDestination(booking.destinationId ?? '2');
+  const { data: dest } = useDestination(booking.destinationId ?? undefined);
   const [selectedSeat, setSelectedSeat] = useState<string | null>('14-C');
 
   const handleSeatClick = (row: number, col: string) => {

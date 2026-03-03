@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
-import { getStubBookingOffers, getStubDestination } from '@/api/stubs';
+import { getStubBookingOffers } from '@/api/stubs';
+import { useDestination } from '@/hooks/useDestination';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 
@@ -128,7 +129,7 @@ export default function FlightSelectionScreen() {
   const navigate = useNavigate();
   const { destinationId, setOffer } = useBookingStore();
   const { departureCode } = useUIStore();
-  const dest = getStubDestination(destinationId ?? '2');
+  const { data: dest } = useDestination(destinationId ?? undefined);
   const offers = getStubBookingOffers(dest, departureCode);
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
   const [selectedCabin, setSelectedCabin] = useState(0);

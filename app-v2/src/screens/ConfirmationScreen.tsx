@@ -3,7 +3,7 @@ import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
-import { getStubDestination } from '@/api/stubs';
+import { useDestination } from '@/hooks/useDestination';
 
 /* ───── screen ───── */
 export default function ConfirmationScreen() {
@@ -11,7 +11,7 @@ export default function ConfirmationScreen() {
   const { user } = useAuthContext();
   const booking = useBookingStore();
   const { departureCode, departureCity } = useUIStore();
-  const dest = getStubDestination(booking.destinationId ?? '2');
+  const { data: dest } = useDestination(booking.destinationId ?? undefined);
   const confirmEmail = user?.email || (booking.passengers[0]?.email) || 'your email';
   const seatDesignator = booking.selectedSeat ?? '—';
   const destCity = dest?.city ?? 'Santorini';

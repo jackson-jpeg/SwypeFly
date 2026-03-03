@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
-import { getStubDestination } from '@/api/stubs';
+import { useDestination } from '@/hooks/useDestination';
 
 /* ───── shared booking header ───── */
 function BookingHeader({
@@ -124,7 +124,7 @@ export default function ReviewPaymentScreen() {
   const navigate = useNavigate();
   const booking = useBookingStore();
   const { departureCode } = useUIStore();
-  const dest = getStubDestination(booking.destinationId ?? '2');
+  const { data: dest } = useDestination(booking.destinationId ?? undefined);
   const total = booking.getTotal();
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');

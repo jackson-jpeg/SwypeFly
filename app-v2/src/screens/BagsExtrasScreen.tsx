@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
-import { getStubDestination } from '@/api/stubs';
+import { useDestination } from '@/hooks/useDestination';
 
 /* ───── shared booking header ───── */
 function BookingHeader({
@@ -230,7 +230,7 @@ const mealOptions: { key: MealOption; label: string; price: string; amount: numb
 export default function BagsExtrasScreen() {
   const navigate = useNavigate();
   const { selectedOffer, destinationId, setBaggage, setInsurance: storeSetInsurance, setMeal: storeSetMeal } = useBookingStore();
-  const dest = getStubDestination(destinationId ?? '2');
+  const { data: dest } = useDestination(destinationId ?? undefined);
   const [selectedBag, setSelectedBag] = useState<BagOption>('one');
   const [insurance, setInsurance] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealOption>('pasta');
