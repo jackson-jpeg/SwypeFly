@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
@@ -19,6 +20,7 @@ export default function ConfirmationScreen() {
   const paxName = booking.passengers[0]
     ? `${booking.passengers[0].given_name} ${booking.passengers[0].family_name}`
     : user?.name ?? 'Guest';
+  const bookingCode = useMemo(() => `SGJET-${destIata}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`, [destIata]);
 
   return (
     <div
@@ -349,7 +351,7 @@ export default function ConfirmationScreen() {
                 letterSpacing: '0.02em',
               }}
             >
-              SGJET-{destIata}-{Math.random().toString(36).slice(2, 6).toUpperCase()}
+              {bookingCode}
             </span>
           </div>
         </div>

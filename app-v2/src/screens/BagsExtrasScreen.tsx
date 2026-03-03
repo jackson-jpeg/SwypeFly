@@ -233,7 +233,7 @@ export default function BagsExtrasScreen() {
   const { data: dest } = useDestination(destinationId ?? undefined);
   const [selectedBag, setSelectedBag] = useState<BagOption>('one');
   const [insurance, setInsurance] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState<MealOption>('pasta');
+  const [selectedMeal, setSelectedMeal] = useState<MealOption | null>(null);
 
   const flightPrice = selectedOffer?.totalAmount ?? 387;
   const bagPrice = bagOptions.find((b) => b.key === selectedBag)?.amount ?? 0;
@@ -353,7 +353,7 @@ export default function BagsExtrasScreen() {
               return (
                 <button
                   key={opt.key}
-                  onClick={() => setSelectedMeal(opt.key)}
+                  onClick={() => setSelectedMeal(selectedMeal === opt.key ? null : opt.key)}
                   style={{
                     flex: 1,
                     display: 'flex',
@@ -396,7 +396,7 @@ export default function BagsExtrasScreen() {
           <LineItem label="Flight" price={`$${flightPrice}`} />
           {bagPrice > 0 && <LineItem label="1 checked bag" price={`$${bagPrice}`} />}
           {insurancePrice > 0 && <LineItem label="Insurance" price={`$${insurancePrice}`} />}
-          <LineItem label={`Meal (${selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)})`} price={`$${mealPrice}`} />
+          {selectedMeal && mealPrice > 0 && <LineItem label={`Meal (${selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)})`} price={`$${mealPrice}`} />}
           <div style={{ height: 1, backgroundColor: '#C9A99A40' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 700, color: colors.deepDusk }}>

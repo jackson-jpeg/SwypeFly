@@ -130,7 +130,7 @@ export default function ReviewPaymentScreen() {
   const [promoError, setPromoError] = useState('');
   const [paying, setPaying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
-  const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
+  const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
 
@@ -344,6 +344,7 @@ export default function ReviewPaymentScreen() {
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
+                placeholder="Card number"
                 value={cardNumber}
                 onChange={(e) => setCardNumber(e.target.value)}
                 style={inputStyle}

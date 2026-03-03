@@ -26,7 +26,7 @@ const DETAIL_DATA: Record<string, {
     region: 'Aegean Islands',
     vibe: 'Romance',
     quote: 'Sun-bleached walls tumble toward the caldera, each sunset more impossible than the last.',
-    flightStrikethrough: 542,
+    flightStrikethrough: 1050,
     flightRoute: 'JFK \u2192 JTR \u00b7 Round trip',
     flightDates: 'Jun 15 \u2013 Jun 22 \u00b7 Economy \u00b7 1 stop via ATH',
     hotels: [
@@ -50,16 +50,16 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 5\u20137', title: 'Hidden Gems & Departure', desc: 'Akrotiri archaeological site, catamaran cruise, farewell dinner at Ammoudi Bay.' },
     ],
     similar: [
-      { city: 'Mykonos', price: 412, image: 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Amalfi Coast', price: 523, image: 'https://images.pexels.com/photos/2440024/pexels-photo-2440024.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Dubrovnik', price: 389, image: 'https://images.pexels.com/photos/2044434/pexels-photo-2044434.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Mykonos', price: 560, image: 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Amalfi Coast', price: 750, image: 'https://images.pexels.com/photos/2440024/pexels-photo-2440024.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Dubrovnik', price: 680, image: 'https://images.pexels.com/photos/2044434/pexels-photo-2044434.jpeg?auto=compress&cs=tinysrgb&w=600' },
     ],
   },
   '1': {
     region: 'Lesser Sunda Islands',
     vibe: 'Wellness',
     quote: 'Emerald rice terraces, ancient temples, and sunsets that redefine the color orange.',
-    flightStrikethrough: 978,
+    flightStrikethrough: 890,
     flightRoute: 'JFK \u2192 DPS \u00b7 Round trip',
     flightDates: 'Jul 10 \u2013 Jul 20 \u00b7 Economy \u00b7 1 stop via SIN',
     hotels: [
@@ -83,16 +83,16 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 7\u201310', title: 'Island Hopping', desc: 'Day trip to Nusa Penida, Kelingking Beach, manta ray snorkeling.' },
     ],
     similar: [
-      { city: 'Maldives', price: 1089, image: 'https://images.pexels.com/photos/1287460/pexels-photo-1287460.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Kyoto', price: 823, image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Santorini', price: 387, image: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Maldives', price: 1100, image: 'https://images.pexels.com/photos/1287460/pexels-photo-1287460.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Kyoto', price: 980, image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Santorini', price: 820, image: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600' },
     ],
   },
   '9': {
     region: 'Kansai',
     vibe: 'Culture',
     quote: 'Where ancient tradition breathes through bamboo groves and vermilion torii gates.',
-    flightStrikethrough: 1050,
+    flightStrikethrough: 1250,
     flightRoute: 'JFK \u2192 KIX \u00b7 Round trip',
     flightDates: 'Apr 1 \u2013 Apr 10 \u00b7 Economy \u00b7 1 stop via NRT',
     hotels: [
@@ -116,16 +116,16 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 6\u20138', title: 'Day Trips', desc: 'Nara deer park, Osaka street food tour, sake tasting in Fushimi.' },
     ],
     similar: [
-      { city: 'Tokyo', price: 756, image: 'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Bali', price: 845, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Marrakech', price: 612, image: 'https://images.pexels.com/photos/3889843/pexels-photo-3889843.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Tokyo', price: 950, image: 'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Bali', price: 650, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Marrakech', price: 490, image: 'https://images.pexels.com/photos/3889843/pexels-photo-3889843.jpeg?auto=compress&cs=tinysrgb&w=600' },
     ],
   },
   '3': {
     region: 'Kanto',
     vibe: 'Adventure',
     quote: 'Neon-drenched streets, Michelin-starred ramen, and the pulse of 14 million dreamers.',
-    flightStrikethrough: 980,
+    flightStrikethrough: 1200,
     flightRoute: 'JFK \u2192 NRT \u00b7 Round trip',
     flightDates: 'May 5 \u2013 May 14 \u00b7 Economy \u00b7 Nonstop',
     hotels: [
@@ -149,9 +149,9 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 7\u20139', title: 'Day Trips', desc: 'Mt. Fuji viewing at Hakone, Kamakura Great Buddha, onsen experience.' },
     ],
     similar: [
-      { city: 'Kyoto', price: 823, image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Bali', price: 845, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Iceland', price: 534, image: 'https://images.pexels.com/photos/2113566/pexels-photo-2113566.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Kyoto', price: 980, image: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Bali', price: 650, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Reykjavik', price: 420, image: 'https://images.pexels.com/photos/2113566/pexels-photo-2113566.jpeg?auto=compress&cs=tinysrgb&w=600' },
     ],
   },
   '11': {
@@ -182,9 +182,9 @@ const DETAIL_DATA: Record<string, {
       { days: 'Day 6\u20138', title: 'Relaxation', desc: 'Spa treatments, private beach dinner, whale shark excursion.' },
     ],
     similar: [
-      { city: 'Bali', price: 845, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Santorini', price: 387, image: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600' },
-      { city: 'Amalfi Coast', price: 523, image: 'https://images.pexels.com/photos/2440024/pexels-photo-2440024.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Bali', price: 650, image: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Santorini', price: 820, image: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      { city: 'Amalfi Coast', price: 750, image: 'https://images.pexels.com/photos/2440024/pexels-photo-2440024.jpeg?auto=compress&cs=tinysrgb&w=600' },
     ],
   },
 };
@@ -295,7 +295,7 @@ export default function DestinationDetailScreen() {
   if (isLoading) {
     return (
       <div className="screen" style={{ background: colors.duskSand, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF60' }}>Loading...</span>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText }}>Loading...</span>
       </div>
     );
   }

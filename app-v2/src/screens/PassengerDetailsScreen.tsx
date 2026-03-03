@@ -166,6 +166,7 @@ export default function PassengerDetailsScreen() {
   const [passportNumber, setPassportNumber] = useState('');
   const [ffOpen, setFfOpen] = useState(false);
   const [ffNumber, setFfNumber] = useState('');
+  const [nameError, setNameError] = useState(false);
 
   return (
     <div
@@ -239,8 +240,8 @@ export default function PassengerDetailsScreen() {
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              style={inputStyle}
+              onChange={(e) => { setFirstName(e.target.value); setNameError(false); }}
+              style={{ ...inputStyle, ...(nameError && !firstName.trim() ? { borderColor: '#D4734A' } : {}) }}
             />
           </div>
 
@@ -250,8 +251,8 @@ export default function PassengerDetailsScreen() {
             <input
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              style={inputStyle}
+              onChange={(e) => { setLastName(e.target.value); setNameError(false); }}
+              style={{ ...inputStyle, ...(nameError && !lastName.trim() ? { borderColor: '#D4734A' } : {}) }}
             />
           </div>
 
@@ -429,10 +430,19 @@ export default function PassengerDetailsScreen() {
       </div>
 
       {/* CTA */}
-      <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
+      <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {nameError && (
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: '#D4734A', textAlign: 'center' }}>
+            Please enter first and last name
+          </span>
+        )}
         <button
           onClick={() => {
-            if (!firstName.trim() || !lastName.trim()) return;
+            if (!firstName.trim() || !lastName.trim()) {
+              setNameError(true);
+              setTimeout(() => setNameError(false), 3000);
+              return;
+            }
             const paxData = {
               id: 'pax-1',
               given_name: firstName.trim(),

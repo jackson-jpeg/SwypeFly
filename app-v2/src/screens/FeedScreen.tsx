@@ -74,8 +74,11 @@ function FeedCard({ destination }: { destination: Destination }) {
           style={glassButton}
           onClick={(e) => {
             e.stopPropagation();
+            const url = `${window.location.origin}/destination/${destination.id}`;
             if (navigator.share) {
-              navigator.share({ title: `${destination.city} — SoGoJet`, text: destination.tagline, url: `${window.location.origin}/destination/${destination.id}` }).catch(() => {});
+              navigator.share({ title: `${destination.city} — SoGoJet`, text: destination.tagline, url }).catch(() => {});
+            } else {
+              navigator.clipboard.writeText(url).catch(() => {});
             }
           }}
         >
@@ -188,10 +191,10 @@ function FeedCard({ destination }: { destination: Destination }) {
             fontWeight: 700,
             letterSpacing: '0.1em',
             lineHeight: '12px',
-            color: colors.confirmGreen,
+            color: destination.priceSource === 'estimate' ? '#FFFFFF60' : colors.confirmGreen,
           }}
         >
-          LIVE PRICE
+          {destination.priceSource === 'travelpayouts' || destination.priceSource === 'amadeus' || destination.priceSource === 'duffel' ? 'LIVE PRICE' : 'EST.'}
         </span>
       </div>
     </div>
@@ -249,24 +252,21 @@ export default function FeedScreen() {
         ))}
       </div>
 
-      {/* Scroll progress indicator */}
-      <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 3, zIndex: 20 }}>
-        {Array.from({ length: Math.min(destinations.length, 8) }).map((_, i) => {
-          const isActive = i === currentIndex % 8;
-          return (
-            <div
-              key={i}
-              style={{
-                width: 3,
-                height: isActive ? 16 : 6,
-                borderRadius: 2,
-                backgroundColor: isActive ? '#FFFFFF' : '#FFFFFF40',
-                transition: 'height 0.2s, background-color 0.2s',
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* Scroll progress bar */}
+      {destinations.length > 1 && (
+        <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 3, height: 80, borderRadius: 2, backgroundColor: '#FFFFFF20', zIndex: 20, overflow: 'hidden' }}>
+          <div
+            style={{
+              width: '100%',
+              height: `${Math.max(10, 100 / destinations.length)}%`,
+              borderRadius: 2,
+              backgroundColor: '#FFFFFF',
+              transform: `translateY(${(currentIndex / Math.max(1, destinations.length - 1)) * (80 - 80 * Math.max(10, 100 / destinations.length) / 100)}px)`,
+              transition: 'transform 0.2s',
+            }}
+          />
+        </div>
+      )}
 
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
         <BottomNav dark />
