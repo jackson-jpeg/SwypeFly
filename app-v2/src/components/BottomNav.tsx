@@ -38,7 +38,7 @@ function tabIcon(tab: Tab, active: boolean) {
   }
 }
 
-export default function BottomNav() {
+export default function BottomNav({ dark = false }: { dark?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -55,7 +55,9 @@ export default function BottomNav() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
-        background: `linear-gradient(to top, ${colors.duskSand} 60%, transparent 100%)`,
+        background: dark
+          ? 'linear-gradient(to top, #0A0F1E 60%, transparent 100%)'
+          : `linear-gradient(to top, ${colors.duskSand} 60%, transparent 100%)`,
         paddingBottom: 32,
         paddingTop: 12,
         paddingLeft: 40,
@@ -89,7 +91,7 @@ export default function BottomNav() {
                 fontSize: 10,
                 fontWeight: active ? 600 : 400,
                 lineHeight: '12px',
-                color: active ? colors.sageDrift : colors.borderTint,
+                color: active ? colors.sageDrift : dark ? '#FFFFFF80' : colors.borderTint,
               }}
             >
               {tab.label}

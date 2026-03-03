@@ -303,7 +303,7 @@ export default function FeedScreen() {
             ))
         )}
       </div>
-      <BottomNav />
+      <BottomNav dark />
     </div>
   );
 }

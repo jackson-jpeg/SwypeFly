@@ -364,7 +364,7 @@ export default function SeatSelectionScreen() {
                   color: colors.deepDusk,
                 }}
               >
-                Seat {selectedSeat.replace('-', '')} — {(() => { const col = selectedSeat.split('-')[1]; return col === 'A' || col === 'F' ? 'Window' : col === 'C' || col === 'D' ? 'Aisle' : 'Middle'; })()}
+                Seat {selectedSeat.replace('-', '')} — {(() => { const col = selectedSeat.split('-')[1]; return col === 'A' || col === 'F' ? 'Window' : col === 'C' || col === 'D' ? 'Aisle' : 'Middle'; })()} seat
               </span>
               <span
                 style={{
@@ -373,7 +373,7 @@ export default function SeatSelectionScreen() {
                   color: colors.borderTint,
                 }}
               >
-                Standard seat · No extra charge
+                {selectedSeat && getSeatState(parseInt(selectedSeat.split('-')[0]!), selectedSeat.split('-')[1]!) === 'extra' ? 'Extra legroom · +$25' : 'Standard seat · No extra charge'}
               </span>
             </div>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
