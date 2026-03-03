@@ -50,7 +50,8 @@ export default function BottomNav({ dark = false }: { dark?: boolean }) {
         : 'explore';
 
   return (
-    <div
+    <nav
+      aria-label="Main navigation"
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -72,6 +73,8 @@ export default function BottomNav({ dark = false }: { dark?: boolean }) {
         return (
           <button
             key={tab.key}
+            aria-label={tab.label}
+            aria-current={active ? 'page' : undefined}
             onClick={() => navigate(tab.path)}
             style={{
               display: 'flex',
@@ -99,6 +102,6 @@ export default function BottomNav({ dark = false }: { dark?: boolean }) {
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }

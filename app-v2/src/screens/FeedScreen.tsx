@@ -63,6 +63,7 @@ function FeedCard({ destination }: { destination: Destination }) {
       {/* Right side action buttons */}
       <div style={{ position: 'absolute', right: 16, bottom: 220, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
         <button
+          aria-label={saved ? 'Remove from saved' : 'Save destination'}
           style={glassButton}
           onClick={(e) => { e.stopPropagation(); toggle(destination.id); }}
         >
@@ -71,6 +72,7 @@ function FeedCard({ destination }: { destination: Destination }) {
           </svg>
         </button>
         <button
+          aria-label="Share destination"
           style={glassButton}
           onClick={(e) => {
             e.stopPropagation();
@@ -89,6 +91,7 @@ function FeedCard({ destination }: { destination: Destination }) {
           </svg>
         </button>
         <button
+          aria-label="View destination details"
           style={glassButton}
           onClick={(e) => { e.stopPropagation(); navigate(`/destination/${destination.id}`); }}
         >
@@ -204,7 +207,7 @@ function FeedCard({ destination }: { destination: Destination }) {
 export default function FeedScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useFeed();
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useFeed();
 
   const destinations = useMemo(
     () => data?.pages.flatMap((p) => p.destinations) ?? [],
@@ -231,6 +234,27 @@ export default function FeedScreen() {
     return (
       <div className="screen-fixed" style={{ background: '#0A0F1E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF60' }}>Loading destinations...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="screen-fixed" style={{ background: '#0A0F1E', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: '#FFFFFF90' }}>Could not load destinations</span>
+        <button
+          onClick={() => refetch()}
+          style={{
+            paddingBlock: 10,
+            paddingInline: 24,
+            borderRadius: 10,
+            backgroundColor: '#FFFFFF14',
+            border: '1px solid #FFFFFF1F',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFFB3' }}>Try Again</span>
+        </button>
       </div>
     );
   }
