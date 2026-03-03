@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
+import { useUIStore } from '@/stores/uiStore';
 import { getStubDestination } from '@/api/stubs';
 
 /* ───── shared booking header ───── */
@@ -122,6 +123,7 @@ const fieldLabel: React.CSSProperties = {
 export default function ReviewPaymentScreen() {
   const navigate = useNavigate();
   const booking = useBookingStore();
+  const { departureCode } = useUIStore();
   const dest = getStubDestination(booking.destinationId ?? '2');
   const total = booking.getTotal();
   const [promoCode, setPromoCode] = useState('');
@@ -204,7 +206,7 @@ export default function ReviewPaymentScreen() {
                 color: colors.deepDusk,
               }}
             >
-              JFK → {dest?.city ?? 'Santorini'}
+              {departureCode} → {dest?.city ?? 'Santorini'}
             </span>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.borderTint }}>
               Round trip
