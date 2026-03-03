@@ -18,6 +18,8 @@ const AIRPORTS = [
 
 export default function OnboardingScreen() {
   const navigate = useNavigate();
+  const { hasOnboarded } = useUIStore();
+  const canGoBack = hasOnboarded;
   const { setDeparture, setOnboarded } = useUIStore();
   const [selectedAirport, setSelectedAirport] = useState(AIRPORTS[0]!);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -36,9 +38,30 @@ export default function OnboardingScreen() {
         }}
       />
 
-      {/* Header: Logo + Progress */}
+      {/* Header: Back + Logo */}
       <div style={{ position: 'relative', zIndex: 10, padding: '56px 20px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          {canGoBack && <button
+            onClick={() => navigate(-1)}
+            style={{
+              position: 'absolute',
+              left: 0,
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#C9A99A20',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+          </button>}
           <span
             style={{
               fontFamily: `"${fonts.display}", system-ui, sans-serif`,
@@ -180,7 +203,7 @@ export default function OnboardingScreen() {
       {/* Continue button */}
       <div style={{ position: 'relative', zIndex: 10, padding: '0 20px 40px', marginTop: 'auto' }}>
         <button
-          onClick={() => { setDeparture(selectedAirport.city, selectedAirport.code); setOnboarded(); navigate('/'); }}
+          onClick={() => { setDeparture(selectedAirport.city, selectedAirport.code); setOnboarded(); canGoBack ? navigate(-1) : navigate('/'); }}
           style={{
             display: 'flex',
             alignItems: 'center',
