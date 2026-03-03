@@ -11,10 +11,15 @@ interface BookingState {
   selectedBaggage: string | null;
   hasInsurance: boolean;
   selectedMeal: string | null;
+  passengerCount: number;
+  promoCode: string | null;
+  promoDiscount: number;
 
   // Actions
   setDestination: (id: string) => void;
   setOffer: (offer: BookingOffer) => void;
+  setPassengerCount: (count: number) => void;
+  applyPromo: (code: string) => boolean;
   addPassenger: (p: Passenger) => void;
   updatePassenger: (index: number, p: Partial<Passenger>) => void;
   setSeat: (designator: string | null) => void;
@@ -29,7 +34,7 @@ interface BookingState {
 
 const INITIAL: Pick<
   BookingState,
-  'destinationId' | 'selectedOffer' | 'passengers' | 'selectedSeat' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal'
+  'destinationId' | 'selectedOffer' | 'passengers' | 'selectedSeat' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount'
 > = {
   destinationId: null,
   selectedOffer: null,
@@ -38,6 +43,9 @@ const INITIAL: Pick<
   selectedBaggage: null,
   hasInsurance: false,
   selectedMeal: null,
+  passengerCount: 1,
+  promoCode: null,
+  promoDiscount: 0,
 };
 
 export const useBookingStore = create<BookingState>()(
@@ -56,25 +64,43 @@ export const useBookingStore = create<BookingState>()(
       setBaggage: (id) => set({ selectedBaggage: id }),
       setInsurance: (has) => set({ hasInsurance: has }),
       setMeal: (id) => set({ selectedMeal: id }),
+      setPassengerCount: (count) => set({ passengerCount: count }),
+      applyPromo: (code) => {
+        const upper = code.trim().toUpperCase();
+        const VALID_CODES: Record<string, number> = { SOGOJET: 0.1, FLY20: 0.2, WELCOME: 0.15 };
+        const discount = VALID_CODES[upper];
+        if (discount) {
+          set({ promoCode: upper, promoDiscount: discount });
+          return true;
+        }
+        return false;
+      },
       reset: () => set(INITIAL),
 
       getTotal: () => {
         const s = get();
-        let total = s.selectedOffer?.totalAmount ?? 0;
+        let perPerson = s.selectedOffer?.totalAmount ?? 0;
 
         // Baggage
         if (s.selectedBaggage && s.selectedOffer) {
           const svc = s.selectedOffer.availableServices.find((sv) => sv.id === s.selectedBaggage);
-          if (svc) total += svc.amount;
+          if (svc) perPerson += svc.amount;
         }
 
         // Insurance
-        if (s.hasInsurance) total += 29;
+        if (s.hasInsurance) perPerson += 29;
 
         // Meal
         if (s.selectedMeal && s.selectedOffer) {
           const svc = s.selectedOffer.availableServices.find((sv) => sv.id === s.selectedMeal);
-          if (svc) total += svc.amount;
+          if (svc) perPerson += svc.amount;
+        }
+
+        let total = perPerson * s.passengerCount;
+
+        // Promo discount
+        if (s.promoDiscount > 0) {
+          total = Math.round(total * (1 - s.promoDiscount));
         }
 
         return total;
@@ -91,6 +117,9 @@ export const useBookingStore = create<BookingState>()(
         selectedBaggage: state.selectedBaggage,
         hasInsurance: state.hasInsurance,
         selectedMeal: state.selectedMeal,
+        passengerCount: state.passengerCount,
+        promoCode: state.promoCode,
+        promoDiscount: state.promoDiscount,
       }),
     },
   ),

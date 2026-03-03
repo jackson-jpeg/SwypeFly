@@ -4,116 +4,7 @@ import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useDestination } from '@/hooks/useDestination';
 import { useAuthContext } from '@/hooks/AuthContext';
-
-/* ───── shared booking header ───── */
-function BookingHeader({
-  step,
-  stepName,
-  bgImage,
-  onBack,
-  onClose,
-}: {
-  step: number;
-  stepName: string;
-  bgImage?: string;
-  onBack: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      {/* top row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingInline: 20,
-          paddingTop: 56,
-          paddingBottom: 8,
-        }}
-      >
-        <button onClick={onBack} style={{ padding: 4 }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <span
-          style={{
-            fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-            fontSize: 15,
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            color: colors.deepDusk,
-            letterSpacing: '0.04em',
-          }}
-        >
-          SoGoJet
-        </span>
-        <button onClick={onClose} style={{ padding: 4 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
-            <path d="M18 6L6 18" />
-            <path d="M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      {/* photo strip + step info overlay */}
-      <div style={{ position: 'relative', height: 60 }}>
-        {/* background photo strip */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url(${bgImage || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.15,
-          }}
-        />
-        {/* step text */}
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 4, paddingInline: 20, paddingTop: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={{
-                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                fontSize: 11,
-                fontWeight: 600,
-                color: colors.sageDrift,
-              }}
-            >
-              Step {step} of 6
-            </span>
-            <span
-              style={{
-                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                fontSize: 11,
-                fontWeight: 400,
-                color: colors.borderTint,
-              }}
-            >
-              {stepName}
-            </span>
-          </div>
-          {/* progress bar */}
-          <div style={{ display: 'flex', gap: 3 }}>
-            {[1, 2, 3, 4, 5, 6].map((s) => (
-              <div
-                key={s}
-                style={{
-                  flex: 1,
-                  height: 3,
-                  borderRadius: 2,
-                  backgroundColor: s <= step ? colors.sageDrift : colors.warmDusk,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import BookingHeader from '@/components/BookingHeader';
 
 /* ───── reusable styles ───── */
 const labelStyle: React.CSSProperties = {
@@ -179,7 +70,7 @@ export default function PassengerDetailsScreen() {
     >
       <BookingHeader
         step={2}
-        stepName="Passenger Details"
+        stepLabel="Passenger Details"
         bgImage={dest?.imageUrl}
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}

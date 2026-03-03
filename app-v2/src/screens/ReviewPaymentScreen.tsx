@@ -4,88 +4,7 @@ import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useDestination } from '@/hooks/useDestination';
-
-/* ───── shared booking header ───── */
-function BookingHeader({
-  step,
-  stepName,
-  bgImage,
-  onBack,
-  onClose,
-}: {
-  step: number;
-  stepName: string;
-  bgImage?: string;
-  onBack: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingInline: 20,
-          paddingTop: 56,
-          paddingBottom: 8,
-        }}
-      >
-        <button onClick={onBack} style={{ padding: 4 }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <span
-          style={{
-            fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-            fontSize: 15,
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            color: colors.deepDusk,
-            letterSpacing: '0.04em',
-          }}
-        >
-          SoGoJet
-        </span>
-        <button onClick={onClose} style={{ padding: 4 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
-            <path d="M18 6L6 18" />
-            <path d="M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div style={{ position: 'relative', height: 60 }}>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url(${bgImage || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.15,
-          }}
-        />
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 4, paddingInline: 20, paddingTop: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, fontWeight: 600, color: colors.sageDrift }}>
-              Step {step} of 6
-            </span>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.borderTint }}>
-              {stepName}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 3 }}>
-            {[1, 2, 3, 4, 5, 6].map((s) => (
-              <div key={s} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: s <= step ? colors.sageDrift : colors.warmDusk }} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import BookingHeader from '@/components/BookingHeader';
 
 /* ───── section label ───── */
 const sectionLabel: React.CSSProperties = {
@@ -126,8 +45,9 @@ export default function ReviewPaymentScreen() {
   const { departureCode } = useUIStore();
   const { data: dest } = useDestination(booking.destinationId ?? undefined);
   const total = booking.getTotal();
-  const [promoCode, setPromoCode] = useState('');
+  const [promoInput, setPromoInput] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState(booking.promoCode ?? '');
   const [paying, setPaying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
   const [cardNumber, setCardNumber] = useState('');
@@ -146,7 +66,7 @@ export default function ReviewPaymentScreen() {
   const mealPrice = mealSvc?.amount ?? ({ 'meal-pasta': 12, 'meal-salad': 10, 'meal-asian': 14 }[booking.selectedMeal ?? ''] ?? 12);
 
   const lineItems = [
-    { label: `Flight (${booking.selectedOffer?.cabinClass ?? 'Economy'}, 1 adult)`, price: `$${booking.selectedOffer?.totalAmount ?? 387}`, color: colors.bodyText },
+    { label: `Flight (${booking.selectedOffer?.cabinClass ?? 'Economy'}, ${booking.passengerCount} ${booking.passengerCount > 1 ? 'adults' : 'adult'})`, price: `$${(booking.selectedOffer?.totalAmount ?? 387) * booking.passengerCount}`, color: colors.bodyText },
     { label: `Seat ${booking.selectedSeat ?? 'None'}`, price: booking.selectedSeat ? 'Free' : '—', color: booking.selectedSeat ? colors.confirmGreen : colors.bodyText },
     ...(booking.selectedBaggage ? [{ label: bagLabel, price: `$${bagPrice}`, color: colors.bodyText }] : []),
     ...(booking.hasInsurance ? [{ label: 'Trip Protection', price: '$29', color: colors.bodyText }] : []),
@@ -164,7 +84,7 @@ export default function ReviewPaymentScreen() {
     >
       <BookingHeader
         step={5}
-        stepName="Review & Payment"
+        stepLabel="Review & Payment"
         bgImage={dest?.imageUrl}
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}
@@ -242,34 +162,49 @@ export default function ReviewPaymentScreen() {
         </div>
 
         {/* promo code */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input
-            type="text"
-            placeholder="Promo code"
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value)}
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <button
-            onClick={() => {
-              if (!promoCode.trim()) return;
-              setPromoError('Invalid promo code');
-              setTimeout(() => setPromoError(''), 3000);
-            }}
-            style={{
-              height: 44,
-              paddingInline: 20,
-              borderRadius: 10,
-              backgroundColor: '#C9A99A20',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 500, color: colors.mutedText }}>
-              Apply
+        {promoSuccess ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', backgroundColor: '#A8C4B820', border: '1px solid #A8C4B860', borderRadius: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.confirmGreen }}>
+              {promoSuccess} — {Math.round(booking.promoDiscount * 100)}% off applied
             </span>
-          </button>
-        </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input
+              type="text"
+              placeholder="Promo code"
+              value={promoInput}
+              onChange={(e) => { setPromoInput(e.target.value); setPromoError(''); }}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+            <button
+              onClick={() => {
+                if (!promoInput.trim()) return;
+                const ok = booking.applyPromo(promoInput);
+                if (ok) {
+                  setPromoSuccess(promoInput.trim().toUpperCase());
+                  setPromoError('');
+                } else {
+                  setPromoError('Invalid promo code');
+                  setTimeout(() => setPromoError(''), 3000);
+                }
+              }}
+              style={{
+                height: 44,
+                paddingInline: 20,
+                borderRadius: 10,
+                backgroundColor: '#C9A99A20',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 500, color: colors.mutedText }}>
+                Apply
+              </span>
+            </button>
+          </div>
+        )}
         {promoError && (
           <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.terracotta }}>
             {promoError}
