@@ -7,6 +7,9 @@ interface UIState {
   departureCity: string;
   departureCode: string;
   currency: string;
+  tempUnit: '°F' | '°C';
+  notifications: boolean;
+  priceAlerts: boolean;
   vibePrefs: string[];
   isGuest: boolean;
   hasOnboarded: boolean;
@@ -16,6 +19,9 @@ interface UIState {
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
   setDeparture: (city: string, code: string) => void;
   setCurrency: (currency: string) => void;
+  setTempUnit: (unit: '°F' | '°C') => void;
+  toggleNotifications: () => void;
+  togglePriceAlerts: () => void;
   setGuest: (isGuest: boolean) => void;
 }
 
@@ -27,6 +33,9 @@ export const useUIStore = create<UIState>()(
       departureCity: 'New York',
       departureCode: 'JFK',
       currency: 'USD',
+      tempUnit: '°F',
+      notifications: true,
+      priceAlerts: false,
       vibePrefs: [],
       isGuest: false,
       hasOnboarded: false,
@@ -36,6 +45,9 @@ export const useUIStore = create<UIState>()(
       setTheme: (theme) => set({ theme }),
       setDeparture: (city, code) => set({ departureCity: city, departureCode: code }),
       setCurrency: (currency) => set({ currency }),
+      setTempUnit: (unit) => set({ tempUnit: unit }),
+      toggleNotifications: () => set((s) => ({ notifications: !s.notifications })),
+      togglePriceAlerts: () => set((s) => ({ priceAlerts: !s.priceAlerts })),
       setGuest: (isGuest) => set({ isGuest }),
     }),
     {
@@ -47,6 +59,9 @@ export const useUIStore = create<UIState>()(
         departureCity: s.departureCity,
         departureCode: s.departureCode,
         currency: s.currency,
+        tempUnit: s.tempUnit,
+        notifications: s.notifications,
+        priceAlerts: s.priceAlerts,
         vibePrefs: s.vibePrefs,
         isGuest: s.isGuest,
         hasOnboarded: s.hasOnboarded,

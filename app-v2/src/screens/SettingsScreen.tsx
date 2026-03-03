@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
@@ -91,9 +90,7 @@ export default function SettingsScreen() {
     .join('')
     .toUpperCase()
     .slice(0, 2) || 'G';
-  const { hapticsEnabled, toggleHaptics, departureCity, departureCode, currency } = useUIStore();
-  const [notifications, setNotifications] = useState(true);
-  const [priceAlerts, setPriceAlerts] = useState(false);
+  const { hapticsEnabled, toggleHaptics, departureCity, departureCode, currency, setCurrency, tempUnit, setTempUnit, notifications, toggleNotifications, priceAlerts, togglePriceAlerts } = useUIStore();
 
   return (
     <div
@@ -189,7 +186,7 @@ export default function SettingsScreen() {
               </div>
             </button>
             {/* Currency */}
-            <div style={rowStyle}>
+            <button onClick={() => setCurrency(currency === 'USD' ? 'EUR' : currency === 'EUR' ? 'GBP' : 'USD')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5E7EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
@@ -198,17 +195,17 @@ export default function SettingsScreen() {
                 <span style={rowTitleStyle}>Currency</span>
               </div>
               <span style={rowValueStyle}>{currency}</span>
-            </div>
+            </button>
             {/* Temperature */}
-            <div style={rowStyle}>
+            <button onClick={() => setTempUnit(tempUnit === '°F' ? '°C' : '°F')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5E7EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
                 </svg>
                 <span style={rowTitleStyle}>Temperature</span>
               </div>
-              <span style={rowValueStyle}>°F</span>
-            </div>
+              <span style={rowValueStyle}>{tempUnit}</span>
+            </button>
           </div>
         </div>
 
@@ -222,11 +219,11 @@ export default function SettingsScreen() {
             </div>
             <div style={rowStyle}>
               <span style={rowTitleStyle}>Push Notifications</span>
-              <Toggle on={notifications} onToggle={() => setNotifications((v) => !v)} />
+              <Toggle on={notifications} onToggle={toggleNotifications} />
             </div>
             <div style={rowStyle}>
               <span style={rowTitleStyle}>Price Alerts</span>
-              <Toggle on={priceAlerts} onToggle={() => setPriceAlerts((v) => !v)} />
+              <Toggle on={priceAlerts} onToggle={togglePriceAlerts} />
             </div>
           </div>
         </div>
