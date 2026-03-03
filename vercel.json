@@ -1,10 +1,11 @@
 {
-  "buildCommand": "npx expo export --platform web",
-  "outputDirectory": "dist",
+  "buildCommand": "cd app-v2 && npm install && npx vite build",
+  "outputDirectory": "app-v2/dist",
   "framework": null,
+  "installCommand": "echo 'install handled in buildCommand'",
   "headers": [
     {
-      "source": "/_expo/static/js/(.*).map",
+      "source": "/assets/(.*).map",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex" }
       ]

@@ -1,0 +1,380 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { colors, fonts } from '@/tokens';
+
+/* ───── shared booking header ───── */
+function BookingHeader({
+  step,
+  stepName,
+  onBack,
+  onClose,
+}: {
+  step: number;
+  stepName: string;
+  onBack: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingInline: 20,
+          paddingTop: 56,
+          paddingBottom: 8,
+        }}
+      >
+        <button onClick={onBack} style={{ padding: 4 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span
+          style={{
+            fontFamily: `"${fonts.display}", system-ui, sans-serif`,
+            fontSize: 15,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            color: colors.deepDusk,
+            letterSpacing: '0.04em',
+          }}
+        >
+          SoGoJet
+        </span>
+        <button onClick={onClose} style={{ padding: 4 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6L6 18" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div style={{ position: 'relative', height: 60 }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url(https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&q=60)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.15,
+          }}
+        />
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 4, paddingInline: 20, paddingTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, fontWeight: 600, color: colors.sageDrift }}>
+              Step {step} of 6
+            </span>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.borderTint }}>
+              {stepName}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 3 }}>
+            {[1, 2, 3, 4, 5, 6].map((s) => (
+              <div key={s} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: s <= step ? colors.sageDrift : colors.warmDusk }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───── section label ───── */
+const sectionLabel: React.CSSProperties = {
+  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+  fontSize: 10,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.12em',
+  color: colors.sageDrift,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: 44,
+  backgroundColor: colors.offWhite,
+  border: '1px solid #C9A99A60',
+  borderRadius: 10,
+  paddingInline: 14,
+  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+  fontSize: 15,
+  color: colors.deepDusk,
+  outline: 'none',
+};
+
+const fieldLabel: React.CSSProperties = {
+  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+  fontSize: 11,
+  fontWeight: 500,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  color: colors.borderTint,
+};
+
+/* ───── screen ───── */
+export default function ReviewPaymentScreen() {
+  const navigate = useNavigate();
+  const [promoCode, setPromoCode] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
+  const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
+  const [expiry, setExpiry] = useState('');
+  const [cvc, setCvc] = useState('');
+
+  const lineItems = [
+    { label: 'Flight (Economy, 1 adult)', price: '$387', color: colors.bodyText },
+    { label: 'Seat 14C (Window)', price: 'Free', color: colors.confirmGreen },
+    { label: '1 checked bag (23 kg)', price: '$35', color: colors.bodyText },
+    { label: 'Trip Protection', price: '$29', color: colors.bodyText },
+    { label: 'In-flight meal (Pasta)', price: '$12', color: colors.bodyText },
+  ];
+
+  return (
+    <div
+      className="screen"
+      style={{
+        background: colors.duskSand,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <BookingHeader
+        step={5}
+        stepName="Review & Payment"
+        onBack={() => navigate(-1)}
+        onClose={() => navigate('/')}
+      />
+
+      {/* scrollable content */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          paddingInline: 20,
+          paddingTop: 16,
+          paddingBottom: 24,
+        }}
+      >
+        {/* order summary */}
+        <span style={sectionLabel}>Order Summary</span>
+        <div
+          style={{
+            backgroundColor: colors.offWhite,
+            border: '1px solid #C9A99A20',
+            borderRadius: 16,
+            padding: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          {/* route header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span
+              style={{
+                fontFamily: `"${fonts.display}", system-ui, sans-serif`,
+                fontSize: 18,
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                color: colors.deepDusk,
+              }}
+            >
+              JFK → Santorini
+            </span>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.borderTint }}>
+              Round trip
+            </span>
+          </div>
+
+          <div style={{ height: 1, backgroundColor: '#C9A99A40' }} />
+
+          {/* line items */}
+          {lineItems.map((item, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.bodyText }}>
+                {item.label}
+              </span>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 500, color: item.color }}>
+                {item.price}
+              </span>
+            </div>
+          ))}
+
+          <div style={{ height: 1, backgroundColor: '#C9A99A40' }} />
+
+          {/* total */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 700, color: colors.deepDusk }}>
+              Total
+            </span>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 20, fontWeight: 800, color: colors.deepDusk }}>
+              $463
+            </span>
+          </div>
+        </div>
+
+        {/* promo code */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input
+            type="text"
+            placeholder="Promo code"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value)}
+            style={{ ...inputStyle, flex: 1 }}
+          />
+          <button
+            style={{
+              height: 44,
+              paddingInline: 20,
+              borderRadius: 10,
+              backgroundColor: '#C9A99A20',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 500, color: colors.mutedText }}>
+              Apply
+            </span>
+          </button>
+        </div>
+
+        {/* payment method */}
+        <span style={sectionLabel}>Payment Method</span>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {[
+            { key: 'card' as const, label: 'Card', icon: (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={paymentMethod === 'card' ? colors.terracotta : colors.mutedText} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <path d="M2 10h20" />
+              </svg>
+            )},
+            { key: 'apple' as const, label: 'Apple Pay', icon: null },
+            { key: 'google' as const, label: 'Google', icon: null },
+          ].map((method) => {
+            const isSelected = paymentMethod === method.key;
+            return (
+              <button
+                key={method.key}
+                onClick={() => setPaymentMethod(method.key)}
+                style={{
+                  flex: 1,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: isSelected ? '#A8C4B830' : colors.offWhite,
+                  border: isSelected ? `2px solid ${colors.sageDrift}` : '1px solid #C9A99A40',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                {method.icon}
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: isSelected ? 600 : 400, color: isSelected ? colors.deepDusk : colors.mutedText }}>
+                  {method.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* card form */}
+        <div
+          style={{
+            backgroundColor: colors.offWhite,
+            border: '1px solid #C9A99A20',
+            borderRadius: 16,
+            padding: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={fieldLabel}>Card Number</span>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={cardNumber}
+                onChange={(e) => setCardNumber(e.target.value)}
+                style={inputStyle}
+              />
+              {/* Mastercard icon */}
+              <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+                <svg width="28" height="18" viewBox="0 0 28 18">
+                  <circle cx="10" cy="9" r="8" fill="#EB001B" opacity="0.8" />
+                  <circle cx="18" cy="9" r="8" fill="#F79E1B" opacity="0.8" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={fieldLabel}>Expiry</span>
+              <input
+                type="text"
+                placeholder="MM/YY"
+                value={expiry}
+                onChange={(e) => setExpiry(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={fieldLabel}>CVC</span>
+              <input
+                type="text"
+                placeholder="•••"
+                value={cvc}
+                onChange={(e) => setCvc(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* security note */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBlock: 4 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.confirmGreen }}>
+            Secured with 256-bit SSL encryption
+          </span>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
+        <button
+          onClick={() => navigate('/booking/confirmation')}
+          style={{
+            width: '100%',
+            height: 52,
+            borderRadius: 14,
+            backgroundColor: colors.deepDusk,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 16,
+              fontWeight: 600,
+              color: colors.paleHorizon,
+            }}
+          >
+            Pay $463
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
