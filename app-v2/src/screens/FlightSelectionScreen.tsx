@@ -384,37 +384,6 @@ export default function FlightSelectionScreen() {
           </div>
         ))}
 
-        {/* Choose different dates */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            paddingTop: 4,
-            paddingBottom: 4,
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span
-            style={{
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 13,
-              lineHeight: '16px',
-              color: colors.mutedText,
-            }}
-          >
-            Choose different dates
-          </span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </div>
       </div>
 
       {/* ─── Cabin Class ──────────────────────────────────────── */}
