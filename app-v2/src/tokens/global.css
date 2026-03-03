@@ -15,7 +15,7 @@ body {
   font-size: 16px;
   line-height: 24px;
   color: #5C4033;
-  background-color: #F5ECD7;
+  background-color: #1A1A2E;
   min-height: 100dvh;
   overflow-x: hidden;
 }
@@ -23,7 +23,8 @@ body {
 #root {
   min-height: 100dvh;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 a {
@@ -53,22 +54,83 @@ img {
   display: none;
 }
 
-/* Mobile viewport wrapper */
-.screen {
-  width: 100%;
-  max-width: 375px;
-  min-height: 100dvh;
-  margin: 0 auto;
-  position: relative;
-  overflow: hidden;
+/* ─── Mobile: full-width, no frame ─── */
+@media (max-width: 430px) {
+  body {
+    background-color: #F5ECD7;
+  }
+
+  #root {
+    align-items: stretch;
+  }
+
+  .screen,
+  .screen-fixed {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .screen {
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .screen-fixed {
+    height: 100dvh;
+  }
 }
 
-/* Fixed-height screen for feed/booking (uses internal scroll) */
-.screen-fixed {
-  width: 100%;
-  max-width: 375px;
-  height: 100dvh;
-  margin: 0 auto;
-  position: relative;
-  overflow: hidden;
+/* ─── Desktop / tablet: phone frame mockup ─── */
+@media (min-width: 431px) {
+  body {
+    background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+  }
+
+  #root {
+    min-height: 100dvh;
+    padding: 24px;
+  }
+
+  .screen,
+  .screen-fixed {
+    width: 390px;
+    max-width: 390px;
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 0 0 8px #2C2C3A,
+      0 0 0 10px #3A3A4A,
+      0 25px 60px rgba(0, 0, 0, 0.5),
+      0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  .screen {
+    min-height: min(100dvh - 48px, 844px);
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+  }
+
+  .screen-fixed {
+    height: min(100dvh - 48px, 844px);
+  }
+
+  /* Notch / dynamic island indicator */
+  .screen::before,
+  .screen-fixed::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 32px;
+    background: #1A1A2E;
+    border-radius: 20px;
+    z-index: 9999;
+    pointer-events: none;
+  }
 }
