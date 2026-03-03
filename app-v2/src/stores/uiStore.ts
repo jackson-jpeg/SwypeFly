@@ -7,8 +7,10 @@ interface UIState {
   departureCity: string;
   departureCode: string;
   currency: string;
+  vibePrefs: string[];
   isGuest: boolean;
   hasOnboarded: boolean;
+  setVibePrefs: (vibes: string[]) => void;
   setOnboarded: () => void;
   toggleHaptics: () => void;
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
@@ -25,8 +27,10 @@ export const useUIStore = create<UIState>()(
       departureCity: 'New York',
       departureCode: 'JFK',
       currency: 'USD',
+      vibePrefs: [],
       isGuest: false,
       hasOnboarded: false,
+      setVibePrefs: (vibes) => set({ vibePrefs: vibes }),
       setOnboarded: () => set({ hasOnboarded: true }),
       toggleHaptics: () => set((s) => ({ hapticsEnabled: !s.hapticsEnabled })),
       setTheme: (theme) => set({ theme }),
@@ -43,6 +47,7 @@ export const useUIStore = create<UIState>()(
         departureCity: s.departureCity,
         departureCode: s.departureCode,
         currency: s.currency,
+        vibePrefs: s.vibePrefs,
         isGuest: s.isGuest,
         hasOnboarded: s.hasOnboarded,
       }),

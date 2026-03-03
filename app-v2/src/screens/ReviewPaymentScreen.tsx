@@ -125,6 +125,7 @@ export default function ReviewPaymentScreen() {
   const dest = getStubDestination(booking.destinationId ?? '2');
   const total = booking.getTotal();
   const [promoCode, setPromoCode] = useState('');
+  const [promoError, setPromoError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
   const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
   const [expiry, setExpiry] = useState('');
@@ -247,6 +248,11 @@ export default function ReviewPaymentScreen() {
             style={{ ...inputStyle, flex: 1 }}
           />
           <button
+            onClick={() => {
+              if (!promoCode.trim()) return;
+              setPromoError('Invalid promo code');
+              setTimeout(() => setPromoError(''), 3000);
+            }}
             style={{
               height: 44,
               paddingInline: 20,
@@ -261,6 +267,11 @@ export default function ReviewPaymentScreen() {
             </span>
           </button>
         </div>
+        {promoError && (
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.terracotta }}>
+            {promoError}
+          </span>
+        )}
 
         {/* payment method */}
         <span style={sectionLabel}>Payment Method</span>

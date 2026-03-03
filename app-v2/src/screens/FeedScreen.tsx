@@ -250,7 +250,7 @@ export default function FeedScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleSwipe = useCallback((_dir: 'left' | 'right') => {
-    setCurrentIndex((prev) => Math.min(prev + 1, STUB_DESTINATIONS.length - 1));
+    setCurrentIndex((prev) => Math.min(prev + 1, STUB_DESTINATIONS.length));
   }, []);
 
   const handleTap = useCallback(() => {
@@ -258,21 +258,50 @@ export default function FeedScreen() {
     if (dest) navigate(`/destination/${dest.id}`);
   }, [navigate, currentIndex]);
 
+  const atEnd = currentIndex >= STUB_DESTINATIONS.length;
+
   return (
     <div className="screen" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1, position: 'relative' }}>
-        {STUB_DESTINATIONS.slice(currentIndex, currentIndex + 2)
-          .reverse()
-          .map((dest, i, arr) => (
-            <FeedCard
-              key={dest.id}
-              destination={dest}
-              onSwipe={handleSwipe}
-              onTap={handleTap}
-              index={currentIndex + (arr.length - 1 - i)}
-              total={STUB_DESTINATIONS.length}
-            />
-          ))}
+        {atEnd ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: 32 }}>
+            <span style={{ fontFamily: `"${fonts.display}", system-ui, sans-serif`, fontSize: 24, fontWeight: 800, textTransform: 'uppercase', color: '#FFFFFF', textAlign: 'center' }}>
+              You've seen them all!
+            </span>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF80', textAlign: 'center' }}>
+              {STUB_DESTINATIONS.length} destinations explored
+            </span>
+            <button
+              onClick={() => setCurrentIndex(0)}
+              style={{
+                marginTop: 8,
+                height: 44,
+                paddingInline: 24,
+                borderRadius: 12,
+                backgroundColor: colors.sageDrift,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
+                Start Over
+              </span>
+            </button>
+          </div>
+        ) : (
+          STUB_DESTINATIONS.slice(currentIndex, currentIndex + 2)
+            .reverse()
+            .map((dest, i, arr) => (
+              <FeedCard
+                key={dest.id}
+                destination={dest}
+                onSwipe={handleSwipe}
+                onTap={handleTap}
+                index={currentIndex + (arr.length - 1 - i)}
+                total={STUB_DESTINATIONS.length}
+              />
+            ))
+        )}
       </div>
       <BottomNav />
     </div>

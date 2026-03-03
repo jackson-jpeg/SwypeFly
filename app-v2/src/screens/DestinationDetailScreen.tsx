@@ -488,7 +488,7 @@ export default function DestinationDetailScreen() {
                   color: colors.borderTint,
                 }}
               >
-                {dest.flightRoute}
+                {dest.flightRoute.replace('JFK', departureCode)}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

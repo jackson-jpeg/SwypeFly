@@ -21,8 +21,6 @@ export default function OnboardingScreen() {
   const { setDeparture, setOnboarded } = useUIStore();
   const [selectedAirport, setSelectedAirport] = useState(AIRPORTS[0]!);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const currentStep = 1;
-  const totalSteps = 3;
 
   return (
     <div className="screen" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
@@ -54,19 +52,9 @@ export default function OnboardingScreen() {
             SoGoJet
           </span>
         </div>
-        {/* Progress bar */}
-        <div style={{ display: 'flex', gap: 3, paddingTop: 12 }}>
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: 3,
-                borderRadius: 2,
-                backgroundColor: i < currentStep ? colors.sageDrift : colors.warmDusk,
-              }}
-            />
-          ))}
+        {/* Progress bar — single step, fully filled */}
+        <div style={{ paddingTop: 12 }}>
+          <div style={{ height: 3, borderRadius: 2, backgroundColor: colors.sageDrift }} />
         </div>
       </div>
 

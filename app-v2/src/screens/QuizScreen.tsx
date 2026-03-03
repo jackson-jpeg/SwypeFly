@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { useUIStore } from '@/stores/uiStore';
 
 const TRIP_OPTIONS = [
   { id: 'adventure', label: 'Adventure', subtitle: 'Hiking, diving, thrills', gradient: 'linear-gradient(135deg, #37654E 0%, #5BAF73 100%)' },
@@ -9,11 +10,9 @@ const TRIP_OPTIONS = [
   { id: 'relaxation', label: 'Relaxation', subtitle: 'Spa, pool, slow days', gradient: 'linear-gradient(135deg, #2E4A6E 0%, #5A83AD 100%)' },
 ];
 
-const TOTAL_STEPS = 4;
-const CURRENT_STEP = 2;
-
 export default function QuizScreen() {
   const navigate = useNavigate();
+  const setVibePrefs = useUIStore((s) => s.setVibePrefs);
   const [selected, setSelected] = useState<Set<string>>(new Set(['adventure']));
 
   const toggleOption = (id: string) => {
@@ -26,6 +25,11 @@ export default function QuizScreen() {
       }
       return next;
     });
+  };
+
+  const handleContinue = () => {
+    setVibePrefs(Array.from(selected));
+    navigate('/');
   };
 
   return (
@@ -50,32 +54,10 @@ export default function QuizScreen() {
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-          <span
-            style={{
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 11,
-              lineHeight: '14px',
-              color: colors.borderTint,
-            }}
-          >
-            {CURRENT_STEP} of {TOTAL_STEPS}
-          </span>
         </div>
 
-        {/* Progress bar */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                backgroundColor: i < CURRENT_STEP ? colors.sageDrift : colors.warmDusk,
-                borderRadius: 2,
-                height: 3,
-                flex: 1,
-              }}
-            />
-          ))}
-        </div>
+        {/* Progress bar — single step, fully filled */}
+        <div style={{ height: 3, borderRadius: 2, backgroundColor: colors.sageDrift }} />
 
         {/* Question title */}
         <h2
@@ -169,7 +151,7 @@ export default function QuizScreen() {
       {/* Continue button */}
       <div style={{ padding: '16px 24px' }}>
         <button
-          onClick={() => navigate('/')}
+          onClick={handleContinue}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -191,7 +173,7 @@ export default function QuizScreen() {
               color: colors.paleHorizon,
             }}
           >
-            Next Question
+            Continue
           </span>
         </button>
       </div>

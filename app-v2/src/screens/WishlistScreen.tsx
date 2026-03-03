@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useSavedStore } from '@/stores/savedStore';
@@ -12,21 +13,35 @@ function HeartFilled({ size = 16 }: { size?: number }) {
   );
 }
 
+type SortMode = 'all' | 'price' | 'recent';
+
 export default function WishlistScreen() {
   const navigate = useNavigate();
   const { savedIds, toggle } = useSavedStore();
-  const WISHLIST_DATA = savedIds
-    .map((id) => STUB_DESTINATIONS.find((d) => d.id === id))
-    .filter(Boolean)
-    .map((d) => ({
-      id: d!.id,
-      city: d!.city,
-      country: d!.country,
-      vibe: d!.vibeTags[0] ?? 'Travel',
-      price: d!.flightPrice,
-      image: d!.imageUrl,
-      priceDrop: d!.previousPrice ? d!.previousPrice - d!.flightPrice : undefined,
-    }));
+  const [sort, setSort] = useState<SortMode>('all');
+
+  const allData = savedIds
+    .map((id, idx) => {
+      const d = STUB_DESTINATIONS.find((dest) => dest.id === id);
+      return d ? { ...d, savedOrder: idx } : null;
+    })
+    .filter(Boolean) as (typeof STUB_DESTINATIONS[number] & { savedOrder: number })[];
+
+  const sorted = sort === 'price'
+    ? [...allData].sort((a, b) => a.flightPrice - b.flightPrice)
+    : sort === 'recent'
+      ? [...allData].reverse()
+      : allData;
+
+  const WISHLIST_DATA = sorted.map((d) => ({
+    id: d.id,
+    city: d.city,
+    country: d.country,
+    vibe: d.vibeTags[0] ?? 'Travel',
+    price: d.flightPrice,
+    image: d.imageUrl,
+    priceDrop: d.previousPrice ? d.previousPrice - d.flightPrice : undefined,
+  }));
 
   return (
     <div
@@ -96,53 +111,30 @@ export default function WishlistScreen() {
 
         {/* Filter chips */}
         <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 32,
-              paddingInline: 14,
-              backgroundColor: colors.deepDusk,
-              borderRadius: 16,
-            }}
-          >
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, fontWeight: 600, lineHeight: '16px', color: colors.paleHorizon }}>
-              All
-            </span>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 32,
-              paddingInline: 14,
-              backgroundColor: '#F2CEBC40',
-              border: '1px solid #C9A99A40',
-              borderRadius: 16,
-            }}
-          >
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.bodyText }}>
-              Price low
-            </span>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 32,
-              paddingInline: 14,
-              backgroundColor: '#F2CEBC40',
-              border: '1px solid #C9A99A40',
-              borderRadius: 16,
-            }}
-          >
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.bodyText }}>
-              Recently added
-            </span>
-          </div>
+          {([['all', 'All'], ['price', 'Price low'], ['recent', 'Recently added']] as const).map(([key, label]) => {
+            const active = sort === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setSort(key)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 32,
+                  paddingInline: 14,
+                  backgroundColor: active ? colors.deepDusk : '#F2CEBC40',
+                  border: active ? 'none' : '1px solid #C9A99A40',
+                  borderRadius: 16,
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, fontWeight: active ? 600 : 400, lineHeight: '16px', color: active ? colors.paleHorizon : colors.bodyText }}>
+                  {label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
