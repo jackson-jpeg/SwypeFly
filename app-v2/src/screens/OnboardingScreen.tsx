@@ -23,7 +23,7 @@ export default function OnboardingScreen() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <div className="screen" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
+    <div className="screen-fixed" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
       {/* Background photo — 10% opacity */}
       <div
         style={{

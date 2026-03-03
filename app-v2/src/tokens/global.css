@@ -62,3 +62,13 @@ img {
   position: relative;
   overflow: hidden;
 }
+
+/* Fixed-height screen for feed/booking (uses internal scroll) */
+.screen-fixed {
+  width: 100%;
+  max-width: 375px;
+  height: 100dvh;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}

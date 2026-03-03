@@ -29,7 +29,7 @@ function FeedCard({ destination }: { destination: Destination }) {
   return (
     <div
       style={{
-        height: '100%',
+        height: '100dvh',
         width: '100%',
         position: 'relative',
         flexShrink: 0,
@@ -229,14 +229,14 @@ export default function FeedScreen() {
 
   if (isLoading) {
     return (
-      <div className="screen" style={{ background: '#0A0F1E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="screen-fixed" style={{ background: '#0A0F1E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF60' }}>Loading destinations...</span>
       </div>
     );
   }
 
   return (
-    <div className="screen" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Vertical scroll container */}
       <div
         ref={scrollRef}

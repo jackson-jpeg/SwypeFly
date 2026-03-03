@@ -32,7 +32,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="screen" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
+    <div className="screen-fixed" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
       {/* Background destination photo — 15% opacity */}
       <div
         style={{

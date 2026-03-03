@@ -61,7 +61,7 @@ export default function PassengerDetailsScreen() {
 
   return (
     <div
-      className="screen"
+      className="screen-fixed"
       style={{
         background: colors.duskSand,
         display: 'flex',

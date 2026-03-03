@@ -34,7 +34,7 @@ export default function QuizScreen() {
 
   return (
     <div
-      className="screen"
+      className="screen-fixed"
       style={{
         background: colors.duskSand,
         display: 'flex',
