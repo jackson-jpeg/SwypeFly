@@ -29,7 +29,8 @@ function FeedCard({ destination }: { destination: Destination }) {
   return (
     <div
       style={{
-        height: '100dvh',
+        height: '100%',
+        minHeight: '100%',
         width: '100%',
         position: 'relative',
         flexShrink: 0,
