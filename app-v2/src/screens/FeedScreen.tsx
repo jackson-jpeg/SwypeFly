@@ -1,86 +1,41 @@
-import { useState, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useMotionValue, useTransform, animate, type PanInfo } from 'framer-motion';
-import { colors, fonts, motion as motionTokens } from '@/tokens';
+import { colors, fonts } from '@/tokens';
 import { STUB_DESTINATIONS } from '@/api/stubs';
 import { useSavedStore } from '@/stores/savedStore';
 import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
 
-function FeedCard({
-  destination,
-  onSwipe,
-  onTap,
-  index,
-  total,
-}: {
-  destination: Destination;
-  onSwipe: (dir: 'left' | 'right') => void;
-  onTap: () => void;
-  index: number;
-  total: number;
-}) {
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-300, 0, 300], [-15, 0, 15]);
-  const opacity = useTransform(x, [-300, -100, 0, 100, 300], [0.5, 1, 1, 1, 0.5]);
+function FeedCard({ destination }: { destination: Destination }) {
+  const navigate = useNavigate();
   const { isSaved, toggle } = useSavedStore();
   const saved = isSaved(destination.id);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    const { velocity, offset } = info;
-    if (Math.abs(velocity.x) > motionTokens.cardSwipe.velocityThreshold || Math.abs(offset.x) > motionTokens.cardSwipe.triggerDistance) {
-      const dir = offset.x > 0 ? 'right' : 'left';
-      animate(x, dir === 'right' ? 500 : -500, {
-        type: motionTokens.cardSwipe.type,
-        stiffness: motionTokens.cardSwipe.stiffness,
-        damping: motionTokens.cardSwipe.damping,
-      });
-      setTimeout(() => onSwipe(dir), 200);
-    } else {
-      animate(x, 0, {
-        type: 'spring',
-        stiffness: 200,
-        damping: 20,
-      });
-    }
-    setTimeout(() => setIsDragging(false), 50);
-  };
 
   const glassButton: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
     backgroundColor: '#FFFFFF14',
     border: '1px solid #FFFFFF1F',
     cursor: 'pointer',
+    padding: 0,
   };
 
   return (
-    <motion.div
+    <div
       style={{
-        x,
-        rotate,
-        opacity,
-        position: 'absolute',
-        inset: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'clip',
-        cursor: 'grab',
-        touchAction: 'pan-y',
+        height: '100%',
+        width: '100%',
+        position: 'relative',
+        flexShrink: 0,
+        scrollSnapAlign: 'start',
+        overflow: 'hidden',
       }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.8}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={handleDragEnd}
-      onClick={() => { if (!isDragging) onTap(); }}
     >
       {/* Full-bleed photo */}
       <div
@@ -100,36 +55,18 @@ function FeedCard({
           bottom: 0,
           left: 0,
           width: '100%',
-          height: '60%',
+          height: '65%',
           background: 'linear-gradient(to top, rgba(10,15,30,1) 0%, rgba(10,15,30,0.95) 20%, rgba(10,15,30,0.7) 45%, transparent 100%)',
         }}
       />
 
-      {/* Card progress dots */}
-      <div style={{ position: 'absolute', top: 52, left: 0, width: '100%', display: 'flex', justifyContent: 'center', gap: 6 }}>
-        {Array.from({ length: Math.min(total, 4) }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: 20,
-              height: 3,
-              borderRadius: 2,
-              backgroundColor: i === index % 4 ? '#FFFFFF' : '#FFFFFF4D',
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Action buttons (right side) */}
-      <div style={{ position: 'absolute', right: 16, top: 340, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Right side action buttons */}
+      <div style={{ position: 'absolute', right: 16, bottom: 220, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
         <button
           style={glassButton}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggle(destination.id);
-          }}
+          onClick={(e) => { e.stopPropagation(); toggle(destination.id); }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill={saved ? '#FFFFFF' : 'none'} stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill={saved ? '#FFFFFF' : 'none'} stroke="#FFFFFF" strokeWidth="1.8">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>
@@ -142,22 +79,35 @@ function FeedCard({
             }
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
             <polyline points="16 6 12 2 8 6" />
             <line x1="12" y1="2" x2="12" y2="15" />
           </svg>
         </button>
+        <button
+          style={glassButton}
+          onClick={(e) => { e.stopPropagation(); navigate(`/destination/${destination.id}`); }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </button>
       </div>
 
       {/* Destination info */}
-      <div style={{ position: 'absolute', bottom: 160, left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div
+        onClick={() => navigate(`/destination/${destination.id}`)}
+        style={{ position: 'absolute', bottom: 140, left: 20, right: 80, display: 'flex', flexDirection: 'column', gap: 8, cursor: 'pointer' }}
+      >
         <div
           style={{
             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
             fontWeight: 800,
-            fontSize: 'clamp(36px, 10vw, 60px)',
-            lineHeight: 0.97,
+            fontSize: 'clamp(36px, 10vw, 56px)',
+            lineHeight: 0.95,
             letterSpacing: '-0.02em',
             textTransform: 'uppercase',
             color: '#FFFFFF',
@@ -171,20 +121,24 @@ function FeedCard({
         <div
           style={{
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-            fontSize: 16,
+            fontSize: 15,
             lineHeight: '20px',
             color: '#FFFFFFB3',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}
         >
           {destination.tagline}
         </div>
         {/* Tags row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: '#FFFFFF73' }}>
             {destination.country}
           </span>
-          {destination.vibeTags.map((tag) => (
-            <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {destination.vibeTags.slice(0, 2).map((tag) => (
+            <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFFFFF40', flexShrink: 0 }} />
               <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: '#FFFFFF73' }}>
                 {tag}
@@ -198,32 +152,31 @@ function FeedCard({
       <div
         style={{
           position: 'absolute',
-          bottom: 100,
-          left: 24,
+          bottom: 88,
+          left: 20,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          paddingBlock: 12,
-          paddingInline: 22,
-          borderRadius: 24,
+          paddingBlock: 10,
+          paddingInline: 18,
+          borderRadius: 20,
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           backgroundColor: '#2C1F1AE6',
           border: '1px solid #FFFFFF1A',
         }}
       >
-        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.borderTint }}>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, lineHeight: '14px', color: colors.borderTint }}>
           From
         </span>
         <span
           style={{
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: 700,
             letterSpacing: '-0.02em',
-            lineHeight: '28px',
+            lineHeight: '24px',
             color: colors.sunriseButter,
-            width: 60,
           }}
         >
           ${destination.flightPrice}
@@ -241,69 +194,64 @@ function FeedCard({
           LIVE PRICE
         </span>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 export default function FeedScreen() {
-  const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleSwipe = useCallback((_dir: 'left' | 'right') => {
-    setCurrentIndex((prev) => Math.min(prev + 1, STUB_DESTINATIONS.length));
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const idx = Math.round(el.scrollTop / el.clientHeight);
+      setCurrentIndex(idx);
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const handleTap = useCallback(() => {
-    const dest = STUB_DESTINATIONS[currentIndex];
-    if (dest) navigate(`/destination/${dest.id}`);
-  }, [navigate, currentIndex]);
-
-  const atEnd = currentIndex >= STUB_DESTINATIONS.length;
 
   return (
     <div className="screen" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flex: 1, position: 'relative' }}>
-        {atEnd ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: 32 }}>
-            <span style={{ fontFamily: `"${fonts.display}", system-ui, sans-serif`, fontSize: 24, fontWeight: 800, textTransform: 'uppercase', color: '#FFFFFF', textAlign: 'center' }}>
-              You've seen them all!
-            </span>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF80', textAlign: 'center' }}>
-              {STUB_DESTINATIONS.length} destinations explored
-            </span>
-            <button
-              onClick={() => setCurrentIndex(0)}
-              style={{
-                marginTop: 8,
-                height: 44,
-                paddingInline: 24,
-                borderRadius: 12,
-                backgroundColor: colors.sageDrift,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
-                Start Over
-              </span>
-            </button>
-          </div>
-        ) : (
-          STUB_DESTINATIONS.slice(currentIndex, currentIndex + 2)
-            .reverse()
-            .map((dest, i, arr) => (
-              <FeedCard
-                key={dest.id}
-                destination={dest}
-                onSwipe={handleSwipe}
-                onTap={handleTap}
-                index={currentIndex + (arr.length - 1 - i)}
-                total={STUB_DESTINATIONS.length}
-              />
-            ))
-        )}
+      {/* Vertical scroll container */}
+      <div
+        ref={scrollRef}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          scrollSnapType: 'y mandatory',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {STUB_DESTINATIONS.map((dest) => (
+          <FeedCard key={dest.id} destination={dest} />
+        ))}
       </div>
-      <BottomNav dark />
+
+      {/* Scroll progress indicator */}
+      <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 3, zIndex: 20 }}>
+        {Array.from({ length: Math.min(STUB_DESTINATIONS.length, 8) }).map((_, i) => {
+          const isActive = i === currentIndex % 8;
+          return (
+            <div
+              key={i}
+              style={{
+                width: 3,
+                height: isActive ? 16 : 6,
+                borderRadius: 2,
+                backgroundColor: isActive ? '#FFFFFF' : '#FFFFFF40',
+                transition: 'height 0.2s, background-color 0.2s',
+              }}
+            />
+          );
+        })}
+      </div>
+
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
+        <BottomNav dark />
+      </div>
     </div>
   );
 }
