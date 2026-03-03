@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
@@ -13,14 +12,14 @@ export default function ConfirmationScreen() {
   const booking = useBookingStore();
   const { departureCode, departureCity } = useUIStore();
   const { data: dest } = useDestination(booking.destinationId ?? undefined);
+  const order = booking.orderResponse;
   const confirmEmail = user?.email || (booking.passengers[0]?.email) || 'your email';
   const seatDesignator = booking.selectedSeat ?? '—';
   const destCity = dest?.city ?? 'Santorini';
   const destIata = dest?.iataCode ?? 'JTR';
-  const paxName = booking.passengers[0]
-    ? `${booking.passengers[0].given_name} ${booking.passengers[0].family_name}`
-    : user?.name ?? 'Guest';
-  const bookingCode = useMemo(() => `SGJET-${destIata}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`, [destIata]);
+  const paxName = order?.passengers?.[0]?.name
+    ?? (booking.passengers[0] ? `${booking.passengers[0].given_name} ${booking.passengers[0].family_name}` : user?.name ?? 'Guest');
+  const bookingCode = order?.bookingReference ?? `SGJET-${destIata}-PEND`;
 
   return (
     <div
@@ -37,7 +36,7 @@ export default function ConfirmationScreen() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: `url(${dest?.imageUrl || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
+          backgroundImage: `url(${dest?.imageUrl || '/images/santorini.jpg'})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.08,
@@ -134,6 +133,23 @@ export default function ConfirmationScreen() {
           >
             Confirmation sent to {confirmEmail}
           </span>
+          {order && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                backgroundColor: order.status === 'confirmed' ? `${colors.confirmGreen}20` : '#F5E6D820',
+                borderRadius: 6,
+                padding: '4px 10px',
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 12,
+                fontWeight: 600,
+                color: order.status === 'confirmed' ? colors.confirmGreen : colors.borderTint,
+              }}
+            >
+              {order.status === 'confirmed' ? 'Confirmed' : 'Pending'}
+            </span>
+          )}
         </div>
 
         {/* boarding pass card */}
@@ -305,7 +321,7 @@ export default function ConfirmationScreen() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: `url(${dest?.imageUrl || 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=600'})`,
+                backgroundImage: `url(${dest?.imageUrl || '/images/santorini.jpg'})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 opacity: 0.06,

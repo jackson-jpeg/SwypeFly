@@ -4,6 +4,7 @@ import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useDestination } from '@/hooks/useDestination';
+import { useCreatePaymentIntent, useCreateOrder } from '@/hooks/useBooking';
 import BookingHeader from '@/components/BookingHeader';
 
 /* ───── section label ───── */
@@ -49,10 +50,13 @@ export default function ReviewPaymentScreen() {
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState(booking.promoCode ?? '');
   const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
+  const createPaymentIntent = useCreatePaymentIntent();
+  const createOrder = useCreateOrder();
 
   // Derive dynamic baggage label and price
   const bagLabel = booking.selectedBaggage === 'bag-2x23kg' ? '2 checked bags (23 kg each)' : '1 checked bag (23 kg)';
@@ -354,11 +358,55 @@ export default function ReviewPaymentScreen() {
 
       {/* CTA */}
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
+        {payError && (
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta, textAlign: 'center' }}>
+            {payError}
+          </span>
+        )}
         <button
           disabled={paying}
-          onClick={() => {
+          onClick={async () => {
+            setPayError('');
+            // Basic card validation (only for card payment)
+            if (paymentMethod === 'card' && (!cardNumber.trim() || !expiry.trim() || !cvc.trim())) {
+              setPayError('Please fill in all card details');
+              return;
+            }
             setPaying(true);
-            setTimeout(() => navigate('/booking/confirmation'), 1500);
+            try {
+              // Step 1: Create payment intent
+              const offerId = booking.selectedOffer?.id ?? 'unknown';
+              const pi = await createPaymentIntent.mutateAsync({
+                offerId,
+                amount: total * 100, // cents
+                currency: 'USD',
+              });
+              // Step 2: Create order with payment
+              const orderRes = await createOrder.mutateAsync({
+                offerId,
+                passengers: booking.passengers.map((p) => ({
+                  id: p.id,
+                  given_name: p.given_name,
+                  family_name: p.family_name,
+                  born_on: p.born_on,
+                  gender: p.gender,
+                  title: p.title,
+                  email: p.email,
+                  phone_number: p.phone_number,
+                })),
+                selectedServices: [
+                  ...(booking.selectedBaggage ? [{ id: booking.selectedBaggage, quantity: 1 }] : []),
+                  ...(booking.selectedMeal ? [{ id: booking.selectedMeal, quantity: 1 }] : []),
+                ],
+                paymentIntentId: pi.paymentIntentId,
+              });
+              // Step 3: Store response and navigate
+              booking.setOrderResponse(orderRes);
+              navigate('/booking/confirmation');
+            } catch (err) {
+              setPaying(false);
+              setPayError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+            }
           }}
           style={{
             width: '100%',

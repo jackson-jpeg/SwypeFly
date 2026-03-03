@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { BookingOffer, Passenger } from '@/api/types';
+import type { BookingOffer, CreateOrderResponse, Passenger } from '@/api/types';
 
 interface BookingState {
   // Flow state
@@ -14,6 +14,7 @@ interface BookingState {
   passengerCount: number;
   promoCode: string | null;
   promoDiscount: number;
+  orderResponse: CreateOrderResponse | null;
 
   // Actions
   setDestination: (id: string) => void;
@@ -26,6 +27,7 @@ interface BookingState {
   setBaggage: (id: string | null) => void;
   setInsurance: (has: boolean) => void;
   setMeal: (id: string | null) => void;
+  setOrderResponse: (order: CreateOrderResponse) => void;
   reset: () => void;
 
   // Computed
@@ -34,7 +36,7 @@ interface BookingState {
 
 const INITIAL: Pick<
   BookingState,
-  'destinationId' | 'selectedOffer' | 'passengers' | 'selectedSeat' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount'
+  'destinationId' | 'selectedOffer' | 'passengers' | 'selectedSeat' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
 > = {
   destinationId: null,
   selectedOffer: null,
@@ -46,6 +48,7 @@ const INITIAL: Pick<
   passengerCount: 1,
   promoCode: null,
   promoDiscount: 0,
+  orderResponse: null,
 };
 
 export const useBookingStore = create<BookingState>()(
@@ -64,6 +67,7 @@ export const useBookingStore = create<BookingState>()(
       setBaggage: (id) => set({ selectedBaggage: id }),
       setInsurance: (has) => set({ hasInsurance: has }),
       setMeal: (id) => set({ selectedMeal: id }),
+      setOrderResponse: (order) => set({ orderResponse: order }),
       setPassengerCount: (count) => set({ passengerCount: count }),
       applyPromo: (code) => {
         const upper = code.trim().toUpperCase();
@@ -120,6 +124,7 @@ export const useBookingStore = create<BookingState>()(
         passengerCount: state.passengerCount,
         promoCode: state.promoCode,
         promoDiscount: state.promoDiscount,
+        orderResponse: state.orderResponse,
       }),
     },
   ),
