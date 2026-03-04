@@ -27,10 +27,10 @@ export default function FlightSelectionScreen() {
       origin: departureCode,
       destination: dest.iataCode,
       departureDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-      passengers: [{ type: 'adult' as const }],
+      passengers: Array.from({ length: passengers }, () => ({ type: 'adult' as const })),
       cabinClass: CABIN_CLASSES[selectedCabin],
     };
-  }, [dest, departureCode, selectedCabin]);
+  }, [dest, departureCode, selectedCabin, passengers]);
 
   const { data: offers, isLoading, isError } = useBookingSearch(searchParams);
 
