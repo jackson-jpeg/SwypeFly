@@ -26,7 +26,8 @@ export default function FlightSelectionScreen() {
     return {
       origin: departureCode,
       destination: dest.iataCode,
-      departureDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+      departureDate: dest?.departureDate ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+      returnDate: dest?.returnDate,
       passengers: Array.from({ length: passengers }, () => ({ type: 'adult' as const })),
       cabinClass: CABIN_CLASSES[selectedCabin],
     };

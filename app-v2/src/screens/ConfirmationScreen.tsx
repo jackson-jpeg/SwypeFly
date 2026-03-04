@@ -226,7 +226,7 @@ export default function ConfirmationScreen() {
                   <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-2 2 4 1 1 4 2-2v-3l3-2 3.8 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.7.5-1.1z" />
                 </svg>
                 <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 10, color: colors.mutedText }}>
-                  1 stop
+                  {booking.selectedOffer?.slices?.[0]?.stops === 0 ? 'Nonstop' : `${booking.selectedOffer?.slices?.[0]?.stops ?? 1} stop${(booking.selectedOffer?.slices?.[0]?.stops ?? 1) > 1 ? 's' : ''}`}
                 </span>
               </div>
 
