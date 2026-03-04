@@ -23,7 +23,9 @@ interface AuthActions {
   signInWithApple: () => Promise<void>;
   signInWithTikTok: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>;
+  verifyEmail: (code: string) => Promise<{ error: string | null }>;
+  resendVerification: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   browseAsGuest: () => void;
   requireAuth: () => boolean;
@@ -150,10 +152,10 @@ export function useAuth(): Auth {
         if (result.status === 'complete') {
           return { error: null };
         }
-        // May need email verification
+        // Needs email verification
         if (result.status === 'missing_requirements') {
           await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-          return { error: 'Check your email for a verification code' };
+          return { error: null, needsVerification: true };
         }
         return { error: 'Additional verification required' };
       } catch (err: unknown) {
@@ -164,6 +166,43 @@ export function useAuth(): Auth {
               ? err.message
               : 'Sign up failed';
         return { error: message };
+      }
+    },
+    [signUp],
+  );
+
+  // Email verification
+  const verifyEmail = useCallback(
+    async (code: string) => {
+      if (!signUp) return { error: 'Auth not ready' };
+      try {
+        const result = await signUp.attemptEmailAddressVerification({ code });
+        if (result.status === 'complete') {
+          return { error: null };
+        }
+        return { error: 'Verification incomplete. Please try again.' };
+      } catch (err: unknown) {
+        const message =
+          err && typeof err === 'object' && 'errors' in err
+            ? (err as { errors: { message: string }[] }).errors[0]?.message ?? 'Invalid code'
+            : err instanceof Error
+              ? err.message
+              : 'Verification failed';
+        return { error: message };
+      }
+    },
+    [signUp],
+  );
+
+  // Resend verification code
+  const resendVerification = useCallback(
+    async () => {
+      if (!signUp) return { error: 'Auth not ready' };
+      try {
+        await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+        return { error: null };
+      } catch (err: unknown) {
+        return { error: err instanceof Error ? err.message : 'Failed to resend code' };
       }
     },
     [signUp],
@@ -202,6 +241,8 @@ export function useAuth(): Auth {
     signInWithTikTok,
     signInWithEmail,
     signUpWithEmail,
+    verifyEmail,
+    resendVerification,
     signOut: signOutFn,
     browseAsGuest,
     requireAuth,

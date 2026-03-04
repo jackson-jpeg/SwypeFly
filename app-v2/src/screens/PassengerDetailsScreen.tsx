@@ -41,6 +41,44 @@ const accordionStyle: React.CSSProperties = {
   width: '100%',
 };
 
+/* ───── helpers ───── */
+
+/** Mask input to MM/DD/YYYY format */
+function maskDob(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+/** Validate a MM/DD/YYYY date string: real date, passenger at least 2 years old */
+function validateDob(dob: string): string | null {
+  if (!dob) return 'Date of birth is required';
+  const match = dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return 'Use MM/DD/YYYY format';
+  const [, mm, dd, yyyy] = match;
+  const month = parseInt(mm!, 10);
+  const day = parseInt(dd!, 10);
+  const year = parseInt(yyyy!, 10);
+  if (month < 1 || month > 12) return 'Invalid month';
+  if (day < 1 || day > 31) return 'Invalid day';
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return 'Invalid date';
+  }
+  const today = new Date();
+  const age = today.getFullYear() - year - (today < new Date(today.getFullYear(), month - 1, day) ? 1 : 0);
+  if (age < 2) return 'Passenger must be at least 2 years old';
+  if (year < 1900) return 'Invalid year';
+  return null;
+}
+
+/** Format phone: strip non-digits except leading + */
+function formatPhone(raw: string): string {
+  if (raw.startsWith('+')) return '+' + raw.slice(1).replace(/[^\d]/g, '');
+  return raw.replace(/[^\d+]/g, '');
+}
+
 /* ───── screen ───── */
 export default function PassengerDetailsScreen() {
   const navigate = useNavigate();
@@ -53,11 +91,24 @@ export default function PassengerDetailsScreen() {
   const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') ?? '');
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState('Female');
+  const [phone, setPhone] = useState('');
   const [passportOpen, setPassportOpen] = useState(false);
   const [passportNumber, setPassportNumber] = useState('');
   const [ffOpen, setFfOpen] = useState(false);
   const [ffNumber, setFfNumber] = useState('');
-  const [nameError, setNameError] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!firstName.trim()) errs.firstName = 'Required';
+    if (!lastName.trim()) errs.lastName = 'Required';
+    const dobErr = validateDob(dob);
+    if (dobErr) errs.dob = dobErr;
+    if (!phone.trim()) errs.phone = 'Phone number is required';
+    else if (phone.replace(/\D/g, '').length < 7) errs.phone = 'Enter a valid phone number';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   return (
     <div
@@ -131,9 +182,10 @@ export default function PassengerDetailsScreen() {
             <input
               type="text"
               value={firstName}
-              onChange={(e) => { setFirstName(e.target.value); setNameError(false); }}
-              style={{ ...inputStyle, ...(nameError && !firstName.trim() ? { borderColor: '#D4734A' } : {}) }}
+              onChange={(e) => { setFirstName(e.target.value); setErrors((p) => ({ ...p, firstName: '' })); }}
+              style={{ ...inputStyle, ...(errors.firstName ? { borderColor: colors.terracotta } : {}) }}
             />
+            {errors.firstName && <span style={{ fontSize: 12, color: colors.terracotta, fontFamily: `"${fonts.body}", system-ui, sans-serif` }}>{errors.firstName}</span>}
           </div>
 
           {/* last name */}
@@ -142,9 +194,10 @@ export default function PassengerDetailsScreen() {
             <input
               type="text"
               value={lastName}
-              onChange={(e) => { setLastName(e.target.value); setNameError(false); }}
-              style={{ ...inputStyle, ...(nameError && !lastName.trim() ? { borderColor: '#D4734A' } : {}) }}
+              onChange={(e) => { setLastName(e.target.value); setErrors((p) => ({ ...p, lastName: '' })); }}
+              style={{ ...inputStyle, ...(errors.lastName ? { borderColor: colors.terracotta } : {}) }}
             />
+            {errors.lastName && <span style={{ fontSize: 12, color: colors.terracotta, fontFamily: `"${fonts.body}", system-ui, sans-serif` }}>{errors.lastName}</span>}
           </div>
 
           {/* DOB + Gender row */}
@@ -155,9 +208,11 @@ export default function PassengerDetailsScreen() {
                 type="text"
                 placeholder="MM/DD/YYYY"
                 value={dob}
-                onChange={(e) => setDob(e.target.value)}
-                style={{ ...inputStyle, color: dob ? colors.deepDusk : colors.mutedText }}
+                onChange={(e) => { setDob(maskDob(e.target.value)); setErrors((p) => ({ ...p, dob: '' })); }}
+                maxLength={10}
+                style={{ ...inputStyle, color: dob ? colors.deepDusk : colors.mutedText, ...(errors.dob ? { borderColor: colors.terracotta } : {}) }}
               />
+              {errors.dob && <span style={{ fontSize: 12, color: colors.terracotta, fontFamily: `"${fonts.body}", system-ui, sans-serif` }}>{errors.dob}</span>}
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={labelStyle}>Gender</span>
@@ -173,7 +228,7 @@ export default function PassengerDetailsScreen() {
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="Other">Prefer not to say</option>
                 </select>
                 <svg
                   width="14"
@@ -189,6 +244,30 @@ export default function PassengerDetailsScreen() {
                 </svg>
               </div>
             </div>
+          </div>
+
+          {/* phone number */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={labelStyle}>Phone Number</span>
+            <input
+              type="tel"
+              placeholder="+1 555 123 4567"
+              value={phone}
+              onChange={(e) => { setPhone(formatPhone(e.target.value)); setErrors((p) => ({ ...p, phone: '' })); }}
+              style={{ ...inputStyle, ...(errors.phone ? { borderColor: colors.terracotta } : {}) }}
+            />
+            {errors.phone && <span style={{ fontSize: 12, color: colors.terracotta, fontFamily: `"${fonts.body}", system-ui, sans-serif` }}>{errors.phone}</span>}
+          </div>
+
+          {/* email (readonly) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={labelStyle}>Email (for booking confirmation)</span>
+            <input
+              type="email"
+              value={user?.email ?? ''}
+              readOnly
+              style={{ ...inputStyle, backgroundColor: '#F5ECD7', color: colors.mutedText }}
+            />
           </div>
         </div>
 
@@ -297,33 +376,32 @@ export default function PassengerDetailsScreen() {
             </div>
           )}
         </div>
-
-        {/* Multi-passenger support coming later */}
       </div>
 
       {/* CTA */}
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {nameError && (
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: '#D4734A', textAlign: 'center' }}>
-            Please enter first and last name
-          </span>
-        )}
         <button
           onClick={() => {
-            if (!firstName.trim() || !lastName.trim()) {
-              setNameError(true);
-              setTimeout(() => setNameError(false), 3000);
-              return;
-            }
+            if (!validate()) return;
+
+            // Map gender for Duffel API (only supports 'm' and 'f')
+            const genderCode = gender === 'Male' ? 'm' : 'f';
+            // Duffel API doesn't support 'mx'; use 'ms' as neutral default
+            const titleCode = gender === 'Male' ? 'mr' : 'ms';
+
+            // Convert MM/DD/YYYY to YYYY-MM-DD for Duffel API
+            const [mm, dd, yyyy] = dob.split('/');
+            const bornOn = `${yyyy}-${mm}-${dd}`;
+
             const paxData = {
               id: 'pax-1',
               given_name: firstName.trim(),
               family_name: lastName.trim(),
-              born_on: dob,
-              gender: (gender === 'Male' ? 'm' : 'f') as 'f' | 'm',
-              title: (gender === 'Male' ? 'mr' : 'ms') as 'mr' | 'ms',
+              born_on: bornOn,
+              gender: genderCode as 'f' | 'm',
+              title: titleCode as 'mr' | 'ms',
               email: user?.email ?? '',
-              phone_number: '',
+              phone_number: phone.trim(),
             };
             const existingIdx = passengers.findIndex((p) => p.id === 'pax-1');
             if (existingIdx >= 0) {
@@ -337,10 +415,12 @@ export default function PassengerDetailsScreen() {
             width: '100%',
             height: 52,
             borderRadius: 14,
+            border: 'none',
             backgroundColor: colors.deepDusk,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            cursor: 'pointer',
           }}
         >
           <span

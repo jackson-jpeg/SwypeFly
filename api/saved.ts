@@ -15,6 +15,14 @@ async function handleList(userId: string, res: VercelResponse) {
 }
 
 async function handleSave(userId: string, destinationId: string, res: VercelResponse) {
+  // Deduplication: check if already saved
+  const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
+    Query.equal('user_id', userId),
+    Query.equal('destination_id', destinationId),
+    Query.limit(1),
+  ]);
+  if (existing.documents.length > 0) return res.json({ ok: true });
+
   await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.savedTrips, ID.unique(), {
     user_id: userId,
     destination_id: destinationId,

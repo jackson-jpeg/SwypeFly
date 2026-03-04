@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useDestination } from '@/hooks/useDestination';
 import { useCreatePaymentIntent, useCreateOrder } from '@/hooks/useBooking';
+import StripeProvider from '@/components/StripeProvider';
 import BookingHeader from '@/components/BookingHeader';
 
 /* ───── section label ───── */
@@ -30,14 +32,108 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 };
 
-const fieldLabel: React.CSSProperties = {
-  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-  fontSize: 11,
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-  color: colors.borderTint,
-};
+/* ───── inner payment form (has access to Stripe context) ───── */
+function PaymentForm({ onSuccess, total }: { onSuccess: () => Promise<void>; total: number }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState('');
+
+  const handlePay = async () => {
+    if (!stripe || !elements) return;
+    setPayError('');
+    setPaying(true);
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        setPayError(error.message ?? 'Payment failed. Please try again.');
+        setPaying(false);
+        return;
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        await onSuccess();
+      } else {
+        setPayError('Payment was not completed. Please try again.');
+        setPaying(false);
+      }
+    } catch (err) {
+      setPaying(false);
+      setPayError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+    }
+  };
+
+  return (
+    <>
+      {/* Stripe Payment Element */}
+      <div
+        style={{
+          backgroundColor: colors.offWhite,
+          border: '1px solid #C9A99A20',
+          borderRadius: 16,
+          padding: 20,
+        }}
+      >
+        <PaymentElement />
+      </div>
+
+      {/* security note */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBlock: 4 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.confirmGreen }}>
+          Secured with Stripe — your card details never touch our servers
+        </span>
+      </div>
+
+      {/* CTA */}
+      <div style={{ paddingTop: 4 }}>
+        {payError && (
+          <div style={{ marginBottom: 8, textAlign: 'center' }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta }}>
+              {payError}
+            </span>
+          </div>
+        )}
+        <button
+          disabled={paying || !stripe}
+          onClick={handlePay}
+          style={{
+            width: '100%',
+            height: 52,
+            borderRadius: 14,
+            backgroundColor: paying ? colors.sageDrift : colors.deepDusk,
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: paying ? 'wait' : 'pointer',
+            opacity: paying ? 0.8 : 1,
+            transition: 'background-color 0.3s, opacity 0.3s',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 16,
+              fontWeight: 600,
+              color: colors.paleHorizon,
+            }}
+          >
+            {paying ? 'Processing...' : `Pay $${total}`}
+          </span>
+        </button>
+      </div>
+    </>
+  );
+}
 
 /* ───── screen ───── */
 export default function ReviewPaymentScreen() {
@@ -49,12 +145,9 @@ export default function ReviewPaymentScreen() {
   const [promoInput, setPromoInput] = useState('');
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState(booking.promoCode ?? '');
-  const [paying, setPaying] = useState(false);
-  const [payError, setPayError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple' | 'google'>('card');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [intentLoading, setIntentLoading] = useState(false);
+  const [intentError, setIntentError] = useState('');
   const createPaymentIntent = useCreatePaymentIntent();
   const createOrder = useCreateOrder();
 
@@ -76,6 +169,72 @@ export default function ReviewPaymentScreen() {
     ...(booking.hasInsurance ? [{ label: 'Trip Protection', price: '$29', color: colors.bodyText }] : []),
     ...(booking.selectedMeal ? [{ label: mealLabel, price: `$${mealPrice}`, color: colors.bodyText }] : []),
   ];
+
+  // Create payment intent and get clientSecret for Stripe
+  const handleProceedToPayment = async () => {
+    setIntentError('');
+    setIntentLoading(true);
+    try {
+      const offerId = booking.selectedOffer?.id ?? 'unknown';
+      const pi = await createPaymentIntent.mutateAsync({
+        offerId,
+        amount: total * 100, // cents
+        currency: 'USD',
+      });
+      setClientSecret(pi.clientSecret);
+    } catch (err) {
+      setIntentError(err instanceof Error ? err.message : 'Failed to initialize payment');
+    } finally {
+      setIntentLoading(false);
+    }
+  };
+
+  // Called after Stripe confirmPayment succeeds — retries order creation with backoff
+  const handlePaymentSuccess = async () => {
+    const offerId = booking.selectedOffer?.id ?? 'unknown';
+    const paymentIntentId = createPaymentIntent.data?.paymentIntentId ?? '';
+    const orderPayload = {
+      offerId,
+      passengers: booking.passengers.map((p) => ({
+        id: p.id,
+        given_name: p.given_name,
+        family_name: p.family_name,
+        born_on: p.born_on,
+        gender: p.gender,
+        title: p.title,
+        email: p.email,
+        phone_number: p.phone_number,
+      })),
+      selectedServices: [
+        ...(booking.selectedBaggage ? [{ id: booking.selectedBaggage, quantity: 1 }] : []),
+        ...(booking.selectedMeal ? [{ id: booking.selectedMeal, quantity: 1 }] : []),
+      ],
+      paymentIntentId,
+    };
+
+    const MAX_RETRIES = 3;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const orderRes = await createOrder.mutateAsync(orderPayload);
+        booking.setOrderResponse(orderRes);
+        navigate('/booking/confirmation');
+        return;
+      } catch {
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt)); // 1s, 2s, 4s
+        }
+      }
+    }
+
+    // All retries failed — payment succeeded but order didn't
+    // Store paymentIntentId so a future reconciliation can match it
+    try { sessionStorage.setItem('sogojet-orphaned-payment', paymentIntentId); } catch { /* noop */ }
+    throw new Error(
+      'Your payment was received but we couldn\'t confirm your booking. '
+      + 'Don\'t worry — you will not be double-charged. '
+      + 'Please contact support@sogojet.com with reference: ' + paymentIntentId.slice(0, 20),
+    );
+  };
 
   return (
     <div
@@ -215,223 +374,61 @@ export default function ReviewPaymentScreen() {
           </span>
         )}
 
-        {/* payment method */}
-        <span style={sectionLabel}>Payment Method</span>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {[
-            { key: 'card' as const, label: 'Card', icon: (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={paymentMethod === 'card' ? colors.sageDrift : colors.mutedText} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <path d="M2 10h20" />
-              </svg>
-            )},
-            { key: 'apple' as const, label: 'Apple Pay', icon: (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={paymentMethod === 'apple' ? colors.deepDusk : colors.mutedText}>
-                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-              </svg>
-            )},
-            { key: 'google' as const, label: 'Google', icon: (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.96 11.96 0 0 0 1 12c0 1.94.46 3.77 1.18 5.07l3.66-2.98z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-              </svg>
-            )},
-          ].map((method) => {
-            const isSelected = paymentMethod === method.key;
-            return (
-              <button
-                key={method.key}
-                onClick={() => setPaymentMethod(method.key)}
-                style={{
-                  flex: 1,
-                  height: 44,
-                  borderRadius: 12,
-                  backgroundColor: isSelected ? '#A8C4B830' : colors.offWhite,
-                  border: isSelected ? `2px solid ${colors.sageDrift}` : '1px solid #C9A99A40',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                {method.icon}
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: isSelected ? 600 : 400, color: isSelected ? colors.deepDusk : colors.mutedText }}>
-                  {method.label}
+        {/* payment section */}
+        <span style={sectionLabel}>Payment</span>
+
+        {clientSecret ? (
+          /* Stripe Elements loaded — show PaymentElement + Pay button */
+          <StripeProvider clientSecret={clientSecret}>
+            <PaymentForm onSuccess={handlePaymentSuccess} total={total} />
+          </StripeProvider>
+        ) : (
+          /* Pre-payment: show "Proceed to Payment" button */
+          <>
+            {intentError && (
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta }}>
+                  {intentError}
                 </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* card form — only shown for card payment */}
-        {paymentMethod === 'card' && <div
-          style={{
-            backgroundColor: colors.offWhite,
-            border: '1px solid #C9A99A20',
-            borderRadius: 16,
-            padding: 20,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={fieldLabel}>Card Number</span>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                placeholder="Card number"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value)}
-                style={inputStyle}
-              />
-              {/* Mastercard icon */}
-              <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
-                <svg width="28" height="18" viewBox="0 0 28 18">
-                  <circle cx="10" cy="9" r="8" fill="#EB001B" opacity="0.8" />
-                  <circle cx="18" cy="9" r="8" fill="#F79E1B" opacity="0.8" />
-                </svg>
               </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={fieldLabel}>Expiry</span>
-              <input
-                type="text"
-                placeholder="MM/YY"
-                value={expiry}
-                onChange={(e) => setExpiry(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={fieldLabel}>CVC</span>
-              <input
-                type="text"
-                placeholder="•••"
-                value={cvc}
-                onChange={(e) => setCvc(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-          </div>
-        </div>}
+            )}
+          </>
+        )}
+      </div>
 
-        {/* Apple/Google Pay confirmation */}
-        {paymentMethod !== 'card' && (
-          <div
+      {/* CTA — only shown before Stripe is loaded */}
+      {!clientSecret && (
+        <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
+          <button
+            disabled={intentLoading}
+            onClick={handleProceedToPayment}
             style={{
-              backgroundColor: colors.offWhite,
-              border: '1px solid #C9A99A20',
-              borderRadius: 16,
-              padding: 20,
+              width: '100%',
+              height: 52,
+              borderRadius: 14,
+              border: 'none',
+              backgroundColor: intentLoading ? colors.sageDrift : colors.deepDusk,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              cursor: intentLoading ? 'wait' : 'pointer',
+              opacity: intentLoading ? 0.8 : 1,
+              transition: 'background-color 0.3s, opacity 0.3s',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.bodyText }}>
-              {paymentMethod === 'apple' ? 'Apple Pay' : 'Google Pay'} ready — tap Pay to continue
+            <span
+              style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 16,
+                fontWeight: 600,
+                color: colors.paleHorizon,
+              }}
+            >
+              {intentLoading ? 'Initializing...' : `Proceed to Pay $${total}`}
             </span>
-          </div>
-        )}
-
-        {/* security note */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBlock: 4 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.confirmGreen }}>
-            Secured with 256-bit SSL encryption
-          </span>
+          </button>
         </div>
-      </div>
-
-      {/* CTA */}
-      <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
-        {payError && (
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta, textAlign: 'center' }}>
-            {payError}
-          </span>
-        )}
-        <button
-          disabled={paying}
-          onClick={async () => {
-            setPayError('');
-            // Basic card validation (only for card payment)
-            if (paymentMethod === 'card' && (!cardNumber.trim() || !expiry.trim() || !cvc.trim())) {
-              setPayError('Please fill in all card details');
-              return;
-            }
-            setPaying(true);
-            try {
-              // Step 1: Create payment intent
-              const offerId = booking.selectedOffer?.id ?? 'unknown';
-              const pi = await createPaymentIntent.mutateAsync({
-                offerId,
-                amount: total * 100, // cents
-                currency: 'USD',
-              });
-              // Step 2: Create order with payment
-              const orderRes = await createOrder.mutateAsync({
-                offerId,
-                passengers: booking.passengers.map((p) => ({
-                  id: p.id,
-                  given_name: p.given_name,
-                  family_name: p.family_name,
-                  born_on: p.born_on,
-                  gender: p.gender,
-                  title: p.title,
-                  email: p.email,
-                  phone_number: p.phone_number,
-                })),
-                selectedServices: [
-                  ...(booking.selectedBaggage ? [{ id: booking.selectedBaggage, quantity: 1 }] : []),
-                  ...(booking.selectedMeal ? [{ id: booking.selectedMeal, quantity: 1 }] : []),
-                ],
-                paymentIntentId: pi.paymentIntentId,
-              });
-              // Step 3: Store response and navigate
-              booking.setOrderResponse(orderRes);
-              navigate('/booking/confirmation');
-            } catch (err) {
-              setPaying(false);
-              setPayError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
-            }
-          }}
-          style={{
-            width: '100%',
-            height: 52,
-            borderRadius: 14,
-            backgroundColor: paying ? colors.sageDrift : colors.deepDusk,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: paying ? 0.8 : 1,
-            transition: 'background-color 0.3s, opacity 0.3s',
-          }}
-        >
-          <span
-            style={{
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 16,
-              fontWeight: 600,
-              color: colors.paleHorizon,
-            }}
-          >
-            {paying ? 'Processing...' : `Pay $${total}`}
-          </span>
-        </button>
-      </div>
+      )}
     </div>
   );
 }

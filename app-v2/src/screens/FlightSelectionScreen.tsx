@@ -34,7 +34,7 @@ export default function FlightSelectionScreen() {
 
   const { data: offers, isLoading, isError } = useBookingSearch(searchParams);
 
-  if (isLoading || !offers?.length) {
+  if (isLoading || (!offers?.length && !isError)) {
     return (
       <div
         className="screen-fixed"
@@ -42,7 +42,21 @@ export default function FlightSelectionScreen() {
       >
         <BookingHeader step={1} stepLabel="Flight Selection" onBack={() => navigate(-1)} onClose={() => navigate('/')} />
         <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText, padding: 40, textAlign: 'center' }}>
-          {isError ? 'Unable to load flight offers. Please try again.' : 'Finding the best flights...'}
+          Finding the best flights...
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !offers?.length) {
+    return (
+      <div
+        className="screen-fixed"
+        style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <BookingHeader step={1} stepLabel="Flight Selection" onBack={() => navigate(-1)} onClose={() => navigate('/')} />
+        <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText, padding: 40, textAlign: 'center' }}>
+          {isError ? 'Unable to load flight offers. Please try again.' : 'No flights available for this route. Try a different destination.'}
         </div>
       </div>
     );

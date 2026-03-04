@@ -22,10 +22,12 @@ export function useBookingSearch(params: BookingSearchRequest | null) {
         const dest = getStubDestination(params?.destination ?? '');
         return getStubBookingOffers(dest, params?.origin);
       }
-      return apiFetch<BookingOffer[]>('/api/booking?action=search', {
+      const raw = await apiFetch<BookingOffer[] | { offers: BookingOffer[] }>('/api/booking?action=search', {
         method: 'POST',
         body: JSON.stringify(params),
       });
+      // Backend may return a flat array or { offers: [...] } — normalize both
+      return Array.isArray(raw) ? raw : raw.offers ?? [];
     },
     enabled: !!params,
   });
