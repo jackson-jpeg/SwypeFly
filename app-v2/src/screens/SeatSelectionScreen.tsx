@@ -50,12 +50,13 @@ export default function SeatSelectionScreen() {
 
   const seatMap: SeatMap | null = offerDetail?.seatMap ?? null;
 
-  const { columns, rows, exitRows } = useMemo(() => {
-    if (!seatMap) return { columns: ['A', 'B', 'C', 'D', 'E', 'F'], rows: [] as number[], exitRows: [] as number[] };
+  const { columns, rows, exitRows, aisleAfterSet } = useMemo(() => {
+    if (!seatMap) return { columns: ['A', 'B', 'C', 'D', 'E', 'F'], rows: [] as number[], exitRows: [] as number[], aisleAfterSet: new Set(['C']) };
     return {
       columns: seatMap.columns,
       rows: seatMap.rows.map((r) => r.rowNumber),
       exitRows: seatMap.exitRows,
+      aisleAfterSet: new Set(seatMap.aisleAfterColumns ?? ['C']),
     };
   }, [seatMap]);
 
@@ -178,7 +179,7 @@ export default function SeatSelectionScreen() {
             paddingTop: 28,
             paddingBottom: 16,
             paddingInline: 20,
-            width: 260,
+            width: Math.max(260, columns.length * 30 + (aisleAfterSet.size * 12) + 40),
           }}
         >
           {/* airplane icon */}
@@ -198,7 +199,7 @@ export default function SeatSelectionScreen() {
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 9,
                   color: colors.mutedText,
-                  ...(i === 3 ? { marginLeft: 12 } : {}),
+                  ...(i > 0 && columns[i - 1] && aisleAfterSet.has(columns[i - 1]!) ? { marginLeft: 12 } : {}),
                 }}
               >
                 {c}
@@ -249,7 +250,7 @@ export default function SeatSelectionScreen() {
                   return (
                     <div
                       key={col}
-                      style={{ ...(colIdx === 3 ? { marginLeft: 12 } : {}) }}
+                      style={{ ...(colIdx > 0 && columns[colIdx - 1] && aisleAfterSet.has(columns[colIdx - 1]!) ? { marginLeft: 12 } : {}) }}
                     >
                       <button
                         onClick={() => handleSeatClick(row, col)}
@@ -310,7 +311,7 @@ export default function SeatSelectionScreen() {
                   color: colors.deepDusk,
                 }}
               >
-                Seat {selectedSeat.replace('-', '')} — {(() => { const col = selectedSeat.split('-')[1]; return col === 'A' || col === 'F' ? 'Window' : col === 'C' || col === 'D' ? 'Aisle' : 'Middle'; })()} seat
+                Seat {selectedSeat.replace('-', '')} — {(() => { const col = selectedSeat.split('-')[1] ?? ''; const ci = columns.indexOf(col); if (ci === 0 || ci === columns.length - 1) return 'Window'; if (aisleAfterSet.has(col) || (ci > 0 && columns[ci - 1] && aisleAfterSet.has(columns[ci - 1]!))) return 'Aisle'; return 'Middle'; })()} seat
               </span>
               <span
                 style={{

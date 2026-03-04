@@ -321,11 +321,12 @@ export default function DestinationDetailScreen() {
               fontFamily: `"${fonts.display}", system-ui, sans-serif`,
               fontWeight: 800,
               fontSize: 34,
-              lineHeight: '34px',
+              lineHeight: 1.05,
               letterSpacing: '-0.01em',
               textTransform: 'uppercase',
               color: colors.deepDusk,
               margin: 0,
+              wordBreak: 'break-word',
             }}
           >
             {dest.city}
@@ -584,83 +585,7 @@ export default function DestinationDetailScreen() {
         ))}
       </div>
 
-      {/* ─── Suggested Itinerary ──────────────────────────────── */}
-      {dest.itinerary.length > 0 && <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <h2 style={sectionTitle}>Suggested Itinerary</h2>
-        <div style={{ display: 'flex', gap: 16 }}>
-          {/* Timeline dots + line */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              width: 20,
-              paddingTop: 6,
-              flexShrink: 0,
-              gap: 0,
-            }}
-          >
-            {dest.itinerary.map((_, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor: colors.seafoamMist,
-                    flexShrink: 0,
-                  }}
-                />
-                {i < dest.itinerary.length - 1 && (
-                  <div style={{ width: 2, flex: 1, backgroundColor: '#E8E3D8', marginTop: 4, marginBottom: 4 }} />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Content */}
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 24 }}>
-            {dest.itinerary.map((item, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span
-                  style={{
-                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    lineHeight: '12px',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: colors.sageDrift,
-                  }}
-                >
-                  {item.days}
-                </span>
-                <span
-                  style={{
-                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    lineHeight: '18px',
-                    color: colors.deepDusk,
-                  }}
-                >
-                  {item.title}
-                </span>
-                <span
-                  style={{
-                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                    fontSize: 13,
-                    lineHeight: '20px',
-                    color: colors.borderTint,
-                  }}
-                >
-                  {item.desc}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>}
+      {/* ─── Suggested Itinerary — only shown after AI generates a plan ─── */}
 
       {/* ─── AI Trip Planner ──────────────────────────────────── */}
       <div style={{ padding: 24 }}>

@@ -23,6 +23,7 @@ export default function LoginScreen() {
   const {
     signInWithGoogle, signInWithApple, signInWithTikTok,
     signInWithEmail, signUpWithEmail, verifyEmail, resendVerification,
+    forgotPassword, resetPassword,
     browseAsGuest,
   } = useAuthContext();
   const [showEmail, setShowEmail] = useState(false);
@@ -40,6 +41,15 @@ export default function LoginScreen() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
+
+  // Forgot password state
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const handleEmailSubmit = async () => {
     if (!email || !password) {
@@ -83,6 +93,49 @@ export default function LoginScreen() {
       setVerifyError(result.error);
     } else {
       navigate('/');
+    }
+  };
+
+  const handleForgotSubmit = async () => {
+    if (!email) {
+      setResetError('Please enter your email address above');
+      return;
+    }
+    setResetLoading(true);
+    setResetError(null);
+    const result = await forgotPassword(email);
+    setResetLoading(false);
+    if (result.error) {
+      setResetError(result.error);
+    } else {
+      setResetSent(true);
+    }
+  };
+
+  const handleResetSubmit = async () => {
+    if (!resetCode.trim() || !newPassword) {
+      setResetError('Please enter the code and a new password');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setResetError('Password must be at least 8 characters');
+      return;
+    }
+    setResetLoading(true);
+    setResetError(null);
+    const result = await resetPassword(resetCode.trim(), newPassword);
+    setResetLoading(false);
+    if (result.error) {
+      setResetError(result.error);
+    } else {
+      setResetSuccess(true);
+      setTimeout(() => {
+        setForgotMode(false);
+        setResetSent(false);
+        setResetCode('');
+        setNewPassword('');
+        setResetSuccess(false);
+      }, 2000);
     }
   };
 
@@ -177,8 +230,134 @@ export default function LoginScreen() {
             </div>
           )}
 
-          {/* ── Verification code entry ── */}
-          {needsVerification ? (
+          {/* ── Forgot password flow ── */}
+          {forgotMode ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                backgroundColor: colors.offWhite,
+                border: '1px solid #C9A99A40',
+                borderRadius: 14,
+                padding: 20,
+                width: '100%',
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.deepDusk }}>
+                  Reset your password
+                </span>
+              </div>
+
+              {resetSuccess ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingBlock: 12 }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.confirmGreen }}>
+                    Password reset successfully!
+                  </span>
+                </div>
+              ) : !resetSent ? (
+                <>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.mutedText, textAlign: 'center' }}>
+                    Enter your email and we'll send a reset code
+                  </span>
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setResetError(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleForgotSubmit()}
+                    style={emailInputStyle}
+                  />
+                  {resetError && (
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta, textAlign: 'center' }}>
+                      {resetError}
+                    </span>
+                  )}
+                  <button
+                    onClick={handleForgotSubmit}
+                    disabled={resetLoading}
+                    style={{
+                      width: '100%',
+                      height: 48,
+                      borderRadius: 12,
+                      backgroundColor: colors.deepDusk,
+                      border: 'none',
+                      cursor: resetLoading ? 'wait' : 'pointer',
+                      opacity: resetLoading ? 0.7 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.paleHorizon }}>
+                      {resetLoading ? 'Sending...' : 'Send Reset Code'}
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.mutedText, textAlign: 'center' }}>
+                    Enter the code sent to <strong style={{ color: colors.deepDusk }}>{email}</strong> and your new password
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Reset code"
+                    maxLength={6}
+                    value={resetCode}
+                    onChange={(e) => { setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setResetError(null); }}
+                    style={{ ...emailInputStyle, textAlign: 'center', fontSize: 20, fontWeight: 600, letterSpacing: '0.2em' }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="New password (min 8 characters)"
+                    value={newPassword}
+                    onChange={(e) => { setNewPassword(e.target.value); setResetError(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleResetSubmit()}
+                    style={emailInputStyle}
+                  />
+                  {resetError && (
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta, textAlign: 'center' }}>
+                      {resetError}
+                    </span>
+                  )}
+                  <button
+                    onClick={handleResetSubmit}
+                    disabled={resetLoading}
+                    style={{
+                      width: '100%',
+                      height: 48,
+                      borderRadius: 12,
+                      backgroundColor: colors.deepDusk,
+                      border: 'none',
+                      cursor: resetLoading ? 'wait' : 'pointer',
+                      opacity: resetLoading ? 0.7 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.paleHorizon }}>
+                      {resetLoading ? 'Resetting...' : 'Reset Password'}
+                    </span>
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={() => { setForgotMode(false); setResetSent(false); setResetCode(''); setNewPassword(''); setResetError(null); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, alignSelf: 'center' }}
+              >
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.sageDrift }}>
+                  Back to sign in
+                </span>
+              </button>
+            </div>
+          ) : needsVerification ? (
             <div
               style={{
                 display: 'flex',
@@ -488,6 +667,28 @@ export default function LoginScreen() {
                       {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
                     </span>
                   </button>
+                  {!isSignUp && (
+                    <button
+                      onClick={() => { setForgotMode(true); setEmailError(null); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 4,
+                        alignSelf: 'center',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                          fontSize: 13,
+                          color: colors.borderTint,
+                        }}
+                      >
+                        Forgot password?
+                      </span>
+                    </button>
+                  )}
                 </div>
               )}
             </>

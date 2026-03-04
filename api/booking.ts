@@ -12,6 +12,7 @@ import {
 } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
+import { COLLECTIONS } from '../services/appwriteServer';
 
 const DATABASE_ID = 'sogojet';
 const STUB_MODE = !process.env.DUFFEL_API_KEY;
@@ -145,12 +146,45 @@ function stubSearch(origin: string, destination: string, cabinClass: string) {
     availableServices: [
       { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
       { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
-      { id: 'meal-pasta', type: 'meal', name: 'Pasta Primavera', amount: 12, currency: 'USD' },
     ],
   }));
 }
 
+// Seeded PRNG for deterministic stub occupancy — same offerId always produces same seat map
+function seededRandom(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  return () => { h = Math.imul(h ^ (h >>> 16), 0x45d9f3b); h = Math.imul(h ^ (h >>> 13), 0x45d9f3b); return ((h ^= h >>> 16) >>> 0) / 4294967296; };
+}
+
 function stubOffer(offerId: string) {
+  const rand = seededRandom(offerId);
+  const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const EXIT_ROWS = [14, 25];
+  const TOTAL_ROWS = 30;
+
+  const rows = Array.from({ length: TOTAL_ROWS }, (_, i) => {
+    const rowNum = i + 1;
+    const isExit = EXIT_ROWS.includes(rowNum);
+    return {
+      rowNumber: rowNum,
+      seats: COLUMNS.map((col) => {
+        // ~65% occupancy, window/aisle seats fill faster
+        const isWindowOrAisle = 'ADF'.includes(col);
+        const threshold = isWindowOrAisle ? 0.58 : 0.72;
+        const occupied = rand() > threshold;
+        return {
+          column: col,
+          available: !occupied,
+          extraLegroom: isExit,
+          price: isExit ? 25 : 0,
+          currency: 'USD',
+          designator: `${rowNum}${col}`,
+        };
+      }),
+    };
+  });
+
   return {
     offer: {
       id: offerId,
@@ -177,36 +211,13 @@ function stubOffer(offerId: string) {
       availableServices: [
         { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
         { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
-        { id: 'meal-pasta', type: 'meal', name: 'Pasta Primavera', amount: 12, currency: 'USD' },
-        { id: 'meal-salad', type: 'meal', name: 'Garden Salad', amount: 10, currency: 'USD' },
       ],
     },
     seatMap: {
-      columns: ['A', 'B', 'C', 'D', 'E', 'F'],
-      exitRows: [14],
-      rows: Array.from({ length: 6 }, (_, i) => {
-        const rowNum = 12 + i;
-        const isExit = rowNum === 14;
-        return {
-          rowNumber: rowNum,
-          seats: ['A', 'B', 'C', 'D', 'E', 'F'].map((col) => {
-            const occupied =
-              (rowNum === 12 && 'ACF'.includes(col)) ||
-              (rowNum === 13 && 'BD'.includes(col)) ||
-              (rowNum === 15 && 'AEF'.includes(col)) ||
-              (rowNum === 16 && 'CD'.includes(col)) ||
-              (rowNum === 17 && col === 'B');
-            return {
-              column: col,
-              available: !occupied,
-              extraLegroom: isExit,
-              price: isExit ? 25 : 0,
-              currency: 'USD',
-              designator: `${rowNum}${col}`,
-            };
-          }),
-        };
-      }),
+      columns: COLUMNS,
+      exitRows: EXIT_ROWS,
+      aisleAfterColumns: ['C'],
+      rows,
     },
   };
 }
@@ -238,6 +249,68 @@ function stubGetOrder(orderId: string) {
       total_currency: 'USD',
       created_at: new Date().toISOString(),
     },
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformSeatMap(raw: any): { columns: string[]; exitRows: number[]; aisleAfterColumns: string[]; rows: { rowNumber: number; seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string }[] }[] } | null {
+  if (!raw || !Array.isArray(raw)) return null;
+  // Duffel returns an array of seat maps (one per slice); use the first
+  const sliceMap = raw[0];
+  if (!sliceMap?.cabins?.length) return null;
+
+  const cabin = sliceMap.cabins[0]; // primary cabin
+  const allColumns = new Set<string>();
+  const exitRows: number[] = [];
+  const aisleAfterCols = new Set<string>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const row of cabin.rows ?? []) {
+    const rowNumber = row.sections?.[0]?.elements?.[0]?.designator?.match(/^(\d+)/)?.[1];
+    if (!rowNumber) continue;
+    const rn = parseInt(rowNumber);
+    let isExit = false;
+    const seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string }[] = [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    row.sections?.forEach((section: any, sIdx: number) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const el of section.elements ?? []) {
+        if (el.type !== 'seat') continue;
+        const col = el.designator?.replace(/^\d+/, '') ?? '';
+        allColumns.add(col);
+        const hasExitDisclosure = el.disclosures?.includes('exit_row') ?? false;
+        if (hasExitDisclosure) isExit = true;
+        const seatService = el.available_services?.[0];
+        const price = seatService ? parseFloat(seatService.total_amount) || 0 : 0;
+        const currency = seatService?.total_currency || 'USD';
+        seats.push({
+          column: col,
+          available: el.available_services ? el.available_services.length > 0 : true,
+          extraLegroom: hasExitDisclosure || (el.disclosures?.includes('extra_legroom') ?? false),
+          price,
+          currency,
+          designator: el.designator || `${rn}${col}`,
+        });
+      }
+      // Track aisles: if there's a next section, the last column of this section is before an aisle
+      if (sIdx < (row.sections?.length ?? 0) - 1 && seats.length > 0) {
+        aisleAfterCols.add(seats[seats.length - 1].column);
+      }
+    });
+
+    if (isExit) exitRows.push(rn);
+    rows.push({ rowNumber: rn, seats });
+  }
+
+  const columns = Array.from(allColumns).sort();
+  return {
+    columns,
+    exitRows,
+    aisleAfterColumns: Array.from(aisleAfterCols).sort(),
+    rows,
   };
 }
 
@@ -297,7 +370,7 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
       getOffer(v.data.offerId),
       getSeatMap(v.data.offerId).catch(() => null),
     ]);
-    return res.status(200).json({ offer: transformOffer(rawOffer), seatMap });
+    return res.status(200).json({ offer: transformOffer(rawOffer), seatMap: transformSeatMap(seatMap) });
   } catch (err) {
     logApiError('api/booking/offer', err);
     return res.status(500).json({ error: 'Failed to get offer details' });
@@ -385,7 +458,7 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     for (const passenger of v.data.passengers) {
       await databases.createDocument(
         DATABASE_ID,
-        'booking_passengers',
+        COLLECTIONS.bookingPassengers,
         ID.unique(),
         {
           booking_id: booking.$id,
@@ -468,12 +541,12 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
       case 'payment_intent.succeeded':
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
-        const bookings = await databases.listDocuments(DATABASE_ID, 'bookings', [
+        const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
           Query.equal('stripe_payment_intent_id', paymentIntent.id),
           Query.limit(1),
         ]);
         if (bookings.documents.length > 0) {
-          await databases.updateDocument(DATABASE_ID, 'bookings', bookings.documents[0].$id, {
+          await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, bookings.documents[0].$id, {
             status: event.type === 'payment_intent.succeeded' ? 'confirmed' : 'failed',
           });
         }

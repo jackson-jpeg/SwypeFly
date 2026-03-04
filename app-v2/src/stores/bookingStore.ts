@@ -73,14 +73,9 @@ export const useBookingStore = create<BookingState>()(
       setMeal: (id) => set({ selectedMeal: id }),
       setOrderResponse: (order) => set({ orderResponse: order }),
       setPassengerCount: (count) => set({ passengerCount: count }),
-      applyPromo: (code) => {
-        const upper = code.trim().toUpperCase();
-        const VALID_CODES: Record<string, number> = { SOGOJET: 0.1, FLY20: 0.2, WELCOME: 0.15 };
-        const discount = VALID_CODES[upper];
-        if (discount) {
-          set({ promoCode: upper, promoDiscount: discount });
-          return true;
-        }
+      applyPromo: () => {
+        // Promo code validation will be wired to a backend endpoint.
+        // No hardcoded codes — always returns false until backend is ready.
         return false;
       },
       reset: () => set(INITIAL),

@@ -117,6 +117,7 @@ export function getStubBookingOffers(
 export const STUB_SEAT_MAP: SeatMap = {
   columns: ['A', 'B', 'C', 'D', 'E', 'F'],
   exitRows: [14],
+  aisleAfterColumns: ['C'],
   rows: Array.from({ length: 6 }, (_, i) => {
     const rowNum = 12 + i;
     const isExitRow = rowNum === 14;

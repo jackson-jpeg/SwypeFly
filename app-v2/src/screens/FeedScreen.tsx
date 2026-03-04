@@ -115,14 +115,15 @@ function FeedCard({ destination }: { destination: Destination }) {
           style={{
             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
             fontWeight: 800,
-            fontSize: 'clamp(36px, 10vw, 56px)',
-            lineHeight: 0.95,
+            fontSize: 'clamp(32px, 9vw, 48px)',
+            lineHeight: 1.05,
             letterSpacing: '-0.02em',
             textTransform: 'uppercase',
             color: '#FFFFFF',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}
         >
           {destination.city}

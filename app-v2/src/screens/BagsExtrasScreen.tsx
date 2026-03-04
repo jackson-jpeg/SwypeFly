@@ -162,7 +162,7 @@ export default function BagsExtrasScreen() {
   // Derive bag/meal prices from offer's availableServices when present, else use defaults
   const liveBagServices = useMemo(() => {
     const services = offerDetail?.offer?.availableServices ?? selectedOffer?.availableServices ?? [];
-    return services.filter((s) => s.type === 'baggage');
+    return services.filter((s) => s.type === 'baggage' || s.type === 'check_bag');
   }, [offerDetail, selectedOffer]);
 
   const liveMealServices = useMemo(() => {
@@ -307,7 +307,8 @@ export default function BagsExtrasScreen() {
           </div>
         </div>
 
-        {/* in-flight meals */}
+        {/* in-flight meals — only shown when meal services are available */}
+        {liveMealServices.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={sectionLabel}>In-Flight Meals</span>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -343,6 +344,7 @@ export default function BagsExtrasScreen() {
             })}
           </div>
         </div>
+        )}
 
         {/* running total card */}
         <div

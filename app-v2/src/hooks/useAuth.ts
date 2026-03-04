@@ -26,6 +26,8 @@ interface AuthActions {
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>;
   verifyEmail: (code: string) => Promise<{ error: string | null }>;
   resendVerification: () => Promise<{ error: string | null }>;
+  forgotPassword: (email: string) => Promise<{ error: string | null }>;
+  resetPassword: (code: string, newPassword: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   browseAsGuest: () => void;
   requireAuth: () => boolean;
@@ -208,6 +210,53 @@ export function useAuth(): Auth {
     [signUp],
   );
 
+  // Forgot password — sends reset code to email
+  const forgotPassword = useCallback(
+    async (email: string) => {
+      if (!signIn) return { error: 'Auth not ready' };
+      try {
+        await signIn.create({ strategy: 'reset_password_email_code', identifier: email });
+        return { error: null };
+      } catch (err: unknown) {
+        const message =
+          err && typeof err === 'object' && 'errors' in err
+            ? (err as { errors: { message: string }[] }).errors[0]?.message ?? 'Failed to send reset code'
+            : err instanceof Error
+              ? err.message
+              : 'Failed to send reset code';
+        return { error: message };
+      }
+    },
+    [signIn],
+  );
+
+  // Reset password — verifies code + sets new password
+  const resetPassword = useCallback(
+    async (code: string, newPassword: string) => {
+      if (!signIn) return { error: 'Auth not ready' };
+      try {
+        const result = await signIn.attemptFirstFactor({
+          strategy: 'reset_password_email_code',
+          code,
+          password: newPassword,
+        });
+        if (result.status === 'complete') {
+          return { error: null };
+        }
+        return { error: 'Password reset incomplete. Please try again.' };
+      } catch (err: unknown) {
+        const message =
+          err && typeof err === 'object' && 'errors' in err
+            ? (err as { errors: { message: string }[] }).errors[0]?.message ?? 'Invalid code or password'
+            : err instanceof Error
+              ? err.message
+              : 'Password reset failed';
+        return { error: message };
+      }
+    },
+    [signIn],
+  );
+
   const signOutFn = useCallback(async () => {
     try {
       await clerkSignOut();
@@ -243,6 +292,8 @@ export function useAuth(): Auth {
     signUpWithEmail,
     verifyEmail,
     resendVerification,
+    forgotPassword,
+    resetPassword,
     signOut: signOutFn,
     browseAsGuest,
     requireAuth,

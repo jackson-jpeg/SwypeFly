@@ -4,6 +4,7 @@ import { useAuthContext } from '@/hooks/AuthContext';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useDestination } from '@/hooks/useDestination';
+import QRCode from '@/components/QRCode';
 
 /* ───── screen ───── */
 export default function ConfirmationScreen() {
@@ -330,33 +331,9 @@ export default function ConfirmationScreen() {
                 pointerEvents: 'none',
               }}
             />
-            {/* QR placeholder */}
-            <div
-              style={{
-                position: 'relative',
-                width: 100,
-                height: 100,
-                backgroundColor: '#3B2F2A',
-                borderRadius: 12,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {/* simple QR pattern placeholder */}
-              <svg width="60" height="60" viewBox="0 0 60 60">
-                <rect x="0" y="0" width="20" height="20" rx="3" fill="#FFFFFF" opacity="0.3" />
-                <rect x="24" y="0" width="12" height="12" rx="2" fill="#FFFFFF" opacity="0.2" />
-                <rect x="40" y="0" width="20" height="20" rx="3" fill="#FFFFFF" opacity="0.3" />
-                <rect x="0" y="24" width="12" height="12" rx="2" fill="#FFFFFF" opacity="0.2" />
-                <rect x="16" y="24" width="8" height="8" rx="1" fill="#FFFFFF" opacity="0.15" />
-                <rect x="28" y="20" width="12" height="12" rx="2" fill="#FFFFFF" opacity="0.2" />
-                <rect x="44" y="24" width="8" height="8" rx="1" fill="#FFFFFF" opacity="0.15" />
-                <rect x="0" y="40" width="20" height="20" rx="3" fill="#FFFFFF" opacity="0.3" />
-                <rect x="24" y="40" width="8" height="8" rx="1" fill="#FFFFFF" opacity="0.15" />
-                <rect x="36" y="44" width="12" height="12" rx="2" fill="#FFFFFF" opacity="0.2" />
-                <rect x="52" y="44" width="8" height="8" rx="1" fill="#FFFFFF" opacity="0.15" />
-              </svg>
+            {/* QR code — encodes booking reference for scanner apps */}
+            <div style={{ position: 'relative' }}>
+              <QRCode value={bookingCode} size={100} bgColor="#3B2F2A" fgColor="#FFFFFF" />
             </div>
             <span
               style={{

@@ -148,6 +148,7 @@ export default function FlightSelectionScreen() {
               position: 'absolute',
               bottom: 14,
               left: 16,
+              right: 16,
               display: 'flex',
               flexDirection: 'column',
               gap: 2,
@@ -161,6 +162,10 @@ export default function FlightSelectionScreen() {
                 lineHeight: '24px',
                 textTransform: 'uppercase',
                 color: '#FFFFFF',
+                display: '-webkit-box',
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
               }}
             >
               {data.destination}
@@ -171,6 +176,10 @@ export default function FlightSelectionScreen() {
                 fontSize: 11,
                 lineHeight: '14px',
                 color: '#FFFFFFCC',
+                display: '-webkit-box',
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
               }}
             >
               {data.route}

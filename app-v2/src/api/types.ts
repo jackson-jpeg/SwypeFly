@@ -104,7 +104,7 @@ export interface BookingOffer {
 
 export interface AvailableService {
   id: string;
-  type: 'baggage' | 'seat' | 'meal';
+  type: 'baggage' | 'check_bag' | 'seat' | 'meal';
   name: string;
   amount: number;
   currency: string;
@@ -129,6 +129,7 @@ export interface SeatMap {
   rows: SeatMapRow[];
   columns: string[];
   exitRows: number[];
+  aisleAfterColumns: string[];
 }
 
 export interface Passenger {

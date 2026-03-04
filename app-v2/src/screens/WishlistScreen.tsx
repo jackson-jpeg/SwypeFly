@@ -215,6 +215,7 @@ export default function WishlistScreen() {
                   position: 'absolute',
                   bottom: 8,
                   left: 10,
+                  right: 30,
                   fontFamily: `"${fonts.display}", system-ui, sans-serif`,
                   fontSize: 15,
                   fontWeight: 800,
@@ -222,6 +223,10 @@ export default function WishlistScreen() {
                   lineHeight: '18px',
                   textTransform: 'uppercase',
                   color: '#FFFFFF',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
                 }}
               >
                 {dest.city}

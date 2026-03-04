@@ -19,18 +19,6 @@ const sectionLabel: React.CSSProperties = {
   color: colors.sageDrift,
 };
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  height: 44,
-  backgroundColor: colors.offWhite,
-  border: '1px solid #C9A99A60',
-  borderRadius: 10,
-  paddingInline: 14,
-  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-  fontSize: 15,
-  color: colors.deepDusk,
-  outline: 'none',
-};
 
 /* ───── inner payment form (has access to Stripe context) ───── */
 function PaymentForm({ onSuccess, total }: { onSuccess: () => Promise<void>; total: number }) {
@@ -142,9 +130,6 @@ export default function ReviewPaymentScreen() {
   const { departureCode } = useUIStore();
   const { data: dest } = useDestination(booking.destinationId ?? undefined);
   const total = booking.getTotal();
-  const [promoInput, setPromoInput] = useState('');
-  const [promoError, setPromoError] = useState('');
-  const [promoSuccess, setPromoSuccess] = useState(booking.promoCode ?? '');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [intentLoading, setIntentLoading] = useState(false);
   const [intentError, setIntentError] = useState('');
@@ -152,8 +137,8 @@ export default function ReviewPaymentScreen() {
   const createOrder = useCreateOrder();
 
   // Derive dynamic baggage label and price
-  const bagLabel = booking.selectedBaggage === 'bag-2x23kg' ? '2 checked bags (23 kg each)' : '1 checked bag (23 kg)';
   const bagSvc = booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedBaggage);
+  const bagLabel = bagSvc?.name ?? (booking.selectedBaggage === 'bag-2x23kg' ? '2 checked bags (23 kg each)' : '1 checked bag (23 kg)');
   const bagPrice = bagSvc?.amount ?? (booking.selectedBaggage === 'bag-2x23kg' ? 60 : 35);
 
   // Derive dynamic meal label and price
@@ -324,55 +309,26 @@ export default function ReviewPaymentScreen() {
           </div>
         </div>
 
-        {/* promo code */}
-        {promoSuccess ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', backgroundColor: '#A8C4B820', border: '1px solid #A8C4B860', borderRadius: 10 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.confirmGreen }}>
-              {promoSuccess} — {Math.round(booking.promoDiscount * 100)}% off applied
-            </span>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', gap: 10 }}>
-            <input
-              type="text"
-              placeholder="Promo code"
-              value={promoInput}
-              onChange={(e) => { setPromoInput(e.target.value); setPromoError(''); }}
-              style={{ ...inputStyle, flex: 1 }}
-            />
-            <button
-              onClick={() => {
-                if (!promoInput.trim()) return;
-                const ok = booking.applyPromo(promoInput);
-                if (ok) {
-                  setPromoSuccess(promoInput.trim().toUpperCase());
-                  setPromoError('');
-                } else {
-                  setPromoError('Invalid promo code');
-                  setTimeout(() => setPromoError(''), 3000);
-                }
-              }}
-              style={{
-                height: 44,
-                paddingInline: 20,
-                borderRadius: 10,
-                backgroundColor: '#C9A99A20',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 500, color: colors.mutedText }}>
-                Apply
-              </span>
-            </button>
-          </div>
-        )}
-        {promoError && (
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.terracotta }}>
-            {promoError}
+        {/* promo code — coming soon */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 14px',
+            backgroundColor: '#C9A99A10',
+            border: '1px solid #C9A99A20',
+            borderRadius: 10,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+            <line x1="7" y1="7" x2="7.01" y2="7" />
+          </svg>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.borderTint }}>
+            Promo codes coming soon
           </span>
-        )}
+        </div>
 
         {/* payment section */}
         <span style={sectionLabel}>Payment</span>
