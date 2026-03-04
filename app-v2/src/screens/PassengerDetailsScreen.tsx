@@ -84,19 +84,52 @@ export default function PassengerDetailsScreen() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const bookingStore = useBookingStore();
-  const { addPassenger, updatePassenger, passengers } = bookingStore;
+  const { addPassenger, updatePassenger, passengers, passengerCount } = bookingStore;
   const { data: dest } = useDestination(bookingStore.destinationId ?? undefined);
+  const totalPax = passengerCount;
+  const [currentPaxIdx, setCurrentPaxIdx] = useState(0);
+
+  // Pre-fill from stored passenger or user profile (pax 0 only)
+  const stored = passengers[currentPaxIdx];
   const nameParts = (user?.name ?? '').split(' ');
-  const [firstName, setFirstName] = useState(nameParts[0] ?? '');
-  const [lastName, setLastName] = useState(nameParts.slice(1).join(' ') ?? '');
-  const [dob, setDob] = useState('');
-  const [gender, setGender] = useState('Female');
-  const [phone, setPhone] = useState('');
+  const defaultFirst = currentPaxIdx === 0 ? (nameParts[0] ?? '') : '';
+  const defaultLast = currentPaxIdx === 0 ? (nameParts.slice(1).join(' ') ?? '') : '';
+
+  const [firstName, setFirstName] = useState(stored?.given_name ?? defaultFirst);
+  const [lastName, setLastName] = useState(stored?.family_name ?? defaultLast);
+  const [dob, setDob] = useState(() => {
+    if (!stored?.born_on) return '';
+    const [y, m, d] = stored.born_on.split('-');
+    return `${m}/${d}/${y}`;
+  });
+  const [gender, setGender] = useState(stored?.gender === 'm' ? 'Male' : 'Female');
+  const [phone, setPhone] = useState(stored?.phone_number ?? '');
   const [passportOpen, setPassportOpen] = useState(false);
   const [passportNumber, setPassportNumber] = useState('');
   const [ffOpen, setFfOpen] = useState(false);
   const [ffNumber, setFfNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Reset form when currentPaxIdx changes
+  const resetFormForPax = (idx: number) => {
+    const pax = passengers[idx];
+    const parts = idx === 0 ? (user?.name ?? '').split(' ') : [];
+    setFirstName(pax?.given_name ?? (idx === 0 ? parts[0] ?? '' : ''));
+    setLastName(pax?.family_name ?? (idx === 0 ? parts.slice(1).join(' ') ?? '' : ''));
+    if (pax?.born_on) {
+      const [y, m, d] = pax.born_on.split('-');
+      setDob(`${m}/${d}/${y}`);
+    } else {
+      setDob('');
+    }
+    setGender(pax?.gender === 'm' ? 'Male' : 'Female');
+    setPhone(pax?.phone_number ?? '');
+    setPassportNumber('');
+    setFfNumber('');
+    setPassportOpen(false);
+    setFfOpen(false);
+    setErrors({});
+  };
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -121,9 +154,17 @@ export default function PassengerDetailsScreen() {
     >
       <BookingHeader
         step={2}
-        stepLabel="Passenger Details"
+        stepLabel={totalPax > 1 ? `Passenger ${currentPaxIdx + 1} of ${totalPax}` : 'Passenger Details'}
         bgImage={dest?.imageUrl}
-        onBack={() => navigate(-1)}
+        onBack={() => {
+          if (currentPaxIdx > 0) {
+            const prevIdx = currentPaxIdx - 1;
+            setCurrentPaxIdx(prevIdx);
+            resetFormForPax(prevIdx);
+          } else {
+            navigate(-1);
+          }
+        }}
         onClose={() => navigate('/')}
       />
 
@@ -150,7 +191,7 @@ export default function PassengerDetailsScreen() {
               color: colors.deepDusk,
             }}
           >
-            Passenger 1 — Adult
+            Passenger {currentPaxIdx + 1} — Adult
           </span>
           <span
             style={{
@@ -160,7 +201,7 @@ export default function PassengerDetailsScreen() {
               color: colors.sageDrift,
             }}
           >
-            Primary
+            {currentPaxIdx === 0 ? 'Primary' : `Traveler ${currentPaxIdx + 1}`}
           </span>
         </div>
 
@@ -393,8 +434,9 @@ export default function PassengerDetailsScreen() {
             const [mm, dd, yyyy] = dob.split('/');
             const bornOn = `${yyyy}-${mm}-${dd}`;
 
+            const paxId = `pax-${currentPaxIdx + 1}`;
             const paxData = {
-              id: 'pax-1',
+              id: paxId,
               given_name: firstName.trim(),
               family_name: lastName.trim(),
               born_on: bornOn,
@@ -403,13 +445,20 @@ export default function PassengerDetailsScreen() {
               email: user?.email ?? '',
               phone_number: phone.trim(),
             };
-            const existingIdx = passengers.findIndex((p) => p.id === 'pax-1');
+            const existingIdx = passengers.findIndex((p) => p.id === paxId);
             if (existingIdx >= 0) {
               updatePassenger(existingIdx, paxData);
             } else {
               addPassenger(paxData);
             }
-            navigate('/booking/seats');
+
+            if (currentPaxIdx < totalPax - 1) {
+              const nextIdx = currentPaxIdx + 1;
+              setCurrentPaxIdx(nextIdx);
+              resetFormForPax(nextIdx);
+            } else {
+              navigate('/booking/seats');
+            }
           }}
           style={{
             width: '100%',
@@ -431,7 +480,7 @@ export default function PassengerDetailsScreen() {
               color: colors.paleHorizon,
             }}
           >
-            Continue to Seat Selection
+            {currentPaxIdx < totalPax - 1 ? `Continue to Passenger ${currentPaxIdx + 2}` : 'Continue to Seat Selection'}
           </span>
         </button>
       </div>

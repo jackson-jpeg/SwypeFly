@@ -72,7 +72,7 @@ export const useBookingStore = create<BookingState>()(
       setInsurance: (has) => set({ hasInsurance: has }),
       setMeal: (id) => set({ selectedMeal: id }),
       setOrderResponse: (order) => set({ orderResponse: order }),
-      setPassengerCount: (count) => set({ passengerCount: count }),
+      setPassengerCount: (count) => set({ passengerCount: count, passengers: [] }),
       applyPromo: () => {
         // Promo code validation will be wired to a backend endpoint.
         // No hardcoded codes — always returns false until backend is ready.
