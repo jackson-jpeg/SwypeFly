@@ -58,6 +58,7 @@ export interface Destination {
     bestFor: string[];
     costLevel: 1 | 2 | 3 | 4;
   };
+  similarDestinations?: { id: string; city: string; flightPrice: number; imageUrl: string }[];
 }
 
 export interface DestinationFeedPage {

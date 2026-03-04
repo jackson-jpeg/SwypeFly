@@ -10,187 +10,6 @@ import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import type { TripPlan, Destination } from '@/api/types';
 
-/* ── detail enrichment (supplements stub Destination data) ────── */
-const DETAIL_DATA: Record<string, {
-  region: string;
-  vibe: string;
-  quote: string;
-  flightStrikethrough?: number;
-  flightRoute: string;
-  flightDates: string;
-  hotels: { name: string; price: string; image: string }[];
-  weather: { month: string; temp: number; pct: number }[];
-  aboutParas: string[];
-  itinerary: { days: string; title: string; desc: string }[];
-  similar: { id?: string; city: string; price: number; image: string }[];
-}> = {
-  '2': {
-    region: 'Aegean Islands',
-    vibe: 'Romance',
-    quote: 'Sun-bleached walls tumble toward the caldera, each sunset more impossible than the last.',
-    flightStrikethrough: 1050,
-    flightRoute: 'JFK \u2192 JTR \u00b7 Round trip',
-    flightDates: 'Jun 15 \u2013 Jun 22 \u00b7 Economy \u00b7 1 stop via ATH',
-    hotels: [
-      { name: 'Canaves Oia', price: '$289/nt', image: '/images/santorini.jpg' },
-      { name: 'Astra Suites', price: '$196/nt', image: '/images/mykonos.jpg' },
-    ],
-    weather: [
-      { month: 'Jun', temp: 82, pct: 85 },
-      { month: 'Jul', temp: 86, pct: 95 },
-      { month: 'Aug', temp: 84, pct: 90 },
-      { month: 'Sep', temp: 79, pct: 75 },
-      { month: 'Oct', temp: 72, pct: 60 },
-    ],
-    aboutParas: [
-      'A crescent-shaped island born from a volcanic eruption, Santorini is the jewel of the Cyclades. Whitewashed villages cascade down rust-colored cliffs, blue-domed churches punctuate every sightline, and the caldera views at golden hour are worth every penny of the flight.',
-      "Beyond the postcard-perfect vistas, you\u2019ll find world-class wine from ancient Assyrtiko vines, black sand beaches, and some of the freshest seafood in the Mediterranean.",
-    ],
-    itinerary: [
-      { days: 'Day 1\u20132', title: 'Oia & Caldera Views', desc: 'Explore the iconic blue domes, watch the legendary sunset from the castle ruins.' },
-      { days: 'Day 3\u20134', title: 'Beaches & Wine', desc: "Red Beach, Kamari\u2019s black sands, then an afternoon wine tasting in Megalochori." },
-      { days: 'Day 5\u20137', title: 'Hidden Gems & Departure', desc: 'Akrotiri archaeological site, catamaran cruise, farewell dinner at Ammoudi Bay.' },
-    ],
-    similar: [
-      { city: 'Mykonos', price: 560, image: '/images/mykonos.jpg' },
-      { city: 'Amalfi Coast', price: 750, image: '/images/amalfi.jpg' },
-      { city: 'Dubrovnik', price: 680, image: '/images/dubrovnik.jpg' },
-    ],
-  },
-  '1': {
-    region: 'Lesser Sunda Islands',
-    vibe: 'Wellness',
-    quote: 'Emerald rice terraces, ancient temples, and sunsets that redefine the color orange.',
-    flightStrikethrough: 890,
-    flightRoute: 'JFK \u2192 DPS \u00b7 Round trip',
-    flightDates: 'Jul 10 \u2013 Jul 20 \u00b7 Economy \u00b7 1 stop via SIN',
-    hotels: [
-      { name: 'Four Seasons Sayan', price: '$450/nt', image: '/images/bali.jpg' },
-      { name: 'Alila Seminyak', price: '$185/nt', image: '/images/bali.jpg' },
-    ],
-    weather: [
-      { month: 'May', temp: 84, pct: 60 },
-      { month: 'Jun', temp: 82, pct: 50 },
-      { month: 'Jul', temp: 81, pct: 45 },
-      { month: 'Aug', temp: 82, pct: 40 },
-      { month: 'Sep', temp: 83, pct: 55 },
-    ],
-    aboutParas: [
-      'Bali is Indonesia\u2019s most famous island, a lush paradise of terraced rice paddies, volcanic mountains, and sacred water temples. Ubud\u2019s artistic heart beats alongside Seminyak\u2019s beach clubs and Uluwatu\u2019s dramatic clifftop temple.',
-      'From sunrise yoga in the jungle to snorkeling with manta rays off Nusa Penida, Bali offers a rare blend of spiritual depth and natural wonder.',
-    ],
-    itinerary: [
-      { days: 'Day 1\u20133', title: 'Ubud & Rice Terraces', desc: 'Tegallalang terraces, Sacred Monkey Forest, traditional Balinese cooking class.' },
-      { days: 'Day 4\u20136', title: 'Beaches & Temples', desc: 'Uluwatu temple at sunset, surf lessons in Canggu, snorkeling at Blue Lagoon.' },
-      { days: 'Day 7\u201310', title: 'Island Hopping', desc: 'Day trip to Nusa Penida, Kelingking Beach, manta ray snorkeling.' },
-    ],
-    similar: [
-      { city: 'Maldives', price: 1100, image: '/images/maldives.jpg' },
-      { city: 'Kyoto', price: 980, image: '/images/kyoto.jpg' },
-      { city: 'Santorini', price: 820, image: '/images/santorini.jpg' },
-    ],
-  },
-  '9': {
-    region: 'Kansai',
-    vibe: 'Culture',
-    quote: 'Where ancient tradition breathes through bamboo groves and vermilion torii gates.',
-    flightStrikethrough: 1250,
-    flightRoute: 'JFK \u2192 KIX \u00b7 Round trip',
-    flightDates: 'Apr 1 \u2013 Apr 10 \u00b7 Economy \u00b7 1 stop via NRT',
-    hotels: [
-      { name: 'The Ritz-Carlton', price: '$380/nt', image: '/images/kyoto.jpg' },
-      { name: 'Hoshinoya Kyoto', price: '$520/nt', image: '/images/kyoto.jpg' },
-    ],
-    weather: [
-      { month: 'Mar', temp: 54, pct: 55 },
-      { month: 'Apr', temp: 63, pct: 90 },
-      { month: 'May', temp: 72, pct: 75 },
-      { month: 'Oct', temp: 66, pct: 80 },
-      { month: 'Nov', temp: 55, pct: 85 },
-    ],
-    aboutParas: [
-      'Kyoto served as Japan\u2019s imperial capital for over a millennium, and the city\u2019s 2,000+ temples, shrines, and gardens make it the cultural soul of the country. Cherry blossoms in spring and fiery maples in autumn paint the city in ethereal color.',
-      'Wander through Arashiyama\u2019s towering bamboo forest, savor a multi-course kaiseki dinner, and catch a geisha gliding through Gion\u2019s lantern-lit streets.',
-    ],
-    itinerary: [
-      { days: 'Day 1\u20132', title: 'Temples & Shrines', desc: 'Fushimi Inari\u2019s 10,000 torii gates, Kinkaku-ji golden pavilion, traditional tea ceremony.' },
-      { days: 'Day 3\u20135', title: 'Culture & Cuisine', desc: 'Arashiyama bamboo grove, Nishiki Market, kaiseki dinner in Gion.' },
-      { days: 'Day 6\u20138', title: 'Day Trips', desc: 'Nara deer park, Osaka street food tour, sake tasting in Fushimi.' },
-    ],
-    similar: [
-      { city: 'Tokyo', price: 950, image: '/images/tokyo.jpg' },
-      { city: 'Bali', price: 650, image: '/images/bali.jpg' },
-      { city: 'Marrakech', price: 490, image: '/images/marrakech.jpg' },
-    ],
-  },
-  '3': {
-    region: 'Kanto',
-    vibe: 'Adventure',
-    quote: 'Neon-drenched streets, Michelin-starred ramen, and the pulse of 14 million dreamers.',
-    flightStrikethrough: 1200,
-    flightRoute: 'JFK \u2192 NRT \u00b7 Round trip',
-    flightDates: 'May 5 \u2013 May 14 \u00b7 Economy \u00b7 Nonstop',
-    hotels: [
-      { name: 'Park Hyatt Tokyo', price: '$410/nt', image: '/images/tokyo.jpg' },
-      { name: 'Aman Tokyo', price: '$680/nt', image: '/images/tokyo.jpg' },
-    ],
-    weather: [
-      { month: 'Mar', temp: 56, pct: 70 },
-      { month: 'Apr', temp: 63, pct: 85 },
-      { month: 'May', temp: 72, pct: 75 },
-      { month: 'Oct', temp: 68, pct: 80 },
-      { month: 'Nov', temp: 58, pct: 65 },
-    ],
-    aboutParas: [
-      'Tokyo is a city of contrasts where ultra-modern skyscrapers stand beside centuries-old shrines. From the chaotic energy of Shibuya Crossing to the serene grounds of Meiji Shrine, every neighborhood tells a different story.',
-      'With more Michelin stars than any city on Earth, a vending machine culture that borders on art, and neighborhoods like Akihabara and Harajuku that defy description, Tokyo delivers sensory overload in the best way possible.',
-    ],
-    itinerary: [
-      { days: 'Day 1\u20133', title: 'City Highlights', desc: 'Shibuya Crossing, Meiji Shrine, Senso-ji temple, Tsukiji Outer Market.' },
-      { days: 'Day 4\u20136', title: 'Culture & Pop Culture', desc: 'Akihabara electronics, Harajuku fashion, teamLab Borderless, Shinjuku nightlife.' },
-      { days: 'Day 7\u20139', title: 'Day Trips', desc: 'Mt. Fuji viewing at Hakone, Kamakura Great Buddha, onsen experience.' },
-    ],
-    similar: [
-      { city: 'Kyoto', price: 980, image: '/images/kyoto.jpg' },
-      { city: 'Bali', price: 650, image: '/images/bali.jpg' },
-      { city: 'Reykjavik', price: 420, image: '/images/iceland.jpg' },
-    ],
-  },
-  '11': {
-    region: 'Indian Ocean',
-    vibe: 'Romance',
-    quote: 'Overwater villas, bioluminescent shores, and a silence that resets your soul.',
-    flightStrikethrough: 1320,
-    flightRoute: 'JFK \u2192 MLE \u00b7 Round trip',
-    flightDates: 'Dec 20 \u2013 Dec 28 \u00b7 Economy \u00b7 1 stop via DXB',
-    hotels: [
-      { name: 'Soneva Fushi', price: '$1,200/nt', image: '/images/maldives.jpg' },
-      { name: 'W Maldives', price: '$680/nt', image: '/images/maldives.jpg' },
-    ],
-    weather: [
-      { month: 'Dec', temp: 84, pct: 70 },
-      { month: 'Jan', temp: 83, pct: 85 },
-      { month: 'Feb', temp: 84, pct: 90 },
-      { month: 'Mar', temp: 85, pct: 95 },
-      { month: 'Apr', temp: 86, pct: 80 },
-    ],
-    aboutParas: [
-      'The Maldives is a necklace of 1,192 coral islands scattered across the Indian Ocean. Impossibly turquoise lagoons, powder-white sandbanks, and some of the world\u2019s most spectacular marine life make this the ultimate barefoot-luxury escape.',
-      'Snorkel with whale sharks, dine on a sandbank lit by torches, and drift to sleep in an overwater villa with the ocean glowing beneath you.',
-    ],
-    itinerary: [
-      { days: 'Day 1\u20132', title: 'Arrival & Resort', desc: 'Seaplane transfer, overwater villa check-in, sunset dolphin cruise.' },
-      { days: 'Day 3\u20135', title: 'Ocean Adventures', desc: 'Snorkeling with mantas, sandbank picnic, night diving with bioluminescence.' },
-      { days: 'Day 6\u20138', title: 'Relaxation', desc: 'Spa treatments, private beach dinner, whale shark excursion.' },
-    ],
-    similar: [
-      { city: 'Bali', price: 650, image: '/images/bali.jpg' },
-      { city: 'Santorini', price: 820, image: '/images/santorini.jpg' },
-      { city: 'Amalfi Coast', price: 750, image: '/images/amalfi.jpg' },
-    ],
-  },
-};
-
 function getDefaultDetail(dest: Destination) {
   // Build itinerary from destination data if available
   const itinerary = (dest.itinerary ?? []).map((item) => ({
@@ -199,25 +18,28 @@ function getDefaultDetail(dest: Destination) {
     desc: item.activities.slice(1).join('. ') || item.activities[0] || '',
   }));
 
-  // Find similar destinations from the same country or vibe
-  const similarDests = STUB_DESTINATIONS
-    .filter((d) => d.id !== dest.id && (d.country === dest.country || d.vibeTags[0] === dest.vibeTags[0]))
-    .slice(0, 3)
-    .map((d) => ({ id: d.id, city: d.city, price: d.flightPrice, image: d.imageUrl }));
+  // Use API-provided similar destinations, fall back to stub lookup
+  const similarDests = (dest.similarDestinations ?? []).length > 0
+    ? dest.similarDestinations!.map((d) => ({ id: d.id, city: d.city, price: d.flightPrice, image: d.imageUrl }))
+    : STUB_DESTINATIONS
+        .filter((d) => d.id !== dest.id && (d.country === dest.country || d.vibeTags[0] === dest.vibeTags[0]))
+        .slice(0, 3)
+        .map((d) => ({ id: d.id, city: d.city, price: d.flightPrice, image: d.imageUrl }));
 
   return {
     region: dest.country,
     vibe: dest.vibeTags[0] ?? 'Adventure',
     quote: dest.tagline ?? `Discover the magic of ${dest.city}.`,
     flightStrikethrough: dest.previousPrice ?? undefined,
-    flightRoute: `JFK → ${dest.iataCode ?? dest.city}`,
-    flightDates: 'Flexible dates · Economy',
+    flightRoute: `${dest.iataCode ?? dest.city} · Round trip`,
+    flightDates: dest.departureDate && dest.returnDate
+      ? `${dest.departureDate} – ${dest.returnDate} · Economy`
+      : 'Flexible dates · Economy',
     hotels: (dest.imageUrls ?? []).slice(0, 2).map((img, i) => ({
       name: i === 0 ? `Top Stay in ${dest.city}` : `Hotel Pick ${i + 1}`,
-      price: `$${Math.round(dest.flightPrice * 0.4 + i * 30)}/nt`,
+      price: dest.liveHotelPrice ? `$${dest.liveHotelPrice}/nt` : `$${dest.hotelPricePerNight}/nt`,
       image: img,
     })),
-    weather: [],
     aboutParas: [dest.tagline ?? `${dest.city} awaits with incredible experiences and unforgettable moments.`],
     itinerary,
     similar: similarDests,
@@ -312,7 +134,7 @@ export default function DestinationDetailScreen() {
     );
   }
 
-  const detail = DETAIL_DATA[id ?? ''] ?? getDefaultDetail(stubDest);
+  const detail = getDefaultDetail(stubDest);
 
   const dest = {
     ...stubDest,
@@ -576,7 +398,7 @@ export default function DestinationDetailScreen() {
                   color: colors.borderTint,
                 }}
               >
-                {dest.flightRoute.replace('JFK', departureCode)}
+                {departureCode} → {dest.flightRoute}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -723,60 +545,19 @@ export default function DestinationDetailScreen() {
         </div>
       </div>}
 
-      {/* ─── Best Time to Visit (Weather) ─────────────────────── */}
-      {dest.weather.length > 0 && <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* ─── Best Time to Visit ──────────────────────────────── */}
+      {stubDest.bestMonths?.length > 0 && <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={sectionLabel}>Best Time to Visit</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {dest.weather.map((w) => (
-            <div key={w.month} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span
-                style={{
-                  width: 28,
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  lineHeight: '14px',
-                  color: colors.specText,
-                  flexShrink: 0,
-                }}
-              >
-                {w.month}
-              </span>
-              <div
-                style={{
-                  flex: 1,
-                  height: 8,
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                  backgroundColor: '#F0EBE3',
-                }}
-              >
-                <div
-                  style={{
-                    width: `${w.pct}%`,
-                    height: 8,
-                    borderRadius: 4,
-                    background: `linear-gradient(90deg, #4A8B7A 0%, ${colors.warmDusk} 100%)`,
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  width: 32,
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  lineHeight: '14px',
-                  color: colors.deepDusk,
-                  textAlign: 'right',
-                  flexShrink: 0,
-                }}
-              >
-                {w.temp}&deg;F
-              </span>
-            </div>
-          ))}
-        </div>
+        <span
+          style={{
+            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+            fontSize: 14,
+            lineHeight: '20px',
+            color: colors.bodyText,
+          }}
+        >
+          {stubDest.bestMonths.join(', ')}
+        </span>
       </div>}
 
       {/* ─── About Section ────────────────────────────────────── */}

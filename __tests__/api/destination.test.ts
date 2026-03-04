@@ -16,6 +16,7 @@ jest.mock('node-appwrite', () => ({
   Users: jest.fn().mockImplementation(() => ({})),
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
+    notEqual: jest.fn((...args: unknown[]) => `notEqual:${args.join(',')}`),
     limit: jest.fn((n: number) => `limit:${n}`),
   },
 }));
@@ -145,7 +146,7 @@ describe('GET /api/destination', () => {
         },
       ],
     });
-    // Promise.all calls: otherPrices, hotelPrices, images
+    // Promise.all calls: otherPrices, hotelPrices, images, similar
     mockListDocuments.mockResolvedValue({ documents: [] });
 
     const req = makeReq();
@@ -173,6 +174,7 @@ describe('GET /api/destination', () => {
     });
     mockListDocuments.mockResolvedValueOnce({ documents: [] }); // hotelPrices
     mockListDocuments.mockResolvedValueOnce({ documents: [] }); // images
+    mockListDocuments.mockResolvedValueOnce({ documents: [] }); // similar destinations
 
     const req = makeReq();
     const res = makeRes();

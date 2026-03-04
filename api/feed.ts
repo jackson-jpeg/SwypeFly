@@ -424,9 +424,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (vibeFilter) {
-      const vibe = vibeFilter.toLowerCase();
+      const vibes = vibeFilter.split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
       destinations = destinations.filter((d) =>
-        d.vibe_tags.some((t) => t.toLowerCase() === vibe),
+        d.vibe_tags.some((t) => vibes.includes(t.toLowerCase())),
       );
     }
 

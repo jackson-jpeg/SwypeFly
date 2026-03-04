@@ -40,8 +40,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // No cached prices
     }
 
-    // Fetch other prices, hotel price, and refreshed images in parallel
-    const [allPricesResult, hotelPriceResult, imageResult] = await Promise.all([
+    // Fetch other prices, hotel price, refreshed images, and similar destinations in parallel
+    const [allPricesResult, hotelPriceResult, imageResult, similarResult] = await Promise.all([
       serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
         Query.equal('destination_iata', dest.iata_code as string),
         Query.limit(20),
@@ -55,6 +55,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         Query.equal('is_primary', true),
         Query.limit(1),
       ]).catch(() => ({ documents: [] })),
+      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
+        Query.equal('country', dest.country as string),
+        Query.notEqual('$id', id),
+        Query.limit(3),
+      ]).catch(() => ({ documents: [] })),
     ]);
 
     const otherPrices = allPricesResult.documents
@@ -65,6 +70,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const hotelPrice = hotelPriceResult.documents[0];
     const refreshedImage = imageResult.documents[0];
+
+    const similarDestinations = similarResult.documents.map((d) => ({
+      id: d.$id as string,
+      city: d.city as string,
+      flightPrice: (d.flight_price as number) ?? 0,
+      imageUrl: (d.image_url as string) ?? '',
+    }));
 
     // Parse JSON fields
     let itinerary;
@@ -111,6 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       priceDirection: (price?.price_direction as string) || undefined,
       previousPrice: (price?.previous_price as number) ?? undefined,
       otherPrices,
+      similarDestinations,
     };
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
