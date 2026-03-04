@@ -76,7 +76,7 @@ async function sendAlertEmail(
   } catch {
     // Use ID as fallback
   }
-  const { sendPriceAlertEmail } = await import('../utils/email');
+  const { sendPriceAlertEmail } = await import('../utils/email.js');
   await sendPriceAlertEmail(email, destName, currentPrice, targetPrice);
 }
 

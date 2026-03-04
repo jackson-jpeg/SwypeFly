@@ -256,7 +256,7 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { searchFlights } = await import('../services/duffel');
+    const { searchFlights } = await import('../services/duffel.js');
     const result = await searchFlights({
       origin: v.data.origin,
       destination: v.data.destination,
@@ -292,7 +292,7 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { getOffer, getSeatMap } = await import('../services/duffel');
+    const { getOffer, getSeatMap } = await import('../services/duffel.js');
     const [rawOffer, seatMap] = await Promise.all([
       getOffer(v.data.offerId),
       getSeatMap(v.data.offerId).catch(() => null),
@@ -320,7 +320,7 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
     const v = validateRequest(paymentIntentSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
-    const { createPaymentIntent } = await import('../services/stripe');
+    const { createPaymentIntent } = await import('../services/stripe.js');
     const result = await createPaymentIntent(v.data.amount, v.data.currency, {
       userId: user.$id,
       offerId: v.data.offerId,
@@ -348,13 +348,13 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     const v = validateRequest(createOrderSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
-    const { getPaymentIntent } = await import('../services/stripe');
+    const { getPaymentIntent } = await import('../services/stripe.js');
     const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
     if (paymentIntent.status !== 'succeeded') {
       return res.status(400).json({ error: 'Payment not completed' });
     }
 
-    const { createOrder } = await import('../services/duffel');
+    const { createOrder } = await import('../services/duffel.js');
     const duffelOrder = await createOrder({
       offerId: v.data.offerId,
       passengers: v.data.passengers,
@@ -430,7 +430,7 @@ async function handleGetOrder(req: VercelRequest, res: VercelResponse) {
     const v = validateRequest(bookingOrderSchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
 
-    const { getOrder } = await import('../services/duffel');
+    const { getOrder } = await import('../services/duffel.js');
     const order = await getOrder(v.data.orderId);
     return res.status(200).json({ order });
   } catch (err) {
@@ -460,7 +460,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
       req.on('error', reject);
     });
 
-    const { constructWebhookEvent } = await import('../services/stripe');
+    const { constructWebhookEvent } = await import('../services/stripe.js');
     const event = constructWebhookEvent(rawBody, signature);
     const databases = getServerDatabases();
 
