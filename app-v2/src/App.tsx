@@ -44,6 +44,7 @@ export default function App() {
   if (isLoading) return <LoadingScreen />;
 
   const needsAuth = !session && !isGuest;
+  const needsRealAuth = !session; // guests can't book — must sign in
   const needsOnboarding = session && !isGuest && !hasOnboarded;
 
   return (
@@ -55,12 +56,12 @@ export default function App() {
         <Route path="/onboarding" element={<OnboardingScreen />} />
         <Route path="/" element={needsAuth ? <Navigate to="/login" /> : needsOnboarding ? <Navigate to="/onboarding" /> : <FeedScreen />} />
         <Route path="/destination/:id" element={needsAuth ? <Navigate to="/login" /> : <DestinationDetailScreen />} />
-        <Route path="/booking/flights" element={needsAuth ? <Navigate to="/login" /> : <FlightSelectionScreen />} />
-        <Route path="/booking/passengers" element={needsAuth ? <Navigate to="/login" /> : <PassengerDetailsScreen />} />
-        <Route path="/booking/seats" element={needsAuth ? <Navigate to="/login" /> : <SeatSelectionScreen />} />
-        <Route path="/booking/extras" element={needsAuth ? <Navigate to="/login" /> : <BagsExtrasScreen />} />
-        <Route path="/booking/review" element={needsAuth ? <Navigate to="/login" /> : <ReviewPaymentScreen />} />
-        <Route path="/booking/confirmation" element={needsAuth ? <Navigate to="/login" /> : <ConfirmationScreen />} />
+        <Route path="/booking/flights" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/flights' }} /> : <FlightSelectionScreen />} />
+        <Route path="/booking/passengers" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/passengers' }} /> : <PassengerDetailsScreen />} />
+        <Route path="/booking/seats" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/seats' }} /> : <SeatSelectionScreen />} />
+        <Route path="/booking/extras" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/extras' }} /> : <BagsExtrasScreen />} />
+        <Route path="/booking/review" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/review' }} /> : <ReviewPaymentScreen />} />
+        <Route path="/booking/confirmation" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/confirmation' }} /> : <ConfirmationScreen />} />
         <Route path="/wishlist" element={needsAuth ? <Navigate to="/login" /> : <WishlistScreen />} />
         <Route path="/settings" element={needsAuth ? <Navigate to="/login" /> : <SettingsScreen />} />
         <Route path="/legal/:type" element={<LegalScreen />} />
