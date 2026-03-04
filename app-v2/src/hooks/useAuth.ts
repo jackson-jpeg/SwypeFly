@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { account, databases, DATABASE_ID, COLLECTIONS } from '@/services/appwrite';
-import { Query } from 'appwrite';
+import { useUser, useAuth as useClerkAuth, useSignIn, useSignUp } from '@clerk/clerk-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSavedStore } from '@/stores/savedStore';
 import { setAuthToken } from '@/api/client';
@@ -22,6 +21,7 @@ interface AuthState {
 interface AuthActions {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  signInWithTikTok: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -31,163 +31,155 @@ interface AuthActions {
 
 export type Auth = AuthState & AuthActions;
 
-/** Refresh JWT and inject it into the API client */
-async function refreshJWT() {
-  try {
-    const user = await account.get();
-    if (!user?.$id) return;
-    const jwt = await account.createJWT();
-    if (jwt?.jwt) {
-      setAuthToken(jwt.jwt);
-    }
-  } catch {
-    setAuthToken(null);
-  }
-}
-
 export function useAuth(): Auth {
-  const [user, setUser] = useState<AppwriteUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isSignedIn, isLoaded, userId, getToken, signOut: clerkSignOut } = useClerkAuth();
+  const { user: clerkUser } = useUser();
+  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
 
   const isGuest = useUIStore((s) => s.isGuest);
   const setGuest = useUIStore((s) => s.setGuest);
 
-  const checkOnboarding = useCallback(async (userId: string) => {
-    try {
-      const result = await databases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
-        Query.equal('user_id', userId),
-        Query.limit(1),
-      ]);
-
-      if (result.documents.length > 0) {
-        const prefs = result.documents[0]!;
-        setHasCompletedOnboarding(prefs['has_completed_onboarding'] ?? false);
-        if (prefs['departure_city'] && prefs['departure_code']) {
-          const store = useUIStore.getState();
-          if (
-            store.departureCity !== prefs['departure_city'] ||
-            store.departureCode !== prefs['departure_code']
-          ) {
-            useUIStore.setState({
-              departureCity: prefs['departure_city'] as string,
-              departureCode: prefs['departure_code'] as string,
-            });
-          }
+  // Map Clerk user to our interface
+  const user: AppwriteUser | null =
+    isSignedIn && clerkUser
+      ? {
+          id: clerkUser.id,
+          email: clerkUser.primaryEmailAddress?.emailAddress ?? '',
+          name: clerkUser.fullName ?? clerkUser.firstName ?? '',
         }
-      } else {
-        setHasCompletedOnboarding(true);
-      }
-    } catch {
-      setHasCompletedOnboarding(true);
-    }
-  }, []);
+      : null;
 
-  // Check for existing session on mount
+  const session = user ? { userId: user.id } : null;
+
+  // Keep API client token in sync with Clerk session
   useEffect(() => {
-    let cancelled = false;
-
-    async function init() {
-      try {
-        const appwriteUser = await account.get();
-        if (cancelled) return;
-        const u: AppwriteUser = {
-          id: appwriteUser.$id,
-          email: appwriteUser.email,
-          name: appwriteUser.name,
-        };
-        setUser(u);
-        setGuest(false);
-        await refreshJWT();
-        await checkOnboarding(u.id);
-        useSavedStore.getState().syncFromServer(u.id);
-      } catch {
-        if (cancelled) return;
-        setUser(null);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+    if (!isLoaded) return;
+    if (isSignedIn) {
+      getToken().then((token) => setAuthToken(token));
+      setGuest(false);
+    } else {
+      setAuthToken(null);
     }
+  }, [isLoaded, isSignedIn, getToken, setGuest]);
 
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, [checkOnboarding, setGuest]);
-
-  const signInWithGoogle = useCallback(async () => {
-    const successUrl = window.location.origin;
-    const failureUrl = `${window.location.origin}/login`;
-    account.createOAuth2Session('google' as never, successUrl, failureUrl);
+  // Onboarding state is persisted locally in uiStore
+  const checkOnboarding = useCallback(async () => {
+    const { hasOnboarded } = useUIStore.getState();
+    setHasCompletedOnboarding(hasOnboarded);
+    setOnboardingChecked(true);
   }, []);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !userId || onboardingChecked) return;
+    checkOnboarding();
+    useSavedStore.getState().syncFromServer();
+  }, [isLoaded, isSignedIn, userId, onboardingChecked, checkOnboarding]);
+
+  // OAuth sign-ins via Clerk redirect
+  const signInWithGoogle = useCallback(async () => {
+    if (!signIn) return;
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/',
+      });
+    } catch (err) {
+      console.error('[auth] Google sign-in failed:', err);
+    }
+  }, [signIn]);
 
   const signInWithApple = useCallback(async () => {
-    const successUrl = window.location.origin;
-    const failureUrl = `${window.location.origin}/login`;
-    account.createOAuth2Session('apple' as never, successUrl, failureUrl);
-  }, []);
+    if (!signIn) return;
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy: 'oauth_apple',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/',
+      });
+    } catch (err) {
+      console.error('[auth] Apple sign-in failed:', err);
+    }
+  }, [signIn]);
 
+  const signInWithTikTok = useCallback(async () => {
+    if (!signIn) return;
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy: 'oauth_tiktok',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/',
+      });
+    } catch (err) {
+      console.error('[auth] TikTok sign-in failed:', err);
+    }
+  }, [signIn]);
+
+  // Email sign-in
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {
+      if (!signIn) return { error: 'Auth not ready' };
       try {
-        await account.createEmailPasswordSession(email, password);
-        const appwriteUser = await account.get();
-        const u: AppwriteUser = {
-          id: appwriteUser.$id,
-          email: appwriteUser.email,
-          name: appwriteUser.name,
-        };
-        setUser(u);
-        setGuest(false);
-        await refreshJWT();
-        await checkOnboarding(u.id);
-        useSavedStore.getState().syncFromServer(u.id);
-        return { error: null };
+        const result = await signIn.create({ identifier: email, password });
+        if (result.status === 'complete') {
+          return { error: null };
+        }
+        return { error: 'Additional verification required' };
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Sign in failed';
+        const message =
+          err && typeof err === 'object' && 'errors' in err
+            ? (err as { errors: { message: string }[] }).errors[0]?.message ?? 'Sign in failed'
+            : err instanceof Error
+              ? err.message
+              : 'Sign in failed';
         return { error: message };
       }
     },
-    [checkOnboarding, setGuest],
+    [signIn],
   );
 
+  // Email sign-up
   const signUpWithEmail = useCallback(
     async (email: string, password: string) => {
+      if (!signUp) return { error: 'Auth not ready' };
       try {
-        const { ID } = await import('appwrite');
-        await account.create(ID.unique(), email, password);
-        await account.createEmailPasswordSession(email, password);
-        const appwriteUser = await account.get();
-        const u: AppwriteUser = {
-          id: appwriteUser.$id,
-          email: appwriteUser.email,
-          name: appwriteUser.name,
-        };
-        setUser(u);
-        setGuest(false);
-        await refreshJWT();
-        setHasCompletedOnboarding(true);
-        useSavedStore.getState().syncFromServer(u.id);
-        return { error: null };
+        const result = await signUp.create({ emailAddress: email, password });
+        if (result.status === 'complete') {
+          return { error: null };
+        }
+        // May need email verification
+        if (result.status === 'missing_requirements') {
+          await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+          return { error: 'Check your email for a verification code' };
+        }
+        return { error: 'Additional verification required' };
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Sign up failed';
+        const message =
+          err && typeof err === 'object' && 'errors' in err
+            ? (err as { errors: { message: string }[] }).errors[0]?.message ?? 'Sign up failed'
+            : err instanceof Error
+              ? err.message
+              : 'Sign up failed';
         return { error: message };
       }
     },
-    [setGuest],
+    [signUp],
   );
 
-  const signOut = useCallback(async () => {
+  const signOutFn = useCallback(async () => {
     try {
-      await account.deleteSession('current');
+      await clerkSignOut();
     } catch {
-      // Session may already be gone
+      // Ignore sign-out errors
     }
-    setUser(null);
-    setGuest(false);
     setAuthToken(null);
+    setGuest(false);
     setHasCompletedOnboarding(false);
-  }, [setGuest]);
+    setOnboardingChecked(false);
+  }, [clerkSignOut, setGuest]);
 
   const browseAsGuest = useCallback(() => {
     setGuest(true);
@@ -197,7 +189,7 @@ export function useAuth(): Auth {
     return user !== null;
   }, [user]);
 
-  const session = user ? { userId: user.id } : null;
+  const isLoading = !isLoaded || (isSignedIn && !onboardingChecked);
 
   return {
     session,
@@ -207,9 +199,10 @@ export function useAuth(): Auth {
     hasCompletedOnboarding,
     signInWithGoogle,
     signInWithApple,
+    signInWithTikTok,
     signInWithEmail,
     signUpWithEmail,
-    signOut,
+    signOut: signOutFn,
     browseAsGuest,
     requireAuth,
   };

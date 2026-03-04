@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
-  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, browseAsGuest } = useAuthContext();
+  const [searchParams] = useSearchParams();
+  const { signInWithGoogle, signInWithApple, signInWithTikTok, signInWithEmail, signUpWithEmail, browseAsGuest } = useAuthContext();
   const [showEmail, setShowEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(
+    searchParams.get('error') === 'oauth' ? 'Social login failed. Please try again or use email.' : null,
+  );
   const [emailLoading, setEmailLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -93,6 +96,23 @@ export default function LoginScreen() {
 
         {/* Auth buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+          {/* Error banner */}
+          {emailError && !showEmail && (
+            <div
+              style={{
+                backgroundColor: '#FEE2E2',
+                border: '1px solid #FECACA',
+                borderRadius: 12,
+                padding: '12px 16px',
+                textAlign: 'center',
+              }}
+            >
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: '#991B1B' }}>
+                {emailError}
+              </span>
+            </div>
+          )}
+
           {/* Google */}
           <button
             onClick={() => signInWithGoogle()}
@@ -157,6 +177,38 @@ export default function LoginScreen() {
               }}
             >
               Continue with Apple
+            </span>
+          </button>
+
+          {/* TikTok */}
+          <button
+            onClick={() => signInWithTikTok()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              height: 56,
+              borderRadius: 14,
+              backgroundColor: '#000000',
+              border: 'none',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.98a8.21 8.21 0 0 0 4.76 1.52V7.05a4.84 4.84 0 0 1-1-.36z" />
+            </svg>
+            <span
+              style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 15,
+                fontWeight: 600,
+                lineHeight: '18px',
+                color: '#FFFFFF',
+              }}
+            >
+              Continue with TikTok
             </span>
           </button>
 

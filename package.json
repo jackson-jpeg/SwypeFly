@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
+    "@clerk/backend": "^3.0.1",
     "@duffel/api": "^4.21.5",
     "@expo-google-fonts/bebas-neue": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",

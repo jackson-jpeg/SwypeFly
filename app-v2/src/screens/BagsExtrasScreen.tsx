@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useDestination } from '@/hooks/useDestination';
+import { useOfferDetail } from '@/hooks/useBooking';
+import { useUIStore } from '@/stores/uiStore';
 import BookingHeader from '@/components/BookingHeader';
 
 /* ───── toggle ───── */
@@ -150,14 +152,56 @@ export default function BagsExtrasScreen() {
   const navigate = useNavigate();
   const { selectedOffer, destinationId, setBaggage, setInsurance: storeSetInsurance, setMeal: storeSetMeal } = useBookingStore();
   const { data: dest } = useDestination(destinationId ?? undefined);
+  const { departureCode } = useUIStore();
+  const { data: offerDetail } = useOfferDetail(
+    selectedOffer?.id ?? null,
+    destinationId ?? undefined,
+    departureCode,
+  );
+
+  // Derive bag/meal prices from offer's availableServices when present, else use defaults
+  const liveBagServices = useMemo(() => {
+    const services = offerDetail?.offer?.availableServices ?? selectedOffer?.availableServices ?? [];
+    return services.filter((s) => s.type === 'baggage');
+  }, [offerDetail, selectedOffer]);
+
+  const liveMealServices = useMemo(() => {
+    const services = offerDetail?.offer?.availableServices ?? selectedOffer?.availableServices ?? [];
+    return services.filter((s) => s.type === 'meal');
+  }, [offerDetail, selectedOffer]);
+
+  // Override default prices if live services exist
+  const resolvedBagOptions = useMemo(() => {
+    if (liveBagServices.length > 0) {
+      return bagOptions.map((opt) => {
+        if (opt.key === 'none') return opt;
+        const svc = opt.key === 'one' ? liveBagServices[0] : liveBagServices[1] ?? liveBagServices[0];
+        if (!svc) return opt;
+        return { ...opt, amount: svc.amount, price: `+$${svc.amount}`, serviceId: svc.id };
+      });
+    }
+    return bagOptions;
+  }, [liveBagServices]);
+
+  const resolvedMealOptions = useMemo(() => {
+    if (liveMealServices.length > 0) {
+      return mealOptions.map((opt, i) => {
+        const svc = liveMealServices[i];
+        if (!svc) return opt;
+        return { ...opt, amount: svc.amount, price: `+$${svc.amount}`, label: svc.name || opt.label, serviceId: svc.id };
+      });
+    }
+    return mealOptions;
+  }, [liveMealServices]);
+
   const [selectedBag, setSelectedBag] = useState<BagOption>('one');
   const [insurance, setInsurance] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<MealOption | null>(null);
 
   const flightPrice = selectedOffer?.totalAmount ?? 387;
-  const bagPrice = bagOptions.find((b) => b.key === selectedBag)?.amount ?? 0;
+  const bagPrice = resolvedBagOptions.find((b) => b.key === selectedBag)?.amount ?? 0;
   const insurancePrice = insurance ? 29 : 0;
-  const mealPrice = mealOptions.find((m) => m.key === selectedMeal)?.amount ?? 0;
+  const mealPrice = resolvedMealOptions.find((m) => m.key === selectedMeal)?.amount ?? 0;
   const total = flightPrice + bagPrice + insurancePrice + mealPrice;
 
   return (
@@ -194,7 +238,7 @@ export default function BagsExtrasScreen() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={sectionLabel}>Checked Baggage</span>
           <div style={{ display: 'flex', gap: 10 }}>
-            {bagOptions.map((opt) => {
+            {resolvedBagOptions.map((opt) => {
               const isSelected = selectedBag === opt.key;
               return (
                 <button
@@ -267,7 +311,7 @@ export default function BagsExtrasScreen() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={sectionLabel}>In-Flight Meals</span>
           <div style={{ display: 'flex', gap: 10 }}>
-            {mealOptions.map((opt) => {
+            {resolvedMealOptions.map((opt) => {
               const isSelected = selectedMeal === opt.key;
               return (
                 <button
@@ -313,7 +357,7 @@ export default function BagsExtrasScreen() {
           }}
         >
           <LineItem label="Flight" price={`$${flightPrice}`} />
-          {bagPrice > 0 && <LineItem label="1 checked bag" price={`$${bagPrice}`} />}
+          {bagPrice > 0 && <LineItem label={resolvedBagOptions.find((b) => b.key === selectedBag)?.label ?? 'Checked bag'} price={`$${bagPrice}`} />}
           {insurancePrice > 0 && <LineItem label="Insurance" price={`$${insurancePrice}`} />}
           {selectedMeal && mealPrice > 0 && <LineItem label={`Meal (${selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)})`} price={`$${mealPrice}`} />}
           <div style={{ height: 1, backgroundColor: '#C9A99A40' }} />
@@ -332,10 +376,12 @@ export default function BagsExtrasScreen() {
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
         <button
           onClick={() => {
-            const bagId = selectedBag === 'one' ? 'bag-23kg' : selectedBag === 'two' ? 'bag-2x23kg' : null;
+            const bagOpt = resolvedBagOptions.find((b) => b.key === selectedBag);
+            const bagId = bagOpt && bagOpt.amount > 0 ? ((bagOpt as { serviceId?: string }).serviceId ?? `bag-${selectedBag}`) : null;
             setBaggage(bagId);
             storeSetInsurance(insurance);
-            const mealId = selectedMeal ? `meal-${selectedMeal}` : null;
+            const mealOpt = selectedMeal ? resolvedMealOptions.find((m) => m.key === selectedMeal) : null;
+            const mealId = mealOpt ? ((mealOpt as { serviceId?: string }).serviceId ?? `meal-${selectedMeal}`) : null;
             storeSetMeal(mealId);
             navigate('/booking/review');
           }}

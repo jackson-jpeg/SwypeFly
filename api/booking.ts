@@ -1,7 +1,7 @@
 // Consolidated booking API — dispatches on ?action= parameter
 // Actions: search, offer, payment-intent, create-order, order, webhook
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client, Account, Databases, ID, Permission, Role, Query } from 'node-appwrite';
+import { Client, Databases, ID, Permission, Role, Query } from 'node-appwrite';
 import {
   bookingSearchSchema,
   bookingOfferSchema,
@@ -11,6 +11,7 @@ import {
   validateRequest,
 } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
+import { verifyClerkToken } from '../utils/clerkAuth';
 
 const DATABASE_ID = 'sogojet';
 const STUB_MODE = !process.env.DUFFEL_API_KEY;
@@ -24,12 +25,9 @@ function getJwt(req: VercelRequest): string | null {
 }
 
 async function verifyUser(jwt: string) {
-  const userClient = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
-    .setProject(process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '')
-    .setJWT(jwt);
-  const userAccount = new Account(userClient);
-  return userAccount.get();
+  const result = await verifyClerkToken(`Bearer ${jwt}`);
+  if (!result) throw new Error('Invalid token');
+  return { $id: result.userId };
 }
 
 function getServerDatabases() {
@@ -42,6 +40,58 @@ function getServerDatabases() {
 
 // ─── Stub data for when Duffel/Stripe keys are not configured ───────────────
 
+// ─── Transform Duffel response to frontend-friendly camelCase format ─────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseDuration(iso: string): string {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+  if (!m) return iso;
+  const h = m[1] ?? '0';
+  const min = m[2] ?? '0';
+  return `${h}h ${min}m`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformOffer(raw: any, cabinClass = 'economy') {
+  const total = parseFloat(raw.total_amount) || 0;
+  const tax = Math.round(total * 0.19);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const slices = (raw.slices || []).map((s: any) => {
+    const seg = s.segments?.[0];
+    return {
+      origin: s.origin?.iata_code ?? '',
+      destination: s.destination?.iata_code ?? '',
+      departureTime: seg?.departing_at ?? '',
+      arrivalTime: seg?.arriving_at ?? '',
+      duration: parseDuration(s.duration || ''),
+      stops: (s.segments?.length || 1) - 1,
+      airline: seg?.operating_carrier?.name ?? raw.owner?.name ?? '',
+      flightNumber: `${seg?.operating_carrier?.iata_code ?? ''} ${seg?.operating_carrier_flight_number ?? ''}`.trim(),
+      aircraft: seg?.aircraft?.name ?? '',
+    };
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const services = (raw.available_services || []).map((svc: any) => ({
+    id: svc.id,
+    type: svc.type,
+    name: svc.metadata?.type ? `${svc.metadata.type} (${svc.metadata.weight_kg}kg)` : svc.type,
+    amount: parseFloat(svc.total_amount) || 0,
+    currency: svc.total_currency || 'USD',
+    metadata: svc.metadata,
+  }));
+  return {
+    id: raw.id,
+    totalAmount: total,
+    totalCurrency: raw.total_currency || 'USD',
+    baseAmount: total - tax,
+    taxAmount: tax,
+    slices,
+    cabinClass: raw.slices?.[0]?.segments?.[0]?.cabin_class ?? cabinClass,
+    passengers: raw.passengers || [],
+    expiresAt: raw.expires_at ?? new Date(Date.now() + 7 * 86400000).toISOString(),
+    availableServices: services,
+  };
+}
+
 function stubSearch(origin: string, destination: string, cabinClass: string) {
   const basePrices: Record<string, number> = {
     economy: 287,
@@ -50,107 +100,114 @@ function stubSearch(origin: string, destination: string, cabinClass: string) {
     first: 3200,
   };
   const base = basePrices[cabinClass] || 287;
+  const depDate = '2026-04-15';
+  const retDate = '2026-04-22';
 
-  return {
-    offers: [
+  const airlines = [
+    { name: 'Delta Air Lines', code: 'DL', flight: '1842', depTime: '08:15', arrTime: '12:50', dur: '4h 35m', offset: 0 },
+    { name: 'United Airlines', code: 'UA', flight: '923', depTime: '10:30', arrTime: '15:40', dur: '5h 10m', offset: 43 },
+    { name: 'American Airlines', code: 'AA', flight: '407', depTime: '14:00', arrTime: '17:55', dur: '3h 55m', offset: 91 },
+  ];
+
+  return airlines.map((a) => ({
+    id: `stub_offer_${a.code.toLowerCase()}`,
+    totalAmount: base + a.offset,
+    totalCurrency: 'USD',
+    baseAmount: Math.round((base + a.offset) * 0.81),
+    taxAmount: Math.round((base + a.offset) * 0.19),
+    slices: [
       {
-        id: 'stub_offer_1',
-        total_amount: String(base),
-        total_currency: 'USD',
-        owner: { name: 'Delta Air Lines', iata_code: 'DL' },
-        slices: [
-          {
-            origin: { iata_code: origin },
-            destination: { iata_code: destination },
-            duration: 'PT4H35M',
-            segments: [
-              {
-                operating_carrier: { name: 'Delta Air Lines', iata_code: 'DL' },
-                operating_carrier_flight_number: '1842',
-                departing_at: '2026-04-15T08:15:00',
-                arriving_at: '2026-04-15T12:50:00',
-                origin: { iata_code: origin },
-                destination: { iata_code: destination },
-                cabin_class: cabinClass,
-              },
-            ],
-          },
-        ],
-        passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+        origin,
+        destination,
+        departureTime: `${depDate}T${a.depTime}:00`,
+        arrivalTime: `${depDate}T${a.arrTime}:00`,
+        duration: a.dur,
+        stops: 0,
+        airline: a.name,
+        flightNumber: `${a.code} ${a.flight}`,
+        aircraft: 'Boeing 737-900',
       },
       {
-        id: 'stub_offer_2',
-        total_amount: String(base + 43),
-        total_currency: 'USD',
-        owner: { name: 'United Airlines', iata_code: 'UA' },
-        slices: [
-          {
-            origin: { iata_code: origin },
-            destination: { iata_code: destination },
-            duration: 'PT5H10M',
-            segments: [
-              {
-                operating_carrier: { name: 'United Airlines', iata_code: 'UA' },
-                operating_carrier_flight_number: '923',
-                departing_at: '2026-04-15T10:30:00',
-                arriving_at: '2026-04-15T15:40:00',
-                origin: { iata_code: origin },
-                destination: { iata_code: destination },
-                cabin_class: cabinClass,
-              },
-            ],
-          },
-        ],
-        passengers: [{ id: 'stub_pas_1', type: 'adult' }],
-      },
-      {
-        id: 'stub_offer_3',
-        total_amount: String(base + 91),
-        total_currency: 'USD',
-        owner: { name: 'American Airlines', iata_code: 'AA' },
-        slices: [
-          {
-            origin: { iata_code: origin },
-            destination: { iata_code: destination },
-            duration: 'PT3H55M',
-            segments: [
-              {
-                operating_carrier: { name: 'American Airlines', iata_code: 'AA' },
-                operating_carrier_flight_number: '407',
-                departing_at: '2026-04-15T14:00:00',
-                arriving_at: '2026-04-15T17:55:00',
-                origin: { iata_code: origin },
-                destination: { iata_code: destination },
-                cabin_class: cabinClass,
-              },
-            ],
-          },
-        ],
-        passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+        origin: destination,
+        destination: origin,
+        departureTime: `${retDate}T${a.depTime}:00`,
+        arrivalTime: `${retDate}T${a.arrTime}:00`,
+        duration: a.dur,
+        stops: 0,
+        airline: a.name,
+        flightNumber: `${a.code} ${parseInt(a.flight) + 1}`,
+        aircraft: 'Boeing 737-900',
       },
     ],
-    slices: [],
+    cabinClass,
     passengers: [{ id: 'stub_pas_1', type: 'adult' }],
-  };
+    expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+    availableServices: [
+      { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
+      { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
+      { id: 'meal-pasta', type: 'meal', name: 'Pasta Primavera', amount: 12, currency: 'USD' },
+    ],
+  }));
 }
 
 function stubOffer(offerId: string) {
   return {
     offer: {
       id: offerId,
-      total_amount: '287.00',
-      total_currency: 'USD',
-      available_services: [
+      totalAmount: 287,
+      totalCurrency: 'USD',
+      baseAmount: 232,
+      taxAmount: 55,
+      slices: [
         {
-          id: 'stub_svc_bag_1',
-          type: 'baggage',
-          total_amount: '35.00',
-          total_currency: 'USD',
-          metadata: { type: 'checked', weight_kg: 23, maximum_quantity: 2 },
+          origin: 'JFK',
+          destination: 'BCN',
+          departureTime: '2026-04-15T08:15:00',
+          arrivalTime: '2026-04-15T12:50:00',
+          duration: '4h 35m',
+          stops: 0,
+          airline: 'Delta Air Lines',
+          flightNumber: 'DL 1842',
+          aircraft: 'Boeing 737-900',
         },
       ],
+      cabinClass: 'economy',
+      passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+      expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      availableServices: [
+        { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
+        { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
+        { id: 'meal-pasta', type: 'meal', name: 'Pasta Primavera', amount: 12, currency: 'USD' },
+        { id: 'meal-salad', type: 'meal', name: 'Garden Salad', amount: 10, currency: 'USD' },
+      ],
     },
-    seatMap: null,
+    seatMap: {
+      columns: ['A', 'B', 'C', 'D', 'E', 'F'],
+      exitRows: [14],
+      rows: Array.from({ length: 6 }, (_, i) => {
+        const rowNum = 12 + i;
+        const isExit = rowNum === 14;
+        return {
+          rowNumber: rowNum,
+          seats: ['A', 'B', 'C', 'D', 'E', 'F'].map((col) => {
+            const occupied =
+              (rowNum === 12 && 'ACF'.includes(col)) ||
+              (rowNum === 13 && 'BD'.includes(col)) ||
+              (rowNum === 15 && 'AEF'.includes(col)) ||
+              (rowNum === 16 && 'CD'.includes(col)) ||
+              (rowNum === 17 && col === 'B');
+            return {
+              column: col,
+              available: !occupied,
+              extraLegroom: isExit,
+              price: isExit ? 25 : 0,
+              currency: 'USD',
+              designator: `${rowNum}${col}`,
+            };
+          }),
+        };
+      }),
+    },
   };
 }
 
@@ -213,9 +270,10 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
       .sort((a: { total_amount: string }, b: { total_amount: string }) =>
         parseFloat(a.total_amount) - parseFloat(b.total_amount),
       )
-      .slice(0, 20);
+      .slice(0, 20)
+      .map((o: Record<string, unknown>) => transformOffer(o, v.data.cabinClass || 'economy'));
 
-    return res.status(200).json({ offers, slices: result.slices, passengers: result.passengers });
+    return res.status(200).json(offers);
   } catch (err) {
     logApiError('api/booking/search', err);
     return res.status(500).json({ error: 'Failed to search flights' });
@@ -235,11 +293,11 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { getOffer, getSeatMap } = await import('../services/duffel');
-    const [offer, seatMap] = await Promise.all([
+    const [rawOffer, seatMap] = await Promise.all([
       getOffer(v.data.offerId),
       getSeatMap(v.data.offerId).catch(() => null),
     ]);
-    return res.status(200).json({ offer, seatMap });
+    return res.status(200).json({ offer: transformOffer(rawOffer), seatMap });
   } catch (err) {
     logApiError('api/booking/offer', err);
     return res.status(500).json({ error: 'Failed to get offer details' });

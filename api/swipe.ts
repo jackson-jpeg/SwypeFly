@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client, Databases, Account, Query, ID } from 'node-appwrite';
+import { Client, Databases, Query, ID } from 'node-appwrite';
 import { swipeBodySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
+import { verifyClerkToken } from '../utils/clerkAuth';
 
 const DATABASE_ID = 'sogojet';
 
@@ -47,28 +48,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Require auth
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const authResult = await verifyClerkToken(req.headers.authorization);
+  if (!authResult) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const jwt = authHeader.replace('Bearer ', '');
-
   try {
-    // Verify the JWT by creating a client with it
-    const userClient = new Client()
-      .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
-      .setProject(
-        process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '',
-      )
-      .setJWT(jwt);
-
-    const userAccount = new Account(userClient);
-    const user = await userAccount.get();
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
+    const user = { $id: authResult.userId };
 
     const v = validateRequest(swipeBodySchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });

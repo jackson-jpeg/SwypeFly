@@ -1,12 +1,11 @@
 // Consolidated alerts API — dispatches on ?action=create|check
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client, Account, Databases, Query, ID } from 'node-appwrite';
+import { Query, ID } from 'node-appwrite';
 import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
 import { priceAlertBodySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
-// Lazy-imported in handleCheck to avoid Resend SDK init at module level
-// import { sendPriceAlertEmail } from '../utils/email';
+import { verifyClerkToken } from '../utils/clerkAuth';
 
 // ─── Create alert ────────────────────────────────────────────────────────────
 
@@ -19,38 +18,18 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Too many requests, please try again later' });
   }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const authResult = await verifyClerkToken(req.headers.authorization);
+  if (!authResult) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-
-  const jwt = authHeader.replace('Bearer ', '');
-
-  let userId: string;
-  try {
-    const userClient = new Client()
-      .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
-      .setProject(process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '')
-      .setJWT(jwt);
-    const userAccount = new Account(userClient);
-    const user = await userAccount.get();
-    userId = user.$id;
-  } catch {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+  const userId = authResult.userId;
 
   const v = validateRequest(priceAlertBodySchema, req.body);
   if (!v.success) return res.status(400).json({ error: v.error });
   const { destination_id, target_price, email } = v.data;
 
   try {
-    const adminClient = new Client()
-      .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
-      .setProject(process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '')
-      .setKey(process.env.APPWRITE_API_KEY ?? '');
-    const db = new Databases(adminClient);
-
-    const existing = await db.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
+    const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
       Query.equal('user_id', userId),
       Query.equal('destination_id', destination_id),
       Query.equal('is_active', true),
@@ -58,13 +37,13 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
 
     if (existing.total > 0) {
       const doc = existing.documents[0];
-      const updated = await db.updateDocument(DATABASE_ID, COLLECTIONS.priceAlerts, doc.$id, {
+      const updated = await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.priceAlerts, doc.$id, {
         target_price,
       });
       return res.json({ alert: updated, updated: true });
     }
 
-    const alert = await db.createDocument(DATABASE_ID, COLLECTIONS.priceAlerts, ID.unique(), {
+    const alert = await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.priceAlerts, ID.unique(), {
       user_id: userId,
       email: email || null,
       destination_id,

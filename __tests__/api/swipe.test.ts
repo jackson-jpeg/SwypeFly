@@ -1,20 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const mockGet = jest.fn();
 const mockListDocuments = jest.fn();
 const mockCreateDocument = jest.fn();
 const mockUpdateDocument = jest.fn();
 const mockGetDocument = jest.fn();
 
+const mockVerifyClerkToken = jest.fn();
+jest.mock('../../utils/clerkAuth', () => ({
+  verifyClerkToken: (...args: unknown[]) => mockVerifyClerkToken(...args),
+}));
+
 jest.mock('node-appwrite', () => ({
   Client: jest.fn().mockImplementation(() => ({
     setEndpoint: jest.fn().mockReturnThis(),
     setProject: jest.fn().mockReturnThis(),
-    setJWT: jest.fn().mockReturnThis(),
     setKey: jest.fn().mockReturnThis(),
-  })),
-  Account: jest.fn().mockImplementation(() => ({
-    get: mockGet,
   })),
   Databases: jest.fn().mockImplementation(() => ({
     listDocuments: mockListDocuments,
@@ -71,6 +71,7 @@ describe('POST /api/swipe', () => {
   });
 
   it('rejects requests without auth header', async () => {
+    mockVerifyClerkToken.mockResolvedValue(null);
     const req = makeReq();
     const res = makeRes();
     await handler(req, res);
@@ -78,6 +79,7 @@ describe('POST /api/swipe', () => {
   });
 
   it('rejects requests with malformed auth header', async () => {
+    mockVerifyClerkToken.mockResolvedValue(null);
     const req = makeReq({ headers: { authorization: 'Token abc' } });
     const res = makeRes();
     await handler(req, res);
@@ -85,7 +87,7 @@ describe('POST /api/swipe', () => {
   });
 
   it('rejects invalid body', async () => {
-    mockGet.mockResolvedValue({ $id: 'user-123' });
+    mockVerifyClerkToken.mockResolvedValue({ userId: 'user-123' });
     const req = makeReq({
       headers: { authorization: 'Bearer valid-token' },
       body: { action: 'liked' },
@@ -96,7 +98,7 @@ describe('POST /api/swipe', () => {
   });
 
   it('records swipe and returns ok for valid request', async () => {
-    mockGet.mockResolvedValue({ $id: 'user-123' });
+    mockVerifyClerkToken.mockResolvedValue({ userId: 'user-123' });
     mockCreateDocument.mockResolvedValue({});
     mockGetDocument.mockResolvedValue({
       beach_score: 0.8,

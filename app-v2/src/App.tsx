@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import { useAuthContext } from '@/hooks/AuthContext';
 import { useUIStore } from '@/stores/uiStore';
 import { colors } from '@/tokens';
@@ -47,6 +48,7 @@ export default function App() {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
+        <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
         <Route path="/login" element={session || isGuest ? <Navigate to="/" /> : <LoginScreen />} />
         <Route path="/onboarding" element={<OnboardingScreen />} />
         <Route path="/" element={needsAuth ? <Navigate to="/login" /> : needsOnboarding ? <Navigate to="/onboarding" /> : <FeedScreen />} />

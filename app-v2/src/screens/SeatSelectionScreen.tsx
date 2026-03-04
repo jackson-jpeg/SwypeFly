@@ -1,38 +1,20 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useDestination } from '@/hooks/useDestination';
+import { useOfferDetail } from '@/hooks/useBooking';
+import { useUIStore } from '@/stores/uiStore';
 import BookingHeader from '@/components/BookingHeader';
+import type { SeatMap, SeatMapSeat } from '@/api/types';
 
-/* ───── seat map data ───── */
+/* ───── seat helpers ───── */
 type SeatState = 'available' | 'occupied' | 'extra';
 
-// deterministic occupied pattern per the design screenshot
-const occupiedPattern: Record<string, SeatState> = {
-  '13-A': 'occupied',
-  '13-E': 'occupied',
-  '13-F': 'occupied',
-  '14-E': 'occupied',
-  '15-A': 'extra',
-  '15-B': 'extra',
-  '15-C': 'occupied',
-  '15-D': 'extra',
-  '15-E': 'extra',
-  '15-F': 'extra',
-  '16-A': 'occupied',
-  '16-B': 'occupied',
-  '16-D': 'occupied',
-  '16-E': 'occupied',
-  '17-C': 'occupied',
-  '17-E': 'occupied',
-};
-
-const columns = ['A', 'B', 'C', 'D', 'E', 'F'];
-const rows = [12, 13, 14, 15, 16, 17];
-
-function getSeatState(row: number, col: string): SeatState {
-  return occupiedPattern[`${row}-${col}`] || 'available';
+function seatStateFromData(seat: SeatMapSeat, exitRows: number[], rowNum: number): SeatState {
+  if (!seat.available) return 'occupied';
+  if (seat.extraLegroom || exitRows.includes(rowNum)) return 'extra';
+  return 'available';
 }
 
 function seatBg(state: SeatState, selected: boolean): string {
@@ -59,7 +41,46 @@ export default function SeatSelectionScreen() {
   const booking = useBookingStore();
   const storeSeat = booking.setSeat;
   const { data: dest } = useDestination(booking.destinationId ?? undefined);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>('14-C');
+  const { departureCode } = useUIStore();
+  const { data: offerDetail, isLoading: offerLoading } = useOfferDetail(
+    booking.selectedOffer?.id ?? null,
+    booking.destinationId ?? undefined,
+    departureCode,
+  );
+
+  const seatMap: SeatMap | null = offerDetail?.seatMap ?? null;
+
+  const { columns, rows, exitRows } = useMemo(() => {
+    if (!seatMap) return { columns: ['A', 'B', 'C', 'D', 'E', 'F'], rows: [] as number[], exitRows: [] as number[] };
+    return {
+      columns: seatMap.columns,
+      rows: seatMap.rows.map((r) => r.rowNumber),
+      exitRows: seatMap.exitRows,
+    };
+  }, [seatMap]);
+
+  const seatLookup = useMemo(() => {
+    if (!seatMap) return new Map<string, SeatMapSeat>();
+    const map = new Map<string, SeatMapSeat>();
+    for (const row of seatMap.rows) {
+      for (const seat of row.seats) {
+        map.set(`${row.rowNumber}-${seat.column}`, seat);
+      }
+    }
+    return map;
+  }, [seatMap]);
+
+  function getSeatState(row: number, col: string): SeatState {
+    const seat = seatLookup.get(`${row}-${col}`);
+    if (!seat) return 'available';
+    return seatStateFromData(seat, exitRows, row);
+  }
+
+  function getSeatPrice(row: number, col: string): number {
+    return seatLookup.get(`${row}-${col}`)?.price ?? 0;
+  }
+
+  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
 
   const handleSeatClick = (row: number, col: string) => {
     const state = getSeatState(row, col);
@@ -99,7 +120,20 @@ export default function SeatSelectionScreen() {
           paddingBottom: 24,
         }}
       >
-        {/* legend */}
+        {/* loading / empty state */}
+        {offerLoading && rows.length === 0 && (
+          <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText, padding: 40, textAlign: 'center' }}>
+            Loading seat map...
+          </div>
+        )}
+        {!offerLoading && rows.length === 0 && (
+          <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText, padding: 40, textAlign: 'center' }}>
+            Seat map not available for this flight. You can skip to continue.
+          </div>
+        )}
+
+        {/* legend + fuselage — only when seat map available */}
+        {rows.length > 0 && <>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', alignSelf: 'flex-start' }}>
           {[
             { label: 'Available', color: '#F0EBE3', border: '1px solid #D4CCC0' },
@@ -175,8 +209,8 @@ export default function SeatSelectionScreen() {
           {/* seat rows */}
           {rows.map((row) => (
             <div key={row}>
-              {/* EXIT row between row 13 and 14 */}
-              {row === 14 && (
+              {/* EXIT row indicator */}
+              {exitRows.includes(row) && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBlock: 6 }}>
                   <div style={{ flex: 1, height: 1.5, backgroundColor: colors.confirmGreen }} />
                   <span
@@ -250,6 +284,7 @@ export default function SeatSelectionScreen() {
             </div>
           ))}
         </div>
+        </>}
 
         {/* selection confirmation */}
         {selectedSeat && (
@@ -284,7 +319,13 @@ export default function SeatSelectionScreen() {
                   color: colors.borderTint,
                 }}
               >
-                {selectedSeat && getSeatState(parseInt(selectedSeat.split('-')[0]!), selectedSeat.split('-')[1]!) === 'extra' ? 'Extra legroom · +$25' : 'Standard seat · No extra charge'}
+                {(() => {
+                  const [r, c] = selectedSeat!.split('-');
+                  const price = getSeatPrice(parseInt(r!), c!);
+                  const state = getSeatState(parseInt(r!), c!);
+                  if (state === 'extra' || price > 0) return `Extra legroom · +$${price}`;
+                  return 'Standard seat · No extra charge';
+                })()}
               </span>
             </div>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

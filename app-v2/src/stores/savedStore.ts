@@ -1,42 +1,33 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { databases, DATABASE_ID, COLLECTIONS } from '@/services/appwrite';
-import { Query, ID, Permission, Role } from 'appwrite';
+import { apiFetch } from '@/api/client';
 
 interface SavedState {
   savedIds: string[];
   toggle: (id: string, userId?: string) => void;
   isSaved: (id: string) => boolean;
   clear: () => void;
-  syncFromServer: (userId: string) => Promise<void>;
+  syncFromServer: (userId?: string) => Promise<void>;
 }
 
-/** Fire-and-forget Appwrite write — errors are silently ignored to keep UX snappy */
-async function syncSave(destId: string, userId: string) {
+/** Fire-and-forget API call — errors are silently ignored to keep UX snappy */
+async function syncSave(destId: string) {
   try {
-    await databases.createDocument(DATABASE_ID, COLLECTIONS.savedTrips, ID.unique(), {
-      user_id: userId,
-      destination_id: destId,
-      saved_at: new Date().toISOString(),
-    }, [
-      Permission.read(Role.user(userId)),
-      Permission.delete(Role.user(userId)),
-    ]);
+    await apiFetch('/api/saved?action=save', {
+      method: 'POST',
+      body: JSON.stringify({ destination_id: destId }),
+    });
   } catch {
     // Best-effort sync
   }
 }
 
-async function syncUnsave(destId: string, userId: string) {
+async function syncUnsave(destId: string) {
   try {
-    const result = await databases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
-      Query.equal('user_id', userId),
-      Query.equal('destination_id', destId),
-      Query.limit(1),
-    ]);
-    if (result.documents[0]) {
-      await databases.deleteDocument(DATABASE_ID, COLLECTIONS.savedTrips, result.documents[0].$id);
-    }
+    await apiFetch('/api/saved?action=unsave', {
+      method: 'POST',
+      body: JSON.stringify({ destination_id: destId }),
+    });
   } catch {
     // Best-effort sync
   }
@@ -53,33 +44,28 @@ export const useSavedStore = create<SavedState>()(
             ? s.savedIds.filter((i) => i !== id)
             : [...s.savedIds, id],
         }));
-        // Async sync to Appwrite (non-blocking)
+        // Async sync to server via API (non-blocking, auth token injected by apiFetch)
         if (userId) {
           if (removing) {
-            syncUnsave(id, userId);
+            syncUnsave(id);
           } else {
-            syncSave(id, userId);
+            syncSave(id);
           }
         }
       },
       isSaved: (id) => get().savedIds.includes(id),
       clear: () => set({ savedIds: [] }),
-      syncFromServer: async (userId) => {
+      syncFromServer: async () => {
         try {
-          const result = await databases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
-            Query.equal('user_id', userId),
-            Query.limit(100),
-          ]);
-          const serverIds = result.documents.map((d) => d['destination_id'] as string);
+          const { savedIds: serverIds } = await apiFetch<{ savedIds: string[] }>('/api/saved?action=list');
           const localIds = get().savedIds;
-          // Merge: union of local + server IDs
           const merged = [...new Set([...localIds, ...serverIds])];
           set({ savedIds: merged });
 
           // Upload any local-only IDs to server
           const localOnly = localIds.filter((id) => !serverIds.includes(id));
           for (const id of localOnly) {
-            syncSave(id, userId);
+            syncSave(id);
           }
         } catch {
           // Keep local state if server unavailable
