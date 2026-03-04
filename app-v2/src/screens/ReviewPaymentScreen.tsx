@@ -136,6 +136,10 @@ export default function ReviewPaymentScreen() {
   const createPaymentIntent = useCreatePaymentIntent();
   const createOrder = useCreateOrder();
 
+  const offerExpired = booking.selectedOffer?.expiresAt
+    ? new Date(booking.selectedOffer.expiresAt) < new Date()
+    : false;
+
   // Derive dynamic baggage label and price
   const bagSvc = booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedBaggage);
   const bagLabel = bagSvc?.name ?? (booking.selectedBaggage === 'bag-2x23kg' ? '2 checked bags (23 kg each)' : '1 checked bag (23 kg)');
@@ -356,20 +360,27 @@ export default function ReviewPaymentScreen() {
       {/* CTA — only shown before Stripe is loaded */}
       {!clientSecret && (
         <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
+          {offerExpired && (
+            <div style={{ textAlign: 'center', marginBottom: 8 }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta }}>
+                This offer has expired. Please go back and select a new flight.
+              </span>
+            </div>
+          )}
           <button
-            disabled={intentLoading}
+            disabled={intentLoading || offerExpired}
             onClick={handleProceedToPayment}
             style={{
               width: '100%',
               height: 52,
               borderRadius: 14,
               border: 'none',
-              backgroundColor: intentLoading ? colors.sageDrift : colors.deepDusk,
+              backgroundColor: intentLoading || offerExpired ? colors.sageDrift : colors.deepDusk,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: intentLoading ? 'wait' : 'pointer',
-              opacity: intentLoading ? 0.8 : 1,
+              cursor: intentLoading || offerExpired ? 'not-allowed' : 'pointer',
+              opacity: intentLoading || offerExpired ? 0.6 : 1,
               transition: 'background-color 0.3s, opacity 0.3s',
             }}
           >
@@ -381,7 +392,7 @@ export default function ReviewPaymentScreen() {
                 color: colors.paleHorizon,
               }}
             >
-              {intentLoading ? 'Initializing...' : `Proceed to Pay $${total}`}
+              {intentLoading ? 'Initializing...' : offerExpired ? 'Offer Expired' : `Proceed to Pay $${total}`}
             </span>
           </button>
         </div>
