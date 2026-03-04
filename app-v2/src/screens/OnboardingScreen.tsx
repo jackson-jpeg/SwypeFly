@@ -1,28 +1,49 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useUIStore } from '@/stores/uiStore';
-
-const AIRPORTS = [
-  { code: 'JFK', city: 'New York' },
-  { code: 'LAX', city: 'Los Angeles' },
-  { code: 'ORD', city: 'Chicago' },
-  { code: 'MIA', city: 'Miami' },
-  { code: 'SFO', city: 'San Francisco' },
-  { code: 'ATL', city: 'Atlanta' },
-  { code: 'DFW', city: 'Dallas' },
-  { code: 'BOS', city: 'Boston' },
-  { code: 'SEA', city: 'Seattle' },
-  { code: 'DEN', city: 'Denver' },
-];
+import { searchAirports, AIRPORTS, type Airport } from '@/data/airports';
 
 export default function OnboardingScreen() {
   const navigate = useNavigate();
   const { hasOnboarded } = useUIStore();
   const canGoBack = hasOnboarded;
   const { setDeparture, setOnboarded } = useUIStore();
-  const [selectedAirport, setSelectedAirport] = useState(AIRPORTS[0]!);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const results = query.trim() ? searchAirports(query, 8) : AIRPORTS.slice(0, 8);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleSelect = (airport: Airport) => {
+    setSelectedAirport(airport);
+    setQuery(`${airport.code} - ${airport.city}`);
+    setOpen(false);
+  };
+
+  const handleContinue = () => {
+    if (!selectedAirport) return;
+    setDeparture(selectedAirport.city, selectedAirport.code);
+    setOnboarded();
+    if (canGoBack) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <div className="screen-fixed" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
@@ -41,27 +62,29 @@ export default function OnboardingScreen() {
       {/* Header: Back + Logo */}
       <div style={{ position: 'relative', zIndex: 10, padding: '56px 20px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          {canGoBack && <button
-            onClick={() => navigate(-1)}
-            style={{
-              position: 'absolute',
-              left: 0,
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#C9A99A20',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-          </button>}
+          {canGoBack && (
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                position: 'absolute',
+                left: 0,
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#C9A99A20',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </button>
+          )}
           <span
             style={{
               fontFamily: `"${fonts.display}", system-ui, sans-serif`,
@@ -109,54 +132,69 @@ export default function OnboardingScreen() {
               margin: 0,
             }}
           >
-            Help us personalize your experience
+            Search by airport code or city name
           </p>
         </div>
 
-        {/* Airport selector */}
-        <div style={{ width: '100%', position: 'relative' }}>
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
+        {/* Airport search input + dropdown */}
+        <div ref={dropdownRef} style={{ width: '100%', position: 'relative' }}>
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
               height: 56,
               borderRadius: 16,
               backgroundColor: colors.offWhite,
-              border: '1px solid #C9A99A40',
+              border: `1px solid ${open ? colors.sageDrift : '#C9A99A40'}`,
               paddingInline: 16,
-              width: '100%',
-              cursor: 'pointer',
+              gap: 10,
+              transition: 'border-color 0.2s',
             }}
           >
-            <span
+            {/* Search icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Try JFK, London, or LAX..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setOpen(true);
+                if (selectedAirport && e.target.value !== `${selectedAirport.code} - ${selectedAirport.city}`) {
+                  setSelectedAirport(null);
+                }
+              }}
+              onFocus={() => setOpen(true)}
               style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                backgroundColor: 'transparent',
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 15,
                 lineHeight: '18px',
                 color: colors.deepDusk,
               }}
-            >
-              {selectedAirport.code} - {selectedAirport.city}
-            </span>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={colors.borderTint}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
+            />
+            {query && (
+              <button
+                onClick={() => { setQuery(''); setSelectedAirport(null); inputRef.current?.focus(); }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
 
-          {/* Dropdown */}
-          {dropdownOpen && (
+          {/* Dropdown results */}
+          {open && results.length > 0 && (
             <div
               style={{
                 position: 'absolute',
@@ -168,33 +206,83 @@ export default function OnboardingScreen() {
                 borderRadius: 14,
                 overflow: 'hidden',
                 zIndex: 20,
-                maxHeight: 240,
+                maxHeight: 280,
                 overflowY: 'auto',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               }}
             >
-              {AIRPORTS.map((airport) => (
+              {results.map((airport) => (
                 <button
                   key={airport.code}
-                  onClick={() => {
-                    setSelectedAirport(airport);
-                    setDropdownOpen(false);
-                  }}
+                  onClick={() => handleSelect(airport)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'space-between',
                     width: '100%',
                     padding: '12px 16px',
                     border: 'none',
-                    backgroundColor: airport.code === selectedAirport.code ? '#A8C4B820' : 'transparent',
+                    backgroundColor: selectedAirport?.code === airport.code ? '#A8C4B820' : 'transparent',
                     cursor: 'pointer',
-                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                    fontSize: 15,
-                    color: colors.deepDusk,
+                    textAlign: 'left',
                   }}
                 >
-                  {airport.code} - {airport.city}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span
+                      style={{
+                        fontFamily: `"${fonts.display}", system-ui, sans-serif`,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: colors.deepDusk,
+                        width: 36,
+                      }}
+                    >
+                      {airport.code}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                        fontSize: 14,
+                        color: colors.bodyText,
+                      }}
+                    >
+                      {airport.city}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 11,
+                      color: colors.borderTint,
+                    }}
+                  >
+                    {airport.country}
+                  </span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* No results */}
+          {open && query.trim() && results.length === 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 60,
+                left: 0,
+                right: 0,
+                backgroundColor: colors.offWhite,
+                border: '1px solid #C9A99A40',
+                borderRadius: 14,
+                padding: '16px',
+                zIndex: 20,
+                textAlign: 'center',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              }}
+            >
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.borderTint }}>
+                No airports found for "{query}"
+              </span>
             </div>
           )}
         </div>
@@ -203,17 +291,20 @@ export default function OnboardingScreen() {
       {/* Continue button */}
       <div style={{ position: 'relative', zIndex: 10, padding: '0 20px 40px', marginTop: 'auto' }}>
         <button
-          onClick={() => { setDeparture(selectedAirport.city, selectedAirport.code); setOnboarded(); canGoBack ? navigate(-1) : navigate('/'); }}
+          disabled={!selectedAirport}
+          onClick={handleContinue}
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             height: 56,
             borderRadius: 14,
-            backgroundColor: colors.deepDusk,
+            backgroundColor: selectedAirport ? colors.deepDusk : colors.sageDrift,
             border: 'none',
-            cursor: 'pointer',
+            cursor: selectedAirport ? 'pointer' : 'not-allowed',
             width: '100%',
+            opacity: selectedAirport ? 1 : 0.6,
+            transition: 'background-color 0.2s, opacity 0.2s',
           }}
         >
           <span
@@ -225,7 +316,7 @@ export default function OnboardingScreen() {
               color: colors.paleHorizon,
             }}
           >
-            Continue
+            {selectedAirport ? `Continue from ${selectedAirport.code}` : 'Select an airport'}
           </span>
         </button>
       </div>
