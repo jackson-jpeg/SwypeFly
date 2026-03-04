@@ -4,6 +4,7 @@ import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import { useAuthContext } from '@/hooks/AuthContext';
 import { useUIStore } from '@/stores/uiStore';
 import { colors } from '@/tokens';
+import DesktopShell from '@/components/DesktopShell';
 
 // Lazy-load all screens for code splitting
 const LoginScreen = lazy(() => import('@/screens/LoginScreen'));
@@ -46,6 +47,7 @@ export default function App() {
   const needsOnboarding = session && !isGuest && !hasOnboarded;
 
   return (
+    <DesktopShell>
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
@@ -68,5 +70,6 @@ export default function App() {
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>
     </Suspense>
+    </DesktopShell>
   );
 }

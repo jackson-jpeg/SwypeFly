@@ -23,7 +23,6 @@ body {
 #root {
   min-height: 100dvh;
   display: flex;
-  justify-content: center;
   align-items: stretch;
 }
 
@@ -70,4 +69,58 @@ img {
 
 .screen-fixed {
   height: 100dvh;
+}
+
+/* ── Desktop shell layout ─────────────────────────────── */
+.desktop-shell {
+  display: flex;
+  width: 100%;
+  min-height: 100dvh;
+}
+
+.desktop-sidebar {
+  display: none;
+}
+
+.desktop-app-column {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+@media (min-width: 768px) {
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 380px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #F5ECD7 0%, #FFFDF8 100%);
+    border-right: 1px solid #C9A99A20;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+  }
+
+  .desktop-app-column {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    background: #F5ECD7;
+    min-height: 100dvh;
+  }
+
+  .screen,
+  .screen-fixed {
+    max-width: 430px;
+    border-left: 1px solid #C9A99A15;
+    border-right: 1px solid #C9A99A15;
+    box-shadow: 0 0 60px rgba(0,0,0,0.04);
+  }
+}
+
+@media (min-width: 1200px) {
+  .desktop-sidebar {
+    width: 440px;
+  }
 }
