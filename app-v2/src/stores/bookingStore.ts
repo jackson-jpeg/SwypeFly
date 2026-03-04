@@ -9,6 +9,7 @@ interface BookingState {
   cabinClass: 'economy' | 'business' | 'first';
   passengers: Passenger[];
   selectedSeat: string | null;
+  seatPrice: number;
   selectedBaggage: string | null;
   hasInsurance: boolean;
   selectedMeal: string | null;
@@ -25,7 +26,7 @@ interface BookingState {
   applyPromo: (code: string) => boolean;
   addPassenger: (p: Passenger) => void;
   updatePassenger: (index: number, p: Partial<Passenger>) => void;
-  setSeat: (designator: string | null) => void;
+  setSeat: (designator: string | null, price?: number) => void;
   setBaggage: (id: string | null) => void;
   setInsurance: (has: boolean) => void;
   setMeal: (id: string | null) => void;
@@ -38,13 +39,14 @@ interface BookingState {
 
 const INITIAL: Pick<
   BookingState,
-  'destinationId' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
+  'destinationId' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'seatPrice' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
 > = {
   destinationId: null,
   selectedOffer: null,
   cabinClass: 'economy',
   passengers: [],
   selectedSeat: null,
+  seatPrice: 0,
   selectedBaggage: null,
   hasInsurance: false,
   selectedMeal: null,
@@ -67,7 +69,7 @@ export const useBookingStore = create<BookingState>()(
         set((s) => ({
           passengers: s.passengers.map((existing, i) => (i === index ? { ...existing, ...p } : existing)),
         })),
-      setSeat: (designator) => set({ selectedSeat: designator }),
+      setSeat: (designator, price) => set({ selectedSeat: designator, seatPrice: price ?? 0 }),
       setBaggage: (id) => set({ selectedBaggage: id }),
       setInsurance: (has) => set({ hasInsurance: has }),
       setMeal: (id) => set({ selectedMeal: id }),
@@ -89,6 +91,9 @@ export const useBookingStore = create<BookingState>()(
           const svc = s.selectedOffer.availableServices.find((sv) => sv.id === s.selectedBaggage);
           if (svc) perPerson += svc.amount;
         }
+
+        // Seat upgrade
+        perPerson += s.seatPrice;
 
         // Insurance
         if (s.hasInsurance) perPerson += 29;
@@ -118,6 +123,7 @@ export const useBookingStore = create<BookingState>()(
         cabinClass: state.cabinClass,
         passengers: state.passengers,
         selectedSeat: state.selectedSeat,
+        seatPrice: state.seatPrice,
         selectedBaggage: state.selectedBaggage,
         hasInsurance: state.hasInsurance,
         selectedMeal: state.selectedMeal,

@@ -339,7 +339,11 @@ export default function SeatSelectionScreen() {
       {/* CTA area */}
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
         <button
-          onClick={() => { storeSeat(selectedSeat ? selectedSeat.replace('-', '') : null); navigate('/booking/extras'); }}
+          onClick={() => {
+            const price = selectedSeat ? getSeatPrice(parseInt(selectedSeat.split('-')[0]!), selectedSeat.split('-')[1]!) : 0;
+            storeSeat(selectedSeat ? selectedSeat.replace('-', '') : null, price);
+            navigate('/booking/extras');
+          }}
           style={{
             width: '100%',
             height: 52,
@@ -362,7 +366,7 @@ export default function SeatSelectionScreen() {
           </span>
         </button>
         <button
-          onClick={() => { storeSeat(null); navigate('/booking/extras'); }}
+          onClick={() => { storeSeat(null, 0); navigate('/booking/extras'); }}
           style={{ padding: 8 }}
         >
           <span

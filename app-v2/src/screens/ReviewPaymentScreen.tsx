@@ -149,7 +149,7 @@ export default function ReviewPaymentScreen() {
 
   const lineItems = [
     { label: `Flight (${booking.selectedOffer?.cabinClass ?? 'Economy'}, ${booking.passengerCount} ${booking.passengerCount > 1 ? 'adults' : 'adult'})`, price: `$${(booking.selectedOffer?.totalAmount ?? 387) * booking.passengerCount}`, color: colors.bodyText },
-    { label: `Seat ${booking.selectedSeat ?? 'None'}`, price: booking.selectedSeat ? 'Free' : '—', color: booking.selectedSeat ? colors.confirmGreen : colors.bodyText },
+    { label: `Seat ${booking.selectedSeat ?? 'None'}`, price: booking.seatPrice > 0 ? `+$${booking.seatPrice}` : booking.selectedSeat ? 'Free' : '—', color: booking.seatPrice > 0 ? colors.bodyText : booking.selectedSeat ? colors.confirmGreen : colors.bodyText },
     ...(booking.selectedBaggage ? [{ label: bagLabel, price: `$${bagPrice}`, color: colors.bodyText }] : []),
     ...(booking.hasInsurance ? [{ label: 'Trip Protection', price: '$29', color: colors.bodyText }] : []),
     ...(booking.selectedMeal ? [{ label: mealLabel, price: `$${mealPrice}`, color: colors.bodyText }] : []),
