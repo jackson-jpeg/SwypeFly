@@ -40,25 +40,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // No cached prices
     }
 
-    // Fetch prices from other origins for comparison
-    let otherPrices: { origin: string; price: number; source: string }[] = [];
-    try {
-      const allPrices = await serverDatabases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.cachedPrices,
-        [
-          Query.equal('destination_iata', dest.iata_code as string),
-          Query.limit(20),
-        ],
-      );
-      otherPrices = allPrices.documents
-        .filter((p) => p.origin !== origin)
-        .map((p) => ({ origin: p.origin as string, price: p.price as number, source: p.source as string }))
-        .sort((a, b) => a.price - b.price)
-        .slice(0, 5);
-    } catch {
-      // Fine if this fails
-    }
+    // Fetch other prices, hotel price, and refreshed images in parallel
+    const [allPricesResult, hotelPriceResult, imageResult] = await Promise.all([
+      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
+        Query.equal('destination_iata', dest.iata_code as string),
+        Query.limit(20),
+      ]).catch(() => ({ documents: [] })),
+      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedHotelPrices, [
+        Query.equal('destination_iata', dest.iata_code as string),
+        Query.limit(1),
+      ]).catch(() => ({ documents: [] })),
+      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
+        Query.equal('destination_id', id),
+        Query.equal('is_primary', true),
+        Query.limit(1),
+      ]).catch(() => ({ documents: [] })),
+    ]);
+
+    const otherPrices = allPricesResult.documents
+      .filter((p) => p.origin !== origin)
+      .map((p) => ({ origin: p.origin as string, price: p.price as number, source: p.source as string }))
+      .sort((a, b) => a.price - b.price)
+      .slice(0, 5);
+
+    const hotelPrice = hotelPriceResult.documents[0];
+    const refreshedImage = imageResult.documents[0];
 
     // Parse JSON fields
     let itinerary;
@@ -81,10 +87,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       country: dest.country,
       tagline: dest.tagline,
       description: dest.description,
-      imageUrl: dest.image_url,
+      imageUrl: (refreshedImage?.url_regular as string) || dest.image_url,
       imageUrls: dest.image_urls,
       flightPrice: (price?.price as number) ?? dest.flight_price,
-      hotelPricePerNight: dest.hotel_price_per_night,
+      hotelPricePerNight: (hotelPrice?.price_per_night as number) ?? dest.hotel_price_per_night,
       currency: dest.currency,
       vibeTags: dest.vibe_tags,
       bestMonths: dest.best_months,
@@ -93,8 +99,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       livePrice: (price?.price as number) ?? null,
       priceSource: price ? ((price.source as string) || 'estimate') : 'estimate',
       priceFetchedAt: (price?.fetched_at as string) || undefined,
-      liveHotelPrice: null,
-      hotelPriceSource: 'estimate',
+      liveHotelPrice: (hotelPrice?.price_per_night as number) ?? null,
+      hotelPriceSource: hotelPrice ? 'liteapi' : 'estimate',
       available_flight_days: dest.available_flight_days,
       itinerary,
       restaurants,

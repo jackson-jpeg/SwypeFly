@@ -6,16 +6,18 @@ import type { DestinationFeedPage } from '@/api/types';
 
 export function useFeed() {
   const departureCode = useUIStore((s) => s.departureCode);
+  const vibePrefs = useUIStore((s) => s.vibePrefs);
+  const primaryVibe = vibePrefs[0] ?? '';
 
   return useInfiniteQuery({
-    queryKey: ['feed', departureCode],
+    queryKey: ['feed', departureCode, primaryVibe],
     queryFn: async ({ pageParam = '0' }) => {
       if (USE_STUBS) {
         return getStubFeed(Number(pageParam), 5);
       }
-      return apiFetch<DestinationFeedPage>(
-        `/api/feed?origin=${departureCode}&cursor=${pageParam}`,
-      );
+      const params = new URLSearchParams({ origin: departureCode, cursor: pageParam as string });
+      if (primaryVibe) params.set('vibeFilter', primaryVibe);
+      return apiFetch<DestinationFeedPage>(`/api/feed?${params.toString()}`);
     },
     initialPageParam: '0',
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,

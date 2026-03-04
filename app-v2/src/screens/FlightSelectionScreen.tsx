@@ -1,25 +1,54 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
-import { getStubBookingOffers } from '@/api/stubs';
 import { useDestination } from '@/hooks/useDestination';
+import { useBookingSearch } from '@/hooks/useBooking';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import BookingHeader from '@/components/BookingHeader';
 
+const CABIN_CLASSES = ['economy', 'business', 'first'] as const;
+const CABIN_LABELS = ['Economy', 'Business', 'First'] as const;
+
 /* ── component ─────────────────────────────────────────────────── */
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
-  const { destinationId, setOffer, passengerCount, setPassengerCount } = useBookingStore();
+  const { destinationId, setOffer, setCabinClass, passengerCount, setPassengerCount } = useBookingStore();
   const { departureCode } = useUIStore();
   const { data: dest } = useDestination(destinationId ?? undefined);
-  const offers = getStubBookingOffers(dest, departureCode);
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
   const [selectedCabin, setSelectedCabin] = useState(0);
   const passengers = passengerCount;
   const setPassengers = setPassengerCount;
 
-  const selectedOffer = offers[selectedDateIdx]!;
+  const searchParams = useMemo(() => {
+    if (!dest) return null;
+    return {
+      origin: departureCode,
+      destination: dest.iataCode,
+      departureDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+      passengers: [{ type: 'adult' as const }],
+      cabinClass: CABIN_CLASSES[selectedCabin],
+    };
+  }, [dest, departureCode, selectedCabin]);
+
+  const { data: offers, isLoading, isError } = useBookingSearch(searchParams);
+
+  if (isLoading || !offers?.length) {
+    return (
+      <div
+        className="screen-fixed"
+        style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <BookingHeader step={1} stepLabel="Flight Selection" onBack={() => navigate(-1)} onClose={() => navigate('/')} />
+        <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText, padding: 40, textAlign: 'center' }}>
+          {isError ? 'Unable to load flight offers. Please try again.' : 'Finding the best flights...'}
+        </div>
+      </div>
+    );
+  }
+
+  const selectedOffer = offers[selectedDateIdx] ?? offers[0]!;
   const cabinMultiplier = selectedCabin === 1 ? 2.8 : selectedCabin === 2 ? 5.2 : 1;
   const cheapest = Math.min(...offers.map((o) => o.totalAmount));
   const strikethrough = Math.round(cheapest * 1.4 * cabinMultiplier);
@@ -46,7 +75,6 @@ export default function FlightSelectionScreen() {
         selected: i === selectedDateIdx,
       };
     }),
-    cabinClasses: ['Economy', 'Business', 'First'] as const,
     selectedCabin,
     passengers,
   };
@@ -191,7 +219,7 @@ export default function FlightSelectionScreen() {
             marginTop: 4,
           }}
         >
-          Round trip &middot; {data.cabinClasses[selectedCabin]} &middot; per person
+          Round trip &middot; {CABIN_LABELS[selectedCabin]} &middot; per person
         </span>
       </div>
 
@@ -287,7 +315,7 @@ export default function FlightSelectionScreen() {
           Cabin Class
         </span>
         <div style={{ display: 'flex', gap: 8 }}>
-          {data.cabinClasses.map((cls, i) => (
+          {CABIN_LABELS.map((cls, i) => (
             <button
               key={cls}
               onClick={() => setSelectedCabin(i)}
@@ -299,7 +327,7 @@ export default function FlightSelectionScreen() {
                 borderRadius: 18,
                 paddingLeft: 16,
                 paddingRight: 16,
-                ...(i === data.selectedCabin
+                ...(i === selectedCabin
                   ? { backgroundColor: colors.sageDrift }
                   : { border: `1px solid ${colors.borderTint}`, backgroundColor: 'transparent' }),
               }}
@@ -310,7 +338,7 @@ export default function FlightSelectionScreen() {
                   fontSize: 13,
                   fontWeight: 600,
                   lineHeight: '16px',
-                  color: i === data.selectedCabin ? '#FFFFFF' : colors.deepDusk,
+                  color: i === selectedCabin ? '#FFFFFF' : colors.deepDusk,
                 }}
               >
                 {cls}
@@ -453,7 +481,7 @@ export default function FlightSelectionScreen() {
 
         {/* Lock This Deal */}
         <button
-          onClick={() => { setOffer(selectedOffer); navigate('/booking/passengers'); }}
+          onClick={() => { setOffer(selectedOffer); setCabinClass(CABIN_CLASSES[selectedCabin] ?? 'economy'); navigate('/booking/passengers'); }}
           style={{
             display: 'flex',
             alignItems: 'center',

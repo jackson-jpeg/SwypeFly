@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/AuthContext';
+import { useUIStore } from '@/stores/uiStore';
 import { colors } from '@/tokens';
 
 // Lazy-load all screens for code splitting
@@ -36,17 +37,19 @@ function LoadingScreen() {
 
 export default function App() {
   const { isLoading, session, isGuest } = useAuthContext();
+  const hasOnboarded = useUIStore((s) => s.hasOnboarded);
 
   if (isLoading) return <LoadingScreen />;
 
   const needsAuth = !session && !isGuest;
+  const needsOnboarding = session && !isGuest && !hasOnboarded;
 
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/login" element={session || isGuest ? <Navigate to="/" /> : <LoginScreen />} />
         <Route path="/onboarding" element={<OnboardingScreen />} />
-        <Route path="/" element={needsAuth ? <Navigate to="/login" /> : <FeedScreen />} />
+        <Route path="/" element={needsAuth ? <Navigate to="/login" /> : needsOnboarding ? <Navigate to="/onboarding" /> : <FeedScreen />} />
         <Route path="/destination/:id" element={needsAuth ? <Navigate to="/login" /> : <DestinationDetailScreen />} />
         <Route path="/booking/flights" element={needsAuth ? <Navigate to="/login" /> : <FlightSelectionScreen />} />
         <Route path="/booking/passengers" element={needsAuth ? <Navigate to="/login" /> : <PassengerDetailsScreen />} />

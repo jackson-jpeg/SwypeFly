@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useFeed } from '@/hooks/useFeed';
 import { useSavedStore } from '@/stores/savedStore';
+import { useAuthContext } from '@/hooks/AuthContext';
 import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
 
 function FeedCard({ destination }: { destination: Destination }) {
   const navigate = useNavigate();
   const { isSaved, toggle } = useSavedStore();
+  const { session } = useAuthContext();
   const saved = isSaved(destination.id);
 
   const glassButton: React.CSSProperties = {
@@ -66,7 +68,7 @@ function FeedCard({ destination }: { destination: Destination }) {
         <button
           aria-label={saved ? 'Remove from saved' : 'Save destination'}
           style={glassButton}
-          onClick={(e) => { e.stopPropagation(); toggle(destination.id); }}
+          onClick={(e) => { e.stopPropagation(); toggle(destination.id, session?.userId); }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill={saved ? '#FFFFFF' : 'none'} stroke="#FFFFFF" strokeWidth="1.8">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />

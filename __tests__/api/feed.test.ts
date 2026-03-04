@@ -118,9 +118,10 @@ describe('GET /api/feed', () => {
     const dests = Array.from({ length: 3 }, (_, i) =>
       makeDest({ $id: `dest-${i}`, iata_code: `D${i}X`, city: `City${i}` }),
     );
+    // destinations, then prices+hotelPrices+images (all empty)
     mockListDocuments
       .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValueOnce({ documents: [] });
+      .mockResolvedValue({ documents: [] });
 
     const req = makeReq({ query: { origin: uniqueOrigin() } });
     const res = makeRes();
@@ -144,7 +145,7 @@ describe('GET /api/feed', () => {
     ];
     mockListDocuments
       .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValueOnce({ documents: [] });
+      .mockResolvedValue({ documents: [] });
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, maxPrice: '400' } });
@@ -164,7 +165,7 @@ describe('GET /api/feed', () => {
     ];
     mockListDocuments
       .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValueOnce({ documents: [] });
+      .mockResolvedValue({ documents: [] });
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, vibeFilter: 'beach' } });
@@ -185,7 +186,7 @@ describe('GET /api/feed', () => {
     ];
     mockListDocuments
       .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValueOnce({ documents: [] });
+      .mockResolvedValue({ documents: [] });
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, sortPreset: 'cheapest' } });
@@ -204,7 +205,7 @@ describe('GET /api/feed', () => {
     );
     mockListDocuments
       .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValueOnce({ documents: [] });
+      .mockResolvedValue({ documents: [] });
 
     const origin = uniqueOrigin();
     const req1 = makeReq({ query: { origin, sortPreset: 'cheapest' } });
@@ -233,8 +234,9 @@ describe('GET /api/feed', () => {
       },
     ];
     mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValueOnce({ documents: prices });
+      .mockResolvedValueOnce({ documents: dests })   // destinations
+      .mockResolvedValueOnce({ documents: prices })   // cached prices
+      .mockResolvedValue({ documents: [] });           // hotel prices + images
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin } });
@@ -258,9 +260,7 @@ describe('GET /api/feed', () => {
   });
 
   it('sets Cache-Control with s-maxage for anonymous requests', async () => {
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: [] })
-      .mockResolvedValueOnce({ documents: [] });
+    mockListDocuments.mockResolvedValue({ documents: [] });
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin } });
@@ -275,9 +275,7 @@ describe('GET /api/feed', () => {
   });
 
   it('sets no-store for session-based requests', async () => {
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: [] })
-      .mockResolvedValueOnce({ documents: [] });
+    mockListDocuments.mockResolvedValue({ documents: [] });
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, sessionId: 'abc-123' } });

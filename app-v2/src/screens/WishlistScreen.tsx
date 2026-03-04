@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueries } from '@tanstack/react-query';
 import { colors, fonts } from '@/tokens';
 import { useSavedStore } from '@/stores/savedStore';
+import { useAuthContext } from '@/hooks/AuthContext';
+import { apiFetch, USE_STUBS } from '@/api/client';
 import { STUB_DESTINATIONS } from '@/api/stubs';
+import { useUIStore } from '@/stores/uiStore';
+import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
 
 function HeartFilled({ size = 16 }: { size?: number }) {
@@ -18,14 +23,35 @@ type SortMode = 'all' | 'price' | 'recent';
 export default function WishlistScreen() {
   const navigate = useNavigate();
   const { savedIds, toggle } = useSavedStore();
+  const { session } = useAuthContext();
+  const departureCode = useUIStore((s) => s.departureCode);
   const [sort, setSort] = useState<SortMode>('all');
+  const userId = session?.userId;
 
-  const allData = savedIds
-    .map((id, idx) => {
-      const d = STUB_DESTINATIONS.find((dest) => dest.id === id);
+  // Fetch destination details for each saved ID
+  const destQueries = useQueries({
+    queries: savedIds.map((id) => ({
+      queryKey: ['destination', id, departureCode],
+      queryFn: async (): Promise<Destination | null> => {
+        if (USE_STUBS) {
+          return STUB_DESTINATIONS.find((d) => d.id === id) ?? null;
+        }
+        try {
+          return await apiFetch<Destination>(`/api/destination?id=${id}&origin=${departureCode}`);
+        } catch {
+          return null;
+        }
+      },
+      staleTime: 10 * 60 * 1000,
+    })),
+  });
+
+  const allData = destQueries
+    .map((q, idx) => {
+      const d = q.data;
       return d ? { ...d, savedOrder: idx } : null;
     })
-    .filter(Boolean) as (typeof STUB_DESTINATIONS[number] & { savedOrder: number })[];
+    .filter(Boolean) as (Destination & { savedOrder: number })[];
 
   const sorted = sort === 'price'
     ? [...allData].sort((a, b) => a.flightPrice - b.flightPrice)
@@ -38,7 +64,7 @@ export default function WishlistScreen() {
     city: d.city,
     country: d.country,
     vibe: d.vibeTags[0] ?? 'Travel',
-    price: d.flightPrice,
+    price: d.livePrice ?? d.flightPrice,
     image: d.imageUrl,
     priceDrop: d.previousPrice ? d.previousPrice - d.flightPrice : undefined,
   }));
@@ -202,13 +228,13 @@ export default function WishlistScreen() {
               </span>
               {/* Heart icon — tap to unsave */}
               <button
-                onClick={(e) => { e.stopPropagation(); toggle(dest.id); }}
+                onClick={(e) => { e.stopPropagation(); toggle(dest.id, userId); }}
                 style={{ position: 'absolute', right: 8, top: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 <HeartFilled />
               </button>
               {/* Price drop badge */}
-              {dest.priceDrop && (
+              {dest.priceDrop && dest.priceDrop > 0 && (
                 <div
                   style={{
                     position: 'absolute',

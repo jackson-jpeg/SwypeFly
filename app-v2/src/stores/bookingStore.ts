@@ -6,6 +6,7 @@ interface BookingState {
   // Flow state
   destinationId: string | null;
   selectedOffer: BookingOffer | null;
+  cabinClass: 'economy' | 'business' | 'first';
   passengers: Passenger[];
   selectedSeat: string | null;
   selectedBaggage: string | null;
@@ -19,6 +20,7 @@ interface BookingState {
   // Actions
   setDestination: (id: string) => void;
   setOffer: (offer: BookingOffer) => void;
+  setCabinClass: (cls: 'economy' | 'business' | 'first') => void;
   setPassengerCount: (count: number) => void;
   applyPromo: (code: string) => boolean;
   addPassenger: (p: Passenger) => void;
@@ -36,10 +38,11 @@ interface BookingState {
 
 const INITIAL: Pick<
   BookingState,
-  'destinationId' | 'selectedOffer' | 'passengers' | 'selectedSeat' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
+  'destinationId' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
 > = {
   destinationId: null,
   selectedOffer: null,
+  cabinClass: 'economy',
   passengers: [],
   selectedSeat: null,
   selectedBaggage: null,
@@ -58,6 +61,7 @@ export const useBookingStore = create<BookingState>()(
 
       setDestination: (id) => set({ destinationId: id }),
       setOffer: (offer) => set({ selectedOffer: offer }),
+      setCabinClass: (cls) => set({ cabinClass: cls }),
       addPassenger: (p) => set((s) => ({ passengers: [...s.passengers, p] })),
       updatePassenger: (index, p) =>
         set((s) => ({
@@ -116,6 +120,7 @@ export const useBookingStore = create<BookingState>()(
       partialize: (state) => ({
         destinationId: state.destinationId,
         selectedOffer: state.selectedOffer,
+        cabinClass: state.cabinClass,
         passengers: state.passengers,
         selectedSeat: state.selectedSeat,
         selectedBaggage: state.selectedBaggage,

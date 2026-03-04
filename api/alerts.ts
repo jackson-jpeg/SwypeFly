@@ -119,8 +119,19 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
     for (const alert of alerts.documents) {
       checked++;
       try {
+        // Look up destination to get IATA code (alert.destination_id is an Appwrite doc ID)
+        let dest;
+        try {
+          dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, alert.destination_id as string);
+        } catch {
+          // Destination not found — skip this alert
+          continue;
+        }
+
+        const iataCode = dest.iata_code as string;
+
         const priceResults = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-          Query.equal('destination_iata', alert.destination_id),
+          Query.equal('destination_iata', iataCode),
           Query.orderAsc('price'),
           Query.limit(1),
         ]);
@@ -129,12 +140,7 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
         if (priceResults.documents.length > 0) {
           currentPrice = priceResults.documents[0].price as number;
         } else {
-          try {
-            const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, alert.destination_id);
-            currentPrice = (dest.flight_price as number) || null;
-          } catch {
-            // Destination not found
-          }
+          currentPrice = (dest.flight_price as number) || null;
         }
 
         if (currentPrice && currentPrice <= alert.target_price) {

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { account, databases, DATABASE_ID, COLLECTIONS } from '@/services/appwrite';
 import { Query } from 'appwrite';
 import { useUIStore } from '@/stores/uiStore';
+import { useSavedStore } from '@/stores/savedStore';
 import { setAuthToken } from '@/api/client';
 
 interface AppwriteUser {
@@ -99,6 +100,7 @@ export function useAuth(): Auth {
         setGuest(false);
         await refreshJWT();
         await checkOnboarding(u.id);
+        useSavedStore.getState().syncFromServer(u.id);
       } catch {
         if (cancelled) return;
         setUser(null);
@@ -139,6 +141,7 @@ export function useAuth(): Auth {
         setGuest(false);
         await refreshJWT();
         await checkOnboarding(u.id);
+        useSavedStore.getState().syncFromServer(u.id);
         return { error: null };
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Sign in failed';
@@ -164,6 +167,7 @@ export function useAuth(): Auth {
         setGuest(false);
         await refreshJWT();
         setHasCompletedOnboarding(true);
+        useSavedStore.getState().syncFromServer(u.id);
         return { error: null };
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Sign up failed';

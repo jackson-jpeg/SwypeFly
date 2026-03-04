@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { API_BASE } from '@/api/client';
 import { STUB_DESTINATIONS } from '@/api/stubs';
 import { useDestination } from '@/hooks/useDestination';
 import { useSavedStore } from '@/stores/savedStore';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useAuthContext } from '@/hooks/AuthContext';
 import type { TripPlan, Destination } from '@/api/types';
 
 /* ── detail enrichment (supplements stub Destination data) ────── */
@@ -20,7 +22,7 @@ const DETAIL_DATA: Record<string, {
   weather: { month: string; temp: number; pct: number }[];
   aboutParas: string[];
   itinerary: { days: string; title: string; desc: string }[];
-  similar: { city: string; price: number; image: string }[];
+  similar: { id?: string; city: string; price: number; image: string }[];
 }> = {
   '2': {
     region: 'Aegean Islands',
@@ -201,7 +203,7 @@ function getDefaultDetail(dest: Destination) {
   const similarDests = STUB_DESTINATIONS
     .filter((d) => d.id !== dest.id && (d.country === dest.country || d.vibeTags[0] === dest.vibeTags[0]))
     .slice(0, 3)
-    .map((d) => ({ city: d.city, price: d.flightPrice, image: d.imageUrl }));
+    .map((d) => ({ id: d.id, city: d.city, price: d.flightPrice, image: d.imageUrl }));
 
   return {
     region: dest.country,
@@ -287,9 +289,11 @@ export default function DestinationDetailScreen() {
   const { id } = useParams<{ id: string }>();
   const { data: stubDest, isLoading } = useDestination(id);
   const { isSaved, toggle } = useSavedStore();
+  const { session } = useAuthContext();
   const setBookingDestination = useBookingStore((s) => s.setDestination);
   const { departureCode } = useUIStore();
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
+  const [tripPlanText, setTripPlanText] = useState('');
   const [tripPlanLoading, setTripPlanLoading] = useState(false);
 
   if (isLoading) {
@@ -317,13 +321,10 @@ export default function DestinationDetailScreen() {
     flightStrikethrough: detail.flightStrikethrough ?? Math.round(stubDest.flightPrice * 1.4),
   };
 
-  const handleGeneratePlan = async () => {
-    setTripPlanLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    // Generate plan from destination's itinerary data
+  const generateLocalPlan = (): TripPlan => {
     const itinerary = stubDest.itinerary ?? [];
     const restaurants = stubDest.restaurants ?? [];
-    const plan: TripPlan = {
+    return {
       days: itinerary.length > 0
         ? itinerary.map((item) => ({
             day: item.day,
@@ -334,8 +335,8 @@ export default function DestinationDetailScreen() {
             })),
           }))
         : [
-            { day: 1, title: `Arrive in ${stubDest.city}`, activities: [{ time: 'Morning', activity: `Arrive and settle in` }, { time: 'Afternoon', activity: `Explore the city center` }, { time: 'Evening', activity: restaurants[0] ? `Dinner at ${restaurants[0].name}` : 'Local dinner' }] },
-            { day: 2, title: 'Local Highlights', activities: [{ time: 'Morning', activity: `Visit top attractions` }, { time: 'Afternoon', activity: stubDest.vibeTags.includes('beach') ? 'Beach afternoon' : 'Cultural exploration' }, { time: 'Evening', activity: restaurants[1] ? `Try ${restaurants[1].name}` : 'Evening stroll' }] },
+            { day: 1, title: `Arrive in ${stubDest.city}`, activities: [{ time: 'Morning', activity: 'Arrive and settle in' }, { time: 'Afternoon', activity: 'Explore the city center' }, { time: 'Evening', activity: restaurants[0] ? `Dinner at ${restaurants[0].name}` : 'Local dinner' }] },
+            { day: 2, title: 'Local Highlights', activities: [{ time: 'Morning', activity: 'Visit top attractions' }, { time: 'Afternoon', activity: stubDest.vibeTags.includes('beach') ? 'Beach afternoon' : 'Cultural exploration' }, { time: 'Evening', activity: restaurants[1] ? `Try ${restaurants[1].name}` : 'Evening stroll' }] },
             { day: 3, title: 'Hidden Gems & Departure', activities: [{ time: 'Morning', activity: 'Off-the-beaten-path exploration' }, { time: 'Afternoon', activity: 'Souvenir shopping & last bites' }, { time: 'Evening', activity: `Depart ${stubDest.city}` }] },
           ],
       estimatedBudget: {
@@ -344,7 +345,44 @@ export default function DestinationDetailScreen() {
         currency: 'USD',
       },
     };
-    setTripPlan(plan);
+  };
+
+  const handleGeneratePlan = async () => {
+    setTripPlanLoading(true);
+    setTripPlanText('');
+    setTripPlan(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/trip-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          city: stubDest.city,
+          country: stubDest.country,
+          duration: 3,
+          style: 'comfort',
+          interests: stubDest.vibeTags.slice(0, 3).join(', '),
+        }),
+      });
+
+      if (!res.ok || !res.body) throw new Error('API unavailable');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        setTripPlanText(text);
+      }
+    } catch {
+      // Fallback to local plan generation
+      setTripPlanText('');
+      setTripPlan(generateLocalPlan());
+    }
+
     setTripPlanLoading(false);
   };
 
@@ -415,7 +453,7 @@ export default function DestinationDetailScreen() {
           </button>
           <div style={{ display: 'flex', gap: 10 }}>
             <button
-              onClick={() => toggle(stubDest.id)}
+              onClick={() => toggle(stubDest.id, session?.userId)}
               style={{
                 width: 40,
                 height: 40,
@@ -931,12 +969,39 @@ export default function DestinationDetailScreen() {
                 color: '#FFFFFF',
               }}
             >
-              {tripPlanLoading ? 'Generating...' : tripPlan ? 'Regenerate Plan' : 'Generate My Trip Plan'}
+              {tripPlanLoading ? 'Generating...' : (tripPlan || tripPlanText) ? 'Regenerate Plan' : 'Generate My Trip Plan'}
             </span>
           </button>
 
-          {/* Trip Plan Result */}
-          {tripPlan && (
+          {/* AI-Streamed Trip Plan */}
+          {tripPlanText && (
+            <div
+              style={{
+                marginTop: 4,
+                padding: '16px',
+                backgroundColor: colors.offWhite,
+                borderRadius: 12,
+                border: `1px solid ${colors.borderTint}`,
+              }}
+            >
+              <pre
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 13,
+                  lineHeight: '21px',
+                  color: colors.bodyText,
+                  whiteSpace: 'pre-wrap',
+                  wordWrap: 'break-word',
+                  margin: 0,
+                }}
+              >
+                {tripPlanText}
+              </pre>
+            </div>
+          )}
+
+          {/* Structured Trip Plan Fallback */}
+          {tripPlan && !tripPlanText && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 4 }}>
               {tripPlan.days.map((day) => (
                 <div key={day.day} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1010,8 +1075,8 @@ export default function DestinationDetailScreen() {
             <div
               key={s.city}
               onClick={() => {
-                const found = STUB_DESTINATIONS.find((d) => d.city === s.city);
-                if (found) navigate(`/destination/${found.id}`);
+                const targetId = s.id || STUB_DESTINATIONS.find((d) => d.city === s.city)?.id;
+                if (targetId) navigate(`/destination/${targetId}`);
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 140, flexShrink: 0, cursor: 'pointer' }}
             >

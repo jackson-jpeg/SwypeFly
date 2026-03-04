@@ -107,10 +107,8 @@ describe('GET /api/destination', () => {
 
   it('returns destination with camelCase keys', async () => {
     mockGetDocument.mockResolvedValueOnce(makeDest());
-    // Price lookup returns empty
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
-    // Other prices lookup returns empty
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
+    // Price lookup, then Promise.all: [otherPrices, hotelPrices, images]
+    mockListDocuments.mockResolvedValue({ documents: [] });
 
     const req = makeReq();
     const res = makeRes();
@@ -128,6 +126,7 @@ describe('GET /api/destination', () => {
 
   it('merges live price when available', async () => {
     mockGetDocument.mockResolvedValueOnce(makeDest());
+    // 1st call: cached prices for this origin
     mockListDocuments.mockResolvedValueOnce({
       documents: [
         {
@@ -146,7 +145,8 @@ describe('GET /api/destination', () => {
         },
       ],
     });
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
+    // Promise.all calls: otherPrices, hotelPrices, images
+    mockListDocuments.mockResolvedValue({ documents: [] });
 
     const req = makeReq();
     const res = makeRes();
@@ -162,13 +162,17 @@ describe('GET /api/destination', () => {
 
   it('includes otherPrices from different origins', async () => {
     mockGetDocument.mockResolvedValueOnce(makeDest());
+    // 1st: cached price for this origin (empty)
     mockListDocuments.mockResolvedValueOnce({ documents: [] });
+    // Promise.all: [otherPrices, hotelPrices, images]
     mockListDocuments.mockResolvedValueOnce({
       documents: [
         { origin: 'LAX', destination_iata: 'BCN', price: 399, source: 'travelpayouts' },
         { origin: 'ORD', destination_iata: 'BCN', price: 450, source: 'amadeus' },
       ],
     });
+    mockListDocuments.mockResolvedValueOnce({ documents: [] }); // hotelPrices
+    mockListDocuments.mockResolvedValueOnce({ documents: [] }); // images
 
     const req = makeReq();
     const res = makeRes();

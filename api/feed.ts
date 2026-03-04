@@ -227,18 +227,20 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     Query.limit(500),
   ]);
 
-  // Fetch cached prices for this origin
-  let prices: Array<Record<string, unknown>> = [];
-  try {
-    const priceResult = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.cachedPrices,
-      [Query.equal('origin', origin), Query.limit(500)],
-    );
-    prices = priceResult.documents;
-  } catch {
-    // No cached prices yet
-  }
+  // Fetch cached prices, hotel prices, and refreshed images in parallel
+  const [priceResult, hotelPriceResult, imageResult] = await Promise.all([
+    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
+      Query.equal('origin', origin), Query.limit(500),
+    ]).catch(() => ({ documents: [] })),
+    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedHotelPrices, [
+      Query.limit(500),
+    ]).catch(() => ({ documents: [] })),
+    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
+      Query.equal('is_primary', true), Query.limit(500),
+    ]).catch(() => ({ documents: [] })),
+  ]);
+
+  const prices = priceResult.documents;
 
   const priceMap = new Map<
     string,
@@ -270,6 +272,21 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     });
   }
 
+  // Build hotel price lookup by IATA code
+  const hotelPriceMap = new Map<string, number>();
+  for (const hp of hotelPriceResult.documents) {
+    hotelPriceMap.set(hp.destination_iata as string, hp.price_per_night as number);
+  }
+
+  // Build image lookup by destination ID
+  const imageMap = new Map<string, { url: string; blurHash?: string }>();
+  for (const img of imageResult.documents) {
+    imageMap.set(img.destination_id as string, {
+      url: (img.url_regular as string) || (img.url_small as string) || '',
+      blurHash: (img.blur_hash as string) || undefined,
+    });
+  }
+
   const merged: ScoredDest[] = destResult.documents.map((d) => {
     const lp = priceMap.get(d.iata_code as string);
 
@@ -295,7 +312,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       continent: (d.continent as string) || undefined,
       tagline: (d.tagline as string) || '',
       description: (d.description as string) || '',
-      image_url: (d.image_url as string) || '',
+      image_url: imageMap.get(d.$id)?.url || (d.image_url as string) || '',
       image_urls: (d.image_urls as string[]) || [],
       flight_price: d.flight_price as number,
       hotel_price_per_night: (d.hotel_price_per_night as number) || 0,
@@ -325,8 +342,8 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       trip_duration_days: lp?.trip_duration_days,
       previous_price: lp?.previous_price,
       price_direction: lp?.price_direction,
-      live_hotel_price: null,
-      hotel_price_source: undefined,
+      live_hotel_price: hotelPriceMap.get(d.iata_code as string) ?? null,
+      hotel_price_source: hotelPriceMap.has(d.iata_code as string) ? 'liteapi' : undefined,
       itinerary,
       restaurants,
     };

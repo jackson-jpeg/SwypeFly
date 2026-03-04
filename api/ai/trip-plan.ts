@@ -25,6 +25,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!v.success) return res.status(400).json({ error: v.error });
 
   const { city, country, duration, style, interests } = v.data;
+
+  // Demo fallback when API key is not configured
+  if (!process.env.ANTHROPIC_API_KEY) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    const fallback = `${city}${country ? `, ${country}` : ''} — ${duration}-Day ${style.charAt(0).toUpperCase() + style.slice(1)} Itinerary\n\nDay 1 — Arrival & First Impressions\n🌅 Morning: Arrive and check into your hotel\n🏛 Afternoon: Explore the city center and main landmarks\n🍽 Evening: Dinner at a top-rated local restaurant\n💡 Tip: Exchange currency at the airport for convenience\n\nDay 2 — Local Highlights\n☀️ Morning: Visit the most popular attraction\n🚶 Afternoon: Walking tour through historic neighborhoods\n🌙 Evening: Sunset views and nightlife district\n💡 Tip: Public transit is the most efficient way to get around\n\nDay 3 — Hidden Gems & Departure\n🌿 Morning: Off-the-beaten-path neighborhood exploration\n🛍 Afternoon: Local markets and souvenir shopping\n✈️ Evening: Depart ${city}\n💡 Tip: Book airport transfer in advance to save time\n\nPro Tips:\n1. Learn a few basic phrases in the local language\n2. Try street food for the most authentic experience\n3. Keep copies of important documents separate from originals`;
+    return res.status(200).end(fallback);
+  }
+
   const safeCity = sanitize(city);
   const safeCountry = sanitize(country || '');
   const safeInterests = interests ? sanitize(interests) : '';
