@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
@@ -91,6 +92,19 @@ export default function SettingsScreen() {
     .toUpperCase()
     .slice(0, 2) || 'G';
   const { hapticsEnabled, toggleHaptics, departureCity, departureCode, currency, setCurrency, tempUnit, setTempUnit, notifications, toggleNotifications, priceAlerts, togglePriceAlerts } = useUIStore();
+  const [notifBlocked, setNotifBlocked] = useState(typeof Notification !== 'undefined' && Notification.permission === 'denied');
+
+  const handleToggleNotifications = async () => {
+    if (!notifications && typeof Notification !== 'undefined') {
+      const perm = await Notification.requestPermission();
+      if (perm === 'denied') {
+        setNotifBlocked(true);
+        return;
+      }
+      setNotifBlocked(false);
+    }
+    toggleNotifications();
+  };
 
   return (
     <div
@@ -218,8 +232,15 @@ export default function SettingsScreen() {
               <Toggle on={hapticsEnabled} onToggle={toggleHaptics} />
             </div>
             <div style={rowStyle}>
-              <span style={rowTitleStyle}>Push Notifications</span>
-              <Toggle on={notifications} onToggle={toggleNotifications} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={rowTitleStyle}>Push Notifications</span>
+                {notifBlocked && (
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.terracotta }}>
+                    Blocked in browser settings
+                  </span>
+                )}
+              </div>
+              <Toggle on={notifications} onToggle={handleToggleNotifications} disabled={notifBlocked} />
             </div>
             <div style={rowStyle}>
               <span style={rowTitleStyle}>Price Alerts</span>

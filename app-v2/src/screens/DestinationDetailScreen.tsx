@@ -8,6 +8,7 @@ import { useSavedStore } from '@/stores/savedStore';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
+import PriceAlertButton from '@/components/PriceAlertButton';
 import type { TripPlan, Destination } from '@/api/types';
 
 function getDefaultDetail(dest: Destination) {
@@ -461,6 +462,9 @@ export default function DestinationDetailScreen() {
           >
             {dest.flightDates}
           </span>
+
+          {/* Price alert */}
+          <PriceAlertButton destinationId={stubDest.id} currentPrice={dest.flightPrice} />
 
           {/* Select button */}
           <button
