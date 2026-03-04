@@ -191,6 +191,7 @@ export default function ReviewPaymentScreen() {
         phone_number: p.phone_number,
       })),
       selectedServices: [
+        ...(booking.selectedSeat ? [{ id: `seat-${booking.selectedSeat}`, quantity: 1 }] : []),
         ...(booking.selectedBaggage ? [{ id: booking.selectedBaggage, quantity: 1 }] : []),
         ...(booking.selectedMeal ? [{ id: booking.selectedMeal, quantity: 1 }] : []),
       ],

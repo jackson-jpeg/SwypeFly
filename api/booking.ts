@@ -232,10 +232,16 @@ function stubPaymentIntent() {
 function stubCreateOrder() {
   const pnr = 'SGJ' + Math.random().toString(36).substring(2, 8).toUpperCase();
   return {
-    bookingId: 'stub_booking_' + Date.now(),
-    duffelOrderId: 'stub_ord_' + Date.now(),
-    status: 'confirmed',
+    orderId: 'stub_booking_' + Date.now(),
     bookingReference: pnr,
+    status: 'confirmed' as const,
+    passengers: [{ id: 'pax-1', name: 'Demo User' }],
+    slices: [
+      { origin: 'JFK', destination: 'BCN', departureTime: new Date(Date.now() + 14 * 86400000).toISOString(), arrivalTime: new Date(Date.now() + 14 * 86400000 + 8 * 3600000).toISOString(), duration: '8h 0m', stops: 0, airline: 'Demo Air', flightNumber: 'DA 100', aircraft: '' },
+      { origin: 'BCN', destination: 'JFK', departureTime: new Date(Date.now() + 21 * 86400000).toISOString(), arrivalTime: new Date(Date.now() + 21 * 86400000 + 9 * 3600000).toISOString(), duration: '9h 0m', stops: 0, airline: 'Demo Air', flightNumber: 'DA 101', aircraft: '' },
+    ],
+    totalPaid: 387,
+    currency: 'USD',
   };
 }
 
@@ -475,10 +481,29 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(200).json({
-      bookingId: booking.$id,
-      duffelOrderId: duffelOrder.id,
-      status: 'confirmed',
+      orderId: booking.$id,
       bookingReference: duffelOrder.booking_reference,
+      status: 'confirmed' as const,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      passengers: (duffelOrder.passengers ?? []).map((p: any) => ({
+        id: p.id,
+        name: `${p.given_name} ${p.family_name}`,
+        seatDesignator: p.seat?.designator,
+      })),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      slices: (duffelOrder.slices ?? []).map((s: any) => ({
+        origin: s.origin?.iata_code ?? '',
+        destination: s.destination?.iata_code ?? '',
+        departureTime: s.segments?.[0]?.departing_at ?? '',
+        arrivalTime: s.segments?.[0]?.arriving_at ?? '',
+        duration: parseDuration(s.duration || ''),
+        stops: (s.segments?.length || 1) - 1,
+        airline: s.segments?.[0]?.operating_carrier?.name ?? '',
+        flightNumber: `${s.segments?.[0]?.operating_carrier?.iata_code ?? ''} ${s.segments?.[0]?.operating_carrier_flight_number ?? ''}`.trim(),
+        aircraft: s.segments?.[0]?.aircraft?.name ?? '',
+      })),
+      totalPaid: parseFloat(duffelOrder.total_amount) || 0,
+      currency: duffelOrder.total_currency || 'USD',
     });
   } catch (err) {
     logApiError('api/booking/create-order', err);
