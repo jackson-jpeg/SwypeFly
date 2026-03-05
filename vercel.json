@@ -33,6 +33,7 @@
     { "source": "/share/:id", "destination": "/api/share/:id" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/tiktok6qw0kODSIWEj0oNE58BzKpqs3UrdPDuN.txt", "destination": "/tiktok6qw0kODSIWEj0oNE58BzKpqs3UrdPDuN.txt" },
+    { "source": "/tiktok-developers-site-verification.txt", "destination": "/tiktok-developers-site-verification.txt" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [
