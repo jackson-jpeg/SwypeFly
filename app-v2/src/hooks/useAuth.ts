@@ -16,6 +16,7 @@ interface AuthState {
   isLoading: boolean;
   isGuest: boolean;
   hasCompletedOnboarding: boolean;
+  oauthError: string | null;
 }
 
 interface AuthActions {
@@ -102,45 +103,47 @@ export function useAuth(): Auth {
     }
   }, [isLoaded, isSignedIn, userId, onboardingChecked, tokenReady, checkOnboarding]);
 
-  // OAuth sign-ins via Clerk redirect
-  const signInWithGoogle = useCallback(async () => {
-    if (!signIn) return;
-    try {
-      await signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/',
-      });
-    } catch (err) {
-      console.error('[auth] Google sign-in failed:', err);
-    }
-  }, [signIn]);
+  // OAuth: try signIn first, fall back to signUp for new users
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
-  const signInWithApple = useCallback(async () => {
-    if (!signIn) return;
-    try {
-      await signIn.authenticateWithRedirect({
-        strategy: 'oauth_apple',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/',
-      });
-    } catch (err) {
-      console.error('[auth] Apple sign-in failed:', err);
-    }
-  }, [signIn]);
+  const oauthSignIn = useCallback(
+    async (strategy: 'oauth_google' | 'oauth_apple' | 'oauth_tiktok') => {
+      setOauthError(null);
+      if (!signIn || !signUp) return;
+      try {
+        await signIn.authenticateWithRedirect({
+          strategy,
+          redirectUrl: '/sso-callback',
+          redirectUrlComplete: '/',
+        });
+      } catch (err: unknown) {
+        // If user doesn't exist, try sign-up instead
+        const clerkErr = err as { errors?: { code: string }[] };
+        if (clerkErr?.errors?.[0]?.code === 'form_identifier_not_found') {
+          try {
+            await signUp.authenticateWithRedirect({
+              strategy,
+              redirectUrl: '/sso-callback',
+              redirectUrlComplete: '/onboarding',
+            });
+            return;
+          } catch (signUpErr) {
+            console.error(`[auth] ${strategy} sign-up failed:`, signUpErr);
+          }
+        }
+        const message =
+          clerkErr?.errors?.[0]?.code === 'form_identifier_not_found'
+            ? 'Account not found. Please sign up first.'
+            : `Sign-in failed. Please try again.`;
+        setOauthError(message);
+      }
+    },
+    [signIn, signUp],
+  );
 
-  const signInWithTikTok = useCallback(async () => {
-    if (!signIn) return;
-    try {
-      await signIn.authenticateWithRedirect({
-        strategy: 'oauth_tiktok',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/',
-      });
-    } catch (err) {
-      console.error('[auth] TikTok sign-in failed:', err);
-    }
-  }, [signIn]);
+  const signInWithGoogle = useCallback(() => oauthSignIn('oauth_google'), [oauthSignIn]);
+  const signInWithApple = useCallback(() => oauthSignIn('oauth_apple'), [oauthSignIn]);
+  const signInWithTikTok = useCallback(() => oauthSignIn('oauth_tiktok'), [oauthSignIn]);
 
   // Email sign-in
   const signInWithEmail = useCallback(
@@ -305,6 +308,7 @@ export function useAuth(): Auth {
     isLoading,
     isGuest,
     hasCompletedOnboarding,
+    oauthError,
     signInWithGoogle,
     signInWithApple,
     signInWithTikTok,

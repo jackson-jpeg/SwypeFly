@@ -24,7 +24,7 @@ export default function LoginScreen() {
     signInWithGoogle, signInWithApple, signInWithTikTok,
     signInWithEmail, signUpWithEmail, verifyEmail, resendVerification,
     forgotPassword, resetPassword,
-    browseAsGuest,
+    browseAsGuest, oauthError,
   } = useAuthContext();
   const [showEmail, setShowEmail] = useState(false);
   const [email, setEmail] = useState('');
@@ -453,6 +453,11 @@ export default function LoginScreen() {
             </div>
           ) : (
             <>
+              {oauthError && (
+                <div style={{ padding: '10px 14px', backgroundColor: '#E5736820', borderRadius: 10, textAlign: 'center' }}>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta }}>{oauthError}</span>
+                </div>
+              )}
               {/* Google */}
               <button
                 onClick={() => signInWithGoogle()}
