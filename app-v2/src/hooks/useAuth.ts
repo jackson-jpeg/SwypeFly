@@ -59,15 +59,32 @@ export function useAuth(): Auth {
   const session = user ? { userId: user.id } : null;
 
   // Keep API client token in sync with Clerk session
+  const [tokenReady, setTokenReady] = useState(false);
+
   useEffect(() => {
     if (!isLoaded) return;
     if (isSignedIn) {
-      getToken().then((token) => setAuthToken(token));
+      getToken().then((token) => {
+        setAuthToken(token);
+        setTokenReady(true);
+      });
       setGuest(false);
     } else {
       setAuthToken(null);
+      setTokenReady(true);
     }
   }, [isLoaded, isSignedIn, getToken, setGuest]);
+
+  // Re-fetch token on 401 from any API call
+  useEffect(() => {
+    const handler = () => {
+      if (isSignedIn) {
+        getToken({ skipCache: true }).then((t) => setAuthToken(t));
+      }
+    };
+    window.addEventListener('sogojet:auth-expired', handler);
+    return () => window.removeEventListener('sogojet:auth-expired', handler);
+  }, [isSignedIn, getToken]);
 
   // Onboarding state is persisted locally in uiStore
   const checkOnboarding = useCallback(async () => {
@@ -277,7 +294,7 @@ export function useAuth(): Auth {
     return user !== null;
   }, [user]);
 
-  const isLoading = !isLoaded || (isSignedIn && !onboardingChecked);
+  const isLoading = !isLoaded || (isSignedIn && (!onboardingChecked || !tokenReady));
 
   return {
     session,

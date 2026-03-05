@@ -36,6 +36,12 @@ export async function apiFetch<T>(
     headers,
   });
 
+  if (res.status === 401) {
+    setAuthToken(null);
+    window.dispatchEvent(new CustomEvent('sogojet:auth-expired'));
+    throw new Error('Session expired. Please sign in again.');
+  }
+
   if (!res.ok) {
     throw new Error(`API error ${res.status}: ${res.statusText}`);
   }
