@@ -124,10 +124,10 @@ export default function PassengerDetailsScreen() {
     }
     setGender(pax?.gender === 'm' ? 'Male' : 'Female');
     setPhone(pax?.phone_number ?? '');
-    setPassportNumber('');
-    setFfNumber('');
-    setPassportOpen(false);
-    setFfOpen(false);
+    setPassportNumber(pax?.passport_number ?? '');
+    setFfNumber(pax?.frequent_flyer_number ?? '');
+    setPassportOpen(!!pax?.passport_number);
+    setFfOpen(!!pax?.frequent_flyer_number);
     setErrors({});
   };
 
@@ -444,6 +444,8 @@ export default function PassengerDetailsScreen() {
               title: titleCode as 'mr' | 'ms',
               email: user?.email ?? '',
               phone_number: phone.trim(),
+              ...(passportNumber.trim() ? { passport_number: passportNumber.trim() } : {}),
+              ...(ffNumber.trim() ? { frequent_flyer_number: ffNumber.trim() } : {}),
             };
             const existingIdx = passengers.findIndex((p) => p.id === paxId);
             if (existingIdx >= 0) {

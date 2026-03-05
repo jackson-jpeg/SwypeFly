@@ -23,11 +23,18 @@ const sectionLabel: React.CSSProperties = {
 /* ───── stub payment form (no Stripe keys configured) ───── */
 function StubPaymentForm({ onSuccess, total }: { onSuccess: () => Promise<void>; total: number }) {
   const [paying, setPaying] = useState(false);
+  const [stubError, setStubError] = useState('');
 
   const handlePay = async () => {
     setPaying(true);
+    setStubError('');
     await new Promise((r) => setTimeout(r, 1500));
-    await onSuccess();
+    try {
+      await onSuccess();
+    } catch (err) {
+      setStubError(err instanceof Error ? err.message : 'Payment failed');
+      setPaying(false);
+    }
   };
 
   return (
@@ -79,6 +86,12 @@ function StubPaymentForm({ onSuccess, total }: { onSuccess: () => Promise<void>;
           Demo mode — payment simulation
         </span>
       </div>
+
+      {stubError && (
+        <div style={{ padding: '10px 14px', backgroundColor: '#E5736820', borderRadius: 10 }}>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.terracotta }}>{stubError}</span>
+        </div>
+      )}
 
       <div style={{ paddingTop: 4 }}>
         <button

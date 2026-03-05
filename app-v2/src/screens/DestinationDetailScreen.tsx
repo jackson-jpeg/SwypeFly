@@ -118,6 +118,7 @@ export default function DestinationDetailScreen() {
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [tripPlanText, setTripPlanText] = useState('');
   const [tripPlanLoading, setTripPlanLoading] = useState(false);
+  const [tripPlanError, setTripPlanError] = useState(false);
 
   if (isLoading) {
     return (
@@ -174,6 +175,7 @@ export default function DestinationDetailScreen() {
     setTripPlanLoading(true);
     setTripPlanText('');
     setTripPlan(null);
+    setTripPlanError(false);
 
     try {
       const res = await fetch(`${API_BASE}/api/ai/trip-plan`, {
@@ -201,9 +203,10 @@ export default function DestinationDetailScreen() {
         setTripPlanText(text);
       }
     } catch {
-      // Fallback to local plan generation
+      // Fallback to local plan generation with error notice
       setTripPlanText('');
       setTripPlan(generateLocalPlan());
+      setTripPlanError(true);
     }
 
     setTripPlanLoading(false);
@@ -707,6 +710,15 @@ export default function DestinationDetailScreen() {
               >
                 {tripPlanText}
               </pre>
+            </div>
+          )}
+
+          {/* AI error notice */}
+          {tripPlanError && (
+            <div style={{ padding: '10px 14px', backgroundColor: '#C9A99A15', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.borderTint }}>
+                AI unavailable — showing a suggested itinerary instead
+              </span>
             </div>
           )}
 

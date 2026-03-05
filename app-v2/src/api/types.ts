@@ -141,6 +141,8 @@ export interface Passenger {
   title: 'mr' | 'mrs' | 'ms' | 'miss' | 'dr';
   email: string;
   phone_number: string;
+  passport_number?: string;
+  frequent_flyer_number?: string;
 }
 
 export interface PaymentIntentResponse {

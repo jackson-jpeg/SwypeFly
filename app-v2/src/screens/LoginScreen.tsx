@@ -56,6 +56,10 @@ export default function LoginScreen() {
       setEmailError('Please enter both email and password');
       return;
     }
+    if (isSignUp && password.length < 8) {
+      setEmailError('Password must be at least 8 characters');
+      return;
+    }
     setEmailLoading(true);
     setEmailError(null);
 

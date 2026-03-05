@@ -43,8 +43,25 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`);
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      if (body?.error) detail = body.error;
+    } catch {
+      // Response wasn't JSON — use statusText
+    }
+
+    if (res.status === 429) throw new Error('Too many requests. Please wait a moment and try again.');
+    if (res.status === 403) throw new Error('Access denied.');
+    if (res.status >= 500) throw new Error(`Server error — please try again later.`);
+    throw new Error(detail || `Request failed (${res.status})`);
   }
 
-  return res.json();
+  const text = await res.text();
+  if (!text) return {} as T;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Invalid response from server');
+  }
 }

@@ -71,9 +71,9 @@ export default function FlightSelectionScreen() {
   const discountPct = Math.round(((strikethrough - Math.round(cheapest * cabinMultiplier)) / strikethrough) * 100);
 
   const data = {
-    destination: dest?.city ?? 'Santorini',
-    destinationImage: dest?.imageUrl ?? '/images/santorini.jpg',
-    route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'} \u00b7 1 stop`,
+    destination: dest?.city ?? 'Destination',
+    destinationImage: dest?.imageUrl ?? '',
+    route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'}`,
     price: adjustedPrice,
     strikethrough,
     discountPct,

@@ -37,7 +37,7 @@ export default function ConfirmationScreen() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: `url(${dest?.imageUrl || '/images/santorini.jpg'})`,
+          backgroundImage: dest?.imageUrl ? `url(${dest.imageUrl})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.08,
@@ -322,7 +322,7 @@ export default function ConfirmationScreen() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: `url(${dest?.imageUrl || '/images/santorini.jpg'})`,
+                backgroundImage: dest?.imageUrl ? `url(${dest.imageUrl})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 opacity: 0.06,
