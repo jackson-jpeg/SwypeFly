@@ -96,8 +96,11 @@ export function useAuth(): Auth {
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !userId || onboardingChecked) return;
     checkOnboarding();
-    useSavedStore.getState().syncFromServer();
-  }, [isLoaded, isSignedIn, userId, onboardingChecked, checkOnboarding]);
+    // Only sync saved destinations once auth token is ready
+    if (tokenReady) {
+      useSavedStore.getState().syncFromServer();
+    }
+  }, [isLoaded, isSignedIn, userId, onboardingChecked, tokenReady, checkOnboarding]);
 
   // OAuth sign-ins via Clerk redirect
   const signInWithGoogle = useCallback(async () => {

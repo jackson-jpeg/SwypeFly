@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useUIStore } from '@/stores/uiStore';
 import { searchAirports, AIRPORTS, type Airport } from '@/data/airports';
+import { apiFetch } from '@/api/client';
 
 export default function OnboardingScreen() {
   const navigate = useNavigate();
@@ -38,6 +39,15 @@ export default function OnboardingScreen() {
     if (!selectedAirport) return;
     setDeparture(selectedAirport.city, selectedAirport.code);
     setOnboarded();
+    // Persist to backend (fire-and-forget)
+    apiFetch('/api/saved?action=save-prefs', {
+      method: 'POST',
+      body: JSON.stringify({
+        departure_city: selectedAirport.city,
+        departure_code: selectedAirport.code,
+        onboarding_completed: true,
+      }),
+    }).catch(() => {}); // best-effort sync
     if (canGoBack) {
       navigate(-1);
     } else {

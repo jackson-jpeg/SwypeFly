@@ -4,10 +4,11 @@ import { colors, fonts } from '@/tokens';
 import { useFeed } from '@/hooks/useFeed';
 import { useSavedStore } from '@/stores/savedStore';
 import { useAuthContext } from '@/hooks/AuthContext';
+import { useSwipeTracking } from '@/hooks/useSwipeTracking';
 import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
 
-function FeedCard({ destination }: { destination: Destination }) {
+function FeedCard({ destination, onSave }: { destination: Destination; onSave?: (id: string) => void }) {
   const navigate = useNavigate();
   const { isSaved, toggle } = useSavedStore();
   const { session } = useAuthContext();
@@ -68,7 +69,7 @@ function FeedCard({ destination }: { destination: Destination }) {
         <button
           aria-label={saved ? 'Remove from saved' : 'Save destination'}
           style={glassButton}
-          onClick={(e) => { e.stopPropagation(); toggle(destination.id, session?.userId); }}
+          onClick={(e) => { e.stopPropagation(); toggle(destination.id, session?.userId); if (!saved) onSave?.(destination.id); }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill={saved ? '#FFFFFF' : 'none'} stroke="#FFFFFF" strokeWidth="1.8">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -212,6 +213,7 @@ export default function FeedScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useFeed();
+  const { trackView, trackSave } = useSwipeTracking();
 
   const destinations = useMemo(
     () => data?.pages.flatMap((p) => p.destinations) ?? [],
@@ -225,14 +227,19 @@ export default function FeedScreen() {
     const handleScroll = () => {
       const idx = Math.round(el.scrollTop / el.clientHeight);
       setCurrentIndex(idx);
+      // Track view when card comes into focus
+      const dest = destinations[idx];
+      if (dest) trackView(dest.id, dest.flightPrice);
       // Prefetch when within 3 items of the end
       if (idx >= destinations.length - 3 && hasNextPage && !isFetchingNextPage) {
         fetchNextPage();
       }
     };
     el.addEventListener('scroll', handleScroll, { passive: true });
+    // Track first card on mount
+    if (destinations[0]) trackView(destinations[0].id, destinations[0].flightPrice);
     return () => el.removeEventListener('scroll', handleScroll);
-  }, [destinations.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [destinations.length, hasNextPage, isFetchingNextPage, fetchNextPage, trackView]);
 
   if (isLoading) {
     return (
@@ -276,7 +283,7 @@ export default function FeedScreen() {
         }}
       >
         {destinations.map((dest) => (
-          <FeedCard key={dest.id} destination={dest} />
+          <FeedCard key={dest.id} destination={dest} onSave={(id) => trackSave(id, dest.flightPrice)} />
         ))}
       </div>
 
