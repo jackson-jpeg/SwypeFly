@@ -144,8 +144,8 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
             }
           }
         }
-      } catch {
-        // Skip individual alert errors
+      } catch (err) {
+        logApiError(`api/alerts/check/${alert.$id}`, err);
       }
     }
 

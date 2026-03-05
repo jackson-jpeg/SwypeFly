@@ -82,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         price_shown: price_shown ?? 0,
       });
     } catch (err) {
-      console.error('[swipe] Insert error:', err);
+      logApiError('api/swipe/history', err);
     }
 
     // 2. Update user preference vectors
@@ -112,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           await db.updateDocument(DATABASE_ID, COLLECTIONS.userPreferences, prefs.$id, updates);
         }
       } catch (err) {
-        console.error('[swipe] Pref update error:', err);
+        logApiError('api/swipe/pref-update', err);
       }
     }
 
