@@ -1,5 +1,9 @@
 import { verifyToken } from '@clerk/backend';
 
+if (!process.env.CLERK_SECRET_KEY) {
+  console.error('[FATAL] CLERK_SECRET_KEY not configured — auth verification will fail');
+}
+
 /**
  * Verify a Clerk JWT from the Authorization header and return the user ID.
  * Returns null if the token is missing or invalid.

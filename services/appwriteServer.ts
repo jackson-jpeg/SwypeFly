@@ -12,6 +12,8 @@ const client = new Client();
 
 if (endpoint && projectId && apiKey) {
   client.setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+} else if (!process.env.APPWRITE_API_KEY && !process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID) {
+  console.error('[FATAL] Appwrite credentials not configured — database operations will fail');
 }
 
 export const serverDatabases = new Databases(client);

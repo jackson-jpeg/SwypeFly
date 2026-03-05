@@ -593,6 +593,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   const action = String(req.query.action || '');
 
+  // In production, block real-money actions when Duffel/Stripe aren't configured
+  if (STUB_MODE && process.env.NODE_ENV === 'production') {
+    if (action === 'payment-intent' || action === 'create-order') {
+      return res.status(503).json({ error: 'Booking service not configured' });
+    }
+  }
+
   switch (action) {
     case 'search':
       return handleSearch(req, res);
