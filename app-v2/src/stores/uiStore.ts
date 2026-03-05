@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { queryClient } from '@/api/client';
 
 interface UIState {
   hapticsEnabled: boolean;
@@ -43,7 +44,11 @@ export const useUIStore = create<UIState>()(
       setOnboarded: () => set({ hasOnboarded: true }),
       toggleHaptics: () => set((s) => ({ hapticsEnabled: !s.hapticsEnabled })),
       setTheme: (theme) => set({ theme }),
-      setDeparture: (city, code) => set({ departureCity: city, departureCode: code }),
+      setDeparture: (city, code) => {
+        set({ departureCity: city, departureCode: code });
+        queryClient.invalidateQueries({ queryKey: ['feed'] });
+        queryClient.invalidateQueries({ queryKey: ['booking-search'] });
+      },
       setCurrency: (currency) => set({ currency }),
       setTempUnit: (unit) => set({ tempUnit: unit }),
       toggleNotifications: () => set((s) => ({ notifications: !s.notifications })),
