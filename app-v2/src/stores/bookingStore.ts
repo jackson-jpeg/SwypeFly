@@ -5,6 +5,7 @@ import type { BookingOffer, CreateOrderResponse, Passenger } from '@/api/types';
 interface BookingState {
   // Flow state
   destinationId: string | null;
+  feedPrice: number | null;
   selectedOffer: BookingOffer | null;
   cabinClass: 'economy' | 'business' | 'first';
   passengers: Passenger[];
@@ -19,7 +20,7 @@ interface BookingState {
   orderResponse: CreateOrderResponse | null;
 
   // Actions
-  setDestination: (id: string) => void;
+  setDestination: (id: string, feedPrice?: number) => void;
   setOffer: (offer: BookingOffer) => void;
   setCabinClass: (cls: 'economy' | 'business' | 'first') => void;
   setPassengerCount: (count: number) => void;
@@ -39,9 +40,10 @@ interface BookingState {
 
 const INITIAL: Pick<
   BookingState,
-  'destinationId' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'seatPrice' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
+  'destinationId' | 'feedPrice' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'seatPrice' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
 > = {
   destinationId: null,
+  feedPrice: null,
   selectedOffer: null,
   cabinClass: 'economy',
   passengers: [],
@@ -61,7 +63,7 @@ export const useBookingStore = create<BookingState>()(
     (set, get) => ({
       ...INITIAL,
 
-      setDestination: (id) => set({ destinationId: id }),
+      setDestination: (id, feedPrice) => set({ destinationId: id, feedPrice: feedPrice ?? null }),
       setOffer: (offer) => set({ selectedOffer: offer }),
       setCabinClass: (cls) => set({ cabinClass: cls }),
       addPassenger: (p) => set((s) => ({ passengers: [...s.passengers, p] })),
@@ -119,6 +121,7 @@ export const useBookingStore = create<BookingState>()(
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         destinationId: state.destinationId,
+        feedPrice: state.feedPrice,
         selectedOffer: state.selectedOffer,
         cabinClass: state.cabinClass,
         passengers: state.passengers,

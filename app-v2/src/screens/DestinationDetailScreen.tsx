@@ -469,7 +469,7 @@ export default function DestinationDetailScreen() {
 
           {/* Select button */}
           <button
-            onClick={() => { setBookingDestination(stubDest.id); navigate('/booking/flights'); }}
+            onClick={() => { setBookingDestination(stubDest.id, stubDest.flightPrice); navigate('/booking/flights'); }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -888,7 +888,7 @@ export default function DestinationDetailScreen() {
         </div>
 
         <button
-          onClick={() => { setBookingDestination(stubDest.id); navigate('/booking/flights'); }}
+          onClick={() => { setBookingDestination(stubDest.id, stubDest.flightPrice); navigate('/booking/flights'); }}
           style={{
             display: 'flex',
             alignItems: 'center',

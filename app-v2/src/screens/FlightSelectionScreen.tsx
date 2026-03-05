@@ -13,7 +13,7 @@ const CABIN_LABELS = ['Economy', 'Business', 'First'] as const;
 /* ── component ─────────────────────────────────────────────────── */
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
-  const { destinationId, setOffer, setCabinClass, passengerCount, setPassengerCount } = useBookingStore();
+  const { destinationId, feedPrice, setOffer, setCabinClass, passengerCount, setPassengerCount } = useBookingStore();
   const { departureCode } = useUIStore();
   const { data: dest } = useDestination(destinationId ?? undefined);
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
@@ -245,6 +245,22 @@ export default function FlightSelectionScreen() {
         >
           Round trip &middot; {CABIN_LABELS[selectedCabin]} &middot; per person
         </span>
+        {feedPrice != null && selectedCabin === 0 && Math.abs(adjustedPrice - feedPrice) > feedPrice * 0.05 && (
+          <span
+            style={{
+              display: 'block',
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 11,
+              lineHeight: '14px',
+              color: adjustedPrice > feedPrice ? colors.terracotta : colors.confirmGreen,
+              marginTop: 4,
+            }}
+          >
+            {adjustedPrice > feedPrice
+              ? `Live price is $${adjustedPrice - feedPrice} more than the estimated $${feedPrice} — prices change based on availability`
+              : `$${feedPrice - adjustedPrice} less than the estimated $${feedPrice}`}
+          </span>
+        )}
       </div>
 
       {/* ─── Date Options ─────────────────────────────────────── */}
