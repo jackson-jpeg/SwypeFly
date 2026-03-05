@@ -20,6 +20,93 @@ const sectionLabel: React.CSSProperties = {
 };
 
 
+/* ───── stub payment form (no Stripe keys configured) ───── */
+function StubPaymentForm({ onSuccess, total }: { onSuccess: () => Promise<void>; total: number }) {
+  const [paying, setPaying] = useState(false);
+
+  const handlePay = async () => {
+    setPaying(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    await onSuccess();
+  };
+
+  return (
+    <>
+      <div
+        style={{
+          backgroundColor: colors.offWhite,
+          border: '1px solid #C9A99A20',
+          borderRadius: 16,
+          padding: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: colors.borderTint }}>Card number</span>
+          <div style={{ height: 44, backgroundColor: '#F5ECD7', border: '1px solid #C9A99A60', borderRadius: 10, display: 'flex', alignItems: 'center', paddingInline: 14 }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, color: colors.mutedText }}>4242 4242 4242 4242</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: colors.borderTint }}>Expiry</span>
+            <div style={{ height: 44, backgroundColor: '#F5ECD7', border: '1px solid #C9A99A60', borderRadius: 10, display: 'flex', alignItems: 'center', paddingInline: 14 }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, color: colors.mutedText }}>12/28</span>
+            </div>
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: colors.borderTint }}>CVC</span>
+            <div style={{ height: 44, backgroundColor: '#F5ECD7', border: '1px solid #C9A99A60', borderRadius: 10, display: 'flex', alignItems: 'center', paddingInline: 14 }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, color: colors.mutedText }}>123</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', paddingTop: 4 }}>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.terracotta }}>
+            Demo mode — no real charge
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBlock: 4 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.confirmGreen }}>
+          Demo mode — payment simulation
+        </span>
+      </div>
+
+      <div style={{ paddingTop: 4 }}>
+        <button
+          disabled={paying}
+          onClick={handlePay}
+          style={{
+            width: '100%',
+            height: 52,
+            borderRadius: 14,
+            backgroundColor: paying ? colors.sageDrift : colors.deepDusk,
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: paying ? 'wait' : 'pointer',
+            opacity: paying ? 0.8 : 1,
+            transition: 'background-color 0.3s, opacity 0.3s',
+          }}
+        >
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 600, color: colors.paleHorizon }}>
+            {paying ? 'Processing...' : `Pay $${total}`}
+          </span>
+        </button>
+      </div>
+    </>
+  );
+}
+
 /* ───── inner payment form (has access to Stripe context) ───── */
 function PaymentForm({ onSuccess, total }: { onSuccess: () => Promise<void>; total: number }) {
   const stripe = useStripe();
@@ -338,7 +425,10 @@ export default function ReviewPaymentScreen() {
         {/* payment section */}
         <span style={sectionLabel}>Payment</span>
 
-        {clientSecret ? (
+        {clientSecret && clientSecret.startsWith('stub_') ? (
+          /* Stub mode — show demo payment form */
+          <StubPaymentForm onSuccess={handlePaymentSuccess} total={total} />
+        ) : clientSecret ? (
           /* Stripe Elements loaded — show PaymentElement + Pay button */
           <StripeProvider clientSecret={clientSecret}>
             <PaymentForm onSuccess={handlePaymentSuccess} total={total} />
