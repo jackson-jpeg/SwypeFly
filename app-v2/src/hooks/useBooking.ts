@@ -3,7 +3,7 @@ import { apiFetch, USE_STUBS } from '@/api/client';
 import {
   getStubBookingOffers,
   getStubDestination,
-  STUB_SEAT_MAP,
+  generateSeatMap,
   STUB_PAYMENT_INTENT,
 } from '@/api/stubs';
 import type {
@@ -41,7 +41,7 @@ export function useOfferDetail(offerId: string | null, destId?: string, origin?:
         const dest = getStubDestination(destId ?? '');
         const offers = getStubBookingOffers(dest, origin);
         const offer = offers.find((o) => o.id === offerId) ?? offers[0]!;
-        return { offer, seatMap: STUB_SEAT_MAP };
+        return { offer, seatMap: generateSeatMap(offerId ?? destId ?? 'default') };
       }
       return apiFetch<{ offer: BookingOffer; seatMap: SeatMap }>(
         `/api/booking?action=offer&offerId=${offerId}`,

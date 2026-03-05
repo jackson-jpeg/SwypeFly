@@ -13,7 +13,7 @@ const CABIN_LABELS = ['Economy', 'Business', 'First'] as const;
 /* ── component ─────────────────────────────────────────────────── */
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
-  const { destinationId, feedPrice, setOffer, setCabinClass, passengerCount, setPassengerCount } = useBookingStore();
+  const { destinationId, setOffer, setCabinClass, passengerCount, setPassengerCount } = useBookingStore();
   const { departureCode } = useUIStore();
   const { data: dest } = useDestination(destinationId ?? undefined);
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
@@ -64,19 +64,14 @@ export default function FlightSelectionScreen() {
   }
 
   const selectedOffer = offers[selectedDateIdx] ?? offers[0]!;
-  const cabinMultiplier = selectedCabin === 1 ? 2.8 : selectedCabin === 2 ? 5.2 : 1;
-  const cheapest = Math.min(...offers.map((o) => o.totalAmount));
-  const strikethrough = Math.round(cheapest * 1.4 * cabinMultiplier);
-  const adjustedPrice = Math.round(selectedOffer.totalAmount * cabinMultiplier);
-  const discountPct = Math.round(((strikethrough - Math.round(cheapest * cabinMultiplier)) / strikethrough) * 100);
+  // No artificial multipliers — offers already reflect cabin class pricing from search
+  const adjustedPrice = selectedOffer.totalAmount;
 
   const data = {
     destination: dest?.city ?? 'Destination',
     destinationImage: dest?.imageUrl ?? '',
     route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'}`,
     price: adjustedPrice,
-    strikethrough,
-    discountPct,
     dates: offers.map((o, i) => {
       const dep = new Date(o.slices[0]!.departureTime);
       const ret = new Date(o.slices[1]!.departureTime);
@@ -205,33 +200,6 @@ export default function FlightSelectionScreen() {
           >
             ${data.price}
           </span>
-          <span
-            style={{
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 14,
-              lineHeight: '18px',
-              color: colors.mutedText,
-              textDecoration: 'line-through',
-            }}
-          >
-            ${data.strikethrough}
-          </span>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              backgroundColor: colors.confirmGreen,
-              borderRadius: 6,
-              padding: '3px 8px',
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 10,
-              fontWeight: 700,
-              lineHeight: '12px',
-              color: '#FFFFFF',
-            }}
-          >
-            {data.discountPct}% OFF
-          </span>
         </div>
         <span
           style={{
@@ -245,22 +213,6 @@ export default function FlightSelectionScreen() {
         >
           Round trip &middot; {CABIN_LABELS[selectedCabin]} &middot; per person
         </span>
-        {feedPrice != null && selectedCabin === 0 && Math.abs(adjustedPrice - feedPrice) > feedPrice * 0.05 && (
-          <span
-            style={{
-              display: 'block',
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 11,
-              lineHeight: '14px',
-              color: adjustedPrice > feedPrice ? colors.terracotta : colors.confirmGreen,
-              marginTop: 4,
-            }}
-          >
-            {adjustedPrice > feedPrice
-              ? `Live price is $${adjustedPrice - feedPrice} more than the estimated $${feedPrice} — prices change based on availability`
-              : `$${feedPrice - adjustedPrice} less than the estimated $${feedPrice}`}
-          </span>
-        )}
       </div>
 
       {/* ─── Date Options ─────────────────────────────────────── */}

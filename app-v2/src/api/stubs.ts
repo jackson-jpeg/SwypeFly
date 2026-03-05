@@ -112,36 +112,75 @@ export function getStubBookingOffers(
   });
 }
 
-// ─── Seat Map ───────────────────────────────────────────────────────
+// ─── Seat Map (dynamic per flight) ──────────────────────────────────
 
-export const STUB_SEAT_MAP: SeatMap = {
-  columns: ['A', 'B', 'C', 'D', 'E', 'F'],
-  exitRows: [14],
-  aisleAfterColumns: ['C'],
-  rows: Array.from({ length: 6 }, (_, i) => {
-    const rowNum = 12 + i;
-    const isExitRow = rowNum === 14;
+/** Simple seeded PRNG so each flight gets a consistent but unique seat map */
+function seatRng(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  }
+  return () => {
+    h = (h ^ (h >>> 16)) * 0x45d9f3b;
+    h = (h ^ (h >>> 16)) * 0x45d9f3b;
+    h = h ^ (h >>> 16);
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+// Aircraft configs: narrowbody (3+3), widebody (3+3+3 or 2+4+2)
+const AIRCRAFT_LAYOUTS = [
+  { columns: ['A', 'B', 'C', 'D', 'E', 'F'], aisles: ['C'], rowCount: [20, 26, 30], name: 'narrowbody' },
+  { columns: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J'], aisles: ['C', 'F'], rowCount: [30, 38, 42], name: 'widebody' },
+  { columns: ['A', 'C', 'D', 'E', 'F', 'H'], aisles: ['C', 'D'], rowCount: [28, 34, 40], name: '2-4-2' }, // skip B and G for 2-seat sides
+];
+
+export function generateSeatMap(flightSeed: string): SeatMap {
+  const rand = seatRng(flightSeed);
+  const layout = AIRCRAFT_LAYOUTS[Math.floor(rand() * AIRCRAFT_LAYOUTS.length)]!;
+  const rowCount = layout.rowCount[Math.floor(rand() * layout.rowCount.length)]!;
+  const startRow = Math.floor(rand() * 4) + 1; // rows start at 1-4
+  const occupancyRate = 0.35 + rand() * 0.45; // 35-80% full
+
+  // Pick 1-3 exit rows spread through the plane
+  const exitRowCount = rowCount > 25 ? 2 : 1;
+  const exitRows: number[] = [];
+  for (let e = 0; e < exitRowCount; e++) {
+    const zone = Math.floor((rowCount / (exitRowCount + 1)) * (e + 1));
+    exitRows.push(startRow + zone + Math.floor(rand() * 3) - 1);
+  }
+
+  // Seat upgrade prices vary
+  const exitPrice = [20, 25, 30, 35][Math.floor(rand() * 4)]!;
+  const preferredPrice = [8, 10, 12, 15][Math.floor(rand() * 4)]!;
+
+  const rows = Array.from({ length: rowCount }, (_, i) => {
+    const rowNum = startRow + i;
+    const isExit = exitRows.includes(rowNum);
+    const isPreferred = rowNum < startRow + 5; // first 5 rows are "preferred"
     return {
       rowNumber: rowNum,
-      seats: ['A', 'B', 'C', 'D', 'E', 'F'].map((col) => {
-        const occupied =
-          (rowNum === 12 && (col === 'A' || col === 'C' || col === 'F')) ||
-          (rowNum === 13 && (col === 'B' || col === 'D')) ||
-          (rowNum === 15 && (col === 'A' || col === 'E' || col === 'F')) ||
-          (rowNum === 16 && (col === 'C' || col === 'D')) ||
-          (rowNum === 17 && (col === 'B'));
+      seats: layout.columns.map((col) => {
+        const occupied = rand() < occupancyRate;
         return {
           column: col,
           available: !occupied,
-          extraLegroom: isExitRow,
-          price: isExitRow ? 25 : 0,
+          extraLegroom: isExit,
+          price: isExit ? exitPrice : isPreferred ? preferredPrice : 0,
           currency: 'USD',
           designator: `${rowNum}${col}`,
         };
       }),
     };
-  }),
-};
+  });
+
+  return {
+    columns: layout.columns,
+    exitRows,
+    aisleAfterColumns: layout.aisles,
+    rows,
+  };
+}
 
 // ─── Extras ─────────────────────────────────────────────────────────
 

@@ -176,9 +176,9 @@ function scoreFeedGeneric(
       for (let j = 0; j < recentVibes.length; j++) {
         if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
-      const jitter = rand() * 0.15;
+      const jitter = rand() * 0.35;
       const score =
-        priceScore * 0.35 - regionPenalty * 0.35 - vibePenalty * 0.2 + jitter;
+        priceScore * 0.30 - regionPenalty * 0.30 - vibePenalty * 0.15 + jitter;
 
       if (score > bestScore) {
         bestScore = score;
@@ -186,7 +186,9 @@ function scoreFeedGeneric(
       }
     }
 
-    const pick = remaining.splice(bestIdx, 1)[0];
+    // 10% exploration: pick a random item instead of the highest-scoring one
+    const pickIdx = rand() < 0.1 ? Math.floor(rand() * remaining.length) : bestIdx;
+    const pick = remaining.splice(pickIdx, 1)[0];
     result.push(pick);
     recentRegions.unshift(getRegion(pick));
     recentVibes.unshift(getVibeBucket(pick.vibe_tags));
@@ -199,7 +201,7 @@ function scoreFeedGeneric(
 
 // ─── Post-score soft shuffle ────────────────────────────────────────
 
-function softShuffle<T>(items: T[], rand: () => number, windowSize = 5): T[] {
+function softShuffle<T>(items: T[], rand: () => number, windowSize = 10): T[] {
   const result = [...items];
   for (let i = 0; i < result.length; i++) {
     const minJ = Math.max(0, i - windowSize);
@@ -216,7 +218,7 @@ function softShuffle<T>(items: T[], rand: () => number, windowSize = 5): T[] {
 // For shared caching across instances, consider Upstash Redis.
 
 const destCache = new Map<string, { data: ScoredDest[]; ts: number }>();
-const CACHE_TTL = 10 * 60 * 1000;
+const CACHE_TTL = 3 * 60 * 1000;
 
 async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> {
   const cached = destCache.get(origin);
