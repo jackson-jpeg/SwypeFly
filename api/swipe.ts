@@ -3,6 +3,7 @@ import { Client, Databases, Query, ID } from 'node-appwrite';
 import { swipeBodySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
+import { cors } from './_cors.js';
 
 const DATABASE_ID = 'sogojet';
 
@@ -43,6 +44,7 @@ const PREF_KEYS = [
 // ─── Handler ─────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

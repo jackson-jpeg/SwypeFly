@@ -6,6 +6,7 @@ import { priceAlertBodySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { verifyClerkToken } from '../utils/clerkAuth';
+import { cors } from './_cors.js';
 
 // ─── Create alert ────────────────────────────────────────────────────────────
 
@@ -158,6 +159,7 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   const action = String(req.query.action || '');
 
   switch (action) {

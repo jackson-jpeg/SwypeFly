@@ -2,7 +2,11 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/__tests__'],
-  moduleNameMapper: { '^@/(.*)$': '<rootDir>/$1' },
+  testPathIgnorePatterns: ['/node_modules/', '__mocks__'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+    '_cors\\.js$': '<rootDir>/__tests__/__mocks__/_cors.ts',
+  },
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'api/**/*.ts',

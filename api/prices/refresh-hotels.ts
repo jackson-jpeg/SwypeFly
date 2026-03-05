@@ -4,10 +4,12 @@ import { ID } from 'node-appwrite';
 import { fetchHotelRates } from '../../services/liteapi';
 import { hotelPricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
+import { cors } from '../_cors.js';
 
 export const maxDuration = 60;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return res.status(503).json({ error: 'CRON_SECRET not configured' });

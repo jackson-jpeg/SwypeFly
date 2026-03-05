@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { tripPlanBodySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../../utils/rateLimit';
+import { cors } from '../_cors.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -12,6 +13,7 @@ function sanitize(input: string): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   // Rate limit: 10 requests per minute per IP

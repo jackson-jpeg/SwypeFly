@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
 import { feedQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
+import { cors } from './_cors.js';
 
 const PAGE_SIZE = 10;
 
@@ -396,6 +397,7 @@ function toFrontend(d: ScoredDest) {
 // ─── Handler ─────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

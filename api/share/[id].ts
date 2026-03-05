@@ -2,12 +2,14 @@
 // redirects real users to the SPA destination page.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../../services/appwriteServer';
+import { cors } from '../_cors.js';
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   const { id } = req.query;
   const destId = String(id);
   const ua = (req.headers['user-agent'] || '').toLowerCase();

@@ -4,6 +4,7 @@ import { ID } from 'node-appwrite';
 import { fetchCityDirections, fetchCheapPrices } from '../../services/travelpayouts';
 import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
+import { cors } from '../_cors.js';
 
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
@@ -281,6 +282,7 @@ async function refreshOrigin(
 // ─── Handler ─────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   // Verify authorization: Vercel cron sends CRON_SECRET, manual calls need Authorization header
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {

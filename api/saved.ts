@@ -4,6 +4,7 @@ import { Query, ID } from 'node-appwrite';
 import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { logApiError } from '../utils/apiLogger';
+import { cors } from './_cors.js';
 
 async function handleList(userId: string, res: VercelResponse) {
   const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
@@ -44,6 +45,7 @@ async function handleUnsave(userId: string, destinationId: string, res: VercelRe
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   const authResult = await verifyClerkToken(req.headers.authorization);
   if (!authResult) return res.status(401).json({ error: 'Unauthorized' });
 

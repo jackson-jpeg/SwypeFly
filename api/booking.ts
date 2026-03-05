@@ -13,6 +13,7 @@ import {
 import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { COLLECTIONS } from '../services/appwriteServer';
+import { cors } from './_cors.js';
 
 const DATABASE_ID = 'sogojet';
 const STUB_MODE = !process.env.DUFFEL_API_KEY;
@@ -589,6 +590,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   const action = String(req.query.action || '');
 
   switch (action) {

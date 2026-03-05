@@ -3,6 +3,7 @@ import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services
 import { ID } from 'node-appwrite';
 import { searchDestinationImages } from '../../services/unsplash';
 import { logApiError } from '../../utils/apiLogger';
+import { cors } from '../_cors.js';
 
 export const maxDuration = 60;
 
@@ -11,6 +12,7 @@ const IMAGES_PER_DEST = 5;
 const TIME_BUDGET_MS = 45_000;  // stay under 60s Vercel limit
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return res.status(503).json({ error: 'CRON_SECRET not configured' });

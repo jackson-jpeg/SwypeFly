@@ -3,12 +3,14 @@
 //    or: /api/og?city=Paris&country=France&price=64&image=https://...
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
+import { cors } from './_cors.js';
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   let cityStr = 'Amazing Destination';
   let countryStr = '';
   let priceStr = '';

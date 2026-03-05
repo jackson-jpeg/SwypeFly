@@ -2,8 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
 import { destinationQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
+import { cors } from './_cors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
