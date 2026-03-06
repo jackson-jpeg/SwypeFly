@@ -31,17 +31,19 @@ function getDefaultDetail(dest: Destination) {
     region: dest.country,
     vibe: dest.vibeTags[0] ?? 'Adventure',
     quote: dest.tagline ?? `Discover the magic of ${dest.city}.`,
-    flightStrikethrough: dest.previousPrice ?? undefined,
+    flightStrikethrough: dest.previousPrice || undefined,
     flightRoute: `${dest.iataCode ?? dest.city} · Round trip`,
     flightDates: dest.departureDate && dest.returnDate
       ? `${dest.departureDate} – ${dest.returnDate} · Economy`
       : 'Flexible dates · Economy',
     hotels: (dest.imageUrls ?? []).slice(0, 2).map((img, i) => ({
-      name: i === 0 ? `Top Stay in ${dest.city}` : `Hotel Pick ${i + 1}`,
-      price: dest.liveHotelPrice ? `$${dest.liveHotelPrice}/nt` : `$${dest.hotelPricePerNight}/nt`,
+      name: i === 0 ? 'Best Value Stay' : 'Top Rated Stay',
+      price: dest.liveHotelPrice
+        ? `$${Math.round(dest.liveHotelPrice * (i === 0 ? 1 : 1.3))}/nt`
+        : `$${Math.round(dest.hotelPricePerNight * (i === 0 ? 1 : 1.3))}/nt`,
       image: img,
     })),
-    aboutParas: [dest.tagline ?? `${dest.city} awaits with incredible experiences and unforgettable moments.`],
+    aboutParas: [dest.description || `${dest.city} awaits with incredible experiences and unforgettable moments.`],
     itinerary,
     similar: similarDests,
   };
@@ -353,7 +355,7 @@ export default function DestinationDetailScreen() {
               margin: '4px 0 0',
             }}
           >
-            {dest.country} &middot; {dest.region} &middot; {dest.vibe}
+            {dest.country}{dest.region !== dest.country ? ` \u00B7 ${dest.region}` : ''} &middot; {dest.vibe}
           </p>
         </div>
       </div>
@@ -451,17 +453,19 @@ export default function DestinationDetailScreen() {
             >
               ${dest.flightPrice}
             </span>
-            <span
-              style={{
-                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                fontSize: 14,
-                lineHeight: '18px',
-                color: colors.borderTint,
-                textDecoration: 'line-through',
-              }}
-            >
-              ${dest.flightStrikethrough}
-            </span>
+            {dest.flightStrikethrough > 0 && dest.flightStrikethrough !== dest.flightPrice && (
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 14,
+                  lineHeight: '18px',
+                  color: colors.borderTint,
+                  textDecoration: 'line-through',
+                }}
+              >
+                ${dest.flightStrikethrough}
+              </span>
+            )}
           </div>
 
           {/* Date / class */}
