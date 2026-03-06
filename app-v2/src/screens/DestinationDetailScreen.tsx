@@ -112,7 +112,7 @@ export default function DestinationDetailScreen() {
   const { id } = useParams<{ id: string }>();
   const { data: stubDest, isLoading } = useDestination(id);
   const { isSaved, toggle } = useSavedStore();
-  const { session } = useAuthContext();
+  const { session, isGuest } = useAuthContext();
   const setBookingDestination = useBookingStore((s) => s.setDestination);
   const { departureCode } = useUIStore();
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
@@ -143,6 +143,15 @@ export default function DestinationDetailScreen() {
     heroImage: stubDest.imageUrl,
     ...detail,
     flightStrikethrough: detail.flightStrikethrough ?? Math.round(stubDest.flightPrice * 1.4),
+  };
+
+  const handleBooking = () => {
+    if (!session) {
+      navigate('/login', { state: { returnTo: `/destination/${stubDest.id}` } });
+      return;
+    }
+    setBookingDestination(stubDest.id, stubDest.flightPrice);
+    navigate('/booking/flights');
   };
 
   const generateLocalPlan = (): TripPlan => {
@@ -472,7 +481,7 @@ export default function DestinationDetailScreen() {
 
           {/* Select button */}
           <button
-            onClick={() => { setBookingDestination(stubDest.id, stubDest.flightPrice); navigate('/booking/flights'); }}
+            onClick={handleBooking}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -900,7 +909,7 @@ export default function DestinationDetailScreen() {
         </div>
 
         <button
-          onClick={() => { setBookingDestination(stubDest.id, stubDest.flightPrice); navigate('/booking/flights'); }}
+          onClick={handleBooking}
           style={{
             display: 'flex',
             alignItems: 'center',

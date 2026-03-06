@@ -52,7 +52,7 @@ export default function App() {
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/sso-callback" element={<><AuthenticateWithRedirectCallback signInFallbackRedirectUrl="/" signUpFallbackRedirectUrl="/onboarding" /><div id="clerk-captcha" /></>} />
-        <Route path="/login" element={session || isGuest ? <Navigate to="/" /> : <LoginScreen />} />
+        <Route path="/login" element={session && !isGuest ? <Navigate to="/" /> : <LoginScreen />} />
         <Route path="/onboarding" element={<OnboardingScreen />} />
         <Route path="/" element={needsAuth ? <Navigate to="/login" /> : needsOnboarding ? <Navigate to="/onboarding" /> : <FeedScreen />} />
         <Route path="/destination/:id" element={needsAuth ? <Navigate to="/login" /> : <DestinationDetailScreen />} />
