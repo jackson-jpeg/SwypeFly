@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {
-    signInWithGoogle, signInWithApple, signInWithTikTok,
+    signInWithGoogle, signInWithTikTok,
     signInWithEmail, signUpWithEmail, verifyEmail, resendVerification,
     forgotPassword, resetPassword,
     browseAsGuest, oauthError,

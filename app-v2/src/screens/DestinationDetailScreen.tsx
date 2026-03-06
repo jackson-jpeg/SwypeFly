@@ -114,7 +114,7 @@ export default function DestinationDetailScreen() {
   const { id } = useParams<{ id: string }>();
   const { data: stubDest, isLoading } = useDestination(id);
   const { isSaved, toggle } = useSavedStore();
-  const { session, isGuest } = useAuthContext();
+  const { session } = useAuthContext();
   const setBookingDestination = useBookingStore((s) => s.setDestination);
   const { departureCode } = useUIStore();
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
