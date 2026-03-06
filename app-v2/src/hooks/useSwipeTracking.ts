@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { apiFetch } from '@/api/client';
+import { apiFetch, hasAuthToken } from '@/api/client';
 
 /** Fire-and-forget swipe tracking — records user interactions to train the feed algorithm */
 export function useSwipeTracking() {
@@ -10,6 +10,8 @@ export function useSwipeTracking() {
     if (viewedSet.current.has(destinationId)) return;
     viewedSet.current.add(destinationId);
     viewTimers.current.set(destinationId, Date.now());
+
+    if (!hasAuthToken()) return;
 
     apiFetch('/api/swipe', {
       method: 'POST',
@@ -23,6 +25,7 @@ export function useSwipeTracking() {
   }, []);
 
   const trackSave = useCallback((destinationId: string, priceShown?: number) => {
+    if (!hasAuthToken()) return;
     const startTime = viewTimers.current.get(destinationId);
     const timeSpent = startTime ? Date.now() - startTime : 0;
 

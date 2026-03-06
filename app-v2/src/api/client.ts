@@ -18,6 +18,10 @@ export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
+export function hasAuthToken(): boolean {
+  return authToken !== null;
+}
+
 export async function apiFetch<T>(
   path: string,
   options?: RequestInit,
