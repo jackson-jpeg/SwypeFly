@@ -169,7 +169,7 @@ export default function WishlistScreen() {
         {WISHLIST_DATA.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, paddingTop: 60, width: '100%' }}>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: colors.mutedText }}>No saved destinations yet</span>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.borderTint }}>Swipe right on destinations you love</span>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.borderTint }}>Tap the heart on destinations you love</span>
           </div>
         )}
         {WISHLIST_DATA.map((dest) => (
