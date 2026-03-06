@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useFeed } from '@/hooks/useFeed';
 import { useSavedStore } from '@/stores/savedStore';
+import { useFeedStore } from '@/stores/feedStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import { useSwipeTracking } from '@/hooks/useSwipeTracking';
 import type { Destination } from '@/api/types';
@@ -211,7 +212,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
 
 export default function FeedScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const { scrollIndex: currentIndex, setScrollIndex: setCurrentIndex } = useFeedStore();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useFeed();
   const { trackView, trackSave } = useSwipeTracking();
 
@@ -240,6 +241,16 @@ export default function FeedScreen() {
     if (destinations[0]) trackView(destinations[0].id, destinations[0].flightPrice);
     return () => el.removeEventListener('scroll', handleScroll);
   }, [destinations.length, hasNextPage, isFetchingNextPage, fetchNextPage, trackView]);
+
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !destinations.length || restoredRef.current) return;
+    restoredRef.current = true;
+    if (currentIndex > 0) {
+      el.scrollTo({ top: currentIndex * el.clientHeight, behavior: 'instant' as ScrollBehavior });
+    }
+  }, [destinations.length]);
 
   if (isLoading) {
     return (
