@@ -10,7 +10,8 @@
  *     `destinations` collection in Appwrite. Create them via console first.
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { Client, Databases, Query } from 'node-appwrite';
 
 const endpoint = process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '';
