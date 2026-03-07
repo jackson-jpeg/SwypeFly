@@ -70,7 +70,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .sort((a, b) => a.price - b.price)
       .slice(0, 5);
 
-    const hotelPrice = hotelPriceResult.documents[0];
+    const hotelPriceDoc = hotelPriceResult.documents[0];
+    const hotelPrice = hotelPriceDoc;
+
+    // Parse hotels_json from cached hotel prices
+    let hotels: any[] | undefined;
+    try {
+      hotels = hotelPriceDoc?.hotels_json ? JSON.parse(hotelPriceDoc.hotels_json as string) : undefined;
+    } catch {
+      hotels = undefined;
+    }
     const refreshedImage = imageResult.documents[0];
 
     const similarDestinations = similarResult.documents.map((d) => ({
@@ -114,7 +123,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       priceSource: price ? ((price.source as string) || 'estimate') : 'estimate',
       priceFetchedAt: (price?.fetched_at as string) || undefined,
       liveHotelPrice: (hotelPrice?.price_per_night as number) ?? null,
-      hotelPriceSource: hotelPrice ? 'liteapi' : 'estimate',
+      hotelPriceSource: hotelPrice ? ((hotelPrice.source as string) || 'estimate') : 'estimate',
+      hotels: hotels ?? undefined,
       available_flight_days: dest.available_flight_days,
       itinerary,
       restaurants,

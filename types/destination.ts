@@ -40,7 +40,7 @@ export interface Destination {
   priceAtSave?: number;
   priceFetchedAt?: string;
   liveHotelPrice?: number | null;
-  hotelPriceSource?: 'liteapi' | 'estimate';
+  hotelPriceSource?: 'duffel' | 'liteapi' | 'estimate';
   available_flight_days?: string[];
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number; mapsUrl?: string }[];
@@ -52,6 +52,7 @@ export interface Destination {
   priceDirection?: 'up' | 'down' | 'stable';
   previousPrice?: number;
   otherPrices?: { origin: string; price: number; source: string }[];
+  hotels?: HotelListing[];
   photographerAttribution?: { name: string; url: string };
   travelTips?: {
     visa: string;
@@ -61,6 +62,18 @@ export interface Destination {
     bestFor: string[];
     costLevel: 1 | 2 | 3 | 4;
   };
+}
+
+export interface HotelListing {
+  name: string;
+  rating: number | null;
+  reviewScore: number | null;
+  reviewCount: number | null;
+  pricePerNight: number;
+  currency: string;
+  photoUrl: string | null;
+  boardType: string | null;
+  accommodationId: string;
 }
 
 export interface DestinationFeedPage {

@@ -9,7 +9,7 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import PriceAlertButton from '@/components/PriceAlertButton';
-import type { TripPlan, Destination } from '@/api/types';
+import type { TripPlan, Destination, HotelListing } from '@/api/types';
 
 function getDefaultDetail(dest: Destination) {
   // Build itinerary from destination data if available
@@ -517,59 +517,197 @@ export default function DestinationDetailScreen() {
       </div>
 
       {/* ─── Hotel Snapshot ───────────────────────────────────── */}
-      {dest.hotels.length > 0 && <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <span style={sectionLabel}>Hotel Snapshot</span>
-        <div style={{ display: 'flex', gap: 12 }}>
-          {dest.hotels.map((hotel) => (
-            <div
-              key={hotel.name}
-              style={{
-                flex: '1 1 0%',
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: 12,
-                padding: 14,
-                gap: 8,
-                backgroundColor: colors.offWhite,
-                border: `1px solid ${colors.borderTint}40`,
-              }}
-            >
+      {stubDest.hotels && stubDest.hotels.length > 0 ? (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={sectionLabel}>Nearby Hotels</span>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 10, color: colors.darkerGreen }}>
+              Live rates via Duffel
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
+            {(stubDest.hotels as HotelListing[]).map((hotel) => (
               <div
+                key={hotel.accommodationId || hotel.name}
                 style={{
-                  width: '100%',
-                  height: 60,
-                  borderRadius: 8,
-                  backgroundImage: `url(${hotel.image})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundColor: colors.duskSand,
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 12,
-                  lineHeight: '16px',
-                  color: colors.specText,
+                  minWidth: 180,
+                  maxWidth: 220,
+                  flex: '0 0 auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  backgroundColor: colors.offWhite,
+                  border: `1px solid ${colors.borderTint}40`,
                 }}
               >
-                {hotel.name}
-              </span>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  lineHeight: '18px',
-                  color: colors.deepDusk,
-                }}
-              >
-                {hotel.price}
-              </span>
-            </div>
-          ))}
+                {/* Hotel photo */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: 100,
+                    backgroundImage: hotel.photoUrl ? `url(${hotel.photoUrl})` : undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundColor: colors.warmDusk,
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    padding: 8,
+                  }}
+                >
+                  {/* Star rating overlay */}
+                  {hotel.rating != null && hotel.rating > 0 && (
+                    <span
+                      style={{
+                        fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: '#FFFFFF',
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        borderRadius: 6,
+                        padding: '2px 6px',
+                      }}
+                    >
+                      {'★'.repeat(hotel.rating)}
+                    </span>
+                  )}
+                </div>
+                {/* Hotel info */}
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span
+                    style={{
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      lineHeight: '16px',
+                      color: colors.deepDusk,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {hotel.name}
+                  </span>
+                  {/* Review score + count */}
+                  {hotel.reviewScore != null && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span
+                        style={{
+                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: colors.confirmGreen,
+                        }}
+                      >
+                        {hotel.reviewScore.toFixed(1)}
+                      </span>
+                      {hotel.reviewCount != null && (
+                        <span
+                          style={{
+                            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                            fontSize: 10,
+                            color: colors.mutedText,
+                          }}
+                        >
+                          ({hotel.reviewCount.toLocaleString()})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {/* Board type badge */}
+                  {hotel.boardType && hotel.boardType !== 'room_only' && (
+                    <span
+                      style={{
+                        fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                        fontSize: 9,
+                        fontWeight: 600,
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        color: colors.darkerGreen,
+                        backgroundColor: '#C8DDD430',
+                        borderRadius: 4,
+                        padding: '2px 6px',
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      {hotel.boardType.replace(/_/g, ' ')}
+                    </span>
+                  )}
+                  {/* Price */}
+                  <span
+                    style={{
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 16,
+                      fontWeight: 800,
+                      lineHeight: '20px',
+                      color: colors.deepDusk,
+                      marginTop: 2,
+                    }}
+                  >
+                    ${hotel.pricePerNight}<span style={{ fontSize: 11, fontWeight: 500, color: colors.mutedText }}>/nt</span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>}
+      ) : dest.hotels.length > 0 ? (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <span style={sectionLabel}>Hotel Snapshot</span>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {dest.hotels.map((hotel) => (
+              <div
+                key={hotel.name}
+                style={{
+                  flex: '1 1 0%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: 12,
+                  padding: 14,
+                  gap: 8,
+                  backgroundColor: colors.offWhite,
+                  border: `1px solid ${colors.borderTint}40`,
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: 60,
+                    borderRadius: 8,
+                    backgroundImage: `url(${hotel.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundColor: colors.duskSand,
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 12,
+                    lineHeight: '16px',
+                    color: colors.specText,
+                  }}
+                >
+                  {hotel.name}
+                </span>
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    lineHeight: '18px',
+                    color: colors.deepDusk,
+                  }}
+                >
+                  {hotel.price}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* ─── Best Time to Visit ──────────────────────────────── */}
       {stubDest.bestMonths?.length > 0 && <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>

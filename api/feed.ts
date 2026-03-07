@@ -124,6 +124,7 @@ interface ScoredDest {
   available_flight_days?: string[];
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number }[];
+  hotels_data?: any[];
 }
 
 // ─── Generic scoring (for anonymous users) ──────────────────────────
@@ -275,10 +276,20 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     });
   }
 
-  // Build hotel price lookup by IATA code
-  const hotelPriceMap = new Map<string, number>();
+  // Build hotel price + hotels lookup by IATA code
+  const hotelPriceMap = new Map<string, { price: number; source: string; hotels?: any[] }>();
   for (const hp of hotelPriceResult.documents) {
-    hotelPriceMap.set(hp.destination_iata as string, hp.price_per_night as number);
+    let hotels: any[] | undefined;
+    try {
+      hotels = hp.hotels_json ? JSON.parse(hp.hotels_json as string) : undefined;
+    } catch {
+      hotels = undefined;
+    }
+    hotelPriceMap.set(hp.destination_iata as string, {
+      price: hp.price_per_night as number,
+      source: (hp.source as string) || 'estimate',
+      hotels,
+    });
   }
 
   // Build image lookup by destination ID
@@ -345,8 +356,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       trip_duration_days: lp?.trip_duration_days,
       previous_price: lp?.previous_price,
       price_direction: lp?.price_direction,
-      live_hotel_price: hotelPriceMap.get(d.iata_code as string) ?? null,
-      hotel_price_source: hotelPriceMap.has(d.iata_code as string) ? 'liteapi' : undefined,
+      live_hotel_price: hotelPriceMap.get(d.iata_code as string)?.price ?? null,
+      hotel_price_source: hotelPriceMap.get(d.iata_code as string)?.source ?? undefined,
+      hotels_data: hotelPriceMap.get(d.iata_code as string)?.hotels ?? undefined,
       itinerary,
       restaurants,
     };
@@ -382,8 +394,9 @@ function toFrontend(d: ScoredDest) {
     priceFetchedAt: d.price_fetched_at || undefined,
     liveHotelPrice: d.live_hotel_price ?? null,
     hotelPriceSource: d.live_hotel_price != null
-      ? (d.hotel_price_source as 'liteapi' | 'estimate')
+      ? (d.hotel_price_source as 'duffel' | 'liteapi' | 'estimate')
       : 'estimate',
+    hotels: d.hotels_data ?? undefined,
     available_flight_days: d.available_flight_days || undefined,
     itinerary: d.itinerary || undefined,
     restaurants: d.restaurants || undefined,
