@@ -112,7 +112,7 @@ img {
 
   .screen,
   .screen-fixed {
-    max-width: 430px;
+    max-width: 520px;
     border-left: 1px solid #C9A99A15;
     border-right: 1px solid #C9A99A15;
     box-shadow: 0 0 60px rgba(0,0,0,0.04);

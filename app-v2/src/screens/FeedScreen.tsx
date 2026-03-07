@@ -111,13 +111,13 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
       {/* Destination info */}
       <div
         onClick={() => navigate(`/destination/${destination.id}`)}
-        style={{ position: 'absolute', bottom: 140, left: 20, right: 80, display: 'flex', flexDirection: 'column', gap: 8, cursor: 'pointer' }}
+        style={{ position: 'absolute', bottom: 140, left: 20, right: 72, display: 'flex', flexDirection: 'column', gap: 8, cursor: 'pointer' }}
       >
         <div
           style={{
             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
             fontWeight: 800,
-            fontSize: 'clamp(32px, 9vw, 48px)',
+            fontSize: 'clamp(26px, 8vw, 44px)',
             lineHeight: 1.05,
             letterSpacing: '-0.02em',
             textTransform: 'uppercase',

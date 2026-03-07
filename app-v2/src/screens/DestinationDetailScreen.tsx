@@ -19,21 +19,30 @@ function getDefaultDetail(dest: Destination) {
     desc: item.activities.slice(1).join('. ') || item.activities[0] || '',
   }));
 
-  // Use API-provided similar destinations, fall back to stub lookup
+  // Use API-provided similar destinations, fall back to overlap-scored matching
   const similarDests = (dest.similarDestinations ?? []).length > 0
     ? dest.similarDestinations!.map((d) => ({ id: d.id, city: d.city, price: d.flightPrice, image: d.imageUrl }))
-    : STUB_DESTINATIONS
-        .filter((d) => d.id !== dest.id && (d.country === dest.country || d.vibeTags[0] === dest.vibeTags[0]))
-        .slice(0, 3)
-        .map((d) => ({ id: d.id, city: d.city, price: d.flightPrice, image: d.imageUrl }));
+    : (() => {
+        const candidates = STUB_DESTINATIONS
+          .filter((d) => d.id !== dest.id)
+          .map((d) => {
+            const sharedVibes = d.vibeTags.filter((t) => dest.vibeTags.includes(t)).length;
+            const sameRegion = d.country === dest.country ? 2 : 0;
+            return { d, score: sharedVibes + sameRegion };
+          })
+          .filter((c) => c.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
+        return candidates.map((c) => ({ id: c.d.id, city: c.d.city, price: c.d.flightPrice, image: c.d.imageUrl }));
+      })();
 
   return {
     region: dest.country,
-    vibe: dest.vibeTags[0] ?? 'Adventure',
+    vibes: dest.vibeTags.length > 0 ? dest.vibeTags : ['Adventure'],
     quote: dest.tagline ?? `Discover the magic of ${dest.city}.`,
     flightStrikethrough: dest.previousPrice || undefined,
     flightRoute: `${dest.iataCode ?? dest.city} · Round trip`,
-    flightDates: dest.departureDate && dest.returnDate
+    flightDates: dest.departureDate && dest.returnDate && dest.departureDate >= new Date().toISOString().slice(0, 10)
       ? `${dest.departureDate} – ${dest.returnDate} · Economy`
       : 'Flexible dates · Economy',
     hotels: (dest.imageUrls ?? []).slice(0, 2).map((img, i) => ({
@@ -144,7 +153,7 @@ export default function DestinationDetailScreen() {
     ...stubDest,
     heroImage: stubDest.imageUrl,
     ...detail,
-    flightStrikethrough: detail.flightStrikethrough ?? Math.round(stubDest.flightPrice * 1.4),
+    flightStrikethrough: detail.flightStrikethrough ?? 0,
   };
 
   const handleBooking = () => {
@@ -355,7 +364,7 @@ export default function DestinationDetailScreen() {
               margin: '4px 0 0',
             }}
           >
-            {dest.country}{dest.region !== dest.country ? ` \u00B7 ${dest.region}` : ''} &middot; {dest.vibe}
+            {dest.country}{dest.region !== dest.country ? ` \u00B7 ${dest.region}` : ''} &middot; {dest.vibes.join(' \u00B7 ')}
           </p>
         </div>
       </div>
@@ -423,7 +432,7 @@ export default function DestinationDetailScreen() {
                   width: 6,
                   height: 6,
                   borderRadius: 3,
-                  backgroundColor: colors.seafoamMist,
+                  backgroundColor: stubDest.priceSource === 'estimate' ? colors.borderTint : colors.seafoamMist,
                   flexShrink: 0,
                 }}
               />
@@ -432,10 +441,10 @@ export default function DestinationDetailScreen() {
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 10,
                   lineHeight: '12px',
-                  color: colors.darkerGreen,
+                  color: stubDest.priceSource === 'estimate' ? colors.borderTint : colors.darkerGreen,
                 }}
               >
-                Live price
+                {stubDest.priceSource === 'travelpayouts' || stubDest.priceSource === 'amadeus' || stubDest.priceSource === 'duffel' ? 'Live price' : 'Estimated'}
               </span>
             </div>
           </div>

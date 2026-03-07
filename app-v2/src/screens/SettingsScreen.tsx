@@ -91,7 +91,7 @@ export default function SettingsScreen() {
     .join('')
     .toUpperCase()
     .slice(0, 2) || 'G';
-  const { hapticsEnabled, toggleHaptics, departureCity, departureCode, currency, setCurrency, tempUnit, setTempUnit, notifications, toggleNotifications, priceAlerts, togglePriceAlerts } = useUIStore();
+  const { departureCity, departureCode, currency, setCurrency, tempUnit, setTempUnit, notifications, toggleNotifications, priceAlerts, togglePriceAlerts } = useUIStore();
   const [notifBlocked, setNotifBlocked] = useState(typeof Notification !== 'undefined' && Notification.permission === 'denied');
 
   const handleToggleNotifications = async () => {
@@ -227,10 +227,6 @@ export default function SettingsScreen() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={sectionLabelStyle}>Experience</span>
           <div style={{ borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 1, overflow: 'clip' }}>
-            <div style={rowStyle}>
-              <span style={rowTitleStyle}>Haptic Feedback</span>
-              <Toggle on={hapticsEnabled} onToggle={toggleHaptics} />
-            </div>
             <div style={rowStyle}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={rowTitleStyle}>Push Notifications</span>

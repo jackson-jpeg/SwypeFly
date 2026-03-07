@@ -75,7 +75,7 @@ export default function DesktopShell({ children }: { children: React.ReactNode }
                 color: colors.borderTint,
               }}
             >
-              sogojet.com · Best experienced on mobile
+              sogojet.com
             </span>
           </div>
         </div>

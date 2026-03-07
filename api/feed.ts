@@ -418,8 +418,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : `${origin}:${Date.now()}-${Math.random()}`;
     const rand = seededRandom(seed);
 
-    // Apply vibe filter only (NOT excludeIds) before scoring.
-    // Scoring must run on the full candidate set so the seeded PRNG produces
+    // Apply filters before scoring.
+    // Scoring must run on the filtered candidate set so the seeded PRNG produces
     // a deterministic order. Cursor-based pagination then slices consistently.
     let destinations = [...allDestinations];
 
@@ -436,6 +436,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (maxPrice != null) {
       destinations = destinations.filter((d) => (d.live_price ?? d.flight_price) <= maxPrice);
+    }
+
+    if (excludeIds) {
+      const excludeSet = new Set(excludeIds.split(',').map((s) => s.trim()).filter(Boolean));
+      destinations = destinations.filter((d) => !excludeSet.has(d.id));
     }
 
     let scored: ScoredDest[];
