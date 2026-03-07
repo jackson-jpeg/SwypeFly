@@ -218,7 +218,7 @@ function softShuffle<T>(items: T[], rand: () => number, windowSize = 10): T[] {
 // For shared caching across instances, consider Upstash Redis.
 
 const destCache = new Map<string, { data: ScoredDest[]; ts: number }>();
-const CACHE_TTL = 3 * 60 * 1000;
+const CACHE_TTL = 60 * 1000; // 1 min — keep prices fresh
 
 async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> {
   const cached = destCache.get(origin);
@@ -463,7 +463,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const page = scored.slice(cursor, cursor + PAGE_SIZE).map(toFrontend);
     const nextCursor = cursor + PAGE_SIZE < scored.length ? String(cursor + PAGE_SIZE) : null;
 
-    const cacheTime = sessionId ? 0 : 300;
+    const cacheTime = sessionId ? 0 : 60;
     res.setHeader(
       'Cache-Control',
       cacheTime > 0

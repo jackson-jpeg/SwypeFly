@@ -56,7 +56,7 @@ export default function App() {
         <Route path="/onboarding" element={<OnboardingScreen />} />
         <Route path="/" element={needsAuth ? <Navigate to="/login" /> : needsOnboarding ? <Navigate to="/onboarding" /> : <FeedScreen />} />
         <Route path="/destination/:id" element={needsAuth ? <Navigate to="/login" /> : <DestinationDetailScreen />} />
-        <Route path="/booking/flights" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/flights' }} /> : <FlightSelectionScreen />} />
+        <Route path="/booking/flights" element={needsAuth ? <Navigate to="/login" state={{ returnTo: '/booking/flights' }} /> : <FlightSelectionScreen />} />
         <Route path="/booking/passengers" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/passengers' }} /> : <PassengerDetailsScreen />} />
         <Route path="/booking/seats" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/seats' }} /> : <SeatSelectionScreen />} />
         <Route path="/booking/extras" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/extras' }} /> : <BagsExtrasScreen />} />

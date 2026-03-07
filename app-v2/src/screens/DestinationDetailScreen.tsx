@@ -157,10 +157,6 @@ export default function DestinationDetailScreen() {
   };
 
   const handleBooking = () => {
-    if (!session) {
-      navigate('/login', { state: { returnTo: `/destination/${stubDest.id}` } });
-      return;
-    }
     setBookingDestination(stubDest.id, stubDest.flightPrice);
     navigate('/booking/flights');
   };
