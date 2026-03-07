@@ -117,7 +117,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           style={{
             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
             fontWeight: 800,
-            fontSize: 'clamp(26px, 8vw, 44px)',
+            fontSize: 'clamp(26px, 8vw, 36px)',
             lineHeight: 1.05,
             letterSpacing: '-0.02em',
             textTransform: 'uppercase',
