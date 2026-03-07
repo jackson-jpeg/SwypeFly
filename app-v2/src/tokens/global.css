@@ -93,7 +93,7 @@ img {
   .desktop-sidebar {
     display: flex;
     flex-direction: column;
-    width: 380px;
+    width: 340px;
     flex-shrink: 0;
     background: linear-gradient(180deg, #F5ECD7 0%, #FFFDF8 100%);
     border-right: 1px solid #C9A99A20;
@@ -106,7 +106,7 @@ img {
     flex: 1;
     display: flex;
     justify-content: center;
-    background: #F5ECD7;
+    background: #0A0F1E;
     min-height: 100dvh;
   }
 
@@ -121,6 +121,18 @@ img {
 
 @media (min-width: 1200px) {
   .desktop-sidebar {
-    width: 440px;
+    width: 380px;
+  }
+
+  .screen,
+  .screen-fixed {
+    max-width: 600px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .screen,
+  .screen-fixed {
+    max-width: 640px;
   }
 }

@@ -4,6 +4,9 @@ import { getStubFeed } from '@/api/stubs';
 import { useUIStore } from '@/stores/uiStore';
 import type { DestinationFeedPage } from '@/api/types';
 
+// Stable per browser session — resets on refresh, consistent across paginated requests
+const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 export function useFeed() {
   const departureCode = useUIStore((s) => s.departureCode);
   const vibePrefs = useUIStore((s) => s.vibePrefs);
@@ -15,7 +18,7 @@ export function useFeed() {
       if (USE_STUBS) {
         return getStubFeed(Number(pageParam), 5);
       }
-      const params = new URLSearchParams({ origin: departureCode, cursor: pageParam as string });
+      const params = new URLSearchParams({ origin: departureCode, cursor: pageParam as string, sessionId: SESSION_ID });
       if (vibeFilter) params.set('vibeFilter', vibeFilter);
       return apiFetch<DestinationFeedPage>(`/api/feed?${params.toString()}`);
     },
