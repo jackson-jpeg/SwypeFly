@@ -129,6 +129,7 @@ export const bookingSearchSchema = z.object({
     type: z.enum(['adult', 'child', 'infant_without_seat']),
   })).min(1).max(9),
   cabinClass: z.enum(['economy', 'premium_economy', 'business', 'first']).optional(),
+  priceHint: z.number().positive().optional(),
 });
 
 export const bookingOfferSchema = z.object({

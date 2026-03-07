@@ -75,6 +75,7 @@ export interface BookingSearchRequest {
   returnDate?: string;
   passengers: { type: 'adult' | 'child' | 'infant_without_seat' }[];
   cabinClass?: 'economy' | 'premium_economy' | 'business' | 'first';
+  priceHint?: number;
 }
 
 export interface FlightSlice {

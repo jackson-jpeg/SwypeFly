@@ -94,61 +94,72 @@ function transformOffer(raw: any, cabinClass = 'economy') {
   };
 }
 
-function stubSearch(origin: string, destination: string, cabinClass: string) {
-  const basePrices: Record<string, number> = {
-    economy: 287,
-    premium_economy: 549,
-    business: 1450,
-    first: 3200,
+function stubSearch(origin: string, destination: string, cabinClass: string, departureDate?: string, priceHint?: number) {
+  const cabinMultipliers: Record<string, number> = {
+    economy: 1,
+    premium_economy: 1.9,
+    business: 5,
+    first: 11,
   };
-  const base = basePrices[cabinClass] || 287;
-  const depDate = '2026-04-15';
-  const retDate = '2026-04-22';
+  const multiplier = cabinMultipliers[cabinClass] || 1;
+  const base = Math.round((priceHint || 287) * multiplier);
+
+  // Use the destination's actual departure date if available, else 2 weeks out
+  const baseDepMs = departureDate
+    ? new Date(departureDate).getTime()
+    : Date.now() + 14 * 86400000;
 
   const airlines = [
-    { name: 'Delta Air Lines', code: 'DL', flight: '1842', depTime: '08:15', arrTime: '12:50', dur: '4h 35m', offset: 0 },
-    { name: 'United Airlines', code: 'UA', flight: '923', depTime: '10:30', arrTime: '15:40', dur: '5h 10m', offset: 43 },
-    { name: 'American Airlines', code: 'AA', flight: '407', depTime: '14:00', arrTime: '17:55', dur: '3h 55m', offset: 91 },
+    { name: 'Delta Air Lines', code: 'DL', flight: '1842', depTime: '08:15', arrTime: '12:50', dur: '4h 35m', offset: 0, dayShift: 0, nights: 7 },
+    { name: 'United Airlines', code: 'UA', flight: '923', depTime: '10:30', arrTime: '15:40', dur: '5h 10m', offset: 43, dayShift: 3, nights: 10 },
+    { name: 'American Airlines', code: 'AA', flight: '407', depTime: '14:00', arrTime: '17:55', dur: '3h 55m', offset: 91, dayShift: 7, nights: 5 },
   ];
 
-  return airlines.map((a) => ({
-    id: `stub_offer_${a.code.toLowerCase()}`,
-    totalAmount: base + a.offset,
-    totalCurrency: 'USD',
-    baseAmount: Math.round((base + a.offset) * 0.81),
-    taxAmount: Math.round((base + a.offset) * 0.19),
-    slices: [
-      {
-        origin,
-        destination,
-        departureTime: `${depDate}T${a.depTime}:00`,
-        arrivalTime: `${depDate}T${a.arrTime}:00`,
-        duration: a.dur,
-        stops: 0,
-        airline: a.name,
-        flightNumber: `${a.code} ${a.flight}`,
-        aircraft: 'Boeing 737-900',
-      },
-      {
-        origin: destination,
-        destination: origin,
-        departureTime: `${retDate}T${a.depTime}:00`,
-        arrivalTime: `${retDate}T${a.arrTime}:00`,
-        duration: a.dur,
-        stops: 0,
-        airline: a.name,
-        flightNumber: `${a.code} ${parseInt(a.flight) + 1}`,
-        aircraft: 'Boeing 737-900',
-      },
-    ],
-    cabinClass,
-    passengers: [{ id: 'stub_pas_1', type: 'adult' }],
-    expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
-    availableServices: [
-      { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
-      { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
-    ],
-  }));
+  return airlines.map((a) => {
+    const depMs = baseDepMs + a.dayShift * 86400000;
+    const retMs = depMs + a.nights * 86400000;
+    const depDate = new Date(depMs).toISOString().slice(0, 10);
+    const retDate = new Date(retMs).toISOString().slice(0, 10);
+
+    return {
+      id: `stub_offer_${a.code.toLowerCase()}`,
+      totalAmount: base + a.offset,
+      totalCurrency: 'USD',
+      baseAmount: Math.round((base + a.offset) * 0.81),
+      taxAmount: Math.round((base + a.offset) * 0.19),
+      slices: [
+        {
+          origin,
+          destination,
+          departureTime: `${depDate}T${a.depTime}:00`,
+          arrivalTime: `${depDate}T${a.arrTime}:00`,
+          duration: a.dur,
+          stops: 0,
+          airline: a.name,
+          flightNumber: `${a.code} ${a.flight}`,
+          aircraft: 'Boeing 737-900',
+        },
+        {
+          origin: destination,
+          destination: origin,
+          departureTime: `${retDate}T${a.depTime}:00`,
+          arrivalTime: `${retDate}T${a.arrTime}:00`,
+          duration: a.dur,
+          stops: 0,
+          airline: a.name,
+          flightNumber: `${a.code} ${parseInt(a.flight) + 1}`,
+          aircraft: 'Boeing 737-900',
+        },
+      ],
+      cabinClass,
+      passengers: [{ id: 'stub_pas_1', type: 'adult' }],
+      expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      availableServices: [
+        { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
+        { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
+      ],
+    };
+  });
 }
 
 // Seeded PRNG for deterministic stub occupancy — same offerId always produces same seat map
@@ -331,7 +342,7 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Duffel API key not configured');
-    const data = stubSearch(v.data.origin, v.data.destination, v.data.cabinClass || 'economy');
+    const data = stubSearch(v.data.origin, v.data.destination, v.data.cabinClass || 'economy', v.data.departureDate, v.data.priceHint);
     return res.status(200).json(data);
   }
 

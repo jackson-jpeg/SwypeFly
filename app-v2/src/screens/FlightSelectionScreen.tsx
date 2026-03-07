@@ -13,7 +13,7 @@ const CABIN_LABELS = ['Economy', 'Business', 'First'] as const;
 /* ── component ─────────────────────────────────────────────────── */
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
-  const { destinationId, setOffer, setCabinClass, passengerCount, setPassengerCount } = useBookingStore();
+  const { destinationId, feedPrice, setOffer, setCabinClass, passengerCount, setPassengerCount } = useBookingStore();
   const { departureCode } = useUIStore();
   const { data: dest } = useDestination(destinationId ?? undefined);
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
@@ -30,8 +30,9 @@ export default function FlightSelectionScreen() {
       returnDate: dest?.returnDate,
       passengers: Array.from({ length: passengers }, () => ({ type: 'adult' as const })),
       cabinClass: CABIN_CLASSES[selectedCabin],
+      priceHint: feedPrice ?? dest.flightPrice,
     };
-  }, [dest, departureCode, selectedCabin, passengers]);
+  }, [dest, departureCode, selectedCabin, passengers, feedPrice]);
 
   const { data: offers, isLoading, isError } = useBookingSearch(searchParams);
 
