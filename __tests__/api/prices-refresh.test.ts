@@ -27,10 +27,13 @@ jest.mock('node-appwrite', () => ({
 
 jest.mock('../../utils/apiLogger', () => ({ logApiError: jest.fn() }));
 
-const mockFetchCityDirections = jest.fn();
+const mockSearchFlights = jest.fn();
+jest.mock('../../services/duffel', () => ({
+  searchFlights: (...args: unknown[]) => mockSearchFlights(...args),
+}));
+
 const mockFetchCheapPrices = jest.fn();
 jest.mock('../../services/travelpayouts', () => ({
-  fetchCityDirections: (...args: unknown[]) => mockFetchCityDirections(...args),
   fetchCheapPrices: (...args: unknown[]) => mockFetchCheapPrices(...args),
 }));
 
@@ -64,6 +67,45 @@ function makeRes(): VercelResponse {
   return res as VercelResponse;
 }
 
+function makeDuffelOffer(dest: string, price: number, airline = 'TestAir') {
+  return {
+    id: `off_${dest}`,
+    total_amount: String(price),
+    total_currency: 'USD',
+    expires_at: '2026-04-01T15:00:00Z',
+    owner: { name: airline, iata_code: 'TA' },
+    slices: [
+      {
+        segments: [
+          {
+            operating_carrier: { name: airline, iata_code: 'TA' },
+            operating_carrier_flight_number: '100',
+            departing_at: '2026-04-01T08:00:00',
+            arriving_at: '2026-04-01T18:00:00',
+            origin: { iata_code: 'JFK' },
+            destination: { iata_code: dest },
+            aircraft: { name: 'Boeing 737' },
+          },
+        ],
+      },
+      {
+        segments: [
+          {
+            operating_carrier: { name: airline, iata_code: 'TA' },
+            operating_carrier_flight_number: '101',
+            departing_at: '2026-04-08T10:00:00',
+            arriving_at: '2026-04-08T20:00:00',
+            origin: { iata_code: dest },
+            destination: { iata_code: 'JFK' },
+            aircraft: { name: 'Boeing 737' },
+          },
+        ],
+      },
+    ],
+    passengers: [{ id: 'pas_001', type: 'adult' }],
+  };
+}
+
 describe('api/prices/refresh', () => {
   const OLD_ENV = process.env;
 
@@ -71,7 +113,6 @@ describe('api/prices/refresh', () => {
     jest.clearAllMocks();
     process.env = { ...OLD_ENV };
     process.env.CRON_SECRET = 'test-secret';
-    process.env.TRAVELPAYOUTS_API_TOKEN = 'test-tp-token';
   });
 
   afterAll(() => {
@@ -102,8 +143,12 @@ describe('api/prices/refresh', () => {
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('succeeds with valid cron secret and returns results', async () => {
-    // listDocuments is called for: destinations, then cachedPrices (upsert checks)
+  test('succeeds with Duffel as primary source', async () => {
+    // listDocuments calls:
+    // 1. destinations (active)
+    // 2. cachedPrices (stalest destinations - currentPriceMap)
+    // 3. cachedPrices (stalest destinations - fetchedAtMap)
+    // 4. userPreferences (getActiveOrigins via pickNextOrigins - won't be called since origin is specified)
     mockDatabases.listDocuments.mockResolvedValue({
       documents: [
         { $id: 'dest-1', iata_code: 'BCN', is_active: true },
@@ -112,15 +157,17 @@ describe('api/prices/refresh', () => {
       total: 2,
     });
 
-    // fetchCityDirections returns a Map
-    mockFetchCityDirections.mockResolvedValue(
-      new Map([
-        ['BCN', { price: 350, airline: 'IB', departureAt: '2026-04-01', returnAt: '2026-04-08' }],
-        ['CDG', { price: 420, airline: 'AF', departureAt: '2026-04-02', returnAt: '2026-04-09' }],
-      ]),
-    );
+    // Duffel returns offers for each destination
+    mockSearchFlights.mockImplementation((params: { destination: string }) => {
+      if (params.destination === 'BCN') {
+        return Promise.resolve({ offers: [makeDuffelOffer('BCN', 350, 'Iberia')] });
+      }
+      if (params.destination === 'CDG') {
+        return Promise.resolve({ offers: [makeDuffelOffer('CDG', 420, 'Air France')] });
+      }
+      return Promise.resolve({ offers: [] });
+    });
 
-    mockFetchCheapPrices.mockResolvedValue(null);
     mockDatabases.createDocument.mockResolvedValue({ $id: 'price-1' });
     mockDatabases.updateDocument.mockResolvedValue({ $id: 'price-1' });
 
@@ -134,5 +181,106 @@ describe('api/prices/refresh', () => {
     const responseData = (res.json as jest.Mock).mock.calls[0][0];
     expect(responseData.origins).toHaveLength(1);
     expect(responseData.origins[0].origin).toBe('JFK');
+    expect(responseData.origins[0].sources.duffel).toBe(2);
+    expect(responseData.batchSize).toBe(8);
+
+    // Verify Duffel was called for each destination
+    expect(mockSearchFlights).toHaveBeenCalledTimes(2);
+
+    // Verify createDocument was called with Duffel source and offer_json
+    const createCalls = mockDatabases.createDocument.mock.calls;
+    expect(createCalls.length).toBe(2);
+    expect(createCalls[0][3].source).toBe('duffel');
+    expect(createCalls[0][3].offer_json).toBeTruthy();
+    expect(createCalls[0][3].offer_expires_at).toBeTruthy();
+  });
+
+  test('falls back to Travelpayouts when Duffel fails', async () => {
+    mockDatabases.listDocuments.mockResolvedValue({
+      documents: [{ $id: 'dest-1', iata_code: 'BCN', is_active: true }],
+      total: 1,
+    });
+
+    // Duffel fails
+    mockSearchFlights.mockRejectedValue(new Error('Duffel API error'));
+
+    // Travelpayouts succeeds
+    mockFetchCheapPrices.mockResolvedValue({
+      destination: 'BCN',
+      price: 380,
+      airline: 'IB',
+      departureAt: '2026-04-01',
+      returnAt: '2026-04-08',
+    });
+
+    mockDatabases.createDocument.mockResolvedValue({ $id: 'price-1' });
+
+    const req = makeReq({
+      headers: { authorization: 'Bearer test-secret' } as any,
+      query: { origin: 'JFK' },
+    });
+    const res = makeRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    const responseData = (res.json as jest.Mock).mock.calls[0][0];
+    expect(responseData.origins[0].sources.travelpayouts).toBe(1);
+    expect(responseData.origins[0].sources.duffel).toBe(0);
+
+    // Verify fallback was called
+    expect(mockFetchCheapPrices).toHaveBeenCalledWith('JFK', 'BCN');
+
+    // Verify stored with travelpayouts source
+    const createCalls = mockDatabases.createDocument.mock.calls;
+    expect(createCalls[0][3].source).toBe('travelpayouts');
+    expect(createCalls[0][3].offer_json).toBe('');
+  });
+
+  test('tracks price history with direction', async () => {
+    // First call: destinations
+    // Second/third calls: cachedPrices with existing price
+    mockDatabases.listDocuments.mockImplementation(
+      (_db: string, collection: string, _queries: unknown[]) => {
+        if (collection === 'destinations') {
+          return Promise.resolve({
+            documents: [{ $id: 'dest-1', iata_code: 'BCN', is_active: true }],
+            total: 1,
+          });
+        }
+        // cachedPrices queries (both for currentPriceMap and fetchedAtMap)
+        return Promise.resolve({
+          documents: [
+            {
+              $id: 'price-bcn',
+              destination_iata: 'BCN',
+              price: 400,
+              fetched_at: '2026-03-01T00:00:00Z',
+            },
+          ],
+          total: 1,
+        });
+      },
+    );
+
+    // Duffel returns cheaper price (>5% drop)
+    mockSearchFlights.mockResolvedValue({
+      offers: [makeDuffelOffer('BCN', 350, 'Iberia')],
+    });
+
+    mockDatabases.updateDocument.mockResolvedValue({ $id: 'price-bcn' });
+
+    const req = makeReq({
+      headers: { authorization: 'Bearer test-secret' } as any,
+      query: { origin: 'JFK' },
+    });
+    const res = makeRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+
+    // Verify update (not create) with price direction
+    const updateCalls = mockDatabases.updateDocument.mock.calls;
+    expect(updateCalls.length).toBe(1);
+    expect(updateCalls[0][3].price).toBe(350);
+    expect(updateCalls[0][3].previous_price).toBe(400);
+    expect(updateCalls[0][3].price_direction).toBe('down');
   });
 });

@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
 import { ID } from 'node-appwrite';
-import { fetchCityDirections, fetchCheapPrices } from '../../services/travelpayouts';
+import { searchFlights } from '../../services/duffel';
+import { fetchCheapPrices } from '../../services/travelpayouts';
 import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { cors } from '../_cors.js';
@@ -9,70 +10,11 @@ import { cors } from '../_cors.js';
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
 
-const AMADEUS_KEY = process.env.AMADEUS_API_KEY || '';
-const AMADEUS_SECRET = process.env.AMADEUS_API_SECRET || '';
-const AMADEUS_BASE = 'https://test.api.amadeus.com';
+// Each Duffel search takes ~1-1.5s, so 8 fits within 10s timeout with margin
+const BATCH_SIZE = 8;
 
-// ─── Amadeus Auth ─────────────────────────────────────────────────────
-
-let tokenCache: { token: string; expiresAt: number } | null = null;
-
-async function getAmadeusToken(): Promise<string> {
-  if (tokenCache && tokenCache.expiresAt > Date.now() + 60_000) {
-    return tokenCache.token;
-  }
-  const res = await fetch(`${AMADEUS_BASE}/v1/security/oauth2/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=client_credentials&client_id=${AMADEUS_KEY}&client_secret=${AMADEUS_SECRET}`,
-  });
-  if (!res.ok) throw new Error(`Amadeus auth failed: ${res.status}`);
-  const data = (await res.json()) as { access_token: string; expires_in: number };
-  tokenCache = { token: data.access_token, expiresAt: Date.now() + data.expires_in * 1000 };
-  return tokenCache.token;
-}
-
-// ─── Amadeus Fallback ─────────────────────────────────────────────────
-
-interface PriceResult {
-  destination: string;
-  price: number;
-  currency: string;
-  airline: string;
-  source: 'travelpayouts' | 'amadeus' | 'estimate';
-  departureDate?: string;
-  returnDate?: string;
-}
-
-async function fetchAmadeusPrice(
-  token: string,
-  origin: string,
-  dest: string,
-  date: string,
-): Promise<PriceResult | null> {
-  try {
-    const res = await fetch(
-      `${AMADEUS_BASE}/v2/shopping/flight-offers?originLocationCode=${origin}&destinationLocationCode=${dest}&departureDate=${date}&adults=1&max=1&currencyCode=USD`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as Record<string, unknown>;
-    const offers = data.data as Array<Record<string, unknown>> | undefined;
-    const offer = offers?.[0];
-    if (!offer) return null;
-
-    const priceObj = offer.price as Record<string, string>;
-    return {
-      destination: dest,
-      price: Math.round(parseFloat(priceObj.grandTotal)),
-      currency: priceObj.currency || 'USD',
-      airline: '',
-      source: 'amadeus',
-    };
-  } catch {
-    return null;
-  }
-}
+// 5% threshold for price direction tracking
+const PRICE_CHANGE_THRESHOLD = 0.05;
 
 // ─── Top-10 fallback airports ────────────────────────────────────────
 
@@ -98,7 +40,6 @@ async function getActiveOrigins(): Promise<string[]> {
 async function pickNextOrigins(count: number): Promise<string[]> {
   const origins = await getActiveOrigins();
 
-  // Check which origin was refreshed longest ago
   let statusDocs: Array<Record<string, unknown>> = [];
   try {
     const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
@@ -132,119 +73,163 @@ async function pickNextOrigins(count: number): Promise<string[]> {
   return sorted.slice(0, count);
 }
 
-// ─── Refresh prices for a single origin ──────────────────────────────
+// ─── Date strategy for discovery searches ────────────────────────────
 
-async function refreshOrigin(
+function getSearchDates(): { departureDate: string; returnDate: string } {
+  // ~2 weeks out, shifted to next Wednesday (cheaper mid-week flights)
+  const now = new Date();
+  const twoWeeksOut = new Date(now.getTime() + 14 * 86400000);
+  const dayOfWeek = twoWeeksOut.getDay(); // 0=Sun, 3=Wed
+  const daysUntilWed = (3 - dayOfWeek + 7) % 7 || 7;
+  const departure = new Date(twoWeeksOut.getTime() + daysUntilWed * 86400000);
+  // Return: departure + 7 days (standard 1-week trip)
+  const returnDate = new Date(departure.getTime() + 7 * 86400000);
+
+  return {
+    departureDate: departure.toISOString().split('T')[0],
+    returnDate: returnDate.toISOString().split('T')[0],
+  };
+}
+
+// ─── Compact offer JSON for caching ──────────────────────────────────
+
+function compactOfferJson(offer: Record<string, unknown>): string {
+  const compact = {
+    id: offer.id,
+    total_amount: offer.total_amount,
+    total_currency: offer.total_currency,
+    expires_at: offer.expires_at,
+    slices: ((offer.slices as any[]) || []).map((slice: any) => ({
+      segments: ((slice.segments as any[]) || []).map((seg: any) => ({
+        operating_carrier: {
+          name: seg.operating_carrier?.name,
+          iata_code: seg.operating_carrier?.iata_code,
+        },
+        operating_carrier_flight_number: seg.operating_carrier_flight_number,
+        departing_at: seg.departing_at,
+        arriving_at: seg.arriving_at,
+        origin: { iata_code: seg.origin?.iata_code },
+        destination: { iata_code: seg.destination?.iata_code },
+        aircraft: seg.aircraft ? { name: seg.aircraft.name } : null,
+      })),
+    })),
+  };
+  return JSON.stringify(compact);
+}
+
+// ─── Refresh a batch of destinations for one origin via Duffel ───────
+
+interface BatchResult {
+  origin: string;
+  fetched: number;
+  total: number;
+  sources: Record<string, number>;
+}
+
+async function refreshBatch(
   origin: string,
-  allIatas: string[],
-): Promise<{ origin: string; fetched: number; total: number; sources: Record<string, number> }> {
-  const sourceCounts: Record<string, number> = { travelpayouts: 0, amadeus: 0 };
+  batch: string[],
+  currentPriceMap: Map<string, { price: number; docId: string }>,
+): Promise<BatchResult> {
+  const sourceCounts: Record<string, number> = { duffel: 0, travelpayouts: 0 };
+  const { departureDate, returnDate } = getSearchDates();
+  let fetched = 0;
 
-  // Step 1: Primary — Travelpayouts city-directions (bulk prices in one call)
-  const tpPrices = await fetchCityDirections(origin);
-  console.log(`[refresh] Travelpayouts city-directions returned ${tpPrices.size} prices for ${origin}`);
+  for (const dest of batch) {
+    let price: number | null = null;
+    let airline = '';
+    let source: 'duffel' | 'travelpayouts' = 'duffel';
+    let depDate = departureDate;
+    let retDate = returnDate;
+    let offerJson = '';
+    let offerExpiresAt = '';
 
-  const allResults = new Map<string, PriceResult>();
-  for (const iata of allIatas) {
-    const tp = tpPrices.get(iata);
-    if (tp) {
-      allResults.set(iata, {
-        destination: iata,
-        price: tp.price,
-        currency: 'USD',
-        airline: tp.airline,
-        source: 'travelpayouts',
-        departureDate: tp.departureAt || undefined,
-        returnDate: tp.returnAt || undefined,
-      });
-      sourceCounts.travelpayouts++;
-    }
-  }
-
-  // Step 2: Fill gaps — Travelpayouts cheap-prices for individual routes (cap at 30 to stay in time budget)
-  const missingAfterTP = allIatas.filter((iata) => !allResults.has(iata)).slice(0, 30);
-  if (missingAfterTP.length > 0) {
-    console.log(`[refresh] Fetching ${missingAfterTP.length} individual Travelpayouts prices for ${origin}...`);
-    for (let i = 0; i < missingAfterTP.length; i += 5) {
-      const batch = missingAfterTP.slice(i, i + 5);
-      const promises = batch.map((dest) => fetchCheapPrices(origin, dest));
-      const results = await Promise.all(promises);
-      for (const r of results) {
-        if (r) {
-          allResults.set(r.destination, {
-            destination: r.destination,
-            price: r.price,
-            currency: 'USD',
-            airline: r.airline,
-            source: 'travelpayouts',
-            departureDate: r.departureAt || undefined,
-            returnDate: r.returnAt || undefined,
-          });
-          sourceCounts.travelpayouts++;
-        }
-      }
-    }
-  }
-
-  // Step 3: Final fallback — Amadeus for any still-missing (cap at 10 to avoid timeout)
-  const missingAfterAll = allIatas.filter((iata) => !allResults.has(iata)).slice(0, 10);
-  if (missingAfterAll.length > 0 && AMADEUS_KEY && AMADEUS_SECRET) {
-    console.log(`[refresh] Fetching ${missingAfterAll.length} Amadeus fallback prices for ${origin}...`);
+    // Primary: Duffel
     try {
-      const amadeusToken = await getAmadeusToken();
-      const date = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
-      for (let i = 0; i < missingAfterAll.length; i += 3) {
-        const batch = missingAfterAll.slice(i, i + 3);
-        const promises = batch.map((dest) => fetchAmadeusPrice(amadeusToken, origin, dest, date));
-        const results = await Promise.all(promises);
-        for (const r of results) {
-          if (r) {
-            allResults.set(r.destination, r);
-            sourceCounts.amadeus++;
-          }
+      const result = await searchFlights({
+        origin,
+        destination: dest,
+        departureDate,
+        returnDate,
+        passengers: [{ type: 'adult' }],
+        cabinClass: 'economy',
+      });
+
+      const offers = (result as any).offers as any[] | undefined;
+      if (offers && offers.length > 0) {
+        // Sort by total_amount (string from Duffel, parse to float)
+        offers.sort(
+          (a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount),
+        );
+        const cheapest = offers[0];
+
+        price = Math.round(parseFloat(cheapest.total_amount));
+        offerExpiresAt = cheapest.expires_at || '';
+
+        // Extract airline from first outbound segment
+        const firstSlice = cheapest.slices?.[0];
+        const firstSeg = firstSlice?.segments?.[0];
+        if (firstSeg?.operating_carrier) {
+          airline = firstSeg.operating_carrier.name || firstSeg.operating_carrier.iata_code || '';
         }
-        if (i + 3 < missingAfterAll.length) await new Promise((r) => setTimeout(r, 250));
+
+        // Extract actual dates from segments
+        if (firstSeg?.departing_at) {
+          depDate = firstSeg.departing_at.split('T')[0];
+        }
+        const lastSlice = cheapest.slices?.[cheapest.slices.length - 1];
+        const lastSeg = lastSlice?.segments?.[0];
+        if (lastSeg?.departing_at) {
+          retDate = lastSeg.departing_at.split('T')[0];
+        }
+
+        // Compact offer for caching
+        offerJson = compactOfferJson(cheapest);
+        // Truncate if too large
+        if (offerJson.length > 10000) {
+          offerJson = offerJson.slice(0, 10000);
+        }
+
+        source = 'duffel';
+        sourceCounts.duffel++;
       }
     } catch (err) {
-      console.warn('[refresh] Amadeus fallback failed:', err);
+      console.warn(`[refresh] Duffel search failed for ${origin}->${dest}:`, err);
     }
-  }
 
-  console.log(`[refresh] Total prices for ${origin}: ${allResults.size}/${allIatas.length} (TP: ${sourceCounts.travelpayouts}, Amadeus: ${sourceCounts.amadeus})`);
-
-  // Step 4: Query current prices for price history tracking
-  const currentPriceMap = new Map<string, { price: number; docId: string }>();
-  try {
-    const currentResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.equal('origin', origin),
-      Query.limit(500),
-    ]);
-    for (const cp of currentResult.documents) {
-      currentPriceMap.set(cp.destination_iata as string, {
-        price: cp.price as number,
-        docId: cp.$id,
-      });
+    // Fallback: Travelpayouts
+    if (price === null) {
+      try {
+        const tp = await fetchCheapPrices(origin, dest);
+        if (tp) {
+          price = tp.price;
+          airline = tp.airline;
+          depDate = tp.departureAt ? tp.departureAt.split('T')[0] : departureDate;
+          retDate = tp.returnAt ? tp.returnAt.split('T')[0] : returnDate;
+          source = 'travelpayouts';
+          sourceCounts.travelpayouts++;
+        }
+      } catch (err) {
+        console.warn(`[refresh] Travelpayouts fallback failed for ${origin}->${dest}:`, err);
+      }
     }
-  } catch {
-    // No existing prices
-  }
 
-  // Step 5: Upsert into cached_prices with dates + price history
-  const PRICE_CHANGE_THRESHOLD = 0.05; // 5% threshold for up/down
-  for (const p of allResults.values()) {
-    const existing = currentPriceMap.get(p.destination);
+    if (price === null) continue;
+
+    // Price history tracking
+    const existing = currentPriceMap.get(dest);
     let priceDirection: 'up' | 'down' | 'stable' = 'stable';
     const prevPrice = existing?.price;
     if (prevPrice != null && prevPrice > 0) {
-      const pctChange = (p.price - prevPrice) / prevPrice;
+      const pctChange = (price - prevPrice) / prevPrice;
       if (pctChange > PRICE_CHANGE_THRESHOLD) priceDirection = 'up';
       else if (pctChange < -PRICE_CHANGE_THRESHOLD) priceDirection = 'down';
     }
 
     let tripDurationDays: number | null = null;
-    if (p.departureDate && p.returnDate) {
-      const dep = new Date(p.departureDate);
-      const ret = new Date(p.returnDate);
+    if (depDate && retDate) {
+      const dep = new Date(depDate);
+      const ret = new Date(retDate);
       if (!isNaN(dep.getTime()) && !isNaN(ret.getTime())) {
         tripDurationDays = Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24));
       }
@@ -252,37 +237,107 @@ async function refreshOrigin(
 
     const data: Record<string, unknown> = {
       origin,
-      destination_iata: p.destination,
-      price: p.price,
-      currency: p.currency,
-      airline: p.airline,
-      source: p.source,
+      destination_iata: dest,
+      price,
+      currency: 'USD',
+      airline,
+      source,
       fetched_at: new Date().toISOString(),
-      departure_date: p.departureDate ? p.departureDate.split('T')[0] : '',
-      return_date: p.returnDate ? p.returnDate.split('T')[0] : '',
+      departure_date: depDate || '',
+      return_date: retDate || '',
       trip_duration_days: tripDurationDays ?? 0,
       previous_price: prevPrice ?? 0,
       price_direction: priceDirection,
+      offer_json: offerJson,
+      offer_expires_at: offerExpiresAt,
     };
 
     try {
       if (existing) {
-        await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.cachedPrices, existing.docId, data);
+        await serverDatabases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.cachedPrices,
+          existing.docId,
+          data,
+        );
       } else {
-        await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.cachedPrices, ID.unique(), data);
+        await serverDatabases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.cachedPrices,
+          ID.unique(),
+          data,
+        );
       }
+      fetched++;
     } catch (err) {
-      console.error(`[refresh] Upsert error for ${origin}->${p.destination}:`, err);
+      console.error(`[refresh] Upsert error for ${origin}->${dest}:`, err);
     }
   }
 
-  return { origin, fetched: allResults.size, total: allIatas.length, sources: sourceCounts };
+  console.log(
+    `[refresh] Batch for ${origin}: ${fetched}/${batch.length} (Duffel: ${sourceCounts.duffel}, TP: ${sourceCounts.travelpayouts})`,
+  );
+
+  return { origin, fetched, total: batch.length, sources: sourceCounts };
+}
+
+// ─── Pick stalest destinations for an origin ─────────────────────────
+
+async function pickStalestDestinations(
+  origin: string,
+  allIatas: string[],
+  count: number,
+): Promise<{ batch: string[]; currentPriceMap: Map<string, { price: number; docId: string }> }> {
+  const currentPriceMap = new Map<string, { price: number; docId: string }>();
+
+  try {
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
+      Query.equal('origin', origin),
+      Query.limit(500),
+    ]);
+    for (const doc of result.documents) {
+      currentPriceMap.set(doc.destination_iata as string, {
+        price: doc.price as number,
+        docId: doc.$id,
+      });
+    }
+  } catch {
+    // No existing prices for this origin
+  }
+
+  // Build staleness map: iata -> fetched_at timestamp
+  const fetchedAtMap = new Map<string, string>();
+  try {
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
+      Query.equal('origin', origin),
+      Query.orderAsc('fetched_at'),
+      Query.limit(500),
+    ]);
+    for (const doc of result.documents) {
+      fetchedAtMap.set(doc.destination_iata as string, doc.fetched_at as string);
+    }
+  } catch {
+    // No data yet
+  }
+
+  // Sort: never-refreshed first, then oldest fetched_at
+  const sorted = [...allIatas].sort((a, b) => {
+    const tsA = fetchedAtMap.get(a);
+    const tsB = fetchedAtMap.get(b);
+    if (!tsA && !tsB) return 0;
+    if (!tsA) return -1;
+    if (!tsB) return 1;
+    return new Date(tsA).getTime() - new Date(tsB).getTime();
+  });
+
+  return { batch: sorted.slice(0, count), currentPriceMap };
 }
 
 // ─── Handler ─────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
+
   // Verify authorization: Vercel cron sends CRON_SECRET, manual calls need Authorization header
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
@@ -307,7 +362,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const allIatas = destResult.documents.map((d) => d.iata_code as string);
 
-    // Determine which origin(s) to refresh
+    // Determine which origin to refresh
     let origins: string[];
     if (originParam && originParam !== 'ALL') {
       origins = [originParam];
@@ -318,21 +373,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[refresh] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`);
 
-    const startTime = Date.now();
-    const TIME_BUDGET_MS = 45_000;
     const results = [];
     for (const org of origins) {
-      if (results.length > 0 && Date.now() - startTime > TIME_BUDGET_MS) {
-        console.log(`[refresh] Time budget exceeded (${Date.now() - startTime}ms), stopping after ${results.length} origin(s)`);
-        break;
-      }
-      const result = await refreshOrigin(org, allIatas);
+      // Pick the stalest BATCH_SIZE destinations for this origin
+      const { batch, currentPriceMap } = await pickStalestDestinations(org, allIatas, BATCH_SIZE);
+      console.log(`[refresh] Batch for ${org}: ${batch.join(', ')}`);
+
+      const result = await refreshBatch(org, batch, currentPriceMap);
       results.push(result);
     }
 
     return res.status(200).json({
       origins: results,
       totalOrigins: results.length,
+      batchSize: BATCH_SIZE,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
