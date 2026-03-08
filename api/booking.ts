@@ -365,9 +365,11 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
       .map((o: Record<string, unknown>) => transformOffer(o, v.data.cabinClass || 'economy'));
 
     return res.status(200).json(offers);
-  } catch (err) {
+  } catch (err: any) {
     logApiError('api/booking/search', err);
-    return res.status(500).json({ error: 'Failed to search flights' });
+    const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);
+    console.error('[booking/search] Duffel error detail:', JSON.stringify(detail, null, 2));
+    return res.status(500).json({ error: 'Failed to search flights', detail });
   }
 }
 
