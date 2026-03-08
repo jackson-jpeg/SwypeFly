@@ -369,7 +369,7 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
     logApiError('api/booking/search', err);
     const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);
     console.error('[booking/search] Duffel error detail:', JSON.stringify(detail, null, 2));
-    return res.status(500).json({ error: 'Failed to search flights', detail });
+    return res.status(500).json({ error: 'Failed to search flights' });
   }
 }
 

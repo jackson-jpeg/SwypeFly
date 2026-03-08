@@ -4,7 +4,7 @@
 
 import { Duffel } from '@duffel/api';
 
-const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY || '';
+const DUFFEL_API_KEY = (process.env.DUFFEL_API_KEY || '').trim();
 
 let _client: Duffel | null = null;
 
