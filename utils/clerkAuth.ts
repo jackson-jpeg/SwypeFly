@@ -1,6 +1,8 @@
 import { verifyToken } from '@clerk/backend';
 
-if (!process.env.CLERK_SECRET_KEY) {
+const CLERK_SECRET_KEY = (process.env.CLERK_SECRET_KEY || '').trim();
+
+if (!CLERK_SECRET_KEY) {
   console.error('[FATAL] CLERK_SECRET_KEY not configured — auth verification will fail');
 }
 
@@ -17,7 +19,7 @@ export async function verifyClerkToken(
 
   try {
     const payload = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY ?? '',
+      secretKey: CLERK_SECRET_KEY,
     });
     if (!payload.sub) return null;
     return { userId: payload.sub };

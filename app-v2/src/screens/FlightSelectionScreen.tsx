@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useDestination } from '@/hooks/useDestination';
@@ -67,6 +67,30 @@ export default function FlightSelectionScreen() {
   const selectedOffer = offers[selectedDateIdx] ?? offers[0]!;
   // No artificial multipliers — offers already reflect cabin class pricing from search
   const adjustedPrice = selectedOffer.totalAmount;
+
+  // ─── Offer expiration tracking ──────────────────────────────────
+  const [timeLeft, setTimeLeft] = useState('');
+  const [offerExpired, setOfferExpired] = useState(false);
+
+  const checkExpiry = useCallback(() => {
+    if (!selectedOffer.expiresAt) return;
+    const diff = new Date(selectedOffer.expiresAt).getTime() - Date.now();
+    if (diff <= 0) {
+      setOfferExpired(true);
+      setTimeLeft('Expired');
+      return;
+    }
+    setOfferExpired(false);
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    setTimeLeft(mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
+  }, [selectedOffer.expiresAt]);
+
+  useEffect(() => {
+    checkExpiry();
+    const id = setInterval(checkExpiry, 1000);
+    return () => clearInterval(id);
+  }, [checkExpiry]);
 
   const data = {
     destination: dest?.city ?? 'Destination',
@@ -202,18 +226,34 @@ export default function FlightSelectionScreen() {
             ${data.price}
           </span>
         </div>
-        <span
-          style={{
-            display: 'block',
-            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-            fontSize: 12,
-            lineHeight: '16px',
-            color: colors.mutedText,
-            marginTop: 4,
-          }}
-        >
-          Round trip &middot; {CABIN_LABELS[selectedCabin]} &middot; per person
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 12,
+              lineHeight: '16px',
+              color: colors.mutedText,
+            }}
+          >
+            Round trip &middot; {CABIN_LABELS[selectedCabin]} &middot; per person
+          </span>
+          {timeLeft && (
+            <span
+              style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 11,
+                fontWeight: 600,
+                lineHeight: '14px',
+                color: offerExpired ? '#C44' : colors.borderTint,
+                backgroundColor: offerExpired ? '#C4440F' : '#C9A99A20',
+                borderRadius: 6,
+                padding: '2px 8px',
+              }}
+            >
+              {offerExpired ? 'Price expired — re-search' : `Offer expires in ${timeLeft}`}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ─── Date Options ─────────────────────────────────────── */}
@@ -474,7 +514,17 @@ export default function FlightSelectionScreen() {
 
         {/* Lock This Deal */}
         <button
-          onClick={() => { setOffer(selectedOffer); setCabinClass(CABIN_CLASSES[selectedCabin] ?? 'economy'); navigate('/booking/passengers'); }}
+          onClick={() => {
+            if (offerExpired) {
+              // Force re-search by resetting date index to trigger new query
+              setSelectedDateIdx(0);
+              window.location.reload();
+              return;
+            }
+            setOffer(selectedOffer);
+            setCabinClass(CABIN_CLASSES[selectedCabin] ?? 'economy');
+            navigate('/booking/passengers');
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -494,7 +544,7 @@ export default function FlightSelectionScreen() {
               color: colors.paleHorizon,
             }}
           >
-            Lock This Deal
+            {offerExpired ? 'Re-search Flights' : 'Lock This Deal'}
           </span>
         </button>
       </div>

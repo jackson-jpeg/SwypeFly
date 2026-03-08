@@ -157,6 +157,11 @@ export default function DestinationDetailScreen() {
   };
 
   const handleBooking = () => {
+    // Guest users can't complete payment — redirect to login first
+    if (!session?.userId) {
+      navigate('/login', { state: { returnTo: `/destination/${stubDest.id}` } });
+      return;
+    }
     setBookingDestination(stubDest.id, stubDest.flightPrice);
     navigate('/booking/flights');
   };
