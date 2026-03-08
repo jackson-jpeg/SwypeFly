@@ -119,6 +119,9 @@ interface ScoredDest {
   trip_duration_days?: number;
   previous_price?: number;
   price_direction?: string;
+  offer_json?: string;
+  offer_expires_at?: string;
+  flight_number?: string;
   live_hotel_price?: number | null;
   hotel_price_source?: string;
   available_flight_days?: string[];
@@ -259,6 +262,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       trip_duration_days?: number;
       previous_price?: number;
       price_direction?: string;
+      offer_json?: string;
+      offer_expires_at?: string;
+      flight_number?: string;
     }
   >();
   for (const p of prices) {
@@ -273,6 +279,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       trip_duration_days: (p.trip_duration_days as number) ?? undefined,
       previous_price: (p.previous_price as number) ?? undefined,
       price_direction: (p.price_direction as string) || 'stable',
+      offer_json: (p.offer_json as string) || undefined,
+      offer_expires_at: (p.offer_expires_at as string) || undefined,
+      flight_number: (p.flight_number as string) || undefined,
     });
   }
 
@@ -356,6 +365,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       trip_duration_days: lp?.trip_duration_days,
       previous_price: lp?.previous_price,
       price_direction: lp?.price_direction,
+      offer_json: lp?.offer_json,
+      offer_expires_at: lp?.offer_expires_at,
+      flight_number: lp?.flight_number,
       live_hotel_price: hotelPriceMap.get(d.iata_code as string)?.price ?? null,
       hotel_price_source: hotelPriceMap.get(d.iata_code as string)?.source ?? undefined,
       hotels_data: hotelPriceMap.get(d.iata_code as string)?.hotels ?? undefined,
@@ -406,6 +418,8 @@ function toFrontend(d: ScoredDest) {
     airline: d.live_airline || undefined,
     priceDirection: (d.price_direction as 'up' | 'down' | 'stable') || undefined,
     previousPrice: d.previous_price ?? undefined,
+    offerJson: d.offer_json || undefined,
+    offerExpiresAt: d.offer_expires_at || undefined,
   };
 }
 

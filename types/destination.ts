@@ -51,6 +51,8 @@ export interface Destination {
   blurHash?: string;
   priceDirection?: 'up' | 'down' | 'stable';
   previousPrice?: number;
+  offerJson?: string;
+  offerExpiresAt?: string;
   otherPrices?: { origin: string; price: number; source: string }[];
   hotels?: HotelListing[];
   photographerAttribution?: { name: string; url: string };
