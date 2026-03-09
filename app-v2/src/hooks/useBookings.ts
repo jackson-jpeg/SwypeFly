@@ -31,7 +31,7 @@ export function useBookings() {
       if (USE_STUBS) {
         return [] as BookingRecord[];
       }
-      const res = await apiFetch<{ bookings: BookingRecord[] }>('/api/bookings');
+      const res = await apiFetch<{ bookings: BookingRecord[] }>('/api/booking?action=history');
       return res.bookings;
     },
     staleTime: 30_000,

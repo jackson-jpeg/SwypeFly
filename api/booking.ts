@@ -639,6 +639,74 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Booking history ─────────────────────────────────────────────────────────
+
+async function handleHistory(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const jwt = getJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const user = await verifyUser(jwt);
+    const databases = getServerDatabases();
+
+    const { documents: bookingDocs } = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.bookings,
+      [
+        Query.equal('user_id', user.$id),
+        Query.orderDesc('created_at'),
+        Query.limit(50),
+      ],
+    );
+
+    const bookings = await Promise.all(
+      bookingDocs.map(async (doc) => {
+        let passengers: { givenName: string; familyName: string; email: string }[] = [];
+        try {
+          const { documents: paxDocs } = await databases.listDocuments(
+            DATABASE_ID,
+            COLLECTIONS.bookingPassengers,
+            [Query.equal('booking_id', doc.$id)],
+          );
+          passengers = paxDocs.map((p) => ({
+            givenName: (p.given_name as string) ?? '',
+            familyName: (p.family_name as string) ?? '',
+            email: (p.email as string) ?? '',
+          }));
+        } catch {
+          // Passengers may not exist yet
+        }
+
+        return {
+          id: doc.$id,
+          duffelOrderId: (doc.duffel_order_id as string) ?? '',
+          status: (doc.status as string) ?? '',
+          totalAmount: (doc.total_amount as number) ?? 0,
+          currency: (doc.currency as string) ?? 'USD',
+          passengerCount: (doc.passenger_count as number) ?? 0,
+          stripePaymentIntentId: (doc.stripe_payment_intent_id as string) ?? '',
+          createdAt: (doc.created_at as string) ?? '',
+          destinationCity: (doc.destination_city as string) ?? '',
+          destinationIata: (doc.destination_iata as string) ?? '',
+          originIata: (doc.origin_iata as string) ?? '',
+          departureDate: (doc.departure_date as string) ?? '',
+          returnDate: (doc.return_date as string) ?? '',
+          airline: (doc.airline as string) ?? '',
+          bookingReference: (doc.booking_reference as string) ?? '',
+          passengers,
+        };
+      }),
+    );
+
+    return res.status(200).json({ bookings });
+  } catch (err) {
+    logApiError('api/booking/history', err);
+    return res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -663,6 +731,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleCreateOrder(req, res);
     case 'order':
       return handleGetOrder(req, res);
+    case 'history':
+      return handleHistory(req, res);
     case 'webhook':
       return handleWebhook(req, res);
     default:
