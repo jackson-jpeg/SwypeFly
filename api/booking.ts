@@ -45,11 +45,14 @@ function getServerDatabases() {
 // ─── Transform Duffel response to frontend-friendly camelCase format ─────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseDuration(iso: string): string {
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-  if (!m) return iso;
-  const h = m[1] ?? '0';
-  const min = m[2] ?? '0';
-  return `${h}h ${min}m`;
+  // Handle ISO 8601 durations like PT4H35M, P1DT8H20M, P2DT3H
+  const dm = iso.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/);
+  if (!dm) return iso;
+  const days = parseInt(dm[1] ?? '0', 10);
+  const hours = parseInt(dm[2] ?? '0', 10);
+  const mins = parseInt(dm[3] ?? '0', 10);
+  const totalHours = days * 24 + hours;
+  return `${totalHours}h ${mins}m`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,17 +61,18 @@ function transformOffer(raw: any, cabinClass = 'economy') {
   const tax = Math.round(total * 0.19);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const slices = (raw.slices || []).map((s: any) => {
-    const seg = s.segments?.[0];
+    const firstSeg = s.segments?.[0];
+    const lastSeg = s.segments?.length > 1 ? s.segments[s.segments.length - 1] : firstSeg;
     return {
       origin: s.origin?.iata_code ?? '',
       destination: s.destination?.iata_code ?? '',
-      departureTime: seg?.departing_at ?? '',
-      arrivalTime: seg?.arriving_at ?? '',
+      departureTime: firstSeg?.departing_at ?? '',
+      arrivalTime: lastSeg?.arriving_at ?? '',
       duration: parseDuration(s.duration || ''),
       stops: (s.segments?.length || 1) - 1,
-      airline: seg?.operating_carrier?.name ?? raw.owner?.name ?? '',
-      flightNumber: `${seg?.operating_carrier?.iata_code ?? ''} ${seg?.operating_carrier_flight_number ?? ''}`.trim(),
-      aircraft: seg?.aircraft?.name ?? '',
+      airline: firstSeg?.operating_carrier?.name ?? raw.owner?.name ?? '',
+      flightNumber: `${firstSeg?.operating_carrier?.iata_code ?? ''} ${firstSeg?.operating_carrier_flight_number ?? ''}`.trim(),
+      aircraft: firstSeg?.aircraft?.name ?? '',
     };
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

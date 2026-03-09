@@ -407,18 +407,29 @@ export default function FlightSelectionScreen() {
   const searchParams = useMemo(() => {
     if (!dest) return null;
 
-    const depDateStr = dest?.departureDate ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-    const depDate = new Date(depDateStr + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const minDep = new Date(today.getTime() + 2 * 86400000); // At least 2 days from now
+
+    let depDate: Date;
+    if (dest?.departureDate) {
+      depDate = new Date(dest.departureDate + 'T00:00:00');
+      // If cached date is in the past or too soon, push to 14 days out
+      if (depDate < minDep) {
+        depDate = new Date(today.getTime() + 14 * 86400000);
+      }
+    } else {
+      depDate = new Date(today.getTime() + 14 * 86400000);
+    }
+    const depDateStr = depDate.toISOString().slice(0, 10);
 
     // Always ensure round-trip: compute return date (min 2 days, max 10 days from departure)
     let retDate: Date;
     if (dest?.returnDate) {
       retDate = new Date(dest.returnDate + 'T00:00:00');
       const tripDays = Math.round((retDate.getTime() - depDate.getTime()) / 86400000);
-      if (tripDays < 2) {
-        retDate = new Date(depDate.getTime() + 2 * 86400000);
-      } else if (tripDays > 10) {
-        retDate = new Date(depDate.getTime() + 7 * 86400000);
+      if (tripDays < 2 || tripDays > 10) {
+        retDate = new Date(depDate.getTime() + 5 * 86400000);
       }
     } else {
       // Default: 5-day trip
