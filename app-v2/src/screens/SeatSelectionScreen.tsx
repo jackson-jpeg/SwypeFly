@@ -85,6 +85,12 @@ export default function SeatSelectionScreen() {
     return seatLookup.get(`${row}-${col}`)?.serviceId ?? null;
   }
 
+  // Detect if seat map exists but no seats are selectable (airline doesn't sell through Duffel)
+  const allSeatsUnavailable = useMemo(() => {
+    if (!seatMap || seatMap.rows.length === 0) return false;
+    return seatMap.rows.every((r) => r.seats.every((s) => !s.available));
+  }, [seatMap]);
+
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
 
   const handleSeatClick = (row: number, col: string) => {
@@ -131,14 +137,28 @@ export default function SeatSelectionScreen() {
             Loading seat map...
           </div>
         )}
-        {!offerLoading && rows.length === 0 && (
-          <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText, padding: 40, textAlign: 'center' }}>
-            Seat map not available for this flight. You can skip to continue.
+        {!offerLoading && (rows.length === 0 || allSeatsUnavailable) && (
+          <div style={{
+            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+            fontSize: 14,
+            color: colors.mutedText,
+            padding: 40,
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            alignItems: 'center',
+          }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-2 2 4 1 1 4 2-2v-3l3-2 3.8 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.7.5-1.1z" />
+            </svg>
+            <span style={{ fontWeight: 600, color: colors.deepDusk }}>Seat selection not available</span>
+            <span>This airline assigns seats at check-in. You can skip this step and continue.</span>
           </div>
         )}
 
-        {/* legend + fuselage — only when seat map available */}
-        {rows.length > 0 && <>
+        {/* legend + fuselage — only when seat map available and seats are selectable */}
+        {rows.length > 0 && !allSeatsUnavailable && <>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', alignSelf: 'flex-start' }}>
           {[
             { label: 'Available', color: '#F0EBE3', border: '1px solid #D4CCC0' },
@@ -292,7 +312,7 @@ export default function SeatSelectionScreen() {
         </>}
 
         {/* selection confirmation */}
-        {selectedSeat && (
+        {selectedSeat && !allSeatsUnavailable && (
           <div
             style={{
               width: '100%',
