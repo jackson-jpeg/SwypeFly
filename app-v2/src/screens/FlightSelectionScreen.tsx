@@ -6,9 +6,238 @@ import { useBookingSearch } from '@/hooks/useBooking';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import BookingHeader from '@/components/BookingHeader';
+import type { BookingOffer, FlightSlice } from '@/api/types';
 
 const CABIN_CLASSES = ['economy', 'business', 'first'] as const;
 const CABIN_LABELS = ['Economy', 'Business', 'First'] as const;
+
+/* ── Helpers for rich flight cards ─────────────────────────────── */
+
+function formatTime(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+function formatDuration(dur: string): string {
+  if (!dur) return '';
+  // Handle ISO 8601 duration (PT4H35M) or already formatted strings
+  const iso = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+  if (iso) {
+    const h = iso[1] ? `${iso[1]}h` : '';
+    const m = iso[2] ? ` ${iso[2]}m` : '';
+    return `${h}${m}`.trim();
+  }
+  return dur;
+}
+
+function computeDurationMinutes(slice: FlightSlice): number {
+  if (slice.duration) {
+    const iso = slice.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+    if (iso) return (parseInt(iso[1] || '0') * 60) + parseInt(iso[2] || '0');
+  }
+  // Fallback: compute from departure/arrival times
+  if (slice.departureTime && slice.arrivalTime) {
+    return (new Date(slice.arrivalTime).getTime() - new Date(slice.departureTime).getTime()) / 60000;
+  }
+  return Infinity;
+}
+
+function totalDurationMinutes(offer: BookingOffer): number {
+  return offer.slices.reduce((sum, s) => sum + computeDurationMinutes(s), 0);
+}
+
+function stopsLabel(stops: number): string {
+  if (stops === 0) return 'Nonstop';
+  return `${stops} stop${stops > 1 ? 's' : ''}`;
+}
+
+type OfferBadge = 'cheapest' | 'fastest' | null;
+
+function computeBadges(offers: BookingOffer[]): OfferBadge[] {
+  if (offers.length === 0) return [];
+  let cheapestIdx = 0;
+  let fastestIdx = 0;
+  let cheapestPrice = Infinity;
+  let fastestDur = Infinity;
+
+  offers.forEach((o, i) => {
+    if (o.totalAmount < cheapestPrice) { cheapestPrice = o.totalAmount; cheapestIdx = i; }
+    const dur = totalDurationMinutes(o);
+    if (dur < fastestDur) { fastestDur = dur; fastestIdx = i; }
+  });
+
+  const badges: OfferBadge[] = offers.map(() => null);
+  // If cheapest and fastest are the same offer, label it cheapest (more useful)
+  if (cheapestIdx === fastestIdx) {
+    badges[cheapestIdx] = 'cheapest';
+  } else {
+    badges[cheapestIdx] = 'cheapest';
+    badges[fastestIdx] = 'fastest';
+  }
+  return badges;
+}
+
+/* ── SliceSummary: one row for outbound or return ──────────────── */
+
+function SliceSummary({ slice, label }: { slice: FlightSlice; label: string }) {
+  const dep = formatTime(slice.departureTime);
+  const arr = formatTime(slice.arrivalTime);
+  const dur = formatDuration(slice.duration);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span
+        style={{
+          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+          fontSize: 9,
+          fontWeight: 600,
+          lineHeight: '12px',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: colors.mutedText,
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+        <span
+          style={{
+            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+            fontSize: 13,
+            fontWeight: 600,
+            lineHeight: '18px',
+            color: colors.deepDusk,
+          }}
+        >
+          {dep} &rarr; {arr}
+        </span>
+        {(dur || slice.stops !== undefined) && (
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 11,
+              lineHeight: '14px',
+              color: colors.mutedText,
+            }}
+          >
+            {dur ? `${dur}` : ''}{dur && slice.stops !== undefined ? ' \u00b7 ' : ''}{slice.stops !== undefined ? stopsLabel(slice.stops) : ''}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── FlightOfferCard ───────────────────────────────────────────── */
+
+function FlightOfferCard({
+  offer,
+  badge,
+  selected,
+  onSelect,
+}: {
+  offer: BookingOffer;
+  badge: OfferBadge;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const outbound = offer.slices[0];
+  const returnSlice = offer.slices[1];
+  const airlineName = outbound?.airline || 'Airline';
+
+  return (
+    <div
+      onClick={onSelect}
+      style={{
+        cursor: 'pointer',
+        display: 'flex',
+        borderRadius: 12,
+        padding: '14px 16px',
+        gap: 12,
+        ...(selected
+          ? { backgroundColor: '#7BAF8E15', border: '1.5px solid #7BAF8E' }
+          : { border: '1px solid #D4CCC0' }),
+        transition: 'border-color 0.15s, background-color 0.15s',
+      }}
+    >
+      {/* Left: flight details */}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 8 }}>
+        {/* Airline + badge row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 12,
+              fontWeight: 700,
+              lineHeight: '16px',
+              color: colors.deepDusk,
+            }}
+          >
+            {airlineName}
+          </span>
+          {badge && (
+            <span
+              style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 9,
+                fontWeight: 700,
+                lineHeight: '12px',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: badge === 'cheapest' ? '#5A8F6B' : colors.terracotta,
+                backgroundColor: badge === 'cheapest' ? '#7BAF8E1A' : '#D4734A1A',
+                borderRadius: 6,
+                padding: '2px 8px',
+              }}
+            >
+              {badge === 'cheapest' ? 'Cheapest' : 'Fastest'}
+            </span>
+          )}
+        </div>
+
+        {/* Outbound slice */}
+        {outbound && <SliceSummary slice={outbound} label="Outbound" />}
+
+        {/* Return slice */}
+        {returnSlice && <SliceSummary slice={returnSlice} label="Return" />}
+      </div>
+
+      {/* Right: price */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: `"${fonts.display}", system-ui, sans-serif`,
+            fontSize: 22,
+            fontWeight: 800,
+            lineHeight: '26px',
+            color: selected ? '#5A8F6B' : colors.deepDusk,
+          }}
+        >
+          ${offer.totalAmount}
+        </span>
+        <span
+          style={{
+            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+            fontSize: 10,
+            lineHeight: '14px',
+            color: colors.mutedText,
+          }}
+        >
+          per person
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /* ── Cached offer card (Best Deal from feed) ───────────────────── */
 interface CachedOfferRaw {
@@ -268,28 +497,13 @@ export default function FlightSelectionScreen() {
     ? parseFloat(cachedOffer.total_amount)
     : selectedOffer!.totalAmount;
 
+  const badges = useMemo(() => computeBadges(offers), [offers]);
+
   const data = {
     destination: dest?.city ?? 'Destination',
     destinationImage: dest?.imageUrl ?? '',
     route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'}`,
     price: adjustedPrice,
-    dates: offers.map((o, i) => {
-      const depSlice = o.slices[0];
-      const retSlice = o.slices[1];
-      const dep = depSlice ? new Date(depSlice.departureTime) : new Date();
-      const ret = retSlice ? new Date(retSlice.departureTime) : dep;
-      const nights = Math.max(0, Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24)));
-      const depLabel = dep.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const retLabel = ret.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const range = retSlice ? `${depLabel} \u2013 ${retLabel}` : depLabel;
-      return {
-        range,
-        nights,
-        note: i === 0 ? 'Cheapest option' : o.totalAmount > 500 ? 'Peak season' : undefined,
-        price: o.totalAmount,
-        selected: i === selectedDateIdx,
-      };
-    }),
     selectedCabin,
     passengers,
   };
@@ -460,80 +674,43 @@ export default function FlightSelectionScreen() {
         </div>
       )}
 
-      {/* ─── Date Options ─────────────────────────────────────── */}
+      {/* ─── Flight Offers ───────────────────────────────────── */}
       <div style={{ padding: '12px 20px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <span
-          style={{
-            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-            fontSize: 10,
-            fontWeight: 600,
-            lineHeight: '12px',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: colors.mutedText,
-          }}
-        >
-          Best dates for this price
-        </span>
-
-        {data.dates.map((d, i) => (
-          <div
-            key={i}
-            onClick={() => { setSelectedDateIdx(i); setUseCachedOffer(false); }}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span
             style={{
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: 12,
-              padding: '14px 16px',
-              gap: 12,
-              ...(d.selected && !useCachedOffer
-                ? {
-                    backgroundColor: '#7BAF8E15',
-                    border: '1.5px solid #7BAF8E',
-                  }
-                : {
-                    border: '1px solid #D4CCC0',
-                  }),
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 10,
+              fontWeight: 600,
+              lineHeight: '12px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: colors.mutedText,
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 2 }}>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  lineHeight: '18px',
-                  color: colors.deepDusk,
-                }}
-              >
-                {d.range}
-              </span>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 11,
-                  lineHeight: '14px',
-                  color: colors.mutedText,
-                }}
-              >
-                {d.nights} nights{d.note ? ` \u00b7 ${d.note}` : ''}
-              </span>
-            </div>
-            <span
-              style={{
-                fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-                fontSize: 20,
-                fontWeight: 700,
-                lineHeight: '24px',
-                color: d.selected && !useCachedOffer ? colors.confirmGreen : colors.deepDusk,
-              }}
-            >
-              ${d.price}
-            </span>
-          </div>
-        ))}
+            Available flights
+          </span>
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 11,
+              lineHeight: '14px',
+              color: colors.borderTint,
+            }}
+          >
+            {offers.length} option{offers.length !== 1 ? 's' : ''}
+          </span>
+        </div>
 
+        {offers.map((offer, i) => (
+          <FlightOfferCard
+            key={offer.id || i}
+            offer={offer}
+            badge={badges[i] ?? null}
+            selected={i === selectedDateIdx && !useCachedOffer}
+            onSelect={() => { setSelectedDateIdx(i); setUseCachedOffer(false); }}
+          />
+        ))}
       </div>
 
       {/* ─── Cabin Class ──────────────────────────────────────── */}
