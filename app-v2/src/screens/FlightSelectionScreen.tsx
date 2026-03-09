@@ -23,20 +23,23 @@ function formatTime(iso: string): string {
 
 function formatDuration(dur: string): string {
   if (!dur) return '';
-  // Handle ISO 8601 duration (PT4H35M) or already formatted strings
-  const iso = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-  if (iso) {
-    const h = iso[1] ? `${iso[1]}h` : '';
-    const m = iso[2] ? ` ${iso[2]}m` : '';
-    return `${h}${m}`.trim();
+  // Handle ISO 8601 duration (P1DT8H20M or PT4H35M) or already formatted strings
+  const iso = dur.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/);
+  if (iso && (iso[1] || iso[2] || iso[3])) {
+    const totalH = (parseInt(iso[1] || '0') * 24) + parseInt(iso[2] || '0');
+    const m = iso[3] ? ` ${iso[3]}m` : '';
+    return `${totalH}h${m}`.trim();
   }
   return dur;
 }
 
 function computeDurationMinutes(slice: FlightSlice): number {
   if (slice.duration) {
-    const iso = slice.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-    if (iso) return (parseInt(iso[1] || '0') * 60) + parseInt(iso[2] || '0');
+    const iso = slice.duration.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/);
+    if (iso && (iso[1] || iso[2] || iso[3])) return ((parseInt(iso[1] || '0') * 24) + parseInt(iso[2] || '0')) * 60 + parseInt(iso[3] || '0');
+    // Handle pre-parsed "32h 20m" format
+    const parsed = slice.duration.match(/(\d+)h\s*(\d+)m/);
+    if (parsed) return parseInt(parsed[1]) * 60 + parseInt(parsed[2]);
   }
   // Fallback: compute from departure/arrival times
   if (slice.departureTime && slice.arrivalTime) {
@@ -226,7 +229,7 @@ function FlightOfferCard({
             color: selected ? '#5A8F6B' : colors.deepDusk,
           }}
         >
-          ${offer.totalAmount}
+          ${offer.totalAmount.toFixed(2)}
         </span>
         <span
           style={{
@@ -676,7 +679,7 @@ export default function FlightSelectionScreen() {
               color: colors.deepDusk,
             }}
           >
-            ${data.price}
+            ${data.price.toFixed(2)}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -990,7 +993,7 @@ export default function FlightSelectionScreen() {
                 color: colors.deepDusk,
               }}
             >
-              ${data.price * passengers}
+              ${(data.price * passengers).toFixed(2)}
             </span>
             {passengers === 1 && <span
               style={{
