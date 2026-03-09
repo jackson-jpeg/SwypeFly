@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
@@ -5,6 +6,95 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useDestination } from '@/hooks/useDestination';
 import QRCode from '@/components/QRCode';
+
+/* ───── confetti CSS keyframes (injected once) ───── */
+const CONFETTI_STYLE_ID = 'sogojet-confetti-keyframes';
+
+function injectConfettiStyles() {
+  if (document.getElementById(CONFETTI_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = CONFETTI_STYLE_ID;
+  style.textContent = `
+    @keyframes confetti-fall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      80% { opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    @keyframes confetti-sway {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(15px); }
+      75% { transform: translateX(-15px); }
+    }
+    @keyframes card-slide-up {
+      0% { transform: translateY(40px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes check-pop {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes headline-fade {
+      0% { transform: translateY(12px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+const CONFETTI_COLORS = [
+  colors.confirmGreen,
+  colors.sageDrift,
+  colors.sunriseButter,
+  colors.terracotta,
+  colors.paleHorizon,
+  colors.warmDusk,
+  '#E8A0C9',
+  '#A0C4E8',
+];
+
+function ConfettiOverlay() {
+  const particles = useRef(
+    Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 2.5,
+      duration: 2.5 + Math.random() * 2,
+      size: 6 + Math.random() * 6,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      shape: Math.random() > 0.5 ? 'circle' : 'rect',
+      swayDuration: 1.5 + Math.random() * 2,
+    })),
+  ).current;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        zIndex: 10,
+      }}
+    >
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            position: 'absolute',
+            left: `${p.left}%`,
+            top: -12,
+            width: p.size,
+            height: p.shape === 'rect' ? p.size * 1.4 : p.size,
+            borderRadius: p.shape === 'circle' ? '50%' : 2,
+            backgroundColor: p.color,
+            animation: `confetti-fall ${p.duration}s ${p.delay}s ease-in forwards, confetti-sway ${p.swayDuration}s ${p.delay}s ease-in-out infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 /* ───── screen ───── */
 export default function ConfirmationScreen() {
@@ -22,16 +112,46 @@ export default function ConfirmationScreen() {
     ?? (booking.passengers[0] ? `${booking.passengers[0].given_name} ${booking.passengers[0].family_name}` : user?.name ?? 'Guest');
   const bookingCode = order?.bookingReference ?? `SGJET-${destIata}-PEND`;
 
+  const [shareLabel, setShareLabel] = useState('Share Your Trip');
+
+  useEffect(() => {
+    injectConfettiStyles();
+  }, []);
+
+  async function handleShare() {
+    const text = `I just booked a trip to ${destCity}! \u2708\uFE0F via SoGoJet`;
+    const url = 'https://sogojet.com';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Trip to ${destCity}`, text, url });
+      } catch {
+        /* user cancelled — ignore */
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        setShareLabel('Copied!');
+        setTimeout(() => setShareLabel('Share Your Trip'), 2000);
+      } catch {
+        /* clipboard denied — ignore */
+      }
+    }
+  }
+
   return (
     <div
       className="screen-fixed"
       style={{
-        background: colors.duskSand,
+        background: `linear-gradient(180deg, ${colors.confirmGreen}18 0%, ${colors.duskSand} 35%)`,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
       }}
     >
+      {/* confetti */}
+      <ConfettiOverlay />
+
       {/* background photo at 8% opacity */}
       <div
         style={{
@@ -55,6 +175,7 @@ export default function ConfirmationScreen() {
           paddingTop: 56,
           paddingBottom: 8,
           gap: 8,
+          zIndex: 1,
         }}
       >
         <span
@@ -90,6 +211,7 @@ export default function ConfirmationScreen() {
           paddingInline: 24,
           paddingTop: 32,
           paddingBottom: 32,
+          zIndex: 1,
         }}
       >
         {/* green checkmark circle */}
@@ -102,6 +224,7 @@ export default function ConfirmationScreen() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            animation: 'check-pop 0.5s ease-out forwards',
           }}
         >
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -110,7 +233,15 @@ export default function ConfirmationScreen() {
         </div>
 
         {/* headline */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            animation: 'headline-fade 0.6s 0.2s ease-out both',
+          }}
+        >
           <h1
             style={{
               fontFamily: `"${fonts.display}", system-ui, sans-serif`,
@@ -153,7 +284,7 @@ export default function ConfirmationScreen() {
           )}
         </div>
 
-        {/* boarding pass card */}
+        {/* boarding pass card — animated entrance */}
         <div
           style={{
             width: '100%',
@@ -162,6 +293,7 @@ export default function ConfirmationScreen() {
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
+            animation: 'card-slide-up 0.7s 0.35s ease-out both',
           }}
         >
           {/* top section */}
@@ -350,18 +482,67 @@ export default function ConfirmationScreen() {
         </div>
       </div>
 
-      {/* CTA */}
-      <div style={{ position: 'relative', paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
+      {/* CTAs */}
+      <div
+        style={{
+          position: 'relative',
+          paddingInline: 20,
+          paddingBottom: 32,
+          paddingTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          zIndex: 1,
+        }}
+      >
+        {/* Share Your Trip */}
         <button
-          onClick={() => { booking.reset(); navigate('/'); }}
+          onClick={handleShare}
+          style={{
+            width: '100%',
+            height: 52,
+            borderRadius: 14,
+            backgroundColor: colors.confirmGreen,
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#FFFFFF',
+            }}
+          >
+            {shareLabel}
+          </span>
+        </button>
+
+        {/* View Your Trips */}
+        <button
+          onClick={() => { booking.reset(); navigate('/trips'); }}
           style={{
             width: '100%',
             height: 52,
             borderRadius: 14,
             backgroundColor: colors.deepDusk,
+            border: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            cursor: 'pointer',
           }}
         >
           <span
@@ -370,6 +551,33 @@ export default function ConfirmationScreen() {
               fontSize: 16,
               fontWeight: 600,
               color: colors.paleHorizon,
+            }}
+          >
+            View Your Trips
+          </span>
+        </button>
+
+        {/* Back to Explore — tertiary link */}
+        <button
+          onClick={() => { booking.reset(); navigate('/'); }}
+          style={{
+            width: '100%',
+            height: 40,
+            borderRadius: 14,
+            backgroundColor: 'transparent',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 14,
+              fontWeight: 500,
+              color: colors.borderTint,
             }}
           >
             Back to Explore
