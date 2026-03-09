@@ -136,3 +136,9 @@ img {
     max-width: 640px;
   }
 }
+
+/* ── Shimmer animation for skeleton loaders ──────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
