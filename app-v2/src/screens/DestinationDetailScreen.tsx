@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { API_BASE } from '@/api/client';
@@ -9,6 +9,7 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import PriceAlertButton from '@/components/PriceAlertButton';
+import PhotoGallery from '@/components/PhotoGallery';
 import { useWeather } from '@/hooks/useWeather';
 import type { TripPlan, Destination, HotelListing } from '@/api/types';
 
@@ -133,6 +134,14 @@ export default function DestinationDetailScreen() {
   const [tripPlanError, setTripPlanError] = useState(false);
   const { data: weather } = useWeather(stubDest?.latitude, stubDest?.longitude);
 
+  /* ── Parallax scroll tracking ────────────────────────────────── */
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) setScrollY(el.scrollTop);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="screen" style={{ background: colors.duskSand, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -238,6 +247,8 @@ export default function DestinationDetailScreen() {
 
   return (
     <div
+      ref={scrollRef}
+      onScroll={handleScroll}
       className="screen"
       style={{
         background: colors.duskSand,
@@ -248,19 +259,43 @@ export default function DestinationDetailScreen() {
       }}
     >
       {/* ─── Hero ─────────────────────────────────────────────── */}
-      <div style={{ position: 'relative', width: '100%', height: 420, flexShrink: 0 }}>
-        {/* Photo */}
-        <div
-          style={{
-            position: 'absolute',
+      <div style={{ position: 'relative', width: '100%', height: 420, flexShrink: 0, overflow: 'hidden' }}>
+        {/* Parallax photo / gallery */}
+        {(() => {
+          const heroImages =
+            stubDest.imageUrls && stubDest.imageUrls.length > 0
+              ? stubDest.imageUrls
+              : [dest.heroImage];
+          const parallaxStyle: React.CSSProperties = {
+            position: 'absolute' as const,
             inset: 0,
-            backgroundImage: `url(${dest.heroImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundColor: colors.deepDusk,
-          }}
-        />
-        {/* Bottom gradient */}
+            top: -40, /* extra room for parallax travel */
+            bottom: -40,
+            transform: `translateY(${scrollY * 0.3}px) scale(1.1)`,
+            transformOrigin: 'center center',
+            willChange: 'transform',
+          };
+
+          return heroImages.length > 1 ? (
+            <div style={parallaxStyle}>
+              <PhotoGallery
+                images={heroImages}
+                height={420 + 80} /* account for extra parallax room */
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                ...parallaxStyle,
+                backgroundImage: `url(${heroImages[0]})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundColor: colors.deepDusk,
+              }}
+            />
+          );
+        })()}
+        {/* Bottom gradient overlay — transparent to page background */}
         <div
           style={{
             position: 'absolute',
@@ -268,7 +303,8 @@ export default function DestinationDetailScreen() {
             left: 0,
             right: 0,
             height: 250,
-            background: `linear-gradient(to top, ${colors.duskSand} 0%, transparent 100%)`,
+            background: `linear-gradient(to top, ${colors.duskSand} 0%, ${colors.duskSand}99 30%, transparent 100%)`,
+            pointerEvents: 'none',
           }}
         />
 
