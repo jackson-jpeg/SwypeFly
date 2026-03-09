@@ -67,7 +67,7 @@ export const useBookingStore = create<BookingState>()(
       ...INITIAL,
 
       setDestination: (id, feedPrice) => set({ destinationId: id, feedPrice: feedPrice ?? null }),
-      setOffer: (offer) => set({ selectedOffer: offer }),
+      setOffer: (offer) => set({ selectedOffer: offer, passengers: [] }),
       setCabinClass: (cls) => set({ cabinClass: cls }),
       addPassenger: (p) => set((s) => ({ passengers: [...s.passengers, p] })),
       updatePassenger: (index, p) =>

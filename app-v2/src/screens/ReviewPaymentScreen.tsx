@@ -282,9 +282,17 @@ export default function ReviewPaymentScreen() {
   const handlePaymentSuccess = async () => {
     const offerId = booking.selectedOffer?.id ?? 'unknown';
     const paymentIntentId = createPaymentIntent.data?.paymentIntentId ?? '';
+    // Only send passengers whose IDs match the offer (prevents stale accumulation)
+    const offerPaxIds = new Set(
+      (booking.selectedOffer?.passengers ?? []).map((p) => p.id),
+    );
+    const matchedPassengers = offerPaxIds.size > 0
+      ? booking.passengers.filter((p) => offerPaxIds.has(p.id))
+      : booking.passengers;
+
     const orderPayload = {
       offerId,
-      passengers: booking.passengers.map((p) => ({
+      passengers: matchedPassengers.map((p) => ({
         id: p.id,
         given_name: p.given_name,
         family_name: p.family_name,
