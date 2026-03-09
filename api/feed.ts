@@ -437,6 +437,10 @@ function toFrontend(d: ScoredDest) {
     airline: d.live_airline || undefined,
     priceDirection: (d.price_direction as 'up' | 'down' | 'stable') || undefined,
     previousPrice: d.previous_price ?? undefined,
+    priceDropPercent:
+      d.previous_price && d.live_price != null && d.previous_price > 0
+        ? Math.round(((d.previous_price - d.live_price) / d.previous_price) * 100)
+        : undefined,
     offerJson: d.offer_json || undefined,
     offerExpiresAt: d.offer_expires_at || undefined,
   };

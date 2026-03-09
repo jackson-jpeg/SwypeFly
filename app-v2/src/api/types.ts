@@ -49,6 +49,7 @@ export interface Destination {
   blurHash?: string;
   priceDirection?: 'up' | 'down' | 'stable';
   previousPrice?: number;
+  priceDropPercent?: number;
   offerJson?: string;
   offerExpiresAt?: string;
   hotels?: HotelListing[];

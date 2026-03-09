@@ -209,6 +209,41 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           }}>
             ${destination.flightPrice}
           </span>
+          {destination.priceDirection === 'down' && destination.priceDropPercent != null && destination.priceDropPercent > 0 && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 2,
+              paddingBlock: 2,
+              paddingInline: 4,
+              borderRadius: 6,
+              backgroundColor: `${colors.confirmGreen}25`,
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 10,
+              fontWeight: 700,
+              lineHeight: '14px',
+              color: colors.confirmGreen,
+            }}>
+              {'\u2193'}{destination.priceDropPercent}%
+            </span>
+          )}
+          {destination.priceDirection === 'up' && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              paddingBlock: 2,
+              paddingInline: 4,
+              borderRadius: 6,
+              backgroundColor: '#D4736C25',
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 10,
+              fontWeight: 700,
+              lineHeight: '14px',
+              color: '#D4736C',
+            }}>
+              {'\u2191'}
+            </span>
+          )}
           {destination.departureDate && destination.returnDate && (
             <span style={{
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
