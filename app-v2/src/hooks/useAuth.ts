@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useUser, useAuth as useClerkAuth, useSignIn, useSignUp } from '@clerk/clerk-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSavedStore } from '@/stores/savedStore';
-import { setAuthToken } from '@/api/client';
+import { setAuthToken, setTokenGetter } from '@/api/client';
 
 interface AppwriteUser {
   id: string;
@@ -69,9 +69,12 @@ export function useAuth(): Auth {
         setAuthToken(token);
         setTokenReady(true);
       });
+      // Register a getter so apiFetch can always get a fresh JWT
+      setTokenGetter(() => getToken());
       setGuest(false);
     } else {
       setAuthToken(null);
+      setTokenGetter(null);
       setTokenReady(true);
     }
   }, [isLoaded, isSignedIn, getToken, setGuest]);

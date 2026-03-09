@@ -13,9 +13,15 @@ export const queryClient = new QueryClient({
 });
 
 let authToken: string | null = null;
+let tokenGetter: (() => Promise<string | null>) | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
+}
+
+/** Register a function that fetches a fresh Clerk JWT on demand */
+export function setTokenGetter(getter: (() => Promise<string | null>) | null) {
+  tokenGetter = getter;
 }
 
 export function hasAuthToken(): boolean {
@@ -26,6 +32,12 @@ export async function apiFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  // Always fetch a fresh token if we have a getter (Clerk JWTs expire in ~60s)
+  if (tokenGetter) {
+    const fresh = await tokenGetter();
+    if (fresh) authToken = fresh;
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options?.headers as Record<string, string>),
