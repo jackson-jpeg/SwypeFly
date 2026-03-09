@@ -11,6 +11,7 @@ interface BookingState {
   passengers: Passenger[];
   selectedSeat: string | null;
   seatPrice: number;
+  seatServiceId: string | null;
   selectedBaggage: string | null;
   hasInsurance: boolean;
   selectedMeal: string | null;
@@ -28,7 +29,7 @@ interface BookingState {
   applyPromo: (code: string) => boolean;
   addPassenger: (p: Passenger) => void;
   updatePassenger: (index: number, p: Partial<Passenger>) => void;
-  setSeat: (designator: string | null, price?: number) => void;
+  setSeat: (designator: string | null, price?: number, serviceId?: string | null) => void;
   setBaggage: (id: string | null) => void;
   setInsurance: (has: boolean) => void;
   setMeal: (id: string | null) => void;
@@ -42,7 +43,7 @@ interface BookingState {
 
 const INITIAL: Pick<
   BookingState,
-  'destinationId' | 'feedPrice' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'seatPrice' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse' | 'cachedOfferJson'
+  'destinationId' | 'feedPrice' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'seatPrice' | 'seatServiceId' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse' | 'cachedOfferJson'
 > = {
   destinationId: null,
   feedPrice: null,
@@ -51,6 +52,7 @@ const INITIAL: Pick<
   passengers: [],
   selectedSeat: null,
   seatPrice: 0,
+  seatServiceId: null,
   selectedBaggage: null,
   hasInsurance: false,
   selectedMeal: null,
@@ -74,7 +76,7 @@ export const useBookingStore = create<BookingState>()(
         set((s) => ({
           passengers: s.passengers.map((existing, i) => (i === index ? { ...existing, ...p } : existing)),
         })),
-      setSeat: (designator, price) => set({ selectedSeat: designator, seatPrice: price ?? 0 }),
+      setSeat: (designator, price, serviceId) => set({ selectedSeat: designator, seatPrice: price ?? 0, seatServiceId: serviceId ?? null }),
       setBaggage: (id) => set({ selectedBaggage: id }),
       setInsurance: (has) => set({ hasInsurance: has }),
       setMeal: (id) => set({ selectedMeal: id }),
@@ -131,6 +133,7 @@ export const useBookingStore = create<BookingState>()(
         passengers: state.passengers,
         selectedSeat: state.selectedSeat,
         seatPrice: state.seatPrice,
+        seatServiceId: state.seatServiceId,
         selectedBaggage: state.selectedBaggage,
         hasInsurance: state.hasInsurance,
         selectedMeal: state.selectedMeal,

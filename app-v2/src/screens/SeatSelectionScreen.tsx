@@ -81,6 +81,10 @@ export default function SeatSelectionScreen() {
     return seatLookup.get(`${row}-${col}`)?.price ?? 0;
   }
 
+  function getSeatServiceId(row: number, col: string): string | null {
+    return seatLookup.get(`${row}-${col}`)?.serviceId ?? null;
+  }
+
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
 
   const handleSeatClick = (row: number, col: string) => {
@@ -340,8 +344,10 @@ export default function SeatSelectionScreen() {
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
         <button
           onClick={() => {
-            const price = selectedSeat ? getSeatPrice(parseInt(selectedSeat.split('-')[0]!), selectedSeat.split('-')[1]!) : 0;
-            storeSeat(selectedSeat ? selectedSeat.replace('-', '') : null, price);
+            const [rowStr, col] = selectedSeat ? selectedSeat.split('-') : [null, null];
+            const price = rowStr && col ? getSeatPrice(parseInt(rowStr), col) : 0;
+            const serviceId = rowStr && col ? getSeatServiceId(parseInt(rowStr), col) : null;
+            storeSeat(selectedSeat ? selectedSeat.replace('-', '') : null, price, serviceId);
             navigate('/booking/extras');
           }}
           style={{
@@ -366,7 +372,7 @@ export default function SeatSelectionScreen() {
           </span>
         </button>
         <button
-          onClick={() => { storeSeat(null, 0); navigate('/booking/extras'); }}
+          onClick={() => { storeSeat(null, 0, null); navigate('/booking/extras'); }}
           style={{ padding: 8 }}
         >
           <span

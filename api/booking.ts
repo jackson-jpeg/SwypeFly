@@ -271,7 +271,7 @@ function stubGetOrder(orderId: string) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformSeatMap(raw: any): { columns: string[]; exitRows: number[]; aisleAfterColumns: string[]; rows: { rowNumber: number; seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string }[] }[] } | null {
+function transformSeatMap(raw: any): { columns: string[]; exitRows: number[]; aisleAfterColumns: string[]; rows: { rowNumber: number; seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string; serviceId: string | null }[] }[] } | null {
   if (!raw || !Array.isArray(raw)) return null;
   // Duffel returns an array of seat maps (one per slice); use the first
   const sliceMap = raw[0];
@@ -290,7 +290,7 @@ function transformSeatMap(raw: any): { columns: string[]; exitRows: number[]; ai
     if (!rowNumber) continue;
     const rn = parseInt(rowNumber);
     let isExit = false;
-    const seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string }[] = [];
+    const seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string; serviceId: string | null }[] = [];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     row.sections?.forEach((section: any, sIdx: number) => {
@@ -306,11 +306,12 @@ function transformSeatMap(raw: any): { columns: string[]; exitRows: number[]; ai
         const currency = seatService?.total_currency || 'USD';
         seats.push({
           column: col,
-          available: el.available_services ? el.available_services.length > 0 : true,
+          available: Array.isArray(el.available_services) ? el.available_services.length > 0 : false,
           extraLegroom: hasExitDisclosure || (el.disclosures?.includes('extra_legroom') ?? false),
           price,
           currency,
           designator: el.designator || `${rn}${col}`,
+          serviceId: seatService?.id || null,
         });
       }
       // Track aisles: if there's a next section, the last column of this section is before an aisle

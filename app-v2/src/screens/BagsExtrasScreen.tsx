@@ -51,101 +51,32 @@ const sectionLabel: React.CSSProperties = {
   color: colors.sageDrift,
 };
 
-/* ───── baggage option data ───── */
-type BagOption = 'one' | 'two' | 'none';
-const bagOptions: { key: BagOption; label: string; sub: string; price: string; amount: number; icon: ReactNode }[] = [
-  {
-    key: 'one',
-    label: '1 Bag',
-    sub: '23 kg',
-    price: '+$35',
-    amount: 35,
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="6" y="7" width="12" height="14" rx="2" />
-        <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-        <path d="M10 21h4" />
-      </svg>
-    ),
-  },
-  {
-    key: 'two',
-    label: '2 Bags',
-    sub: '23 kg each',
-    price: '+$60',
-    amount: 60,
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="4" y="8" width="10" height="12" rx="2" />
-        <rect x="10" y="6" width="10" height="12" rx="2" />
-        <path d="M7 8V6a2 2 0 0 1 2-2h0" />
-        <path d="M13 6V4a2 2 0 0 1 2-2h0" />
-      </svg>
-    ),
-  },
-  {
-    key: 'none',
-    label: 'None',
-    sub: 'Carry-on only',
-    price: 'Free',
-    amount: 0,
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M18 6L6 18" />
-        <path d="M6 6l12 12" />
-      </svg>
-    ),
-  },
-];
+/* ───── icons ───── */
+const bagIcon = (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="6" y="7" width="12" height="14" rx="2" />
+    <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+    <path d="M10 21h4" />
+  </svg>
+);
+const noBagIcon = (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round">
+    <path d="M18 6L6 18" />
+    <path d="M6 6l12 12" />
+  </svg>
+);
 
-/* ───── meal data ───── */
-type MealOption = 'pasta' | 'salad' | 'asian';
-const mealOptions: { key: MealOption; label: string; price: string; amount: number; icon: ReactNode }[] = [
-  {
-    key: 'pasta',
-    label: 'Pasta',
-    price: '+$12',
-    amount: 12,
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 11h18" />
-        <path d="M5 11c0 4.4 3.6 8 7 8s7-3.6 7-8" />
-        <path d="M9 21h6" />
-        <path d="M12 19v2" />
-        <path d="M7 3v4" />
-        <path d="M12 3v4" />
-        <path d="M17 3v4" />
-      </svg>
-    ),
-  },
-  {
-    key: 'salad',
-    label: 'Salad',
-    price: '+$10',
-    amount: 10,
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9z" />
-        <path d="M7 8c0-2.2 1.8-4 4-4" />
-        <path d="M17 8a4 4 0 0 0-4-4" />
-      </svg>
-    ),
-  },
-  {
-    key: 'asian',
-    label: 'Asian',
-    price: '+$14',
-    amount: 14,
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
-  },
-];
+const mealIcon = (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.mutedText} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 11h18" />
+    <path d="M5 11c0 4.4 3.6 8 7 8s7-3.6 7-8" />
+    <path d="M9 21h6" />
+    <path d="M12 19v2" />
+    <path d="M7 3v4" />
+    <path d="M12 3v4" />
+    <path d="M17 3v4" />
+  </svg>
+);
 
 /* ───── screen ───── */
 export default function BagsExtrasScreen() {
@@ -159,7 +90,7 @@ export default function BagsExtrasScreen() {
     departureCode,
   );
 
-  // Derive bag/meal prices from offer's availableServices when present, else use defaults
+  // Only use real Duffel services — no hardcoded fallbacks
   const liveBagServices = useMemo(() => {
     const services = offerDetail?.offer?.availableServices ?? selectedOffer?.availableServices ?? [];
     return services.filter((s) => s.type === 'baggage' || s.type === 'check_bag');
@@ -170,38 +101,44 @@ export default function BagsExtrasScreen() {
     return services.filter((s) => s.type === 'meal');
   }, [offerDetail, selectedOffer]);
 
-  // Override default prices if live services exist
-  const resolvedBagOptions = useMemo(() => {
-    if (liveBagServices.length > 0) {
-      return bagOptions.map((opt) => {
-        if (opt.key === 'none') return opt;
-        const svc = opt.key === 'one' ? liveBagServices[0] : liveBagServices[1] ?? liveBagServices[0];
-        if (!svc) return opt;
-        return { ...opt, amount: svc.amount, price: `+$${svc.amount}`, serviceId: svc.id };
+  // Build bag options from live data only
+  const bagOptions = useMemo(() => {
+    const opts: { key: string; label: string; sub: string; price: string; amount: number; serviceId: string; icon: ReactNode }[] = [];
+    for (const svc of liveBagServices) {
+      const weight = svc.metadata?.weight_kg ? `${svc.metadata.weight_kg} kg` : 'Checked';
+      opts.push({
+        key: svc.id,
+        label: svc.name || `Checked Bag`,
+        sub: weight,
+        price: `+$${svc.amount}`,
+        amount: svc.amount,
+        serviceId: svc.id,
+        icon: bagIcon,
       });
     }
-    return bagOptions;
+    return opts;
   }, [liveBagServices]);
 
-  const resolvedMealOptions = useMemo(() => {
-    if (liveMealServices.length > 0) {
-      return mealOptions.map((opt, i) => {
-        const svc = liveMealServices[i];
-        if (!svc) return opt;
-        return { ...opt, amount: svc.amount, price: `+$${svc.amount}`, label: svc.name || opt.label, serviceId: svc.id };
-      });
-    }
-    return mealOptions;
+  // Build meal options from live data only
+  const mealOptions = useMemo(() => {
+    return liveMealServices.map((svc) => ({
+      key: svc.id,
+      label: svc.name || 'Meal',
+      price: `+$${svc.amount}`,
+      amount: svc.amount,
+      serviceId: svc.id,
+      icon: mealIcon,
+    }));
   }, [liveMealServices]);
 
-  const [selectedBag, setSelectedBag] = useState<BagOption>('one');
+  const [selectedBagId, setSelectedBagId] = useState<string | null>(null);
   const [insurance, setInsurance] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState<MealOption | null>(null);
+  const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
 
-  const flightPrice = selectedOffer?.totalAmount ?? 387;
-  const bagPrice = resolvedBagOptions.find((b) => b.key === selectedBag)?.amount ?? 0;
+  const flightPrice = selectedOffer?.totalAmount ?? 0;
+  const bagPrice = bagOptions.find((b) => b.key === selectedBagId)?.amount ?? 0;
   const insurancePrice = insurance ? 29 : 0;
-  const mealPrice = resolvedMealOptions.find((m) => m.key === selectedMeal)?.amount ?? 0;
+  const mealPrice = mealOptions.find((m) => m.key === selectedMealId)?.amount ?? 0;
   const total = flightPrice + bagPrice + insurancePrice + mealPrice;
 
   return (
@@ -237,41 +174,77 @@ export default function BagsExtrasScreen() {
         {/* checked baggage */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={sectionLabel}>Checked Baggage</span>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {resolvedBagOptions.map((opt) => {
-              const isSelected = selectedBag === opt.key;
-              return (
-                <button
-                  key={opt.key}
-                  onClick={() => setSelectedBag(opt.key)}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 6,
-                    paddingBlock: 16,
-                    paddingInline: 8,
-                    borderRadius: 14,
-                    backgroundColor: isSelected ? '#A8C4B830' : colors.offWhite,
-                    border: isSelected ? `2px solid ${colors.sageDrift}` : '1px solid #C9A99A40',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {opt.icon}
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.deepDusk }}>
-                    {opt.label}
-                  </span>
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.mutedText }}>
-                    {opt.sub}
-                  </span>
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 600, color: opt.amount > 0 ? colors.deepDusk : colors.mutedText }}>
-                    {opt.price}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {bagOptions.length > 0 ? (
+            <div style={{ display: 'flex', gap: 10 }}>
+              {/* "None" option */}
+              <button
+                onClick={() => setSelectedBagId(null)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingBlock: 16,
+                  paddingInline: 8,
+                  borderRadius: 14,
+                  backgroundColor: selectedBagId === null ? '#A8C4B830' : colors.offWhite,
+                  border: selectedBagId === null ? `2px solid ${colors.sageDrift}` : '1px solid #C9A99A40',
+                  cursor: 'pointer',
+                }}
+              >
+                {noBagIcon}
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.deepDusk }}>None</span>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.mutedText }}>Carry-on only</span>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 600, color: colors.mutedText }}>Free</span>
+              </button>
+              {bagOptions.map((opt) => {
+                const isSelected = selectedBagId === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => setSelectedBagId(opt.key)}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingBlock: 16,
+                      paddingInline: 8,
+                      borderRadius: 14,
+                      backgroundColor: isSelected ? '#A8C4B830' : colors.offWhite,
+                      border: isSelected ? `2px solid ${colors.sageDrift}` : '1px solid #C9A99A40',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {opt.icon}
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.deepDusk }}>
+                      {opt.label}
+                    </span>
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, color: colors.mutedText }}>
+                      {opt.sub}
+                    </span>
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 600, color: colors.deepDusk }}>
+                      {opt.price}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{
+              backgroundColor: colors.offWhite,
+              border: '1px solid #C9A99A20',
+              borderRadius: 14,
+              padding: 16,
+              textAlign: 'center',
+            }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText }}>
+                Carry-on baggage is included with your fare. Checked bags are not available for purchase on this flight.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* travel insurance */}
@@ -308,16 +281,16 @@ export default function BagsExtrasScreen() {
         </div>
 
         {/* in-flight meals — only shown when meal services are available */}
-        {liveMealServices.length > 0 && (
+        {mealOptions.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={sectionLabel}>In-Flight Meals</span>
           <div style={{ display: 'flex', gap: 10 }}>
-            {resolvedMealOptions.map((opt) => {
-              const isSelected = selectedMeal === opt.key;
+            {mealOptions.map((opt) => {
+              const isSelected = selectedMealId === opt.key;
               return (
                 <button
                   key={opt.key}
-                  onClick={() => setSelectedMeal(selectedMeal === opt.key ? null : opt.key)}
+                  onClick={() => setSelectedMealId(selectedMealId === opt.key ? null : opt.key)}
                   style={{
                     flex: 1,
                     display: 'flex',
@@ -359,9 +332,9 @@ export default function BagsExtrasScreen() {
           }}
         >
           <LineItem label="Flight" price={`$${flightPrice}`} />
-          {bagPrice > 0 && <LineItem label={resolvedBagOptions.find((b) => b.key === selectedBag)?.label ?? 'Checked bag'} price={`$${bagPrice}`} />}
+          {bagPrice > 0 && <LineItem label={bagOptions.find((b) => b.key === selectedBagId)?.label ?? 'Checked bag'} price={`$${bagPrice}`} />}
           {insurancePrice > 0 && <LineItem label="Insurance" price={`$${insurancePrice}`} />}
-          {selectedMeal && mealPrice > 0 && <LineItem label={`Meal (${selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)})`} price={`$${mealPrice}`} />}
+          {selectedMealId && mealPrice > 0 && <LineItem label={mealOptions.find((m) => m.key === selectedMealId)?.label ?? 'Meal'} price={`$${mealPrice}`} />}
           <div style={{ height: 1, backgroundColor: '#C9A99A40' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 700, color: colors.deepDusk }}>
@@ -378,13 +351,9 @@ export default function BagsExtrasScreen() {
       <div style={{ paddingInline: 20, paddingBottom: 32, paddingTop: 8 }}>
         <button
           onClick={() => {
-            const bagOpt = resolvedBagOptions.find((b) => b.key === selectedBag);
-            const bagId = bagOpt && bagOpt.amount > 0 ? ((bagOpt as { serviceId?: string }).serviceId ?? `bag-${selectedBag}`) : null;
-            setBaggage(bagId);
+            setBaggage(selectedBagId);
             storeSetInsurance(insurance);
-            const mealOpt = selectedMeal ? resolvedMealOptions.find((m) => m.key === selectedMeal) : null;
-            const mealId = mealOpt ? ((mealOpt as { serviceId?: string }).serviceId ?? `meal-${selectedMeal}`) : null;
-            storeSetMeal(mealId);
+            storeSetMeal(selectedMealId);
             navigate('/booking/review');
           }}
           style={{

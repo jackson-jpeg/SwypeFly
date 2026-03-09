@@ -139,6 +139,7 @@ export interface SeatMapSeat {
   price: number;
   currency: string;
   designator: string;
+  serviceId?: string | null;
 }
 
 export interface SeatMap {

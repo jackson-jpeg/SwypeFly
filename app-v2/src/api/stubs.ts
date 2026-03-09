@@ -169,6 +169,7 @@ export function generateSeatMap(flightSeed: string): SeatMap {
           price: isExit ? exitPrice : isPreferred ? preferredPrice : 0,
           currency: 'USD',
           designator: `${rowNum}${col}`,
+          serviceId: !occupied ? `stub_seat_${rowNum}${col}` : null,
         };
       }),
     };

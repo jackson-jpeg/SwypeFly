@@ -240,16 +240,19 @@ export default function ReviewPaymentScreen() {
     ? new Date(booking.selectedOffer.expiresAt) < new Date()
     : false;
 
-  // Derive dynamic baggage label and price
-  const bagSvc = booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedBaggage);
-  const bagLabel = bagSvc?.name ?? (booking.selectedBaggage === 'bag-2x23kg' ? '2 checked bags (23 kg each)' : '1 checked bag (23 kg)');
-  const bagPrice = bagSvc?.amount ?? (booking.selectedBaggage === 'bag-2x23kg' ? 60 : 35);
+  // Derive dynamic baggage label and price from real Duffel service data
+  const bagSvc = booking.selectedBaggage
+    ? booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedBaggage)
+    : null;
+  const bagLabel = bagSvc?.name ?? 'Checked bag';
+  const bagPrice = bagSvc?.amount ?? 0;
 
-  // Derive dynamic meal label and price
-  const mealName = booking.selectedMeal?.replace('meal-', '') ?? '';
-  const mealLabel = `In-flight meal (${mealName.charAt(0).toUpperCase() + mealName.slice(1)})`;
-  const mealSvc = booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedMeal);
-  const mealPrice = mealSvc?.amount ?? ({ 'meal-pasta': 12, 'meal-salad': 10, 'meal-asian': 14 }[booking.selectedMeal ?? ''] ?? 12);
+  // Derive dynamic meal label and price from real Duffel service data
+  const mealSvc = booking.selectedMeal
+    ? booking.selectedOffer?.availableServices.find((s) => s.id === booking.selectedMeal)
+    : null;
+  const mealLabel = mealSvc ? `In-flight meal (${mealSvc.name})` : 'In-flight meal';
+  const mealPrice = mealSvc?.amount ?? 0;
 
   const lineItems = [
     { label: `Flight (${booking.selectedOffer?.cabinClass ?? 'Economy'}, ${booking.passengerCount} ${booking.passengerCount > 1 ? 'adults' : 'adult'})`, price: `$${(booking.selectedOffer?.totalAmount ?? 387) * booking.passengerCount}`, color: colors.bodyText },
@@ -303,10 +306,11 @@ export default function ReviewPaymentScreen() {
         phone_number: p.phone_number,
       })),
       selectedServices: [
-        ...(booking.selectedSeat ? [{ id: `seat-${booking.selectedSeat}`, quantity: 1 }] : []),
+        // Only include real Duffel service IDs (not fake placeholders)
+        ...(booking.seatServiceId ? [{ id: booking.seatServiceId, quantity: 1 }] : []),
         ...(booking.selectedBaggage ? [{ id: booking.selectedBaggage, quantity: 1 }] : []),
         ...(booking.selectedMeal ? [{ id: booking.selectedMeal, quantity: 1 }] : []),
-      ],
+      ].filter((s) => s.id && !s.id.startsWith('seat-') && !s.id.startsWith('bag-') && !s.id.startsWith('meal-')),
       paymentIntentId,
       // Destination metadata for booking history
       destinationCity: dest?.city,
