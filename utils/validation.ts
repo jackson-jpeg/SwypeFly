@@ -154,6 +154,12 @@ export const createOrderSchema = z.object({
     quantity: z.number().int().min(1).max(10),
   })).optional(),
   paymentIntentId: z.string().min(1).max(200),
+  // Destination metadata for booking history display
+  destinationCity: z.string().max(100).optional(),
+  destinationIata: z.string().max(10).optional(),
+  originIata: z.string().max(10).optional(),
+  departureDate: z.string().max(20).optional(),
+  returnDate: z.string().max(20).optional(),
 });
 
 export const bookingOrderSchema = z.object({

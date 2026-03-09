@@ -458,6 +458,13 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
 
     const databases = getServerDatabases();
 
+    // Extract flight details for booking record
+    const firstSlice = duffelOrder.slices?.[0];
+    const firstSeg = firstSlice?.segments?.[0];
+    const lastSlice = duffelOrder.slices?.[duffelOrder.slices.length - 1];
+    const airlineName = firstSeg?.operating_carrier?.name ?? '';
+    const bookingRef = duffelOrder.booking_reference ?? '';
+
     const booking = await databases.createDocument(
       DATABASE_ID,
       'bookings',
@@ -471,6 +478,13 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
         passenger_count: v.data.passengers.length,
         stripe_payment_intent_id: v.data.paymentIntentId,
         created_at: new Date().toISOString(),
+        destination_city: v.data.destinationCity ?? '',
+        destination_iata: v.data.destinationIata ?? (firstSlice?.destination?.iata_code ?? ''),
+        origin_iata: v.data.originIata ?? (firstSlice?.origin?.iata_code ?? ''),
+        departure_date: v.data.departureDate ?? (firstSeg?.departing_at?.split('T')[0] ?? ''),
+        return_date: v.data.returnDate ?? (lastSlice?.segments?.[0]?.departing_at?.split('T')[0] ?? ''),
+        airline: airlineName,
+        booking_reference: bookingRef,
       },
       [Permission.read(Role.user(user.$id)), Permission.delete(Role.user(user.$id))],
     );
@@ -494,9 +508,32 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       );
     }
 
-    return res.status(200).json({
+    // Send confirmation email (non-blocking)
+    try {
+      const { sendBookingConfirmationEmail } = await import('../utils/email.js');
+      const primaryEmail = v.data.passengers[0]?.email ?? '';
+      if (primaryEmail) {
+        sendBookingConfirmationEmail({
+          to: primaryEmail,
+          passengerName: `${v.data.passengers[0].given_name} ${v.data.passengers[0].family_name}`,
+          bookingReference: bookingRef,
+          destinationCity: v.data.destinationCity ?? '',
+          originIata: v.data.originIata ?? (firstSlice?.origin?.iata_code ?? ''),
+          destinationIata: v.data.destinationIata ?? (firstSlice?.destination?.iata_code ?? ''),
+          departureDate: v.data.departureDate ?? (firstSeg?.departing_at?.split('T')[0] ?? ''),
+          returnDate: v.data.returnDate ?? (lastSlice?.segments?.[0]?.departing_at?.split('T')[0] ?? ''),
+          airline: airlineName,
+          totalPaid: parseFloat(duffelOrder.total_amount) || 0,
+          currency: duffelOrder.total_currency || 'USD',
+        }).catch((emailErr) => console.warn('[booking] Confirmation email failed:', emailErr));
+      }
+    } catch {
+      // Email is non-critical — don't fail the booking
+    }
+
+    const responseData = {
       orderId: booking.$id,
-      bookingReference: duffelOrder.booking_reference,
+      bookingReference: bookingRef,
       status: 'confirmed' as const,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       passengers: (duffelOrder.passengers ?? []).map((p: any) => ({
@@ -518,7 +555,9 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       })),
       totalPaid: parseFloat(duffelOrder.total_amount) || 0,
       currency: duffelOrder.total_currency || 'USD',
-    });
+    };
+
+    return res.status(200).json(responseData);
   } catch (err) {
     logApiError('api/booking/create-order', err);
     return res.status(500).json({ error: 'Failed to create booking' });

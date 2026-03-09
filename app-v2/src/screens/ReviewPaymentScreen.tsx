@@ -300,6 +300,12 @@ export default function ReviewPaymentScreen() {
         ...(booking.selectedMeal ? [{ id: booking.selectedMeal, quantity: 1 }] : []),
       ],
       paymentIntentId,
+      // Destination metadata for booking history
+      destinationCity: dest?.city,
+      destinationIata: dest?.iataCode,
+      originIata: departureCode,
+      departureDate: booking.selectedOffer?.slices?.[0]?.departureTime?.split('T')[0],
+      returnDate: booking.selectedOffer?.slices?.[1]?.departureTime?.split('T')[0],
     };
 
     const MAX_RETRIES = 3;

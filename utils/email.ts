@@ -38,6 +38,143 @@ export async function sendPriceAlertEmail(
   });
 }
 
+export async function sendBookingConfirmationEmail(params: {
+  to: string;
+  passengerName: string;
+  bookingReference: string;
+  destinationCity: string;
+  originIata: string;
+  destinationIata: string;
+  departureDate: string;
+  returnDate: string;
+  airline: string;
+  totalPaid: number;
+  currency: string;
+  seatDesignator?: string;
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[email] RESEND_API_KEY not configured, skipping booking confirmation email');
+    return;
+  }
+
+  const {
+    to,
+    passengerName,
+    bookingReference,
+    destinationCity,
+    originIata,
+    destinationIata,
+    departureDate,
+    returnDate,
+    airline,
+    totalPaid,
+    currency,
+    seatDesignator,
+  } = params;
+
+  const formattedTotal = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(totalPaid);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const seatRow = seatDesignator
+    ? `<tr>
+        <td style="padding: 8px 0; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Seat</td>
+        <td style="padding: 8px 0; text-align: right; font-size: 15px; font-weight: 600; color: #1B1B2F;">${seatDesignator}</td>
+      </tr>`
+    : '';
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `Booking Confirmed: ${originIata} → ${destinationCity} | ${bookingReference}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; background: #F5ECD7;">
+        <!-- Header -->
+        <div style="background: #1B1B2F; padding: 24px 32px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: #ffffff; font-size: 22px; margin: 0; font-weight: 700; letter-spacing: 1px;">SoGoJet</h1>
+        </div>
+
+        <!-- Success Banner -->
+        <div style="background: #7BAF8E; padding: 20px 32px; text-align: center;">
+          <span style="font-size: 32px;">&#10003;</span>
+          <h2 style="color: #ffffff; font-size: 20px; margin: 8px 0 0 0; font-weight: 700;">Booking Confirmed!</h2>
+        </div>
+
+        <!-- Boarding Pass Card -->
+        <div style="margin: 24px 24px 0 24px; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e0d9c8;">
+          <!-- Route Header -->
+          <div style="padding: 24px 24px 16px 24px; text-align: center; border-bottom: 2px dashed #e0d9c8;">
+            <div style="font-size: 28px; font-weight: 700; color: #1B1B2F; letter-spacing: 2px;">
+              ${originIata} &nbsp;&#9992;&nbsp; ${destinationIata}
+            </div>
+            <div style="font-size: 16px; color: #666; margin-top: 4px;">${destinationCity}</div>
+          </div>
+
+          <!-- Details Table -->
+          <div style="padding: 16px 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Passenger</td>
+                <td style="padding: 8px 0; text-align: right; font-size: 15px; font-weight: 600; color: #1B1B2F;">${passengerName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Airline</td>
+                <td style="padding: 8px 0; text-align: right; font-size: 15px; font-weight: 600; color: #1B1B2F;">${airline}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Departure</td>
+                <td style="padding: 8px 0; text-align: right; font-size: 15px; font-weight: 600; color: #1B1B2F;">${formatDate(departureDate)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Return</td>
+                <td style="padding: 8px 0; text-align: right; font-size: 15px; font-weight: 600; color: #1B1B2F;">${formatDate(returnDate)}</td>
+              </tr>
+              ${seatRow}
+            </table>
+          </div>
+
+          <!-- Booking Reference -->
+          <div style="padding: 16px 24px; background: #f9f6ef; border-top: 2px dashed #e0d9c8; text-align: center;">
+            <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Booking Reference</div>
+            <div style="font-size: 26px; font-weight: 800; color: #1B1B2F; letter-spacing: 3px; font-family: 'Courier New', monospace;">${bookingReference}</div>
+          </div>
+        </div>
+
+        <!-- Total Paid -->
+        <div style="margin: 16px 24px 0 24px; background: #ffffff; border-radius: 12px; padding: 16px 24px; border: 1px solid #e0d9c8; text-align: center;">
+          <div style="font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Total Paid</div>
+          <div style="font-size: 28px; font-weight: 800; color: #7BAF8E; margin-top: 4px;">${formattedTotal}</div>
+        </div>
+
+        <!-- CTA Button -->
+        <div style="padding: 24px 24px 8px 24px; text-align: center;">
+          <a href="https://sogojet.com/trips" style="display: inline-block; padding: 14px 36px; background: #1B1B2F; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px;">
+            View Your Trip
+          </a>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 16px 24px 24px 24px; text-align: center;">
+          <p style="color: #999; font-size: 12px; margin: 0;">
+            Need help? Contact <a href="mailto:support@sogojet.com" style="color: #7BAF8E; text-decoration: none;">support@sogojet.com</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
 export async function sendWelcomeEmail(to: string, airport: string): Promise<void> {
   if (!process.env.RESEND_API_KEY) {
     return;
