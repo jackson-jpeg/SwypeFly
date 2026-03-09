@@ -182,7 +182,7 @@ describe('api/prices/refresh', () => {
     expect(responseData.origins).toHaveLength(1);
     expect(responseData.origins[0].origin).toBe('JFK');
     expect(responseData.origins[0].sources.duffel).toBe(2);
-    expect(responseData.batchSize).toBe(8);
+    expect(responseData.batchSize).toBe(40);
 
     // Verify Duffel was called for each destination
     expect(mockSearchFlights).toHaveBeenCalledTimes(2);
