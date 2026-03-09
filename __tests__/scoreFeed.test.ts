@@ -98,6 +98,67 @@ describe('scoreFeed', () => {
     expect(withoutPref).toHaveLength(2);
   });
 
+  it('fresh Duffel price ranks higher than stale estimate', () => {
+    // Need 3+ destinations so the scoring loop picks between fresh and stale
+    const seedDest = makeDest({
+      city: 'Seed',
+      country: 'Japan',
+      vibeTags: ['culture'],
+      flightPrice: 400,
+    });
+    const freshDest = makeDest({
+      city: 'Fresh',
+      country: 'USA',
+      vibeTags: ['city'],
+      flightPrice: 500,
+      priceFetchedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 min ago
+    });
+    const staleDest = makeDest({
+      city: 'Stale',
+      country: 'USA',
+      vibeTags: ['city'],
+      flightPrice: 500,
+    });
+    const result = scoreFeed([seedDest, staleDest, freshDest]);
+    // Seed goes first (cheapest), then Fresh should beat Stale due to freshness boost
+    const freshIdx = result.findIndex((d) => d.city === 'Fresh');
+    const staleIdx = result.findIndex((d) => d.city === 'Stale');
+    expect(freshIdx).toBeLessThan(staleIdx);
+  });
+
+  it('price drop ranks higher than price increase', () => {
+    // Need 3+ destinations so the scoring loop picks between drop and up
+    // (the first item is always the seed from the initial price sort)
+    const seedDest = makeDest({
+      city: 'Seed',
+      country: 'Japan',
+      vibeTags: ['culture'],
+      flightPrice: 400,
+      priceFetchedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    });
+    const dropDest = makeDest({
+      city: 'Dropping',
+      country: 'USA',
+      vibeTags: ['city'],
+      flightPrice: 500,
+      priceFetchedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      priceDirection: 'down',
+    });
+    const upDest = makeDest({
+      city: 'Rising',
+      country: 'USA',
+      vibeTags: ['city'],
+      flightPrice: 500,
+      priceFetchedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      priceDirection: 'up',
+    });
+    const result = scoreFeed([seedDest, upDest, dropDest]);
+    // Seed goes first (cheapest), then Dropping should beat Rising due to deal boost
+    const dropIdx = result.findIndex((d) => d.city === 'Dropping');
+    const upIdx = result.findIndex((d) => d.city === 'Rising');
+    expect(dropIdx).toBeLessThan(upIdx);
+  });
+
   it('cheaper flights score higher (all else being equal)', () => {
     const cheap = makeDest({
       city: 'Budget', country: 'USA', vibeTags: ['city'],

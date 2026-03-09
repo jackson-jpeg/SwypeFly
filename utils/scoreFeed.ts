@@ -49,6 +49,30 @@ function getVibeBucket(dest: Destination): string {
 }
 
 /**
+ * Freshness boost: recently fetched prices get a higher score.
+ * Prices fetched within the last hour get the maximum boost.
+ */
+function getFreshnessBoost(dest: Destination): number {
+  if (!dest.priceFetchedAt) return 0;
+  const ageMs = Date.now() - new Date(dest.priceFetchedAt).getTime();
+  const ageHours = ageMs / (1000 * 60 * 60);
+  if (ageHours < 1) return 1.0;
+  if (ageHours < 4) return 0.7;
+  if (ageHours < 12) return 0.4;
+  if (ageHours < 24) return 0.2;
+  return 0;
+}
+
+/**
+ * Deal quality boost: price drops get the highest boost.
+ */
+function getDealBoost(dest: Destination): number {
+  if (dest.priceDirection === 'down') return 1.0;
+  if (dest.priceDirection === 'stable') return 0.3;
+  return 0; // price went up — no boost
+}
+
+/**
  * Diversity-aware feed sort.
  *
  * Strategy: greedy pick that maximizes distance from recently shown
@@ -115,11 +139,16 @@ export function scoreFeed(destinations: Destination[], savedVibeTags?: string[])
         preferenceBoost = Math.min(overlap / savedVibeTags.length, 1);
       }
 
+      const freshnessBoost = getFreshnessBoost(d);
+      const dealBoost = getDealBoost(d);
+
       const score =
-        priceScore * 0.35 +
-        -regionPenalty * 0.30 +
+        priceScore * 0.25 +
+        -regionPenalty * 0.25 +
         -vibePenalty * 0.10 +
-        preferenceBoost * 0.25;
+        preferenceBoost * 0.20 +
+        freshnessBoost * 0.15 +
+        dealBoost * 0.05;
 
       if (score > bestScore) {
         bestScore = score;
