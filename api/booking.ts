@@ -562,7 +562,11 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(responseData);
   } catch (err: any) {
     logApiError('api/booking/create-order', err);
-    const detail = err?.message ?? String(err);
+    // Duffel SDK errors have `errors` array; Stripe/general errors use `message`
+    const duffelErrors = err?.errors ?? err?.response?.data?.errors;
+    const detail = duffelErrors
+      ? JSON.stringify(duffelErrors)
+      : err?.message || err?.statusCode || String(err);
     console.error('[booking/create-order] Error detail:', detail);
     return res.status(500).json({ error: `Booking failed: ${detail}` });
   }
