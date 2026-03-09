@@ -8,6 +8,9 @@ import { useAuthContext } from '@/hooks/AuthContext';
 import { useSwipeTracking } from '@/hooks/useSwipeTracking';
 import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
+import FilterBar from '@/components/feed/FilterBar';
+import SearchOverlay from '@/components/feed/SearchOverlay';
+import SkeletonCard from '@/components/feed/SkeletonCard';
 
 function FeedCard({ destination, onSave }: { destination: Destination; onSave?: (id: string) => void }) {
   const navigate = useNavigate();
@@ -231,7 +234,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
 
 export default function FeedScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { scrollIndex: currentIndex, setScrollIndex: setCurrentIndex } = useFeedStore();
+  const { scrollIndex: currentIndex, setScrollIndex: setCurrentIndex, filters, isSearchOpen, setSearchOpen, clearFilters, hasActiveFilters } = useFeedStore();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useFeed();
   const { trackView, trackSave } = useSwipeTracking();
 
@@ -239,6 +242,22 @@ export default function FeedScreen() {
     () => data?.pages.flatMap((p) => p.destinations) ?? [],
     [data],
   );
+
+  // Reset scroll to top when filters change
+  const prevFiltersRef = useRef(filters);
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const changed =
+      prev.vibes.join(',') !== filters.vibes.join(',') ||
+      prev.region.join(',') !== filters.region.join(',') ||
+      prev.minPrice !== filters.minPrice ||
+      prev.maxPrice !== filters.maxPrice;
+    prevFiltersRef.current = filters;
+    if (changed && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      setCurrentIndex(0);
+    }
+  }, [filters, setCurrentIndex]);
 
   // Track scroll position + prefetch next page when near end
   useEffect(() => {
@@ -271,10 +290,32 @@ export default function FeedScreen() {
     }
   }, [destinations.length]);
 
+  const glassButton: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    backgroundColor: '#FFFFFF14',
+    border: '1px solid #FFFFFF1F',
+    cursor: 'pointer',
+    padding: 0,
+  };
+
+  // Loading state with skeleton
   if (isLoading) {
     return (
-      <div className="screen-fixed" style={{ background: '#0A0F1E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFF60' }}>Loading destinations...</span>
+      <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <FilterBar />
+        <div style={{ flex: 1 }}>
+          <SkeletonCard />
+        </div>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
+          <BottomNav dark />
+        </div>
       </div>
     );
   }
@@ -300,8 +341,65 @@ export default function FeedScreen() {
     );
   }
 
+  // Empty state (filters active but no results)
+  if (destinations.length === 0) {
+    return (
+      <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <FilterBar />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF30" strokeWidth="1.5" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: '#FFFFFF80', textAlign: 'center' }}>
+            No destinations match your filters
+          </span>
+          {hasActiveFilters() && (
+            <button
+              onClick={() => clearFilters()}
+              style={{
+                paddingBlock: 10,
+                paddingInline: 24,
+                borderRadius: 10,
+                backgroundColor: '#FFFFFF14',
+                border: '1px solid #FFFFFF1F',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFFB3' }}>Clear Filters</span>
+            </button>
+          )}
+        </div>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
+          <BottomNav dark />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* Filter bar at top */}
+      <FilterBar />
+
+      {/* Search button (top-right) */}
+      <button
+        aria-label="Search destinations"
+        onClick={() => setSearchOpen(true)}
+        style={{
+          ...glassButton,
+          position: 'absolute',
+          top: 52,
+          right: 12,
+          zIndex: 10,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFFCC" strokeWidth="2" strokeLinecap="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </button>
+
       {/* Vertical scroll container */}
       <div
         ref={scrollRef}
@@ -336,6 +434,9 @@ export default function FeedScreen() {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
         <BottomNav dark />
       </div>
+
+      {/* Search overlay */}
+      {isSearchOpen && <SearchOverlay />}
     </div>
   );
 }
