@@ -6,6 +6,7 @@ import { useBookingSearch } from '@/hooks/useBooking';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import BookingHeader from '@/components/BookingHeader';
+import RouteMap from '@/components/RouteMap';
 import type { BookingOffer, FlightSlice } from '@/api/types';
 
 const CABIN_CLASSES = ['economy', 'business', 'first'] as const;
@@ -527,6 +528,16 @@ export default function FlightSelectionScreen() {
         onBack={() => navigate(-1)}
         onClose={() => navigate('/')}
       />
+
+      {/* ─── Route Map ────────────────────────────────────────── */}
+      <div style={{ padding: '0 20px' }}>
+        <RouteMap
+          originCode={departureCode}
+          destCode={dest?.iataCode ?? ''}
+          airlineName={offers[0]?.slices[0]?.airline}
+          duration={offers[0]?.slices[0]?.duration ? formatDuration(offers[0].slices[0].duration) : undefined}
+        />
+      </div>
 
       {/* ─── Destination Banner ───────────────────────────────── */}
       <div style={{ padding: '0 20px' }}>
