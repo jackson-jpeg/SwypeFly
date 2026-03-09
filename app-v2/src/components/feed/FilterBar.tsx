@@ -107,7 +107,8 @@ export default function FilterBar() {
           alignItems: 'center',
           gap: 8,
           overflowX: 'auto',
-          paddingInline: 12,
+          paddingLeft: 12,
+          paddingRight: 120,
           width: '100%',
           scrollbarWidth: 'none',
         }}
