@@ -24,6 +24,8 @@ export const feedQuerySchema = z.object({
   sortPreset: z.enum(['default', 'cheapest', 'trending']).optional(),
   regionFilter: z.enum(['all', 'domestic', 'caribbean', 'latam', 'europe', 'asia', 'africa-me', 'oceania']).optional(),
   maxPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
+  minPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
+  search: z.string().max(100).optional(),
 });
 
 // ─── Swipe endpoint ──────────────────────────────────────────────────

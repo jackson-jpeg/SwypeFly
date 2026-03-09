@@ -274,6 +274,94 @@ describe('GET /api/feed', () => {
     expect(cacheHeader![1]).toContain('s-maxage');
   });
 
+  it('filters by city name with search param', async () => {
+    const dests = [
+      makeDest({ $id: 'bcn', city: 'Barcelona', country: 'Spain' }),
+      makeDest({ $id: 'par', city: 'Paris', country: 'France' }),
+      makeDest({ $id: 'tok', city: 'Tokyo', country: 'Japan' }),
+    ];
+    mockListDocuments
+      .mockResolvedValueOnce({ documents: dests })
+      .mockResolvedValue({ documents: [] });
+
+    const origin = uniqueOrigin();
+    const req = makeReq({ query: { origin, search: 'barcelona' } });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.destinations).toHaveLength(1);
+    expect(body.destinations[0].city).toBe('Barcelona');
+  });
+
+  it('filters by country name with search param', async () => {
+    const dests = [
+      makeDest({ $id: 'bcn2', city: 'Barcelona', country: 'Spain' }),
+      makeDest({ $id: 'par2', city: 'Paris', country: 'France' }),
+      makeDest({ $id: 'mad2', city: 'Madrid', country: 'Spain' }),
+    ];
+    mockListDocuments
+      .mockResolvedValueOnce({ documents: dests })
+      .mockResolvedValue({ documents: [] });
+
+    const origin = uniqueOrigin();
+    const req = makeReq({ query: { origin, search: 'Spain' } });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.destinations).toHaveLength(2);
+    const cities = body.destinations.map((d: any) => d.city).sort();
+    expect(cities).toEqual(['Barcelona', 'Madrid']);
+  });
+
+  it('excludes cheap destinations with minPrice filter', async () => {
+    const dests = [
+      makeDest({ $id: 'cheap2', flight_price: 150 }),
+      makeDest({ $id: 'mid2', flight_price: 500 }),
+      makeDest({ $id: 'exp2', flight_price: 900 }),
+    ];
+    mockListDocuments
+      .mockResolvedValueOnce({ documents: dests })
+      .mockResolvedValue({ documents: [] });
+
+    const origin = uniqueOrigin();
+    const req = makeReq({ query: { origin, minPrice: '400', sortPreset: 'cheapest' } });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.destinations).toHaveLength(2);
+    expect(body.destinations[0].flightPrice).toBe(500);
+    expect(body.destinations[1].flightPrice).toBe(900);
+  });
+
+  it('combines minPrice and maxPrice for price range', async () => {
+    const dests = [
+      makeDest({ $id: 'p1', flight_price: 100 }),
+      makeDest({ $id: 'p2', flight_price: 300 }),
+      makeDest({ $id: 'p3', flight_price: 600 }),
+      makeDest({ $id: 'p4', flight_price: 900 }),
+    ];
+    mockListDocuments
+      .mockResolvedValueOnce({ documents: dests })
+      .mockResolvedValue({ documents: [] });
+
+    const origin = uniqueOrigin();
+    const req = makeReq({ query: { origin, minPrice: '200', maxPrice: '700', sortPreset: 'cheapest' } });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.destinations).toHaveLength(2);
+    expect(body.destinations[0].flightPrice).toBe(300);
+    expect(body.destinations[1].flightPrice).toBe(600);
+  });
+
   it('sets no-store for session-based requests', async () => {
     mockListDocuments.mockResolvedValue({ documents: [] });
 
