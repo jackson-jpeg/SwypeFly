@@ -102,7 +102,7 @@ export default function PassengerDetailsScreen() {
     const [y, m, d] = stored.born_on.split('-');
     return `${m}/${d}/${y}`;
   });
-  const [gender, setGender] = useState(stored?.gender === 'm' ? 'Male' : 'Female');
+  const [gender, setGender] = useState(stored?.gender === 'm' ? 'Male' : stored?.gender === 'f' ? 'Female' : '');
   const [phone, setPhone] = useState(stored?.phone_number ?? '');
   const [passportOpen, setPassportOpen] = useState(false);
   const [passportNumber, setPassportNumber] = useState('');
@@ -122,7 +122,7 @@ export default function PassengerDetailsScreen() {
     } else {
       setDob('');
     }
-    setGender(pax?.gender === 'm' ? 'Male' : 'Female');
+    setGender(pax?.gender === 'm' ? 'Male' : pax?.gender === 'f' ? 'Female' : '');
     setPhone(pax?.phone_number ?? '');
     setPassportNumber(pax?.passport_number ?? '');
     setFfNumber(pax?.frequent_flyer_number ?? '');
@@ -137,6 +137,7 @@ export default function PassengerDetailsScreen() {
     if (!lastName.trim()) errs.lastName = 'Required';
     const dobErr = validateDob(dob);
     if (dobErr) errs.dob = dobErr;
+    if (!gender) errs.gender = 'Required';
     if (!phone.trim()) errs.phone = 'Phone number is required';
     else if (phone.replace(/\D/g, '').length < 7) errs.phone = 'Enter a valid phone number';
     setErrors(errs);
@@ -265,8 +266,10 @@ export default function PassengerDetailsScreen() {
                     ...inputStyle,
                     appearance: 'none',
                     paddingRight: 32,
+                    color: gender ? colors.deepDusk : colors.mutedText,
                   }}
                 >
+                  <option value="" disabled>Select</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Prefer not to say</option>
