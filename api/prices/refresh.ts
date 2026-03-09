@@ -10,10 +10,13 @@ import { cors } from '../_cors.js';
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
 
-// Each Duffel search takes ~2-2.5s (search + upsert). Hobby plan has 60s timeout.
-// 20 destinations × ~2.5s = ~50s, leaving margin for cold start + DB queries.
+// With parallel searches (5 concurrent), each chunk takes ~3s.
+// 20 destinations = 4 chunks × ~3s = ~12s search + DB overhead ≈ ~30s total.
 // When upgrading to Pro with */30 cron, reduce to 8 for faster rotation.
 const BATCH_SIZE = 20;
+
+// Concurrent Duffel searches per chunk (Duffel rate limit: 60 req/min)
+const CONCURRENCY = 5;
 
 // 5% threshold for price direction tracking
 const PRICE_CHANGE_THRESHOLD = 0.05;
@@ -128,6 +131,135 @@ interface BatchResult {
   sources: Record<string, number>;
 }
 
+async function refreshOneDest(
+  origin: string,
+  dest: string,
+  departureDate: string,
+  returnDate: string,
+  currentPriceMap: Map<string, { price: number; docId: string }>,
+): Promise<{ source: 'duffel' | 'travelpayouts' | null }> {
+  let price: number | null = null;
+  let airline = '';
+  let source: 'duffel' | 'travelpayouts' = 'duffel';
+  let depDate = departureDate;
+  let retDate = returnDate;
+  let offerJson = '';
+  let offerExpiresAt = '';
+
+  // Primary: Duffel
+  try {
+    const result = await searchFlights({
+      origin,
+      destination: dest,
+      departureDate,
+      returnDate,
+      passengers: [{ type: 'adult' }],
+      cabinClass: 'economy',
+    });
+
+    const offers = (result as any).offers as any[] | undefined;
+    if (offers && offers.length > 0) {
+      offers.sort(
+        (a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount),
+      );
+      const cheapest = offers[0];
+
+      price = Math.round(parseFloat(cheapest.total_amount));
+      offerExpiresAt = cheapest.expires_at || '';
+
+      const firstSlice = cheapest.slices?.[0];
+      const firstSeg = firstSlice?.segments?.[0];
+      if (firstSeg?.operating_carrier) {
+        airline = firstSeg.operating_carrier.name || firstSeg.operating_carrier.iata_code || '';
+      }
+      if (firstSeg?.departing_at) {
+        depDate = firstSeg.departing_at.split('T')[0];
+      }
+      const lastSlice = cheapest.slices?.[cheapest.slices.length - 1];
+      const lastSeg = lastSlice?.segments?.[0];
+      if (lastSeg?.departing_at) {
+        retDate = lastSeg.departing_at.split('T')[0];
+      }
+
+      offerJson = compactOfferJson(cheapest);
+      if (offerJson.length > 10000) {
+        offerJson = offerJson.slice(0, 10000);
+      }
+
+      source = 'duffel';
+    }
+  } catch (err) {
+    console.warn(`[refresh] Duffel search failed for ${origin}->${dest}:`, err);
+  }
+
+  // Fallback: Travelpayouts
+  if (price === null) {
+    try {
+      const tp = await fetchCheapPrices(origin, dest);
+      if (tp) {
+        price = tp.price;
+        airline = tp.airline;
+        depDate = tp.departureAt ? tp.departureAt.split('T')[0] : departureDate;
+        retDate = tp.returnAt ? tp.returnAt.split('T')[0] : returnDate;
+        source = 'travelpayouts';
+      }
+    } catch (err) {
+      console.warn(`[refresh] Travelpayouts fallback failed for ${origin}->${dest}:`, err);
+    }
+  }
+
+  if (price === null) return { source: null };
+
+  // Price history tracking
+  const existing = currentPriceMap.get(dest);
+  let priceDirection: 'up' | 'down' | 'stable' = 'stable';
+  const prevPrice = existing?.price;
+  if (prevPrice != null && prevPrice > 0) {
+    const pctChange = (price - prevPrice) / prevPrice;
+    if (pctChange > PRICE_CHANGE_THRESHOLD) priceDirection = 'up';
+    else if (pctChange < -PRICE_CHANGE_THRESHOLD) priceDirection = 'down';
+  }
+
+  let tripDurationDays: number | null = null;
+  if (depDate && retDate) {
+    const dep = new Date(depDate);
+    const ret = new Date(retDate);
+    if (!isNaN(dep.getTime()) && !isNaN(ret.getTime())) {
+      tripDurationDays = Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  const data: Record<string, unknown> = {
+    origin,
+    destination_iata: dest,
+    price,
+    currency: 'USD',
+    airline,
+    source,
+    fetched_at: new Date().toISOString(),
+    departure_date: depDate || '',
+    return_date: retDate || '',
+    trip_duration_days: tripDurationDays ?? 0,
+    previous_price: prevPrice ?? 0,
+    price_direction: priceDirection,
+    offer_json: offerJson,
+    offer_expires_at: offerExpiresAt,
+  };
+
+  try {
+    if (existing) {
+      await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.cachedPrices, existing.docId, data);
+    } else {
+      await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.cachedPrices, ID.unique(), data);
+    }
+  } catch (err) {
+    console.error(`[refresh] Upsert error for ${origin}->${dest}:`, err);
+    return { source: null };
+  }
+
+  return { source };
+}
+
 async function refreshBatch(
   origin: string,
   batch: string[],
@@ -137,142 +269,17 @@ async function refreshBatch(
   const { departureDate, returnDate } = getSearchDates();
   let fetched = 0;
 
-  for (const dest of batch) {
-    let price: number | null = null;
-    let airline = '';
-    let source: 'duffel' | 'travelpayouts' = 'duffel';
-    let depDate = departureDate;
-    let retDate = returnDate;
-    let offerJson = '';
-    let offerExpiresAt = '';
-
-    // Primary: Duffel
-    try {
-      const result = await searchFlights({
-        origin,
-        destination: dest,
-        departureDate,
-        returnDate,
-        passengers: [{ type: 'adult' }],
-        cabinClass: 'economy',
-      });
-
-      const offers = (result as any).offers as any[] | undefined;
-      if (offers && offers.length > 0) {
-        // Sort by total_amount (string from Duffel, parse to float)
-        offers.sort(
-          (a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount),
-        );
-        const cheapest = offers[0];
-
-        price = Math.round(parseFloat(cheapest.total_amount));
-        offerExpiresAt = cheapest.expires_at || '';
-
-        // Extract airline from first outbound segment
-        const firstSlice = cheapest.slices?.[0];
-        const firstSeg = firstSlice?.segments?.[0];
-        if (firstSeg?.operating_carrier) {
-          airline = firstSeg.operating_carrier.name || firstSeg.operating_carrier.iata_code || '';
-        }
-
-        // Extract actual dates from segments
-        if (firstSeg?.departing_at) {
-          depDate = firstSeg.departing_at.split('T')[0];
-        }
-        const lastSlice = cheapest.slices?.[cheapest.slices.length - 1];
-        const lastSeg = lastSlice?.segments?.[0];
-        if (lastSeg?.departing_at) {
-          retDate = lastSeg.departing_at.split('T')[0];
-        }
-
-        // Compact offer for caching
-        offerJson = compactOfferJson(cheapest);
-        // Truncate if too large
-        if (offerJson.length > 10000) {
-          offerJson = offerJson.slice(0, 10000);
-        }
-
-        source = 'duffel';
-        sourceCounts.duffel++;
+  // Process in parallel chunks of CONCURRENCY
+  for (let i = 0; i < batch.length; i += CONCURRENCY) {
+    const chunk = batch.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      chunk.map((dest) => refreshOneDest(origin, dest, departureDate, returnDate, currentPriceMap)),
+    );
+    for (const r of results) {
+      if (r.source) {
+        sourceCounts[r.source]++;
+        fetched++;
       }
-    } catch (err) {
-      console.warn(`[refresh] Duffel search failed for ${origin}->${dest}:`, err);
-    }
-
-    // Fallback: Travelpayouts
-    if (price === null) {
-      try {
-        const tp = await fetchCheapPrices(origin, dest);
-        if (tp) {
-          price = tp.price;
-          airline = tp.airline;
-          depDate = tp.departureAt ? tp.departureAt.split('T')[0] : departureDate;
-          retDate = tp.returnAt ? tp.returnAt.split('T')[0] : returnDate;
-          source = 'travelpayouts';
-          sourceCounts.travelpayouts++;
-        }
-      } catch (err) {
-        console.warn(`[refresh] Travelpayouts fallback failed for ${origin}->${dest}:`, err);
-      }
-    }
-
-    if (price === null) continue;
-
-    // Price history tracking
-    const existing = currentPriceMap.get(dest);
-    let priceDirection: 'up' | 'down' | 'stable' = 'stable';
-    const prevPrice = existing?.price;
-    if (prevPrice != null && prevPrice > 0) {
-      const pctChange = (price - prevPrice) / prevPrice;
-      if (pctChange > PRICE_CHANGE_THRESHOLD) priceDirection = 'up';
-      else if (pctChange < -PRICE_CHANGE_THRESHOLD) priceDirection = 'down';
-    }
-
-    let tripDurationDays: number | null = null;
-    if (depDate && retDate) {
-      const dep = new Date(depDate);
-      const ret = new Date(retDate);
-      if (!isNaN(dep.getTime()) && !isNaN(ret.getTime())) {
-        tripDurationDays = Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24));
-      }
-    }
-
-    const data: Record<string, unknown> = {
-      origin,
-      destination_iata: dest,
-      price,
-      currency: 'USD',
-      airline,
-      source,
-      fetched_at: new Date().toISOString(),
-      departure_date: depDate || '',
-      return_date: retDate || '',
-      trip_duration_days: tripDurationDays ?? 0,
-      previous_price: prevPrice ?? 0,
-      price_direction: priceDirection,
-      offer_json: offerJson,
-      offer_expires_at: offerExpiresAt,
-    };
-
-    try {
-      if (existing) {
-        await serverDatabases.updateDocument(
-          DATABASE_ID,
-          COLLECTIONS.cachedPrices,
-          existing.docId,
-          data,
-        );
-      } else {
-        await serverDatabases.createDocument(
-          DATABASE_ID,
-          COLLECTIONS.cachedPrices,
-          ID.unique(),
-          data,
-        );
-      }
-      fetched++;
-    } catch (err) {
-      console.error(`[refresh] Upsert error for ${origin}->${dest}:`, err);
     }
   }
 
