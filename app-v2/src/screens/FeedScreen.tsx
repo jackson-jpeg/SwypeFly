@@ -167,44 +167,63 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           bottom: 88,
           left: 20,
           display: 'flex',
-          alignItems: 'center',
-          gap: 8,
+          flexDirection: 'column',
+          gap: 3,
           paddingBlock: 10,
-          paddingInline: 18,
-          borderRadius: 20,
+          paddingInline: 16,
+          borderRadius: 16,
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           backgroundColor: '#2C1F1AE6',
           border: '1px solid #FFFFFF1A',
         }}
       >
-        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, lineHeight: '14px', color: colors.borderTint }}>
-          From
-        </span>
-        <span
-          style={{
+        {/* Row 1: Price + dates */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {destination.priceSource === 'estimate' && (
+            <span style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 11, lineHeight: '14px', color: colors.borderTint,
+            }}>
+              From
+            </span>
+          )}
+          <span style={{
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-            fontSize: 20,
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            lineHeight: '24px',
-            color: colors.sunriseButter,
-          }}
-        >
-          ${destination.flightPrice}
-        </span>
-        <span
-          style={{
+            fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em',
+            lineHeight: '26px', color: colors.sunriseButter,
+          }}>
+            ${destination.flightPrice}
+          </span>
+          {destination.departureDate && destination.returnDate && (
+            <span style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 11, lineHeight: '14px', color: '#FFFFFFAA',
+            }}>
+              {new Date(destination.departureDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {' \u2013 '}
+              {new Date(destination.returnDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          )}
+        </div>
+        {/* Row 2: Airline + live badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {destination.airline && destination.priceSource !== 'estimate' && (
+            <span style={{
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 10, lineHeight: '12px', color: '#FFFFFF80',
+            }}>
+              {destination.airline}
+            </span>
+          )}
+          <span style={{
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            lineHeight: '12px',
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', lineHeight: '12px',
             color: destination.priceSource === 'estimate' ? '#FFFFFF60' : colors.confirmGreen,
-          }}
-        >
-          {destination.priceSource === 'travelpayouts' || destination.priceSource === 'amadeus' || destination.priceSource === 'duffel' ? 'LIVE PRICE' : 'EST.'}
-        </span>
+          }}>
+            {destination.priceSource !== 'estimate' ? 'LIVE' : 'EST.'}
+          </span>
+        </div>
       </div>
     </div>
   );
