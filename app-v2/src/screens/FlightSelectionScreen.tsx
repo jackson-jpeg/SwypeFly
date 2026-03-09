@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useDestination } from '@/hooks/useDestination';
 import { useBookingSearch } from '@/hooks/useBooking';
@@ -399,6 +399,13 @@ function CachedOfferCard({ offer, selected, onSelect }: { offer: CachedOfferRaw;
 /* ── component ─────────────────────────────────────────────────── */
 export default function FlightSelectionScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchState = location.state as {
+    fromSearch?: boolean;
+    departureDate?: string;
+    returnDate?: string;
+    destinationIata?: string;
+  } | null;
   const { destinationId, feedPrice, setOffer, setCabinClass, passengerCount, setPassengerCount, cachedOfferJson } = useBookingStore();
   const { departureCode } = useUIStore();
   const { data: dest } = useDestination(destinationId ?? undefined);
@@ -426,15 +433,16 @@ export default function FlightSelectionScreen() {
 
   // Resolve destination IATA: use fallback hub for small airports, skip same-as-origin
   const resolvedDestCode = useMemo(() => {
-    if (!dest?.iataCode) return null;
-    let code = dest.iataCode.toUpperCase();
+    const rawCode = dest?.iataCode || searchState?.destinationIata;
+    if (!rawCode) return null;
+    let code = rawCode.toUpperCase();
     // If small airport, use nearby major hub
     const fallback = AIRPORT_FALLBACKS[code];
     if (fallback) code = fallback;
     // Can't fly to same airport as origin
     if (code === departureCode.toUpperCase()) return null;
     return code;
-  }, [dest?.iataCode, departureCode]);
+  }, [dest?.iataCode, searchState?.destinationIata, departureCode]);
 
   const searchParams = useMemo(() => {
     if (!dest || !resolvedDestCode) return null;
@@ -443,9 +451,11 @@ export default function FlightSelectionScreen() {
     today.setHours(0, 0, 0, 0);
     const minDep = new Date(today.getTime() + 2 * 86400000); // At least 2 days from now
 
+    // Use Search tab handoff dates if available, then destination dates, then defaults
+    const rawDepDate = searchState?.departureDate || dest?.departureDate;
     let depDate: Date;
-    if (dest?.departureDate) {
-      depDate = new Date(dest.departureDate + 'T00:00:00');
+    if (rawDepDate) {
+      depDate = new Date(rawDepDate + 'T00:00:00');
       // If cached date is in the past or too soon, push to 14 days out
       if (depDate < minDep) {
         depDate = new Date(today.getTime() + 14 * 86400000);
@@ -456,9 +466,10 @@ export default function FlightSelectionScreen() {
     const depDateStr = depDate.toISOString().slice(0, 10);
 
     // Always ensure round-trip: compute return date (min 2 days, max 10 days from departure)
+    const rawRetDate = searchState?.returnDate || dest?.returnDate;
     let retDate: Date;
-    if (dest?.returnDate) {
-      retDate = new Date(dest.returnDate + 'T00:00:00');
+    if (rawRetDate) {
+      retDate = new Date(rawRetDate + 'T00:00:00');
       const tripDays = Math.round((retDate.getTime() - depDate.getTime()) / 86400000);
       if (tripDays < 2 || tripDays > 10) {
         retDate = new Date(depDate.getTime() + 5 * 86400000);
@@ -478,7 +489,7 @@ export default function FlightSelectionScreen() {
       cabinClass: CABIN_CLASSES[selectedCabin],
       priceHint: feedPrice ?? dest.flightPrice,
     };
-  }, [dest, resolvedDestCode, departureCode, selectedCabin, passengers, feedPrice]);
+  }, [dest, resolvedDestCode, departureCode, selectedCabin, passengers, feedPrice, searchState?.departureDate, searchState?.returnDate]);
 
   const { data: offers, isLoading, isError } = useBookingSearch(searchParams);
 
