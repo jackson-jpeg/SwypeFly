@@ -28,6 +28,18 @@ export const feedQuerySchema = z.object({
   search: z.string().max(100).optional(),
 });
 
+// ─── Search deals endpoint ──────────────────────────────────────────
+
+export const searchDealsQuerySchema = z.object({
+  origin: iataCode.default('TPA'),
+  search: z.string().max(100).optional(),
+  region: z.enum(['all', 'domestic', 'caribbean', 'latam', 'europe', 'asia', 'africa-me', 'oceania']).optional(),
+  minPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
+  maxPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
+  sort: z.enum(['cheapest', 'trending', 'newest']).default('cheapest'),
+  cursor: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(0)).optional(),
+});
+
 // ─── Swipe endpoint ──────────────────────────────────────────────────
 
 export const swipeBodySchema = z.object({

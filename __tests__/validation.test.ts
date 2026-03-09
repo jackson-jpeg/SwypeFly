@@ -1,5 +1,6 @@
 import {
   feedQuerySchema,
+  searchDealsQuerySchema,
   swipeBodySchema,
   destinationQuerySchema,
   pricesQuerySchema,
@@ -313,6 +314,59 @@ describe('subscribeBodySchema', () => {
 
   it('rejects missing email', () => {
     const result = validateRequest(subscribeBodySchema, { airport: 'JFK' });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── searchDealsQuerySchema ─────────────────────────────────────────
+
+describe('searchDealsQuerySchema', () => {
+  it('accepts valid query with origin', () => {
+    const result = validateRequest(searchDealsQuerySchema, { origin: 'TPA' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.origin).toBe('TPA');
+      expect(result.data.sort).toBe('cheapest');
+    }
+  });
+
+  it('defaults origin to TPA and sort to cheapest', () => {
+    const result = validateRequest(searchDealsQuerySchema, {});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.origin).toBe('TPA');
+      expect(result.data.sort).toBe('cheapest');
+    }
+  });
+
+  it('accepts all filter params', () => {
+    const result = validateRequest(searchDealsQuerySchema, {
+      origin: 'JFK',
+      search: 'paris',
+      region: 'europe',
+      minPrice: '100',
+      maxPrice: '500',
+      sort: 'trending',
+      cursor: '10',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.search).toBe('paris');
+      expect(result.data.region).toBe('europe');
+      expect(result.data.minPrice).toBe(100);
+      expect(result.data.maxPrice).toBe(500);
+      expect(result.data.sort).toBe('trending');
+      expect(result.data.cursor).toBe(10);
+    }
+  });
+
+  it('rejects invalid sort value', () => {
+    const result = validateRequest(searchDealsQuerySchema, { sort: 'alphabetical' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid region', () => {
+    const result = validateRequest(searchDealsQuerySchema, { region: 'mars' });
     expect(result.success).toBe(false);
   });
 });
