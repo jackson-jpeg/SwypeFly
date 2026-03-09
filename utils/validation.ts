@@ -31,7 +31,7 @@ export const feedQuerySchema = z.object({
 // ─── Swipe endpoint ──────────────────────────────────────────────────
 
 export const swipeBodySchema = z.object({
-  destination_id: uuid,
+  destination_id: z.string().min(1).max(100),
   action: z.enum(['viewed', 'skipped', 'saved']),
   time_spent_ms: z.number().int().min(0).optional(),
   price_shown: z.number().min(0).optional(),
@@ -87,7 +87,7 @@ export const priceCheckQuerySchema = z.object({
 });
 
 export const tripPlanBodySchema = z.object({
-  destination_id: uuid.optional(),
+  destination_id: z.string().min(1).max(100).optional(),
   city: z.string().min(1).max(100),
   country: z.string().max(100).optional(),
   duration: z.number().int().min(1).max(30).optional().default(5),
@@ -98,7 +98,7 @@ export const tripPlanBodySchema = z.object({
 // ─── Price alert endpoint ────────────────────────────────────────────
 
 export const priceAlertBodySchema = z.object({
-  destination_id: uuid,
+  destination_id: z.string().min(1).max(100),
   target_price: z.number().positive().max(100000),
   email: z.string().email().max(255).optional(),
 });

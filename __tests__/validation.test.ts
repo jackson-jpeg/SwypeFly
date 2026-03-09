@@ -120,12 +120,12 @@ describe('swipeBodySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects non-uuid destination_id', () => {
+  it('accepts non-uuid destination_id (Appwrite uses numeric IDs)', () => {
     const result = validateRequest(swipeBodySchema, {
-      destination_id: 'not-a-uuid',
+      destination_id: '36',
       action: 'saved',
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('rejects negative time_spent_ms', () => {
