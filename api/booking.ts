@@ -345,6 +345,11 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(bookingSearchSchema, req.body);
   if (!v.success) return res.status(400).json({ error: v.error });
 
+  // Guard: origin and destination cannot be the same airport
+  if (v.data.origin.toUpperCase() === v.data.destination.toUpperCase()) {
+    return res.status(400).json({ error: 'Origin and destination cannot be the same airport' });
+  }
+
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Duffel API key not configured');
     const data = stubSearch(v.data.origin, v.data.destination, v.data.cabinClass || 'economy', v.data.departureDate, v.data.priceHint);

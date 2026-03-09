@@ -13,6 +13,23 @@ import type { BookingOffer, FlightSlice } from '@/api/types';
 const CABIN_CLASSES = ['economy', 'business', 'first'] as const;
 const CABIN_LABELS = ['Economy', 'Business', 'First'] as const;
 
+/** Map small/regional airports to nearby major hubs with better Duffel coverage */
+const AIRPORT_FALLBACKS: Record<string, string> = {
+  PVD: 'BOS', // Providence → Boston Logan
+  PIE: 'TPA', // St. Pete-Clearwater → Tampa
+  SXB: 'CDG', // Strasbourg → Paris CDG
+  BDL: 'BOS', // Hartford → Boston
+  ISP: 'JFK', // Long Island → JFK
+  SWF: 'EWR', // Stewart → Newark
+  HPN: 'JFK', // Westchester → JFK
+  ABE: 'PHL', // Allentown → Philadelphia
+  MDT: 'PHL', // Harrisburg → Philadelphia
+  SRQ: 'TPA', // Sarasota → Tampa
+  PBI: 'FLL', // West Palm → Fort Lauderdale
+  TYS: 'BNA', // Knoxville → Nashville
+  GSO: 'CLT', // Greensboro → Charlotte
+};
+
 /* ── Helpers for rich flight cards ─────────────────────────────── */
 
 function formatTime(iso: string): string {
@@ -39,7 +56,7 @@ function computeDurationMinutes(slice: FlightSlice): number {
     if (iso && (iso[1] || iso[2] || iso[3])) return ((parseInt(iso[1] || '0') * 24) + parseInt(iso[2] || '0')) * 60 + parseInt(iso[3] || '0');
     // Handle pre-parsed "32h 20m" format
     const parsed = slice.duration.match(/(\d+)h\s*(\d+)m/);
-    if (parsed) return parseInt(parsed[1]) * 60 + parseInt(parsed[2]);
+    if (parsed) return parseInt(parsed[1] ?? '0') * 60 + parseInt(parsed[2] ?? '0');
   }
   // Fallback: compute from departure/arrival times
   if (slice.departureTime && slice.arrivalTime) {
@@ -407,8 +424,20 @@ export default function FlightSelectionScreen() {
     }
   }, [cachedOfferJson]);
 
+  // Resolve destination IATA: use fallback hub for small airports, skip same-as-origin
+  const resolvedDestCode = useMemo(() => {
+    if (!dest?.iataCode) return null;
+    let code = dest.iataCode.toUpperCase();
+    // If small airport, use nearby major hub
+    const fallback = AIRPORT_FALLBACKS[code];
+    if (fallback) code = fallback;
+    // Can't fly to same airport as origin
+    if (code === departureCode.toUpperCase()) return null;
+    return code;
+  }, [dest?.iataCode, departureCode]);
+
   const searchParams = useMemo(() => {
-    if (!dest) return null;
+    if (!dest || !resolvedDestCode) return null;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -442,14 +471,14 @@ export default function FlightSelectionScreen() {
 
     return {
       origin: departureCode,
-      destination: dest.iataCode,
+      destination: resolvedDestCode,
       departureDate: depDateStr,
       returnDate: retDateStr,
       passengers: Array.from({ length: passengers }, () => ({ type: 'adult' as const })),
       cabinClass: CABIN_CLASSES[selectedCabin],
       priceHint: feedPrice ?? dest.flightPrice,
     };
-  }, [dest, departureCode, selectedCabin, passengers, feedPrice]);
+  }, [dest, resolvedDestCode, departureCode, selectedCabin, passengers, feedPrice]);
 
   const { data: offers, isLoading, isError } = useBookingSearch(searchParams);
 
@@ -532,6 +561,44 @@ export default function FlightSelectionScreen() {
     );
   }
 
+  // Same-origin guard: destination is user's departure city
+  if (dest && !resolvedDestCode) {
+    return (
+      <div
+        className="screen-fixed"
+        style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <BookingHeader step={1} stepLabel="Flight Selection" onBack={() => navigate(-1)} onClose={() => navigate('/')} />
+        <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, padding: 40, textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🏠</div>
+          <div style={{ fontSize: 16, color: colors.deepDusk, fontWeight: 600, marginBottom: 8 }}>
+            You're already here!
+          </div>
+          <div style={{ fontSize: 14, color: colors.mutedText, lineHeight: 1.5 }}>
+            {dest.city} is your departure city. Explore other destinations to find great flight deals.
+          </div>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              marginTop: 20,
+              padding: '10px 24px',
+              borderRadius: 8,
+              background: colors.terracotta,
+              color: '#fff',
+              border: 'none',
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Browse Destinations
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isError || !offers?.length) {
     return (
       <div
@@ -539,8 +606,33 @@ export default function FlightSelectionScreen() {
         style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
       >
         <BookingHeader step={1} stepLabel="Flight Selection" onBack={() => navigate(-1)} onClose={() => navigate('/')} />
-        <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText, padding: 40, textAlign: 'center' }}>
-          {isError ? 'Unable to load flight offers. Please try again.' : 'No flights available for this route. Try a different destination.'}
+        <div style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, padding: 40, textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>✈️</div>
+          <div style={{ fontSize: 16, color: colors.deepDusk, fontWeight: 600, marginBottom: 8 }}>
+            No flights found
+          </div>
+          <div style={{ fontSize: 14, color: colors.mutedText, lineHeight: 1.5 }}>
+            {isError
+              ? 'Unable to load flight offers. Please try again later.'
+              : `No direct flights available to ${dest?.city ?? 'this destination'}. Try a different date or destination.`}
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              marginTop: 20,
+              padding: '10px 24px',
+              borderRadius: 8,
+              background: colors.terracotta,
+              color: '#fff',
+              border: 'none',
+              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
@@ -554,7 +646,7 @@ export default function FlightSelectionScreen() {
   const data = {
     destination: dest?.city ?? 'Destination',
     destinationImage: dest?.imageUrl ?? '',
-    route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'}`,
+    route: `${departureCode} → ${resolvedDestCode ?? dest?.iataCode ?? 'JTR'}`,
     price: adjustedPrice,
     selectedCabin,
     passengers,
