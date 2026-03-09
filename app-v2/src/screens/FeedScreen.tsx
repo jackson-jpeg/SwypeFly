@@ -14,6 +14,7 @@ import SkeletonCard from '@/components/feed/SkeletonCard';
 import MapView from '@/components/feed/MapView';
 import TrendingStories from '@/components/feed/TrendingStories';
 import AirlineLogo from '@/components/AirlineLogo';
+import { getAirlineName } from '@/utils/airlines';
 
 function FeedCard({ destination, onSave }: { destination: Destination; onSave?: (id: string) => void }) {
   const navigate = useNavigate();
@@ -267,7 +268,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 10, lineHeight: '12px', color: '#FFFFFF80',
               }}>
-                {destination.airline}
+                {getAirlineName(destination.airline!)}
               </span>
             </>
           )}

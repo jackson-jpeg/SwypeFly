@@ -1,8 +1,14 @@
+/**
+ * IATA airline code → human-readable name mapping.
+ * Used to resolve raw 2-letter codes that come from cached_prices
+ * when the Duffel API or Travelpayouts didn't return a full name.
+ */
 const AIRLINE_NAMES: Record<string, string> = {
   '2B': 'Albawings',
+  '3K': 'Jetstar Asia',
   '4O': 'Interjet',
   '5J': 'Cebu Pacific',
-  '6E': '6E IndiGo',
+  '6E': 'IndiGo',
   '7C': 'Jeju Air',
   '8M': 'Myanmar Airways',
   '9W': 'Jet Airways',
@@ -48,6 +54,7 @@ const AIRLINE_NAMES: Record<string, string> = {
   IB: 'Iberia',
   JL: 'Japan Airlines',
   JQ: 'Jetstar',
+  KC: 'Air Astana',
   KE: 'Korean Air',
   KL: 'KLM',
   KQ: 'Kenya Airways',
@@ -99,10 +106,15 @@ const AIRLINE_NAMES: Record<string, string> = {
 };
 
 /**
- * Resolve IATA airline code to display name.
- * Returns the full name if known, otherwise the code itself.
+ * Resolve an airline code or name to a display-friendly name.
+ * If the input is already a full name (more than 2 chars), returns it as-is.
+ * If it's a 2-letter IATA code, looks it up in the mapping.
+ * Falls back to the original string if not found.
  */
-export function getAirlineName(code: string): string {
-  if (!code) return '';
-  return AIRLINE_NAMES[code.toUpperCase()] || code;
+export function getAirlineName(codeOrName: string): string {
+  if (!codeOrName) return '';
+  // If it's already a full name (longer than 3 chars and not all uppercase), return as-is
+  if (codeOrName.length > 3) return codeOrName;
+  // Try lookup (handles 2-letter codes and 3-letter edge cases)
+  return AIRLINE_NAMES[codeOrName.toUpperCase()] ?? codeOrName;
 }
