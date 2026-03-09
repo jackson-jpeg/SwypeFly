@@ -43,7 +43,7 @@ function getDefaultDetail(dest: Destination) {
     flightStrikethrough: dest.previousPrice || undefined,
     flightRoute: `${dest.iataCode ?? dest.city} · Round trip`,
     flightDates: dest.departureDate && dest.returnDate && dest.departureDate >= new Date().toISOString().slice(0, 10)
-      ? `${dest.departureDate} – ${dest.returnDate} · Economy`
+      ? `${new Date(dest.departureDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(dest.returnDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · Economy`
       : 'Flexible dates · Economy',
     hotels: (dest.imageUrls ?? []).slice(0, 2).map((img, i) => ({
       name: i === 0 ? 'Best Value Stay' : 'Top Rated Stay',
