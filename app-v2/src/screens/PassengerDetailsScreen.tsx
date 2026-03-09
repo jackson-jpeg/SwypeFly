@@ -434,7 +434,9 @@ export default function PassengerDetailsScreen() {
             const [mm, dd, yyyy] = dob.split('/');
             const bornOn = `${yyyy}-${mm}-${dd}`;
 
-            const paxId = `pax-${currentPaxIdx + 1}`;
+            // Use the actual Duffel passenger ID from the offer (required for order creation)
+            const offerPassengers = bookingStore.selectedOffer?.passengers ?? [];
+            const paxId = offerPassengers[currentPaxIdx]?.id ?? `pax-${currentPaxIdx + 1}`;
             const paxData = {
               id: paxId,
               given_name: firstName.trim(),
@@ -443,7 +445,7 @@ export default function PassengerDetailsScreen() {
               gender: genderCode as 'f' | 'm',
               title: titleCode as 'mr' | 'ms',
               email: user?.email ?? '',
-              phone_number: phone.trim(),
+              phone_number: phone.trim().startsWith('+') ? phone.trim() : `+1${phone.trim().replace(/\D/g, '')}`,
               ...(passportNumber.trim() ? { passport_number: passportNumber.trim() } : {}),
               ...(ffNumber.trim() ? { frequent_flyer_number: ffNumber.trim() } : {}),
             };
