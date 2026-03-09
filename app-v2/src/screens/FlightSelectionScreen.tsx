@@ -254,10 +254,14 @@ export default function FlightSelectionScreen() {
     route: `${departureCode} \u2192 ${dest?.iataCode ?? 'JTR'}`,
     price: adjustedPrice,
     dates: offers.map((o, i) => {
-      const dep = new Date(o.slices[0]!.departureTime);
-      const ret = new Date(o.slices[1]!.departureTime);
-      const nights = Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24));
-      const range = `${dep.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} \u2013 ${ret.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      const depSlice = o.slices[0];
+      const retSlice = o.slices[1];
+      const dep = depSlice ? new Date(depSlice.departureTime) : new Date();
+      const ret = retSlice ? new Date(retSlice.departureTime) : dep;
+      const nights = Math.max(0, Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24)));
+      const depLabel = dep.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const retLabel = ret.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const range = retSlice ? `${depLabel} \u2013 ${retLabel}` : depLabel;
       return {
         range,
         nights,
