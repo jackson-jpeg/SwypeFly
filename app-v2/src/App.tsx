@@ -20,6 +20,7 @@ const ConfirmationScreen = lazy(() => import('@/screens/ConfirmationScreen'));
 const TripsScreen = lazy(() => import('@/screens/TripsScreen'));
 const WishlistScreen = lazy(() => import('@/screens/WishlistScreen'));
 const SettingsScreen = lazy(() => import('@/screens/SettingsScreen'));
+const SearchScreen = lazy(() => import('@/screens/SearchScreen'));
 const QuizScreen = lazy(() => import('@/screens/QuizScreen'));
 const LegalScreen = lazy(() => import('@/screens/LegalScreen'));
 const NotFoundScreen = lazy(() => import('@/screens/NotFoundScreen'));
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/login" element={session && !isGuest ? <Navigate to="/" /> : <LoginScreen />} />
         <Route path="/onboarding" element={<OnboardingScreen />} />
         <Route path="/" element={needsAuth ? <Navigate to="/login" /> : needsOnboarding ? <Navigate to="/onboarding" /> : <FeedScreen />} />
+        <Route path="/search" element={needsAuth ? <Navigate to="/login" /> : <SearchScreen />} />
         <Route path="/destination/:id" element={needsAuth ? <Navigate to="/login" /> : <DestinationDetailScreen />} />
         <Route path="/booking/flights" element={needsAuth ? <Navigate to="/login" state={{ returnTo: '/booking/flights' }} /> : <FlightSelectionScreen />} />
         <Route path="/booking/passengers" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/passengers' }} /> : <PassengerDetailsScreen />} />
