@@ -540,8 +540,8 @@ export default function FlightSelectionScreen() {
         <RouteMap
           originCode={departureCode}
           destCode={dest?.iataCode ?? ''}
-          airlineName={offers[0]?.slices[0]?.airline}
-          duration={offers[0]?.slices[0]?.duration ? formatDuration(offers[0].slices[0].duration) : undefined}
+          airlineName={offers?.[0]?.slices[0]?.airline}
+          duration={offers?.[0]?.slices[0]?.duration ? formatDuration(offers[0]!.slices[0]!.duration) : undefined}
         />
       </div>
 
