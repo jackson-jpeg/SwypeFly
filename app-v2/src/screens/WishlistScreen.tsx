@@ -167,9 +167,14 @@ export default function WishlistScreen() {
       {/* Card grid */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, padding: '20px 24px', flex: 1 }}>
         {WISHLIST_DATA.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, paddingTop: 60, width: '100%' }}>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: colors.mutedText }}>No saved destinations yet</span>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.borderTint }}>Tap the heart on destinations you love</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', width: '100%' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>✈️</div>
+            <h3 style={{ fontFamily: `"${fonts.display}", system-ui, sans-serif`, color: '#FFFFFF', fontSize: 20, fontWeight: 700, marginBottom: 8, margin: 0 }}>
+              No saved destinations yet
+            </h3>
+            <p style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, margin: '8px 0 0 0' }}>
+              Swipe through destinations and tap the heart to save your favorites here.
+            </p>
           </div>
         )}
         {WISHLIST_DATA.map((dest) => (

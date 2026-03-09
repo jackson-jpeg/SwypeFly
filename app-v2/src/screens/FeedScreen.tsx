@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useFeed } from '@/hooks/useFeed';
@@ -17,6 +17,14 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
   const { isSaved, toggle } = useSavedStore();
   const { session } = useAuthContext();
   const saved = isSaved(destination.id);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  useEffect(() => {
+    setImageLoaded(false);
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.src = destination.imageUrl;
+  }, [destination.imageUrl]);
 
   const glassButton: React.CSSProperties = {
     display: 'flex',
@@ -54,6 +62,9 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundColor: '#0A0F1E',
+          filter: imageLoaded ? 'none' : 'blur(20px)',
+          transform: imageLoaded ? 'scale(1)' : 'scale(1.1)',
+          transition: 'filter 0.5s ease, transform 0.5s ease',
         }}
       />
       {/* Bottom gradient overlay */}
