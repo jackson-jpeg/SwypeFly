@@ -12,6 +12,7 @@ import FilterBar from '@/components/feed/FilterBar';
 import SearchOverlay from '@/components/feed/SearchOverlay';
 import SkeletonCard from '@/components/feed/SkeletonCard';
 import MapView from '@/components/feed/MapView';
+import TrendingStories from '@/components/feed/TrendingStories';
 import AirlineLogo from '@/components/AirlineLogo';
 
 function FeedCard({ destination, onSave }: { destination: Destination; onSave?: (id: string) => void }) {
@@ -434,6 +435,12 @@ export default function FeedScreen() {
     <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Filter bar at top */}
       <FilterBar />
+
+      {/* Trending stories row */}
+      <TrendingStories
+        destinations={destinations}
+        onSelect={(dest) => navigate(`/destination/${dest.id}`)}
+      />
 
       {/* Top-right controls: view toggle + search */}
       <div style={{ position: 'absolute', top: 52, right: 12, zIndex: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
