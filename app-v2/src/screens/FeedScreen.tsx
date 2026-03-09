@@ -23,7 +23,10 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
   const saved = isSaved(destination.id);
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  const hasImage = !!destination.imageUrl;
+
   useEffect(() => {
+    if (!hasImage) { setImageLoaded(true); return; }
     setImageLoaded(false);
     const img = new Image();
     img.onload = () => setImageLoaded(true);
@@ -57,14 +60,14 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
         overflow: 'hidden',
       }}
     >
-      {/* Full-bleed photo */}
+      {/* Full-bleed photo or gradient fallback */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: `url(${destination.imageUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          ...(hasImage
+            ? { backgroundImage: `url(${destination.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : { background: `linear-gradient(135deg, #1a2a3a 0%, #2d1b3d 40%, #1a3a2a 70%, #0A0F1E 100%)` }),
           backgroundColor: '#0A0F1E',
           filter: imageLoaded ? 'none' : 'blur(20px)',
           transform: imageLoaded ? 'scale(1)' : 'scale(1.1)',
