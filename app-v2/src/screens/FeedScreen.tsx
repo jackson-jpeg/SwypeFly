@@ -11,6 +11,7 @@ import BottomNav from '@/components/BottomNav';
 import FilterBar from '@/components/feed/FilterBar';
 import SearchOverlay from '@/components/feed/SearchOverlay';
 import SkeletonCard from '@/components/feed/SkeletonCard';
+import AirlineLogo from '@/components/AirlineLogo';
 
 function FeedCard({ destination, onSave }: { destination: Destination; onSave?: (id: string) => void }) {
   const navigate = useNavigate();
@@ -258,12 +259,15 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
         {/* Row 2: Airline + live badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {destination.airline && destination.priceSource !== 'estimate' && (
-            <span style={{
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 10, lineHeight: '12px', color: '#FFFFFF80',
-            }}>
-              {destination.airline}
-            </span>
+            <>
+              <AirlineLogo code={destination.airline} size={14} />
+              <span style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 10, lineHeight: '12px', color: '#FFFFFF80',
+              }}>
+                {destination.airline}
+              </span>
+            </>
           )}
           <span style={{
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,

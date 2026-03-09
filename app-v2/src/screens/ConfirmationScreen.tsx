@@ -6,6 +6,7 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useDestination } from '@/hooks/useDestination';
 import QRCode from '@/components/QRCode';
+import AirlineLogo from '@/components/AirlineLogo';
 
 /* ───── confetti CSS keyframes (injected once) ───── */
 const CONFETTI_STYLE_ID = 'sogojet-confetti-keyframes';
@@ -111,6 +112,9 @@ export default function ConfirmationScreen() {
   const paxName = order?.passengers?.[0]?.name
     ?? (booking.passengers[0] ? `${booking.passengers[0].given_name} ${booking.passengers[0].family_name}` : user?.name ?? 'Guest');
   const bookingCode = order?.bookingReference ?? `SGJET-${destIata}-PEND`;
+  const outboundSlice = booking.selectedOffer?.slices?.[0];
+  const airlineName = outboundSlice?.airline ?? '';
+  const airlineCode = outboundSlice?.flightNumber?.match(/^([A-Z]{2})/)?.[1] ?? '';
 
   const [shareLabel, setShareLabel] = useState('Share Your Trip');
 
@@ -298,10 +302,20 @@ export default function ConfirmationScreen() {
         >
           {/* top section */}
           <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* passenger name */}
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 500, color: colors.sageDrift, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {paxName}
-            </span>
+            {/* passenger name + airline */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, fontWeight: 500, color: colors.sageDrift, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {paxName}
+              </span>
+              {airlineName && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {airlineCode && <AirlineLogo code={airlineCode} size={20} />}
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, fontWeight: 600, color: colors.deepDusk }}>
+                    {airlineName}
+                  </span>
+                </div>
+              )}
+            </div>
             {/* header row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span

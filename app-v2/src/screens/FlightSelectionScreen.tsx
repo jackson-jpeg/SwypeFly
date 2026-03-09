@@ -7,6 +7,7 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import BookingHeader from '@/components/BookingHeader';
 import RouteMap from '@/components/RouteMap';
+import AirlineLogo from '@/components/AirlineLogo';
 import type { BookingOffer, FlightSlice } from '@/api/types';
 
 const CABIN_CLASSES = ['economy', 'business', 'first'] as const;
@@ -146,6 +147,7 @@ function FlightOfferCard({
   const outbound = offer.slices[0];
   const returnSlice = offer.slices[1];
   const airlineName = outbound?.airline || 'Airline';
+  const airlineCode = outbound?.flightNumber?.match(/^([A-Z]{2})/)?.[1] ?? '';
 
   return (
     <div
@@ -165,7 +167,8 @@ function FlightOfferCard({
       {/* Left: flight details */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 8 }}>
         {/* Airline + badge row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {airlineCode && <AirlineLogo code={airlineCode} size={20} />}
           <span
             style={{
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
@@ -327,19 +330,22 @@ function CachedOfferCard({ offer, selected, onSelect }: { offer: CachedOfferRaw;
       </div>
 
       {/* Flight info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {firstSegment && (
-          <span
-            style={{
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 12,
-              fontWeight: 600,
-              lineHeight: '16px',
-              color: colors.deepDusk,
-            }}
-          >
-            {firstSegment.airline} {firstSegment.flight_number}
-          </span>
+          <>
+            {firstSegment.airline_code && <AirlineLogo code={firstSegment.airline_code} size={20} />}
+            <span
+              style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 12,
+                fontWeight: 600,
+                lineHeight: '16px',
+                color: colors.deepDusk,
+              }}
+            >
+              {firstSegment.airline} {firstSegment.flight_number}
+            </span>
+          </>
         )}
         <span
           style={{
