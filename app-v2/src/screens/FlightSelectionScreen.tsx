@@ -387,6 +387,8 @@ export default function FlightSelectionScreen() {
   const passengers = passengerCount;
   const setPassengers = setPassengerCount;
   const [useCachedOffer, setUseCachedOffer] = useState(false);
+  const [sortBy, setSortBy] = useState<'price' | 'duration' | 'departure'>('price');
+  const [maxStops, setMaxStops] = useState<number | null>(null); // null = any
 
   // Parse cached Duffel offer from feed (if available and not expired)
   const cachedOffer = useMemo(() => {
@@ -463,8 +465,36 @@ export default function FlightSelectionScreen() {
     return () => clearInterval(id);
   }, [checkExpiry]);
 
+  // Sort & filter offers (must be before early returns for hook ordering)
+  const sortedOffers = useMemo(() => {
+    if (!offers) return [];
+    let filtered = [...offers];
+
+    // Filter by max stops
+    if (maxStops !== null) {
+      filtered = filtered.filter(o =>
+        o.slices.every(s => (s.stops ?? 0) <= maxStops)
+      );
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'price': return a.totalAmount - b.totalAmount;
+        case 'duration': return totalDurationMinutes(a) - totalDurationMinutes(b);
+        case 'departure': {
+          const aTime = new Date(a.slices[0]?.departureTime ?? '').getTime();
+          const bTime = new Date(b.slices[0]?.departureTime ?? '').getTime();
+          return aTime - bTime;
+        }
+        default: return 0;
+      }
+    });
+    return filtered;
+  }, [offers, sortBy, maxStops]);
+
   // Must be before early returns to maintain consistent hook call order
-  const badges = useMemo(() => (offers ? computeBadges(offers) : []), [offers]);
+  const badges = useMemo(() => (sortedOffers.length ? computeBadges(sortedOffers) : []), [sortedOffers]);
 
   if (isLoading || (!offers?.length && !isError)) {
     return (
@@ -716,11 +746,64 @@ export default function FlightSelectionScreen() {
               color: colors.borderTint,
             }}
           >
-            {offers.length} option{offers.length !== 1 ? 's' : ''}
+            {sortedOffers.length} option{sortedOffers.length !== 1 ? 's' : ''}
           </span>
         </div>
 
-        {offers.map((offer, i) => (
+        {/* Sort & Filter controls */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+          {(['price', 'duration', 'departure'] as const).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSortBy(key)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                backgroundColor: sortBy === key ? colors.sageDrift : colors.offWhite,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: sortBy === key ? '#FFFFFF' : colors.mutedText,
+                }}
+              >
+                {key === 'price' ? 'Price' : key === 'duration' ? 'Duration' : 'Departure'}
+              </span>
+            </button>
+          ))}
+          <div style={{ width: 1, height: 24, backgroundColor: colors.borderTint, alignSelf: 'center', opacity: 0.3 }} />
+          {([null, 0, 1, 2] as const).map((val) => (
+            <button
+              key={String(val)}
+              onClick={() => setMaxStops(val)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                backgroundColor: maxStops === val ? colors.sageDrift : colors.offWhite,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: maxStops === val ? '#FFFFFF' : colors.mutedText,
+                }}
+              >
+                {val === null ? 'Any' : val === 0 ? 'Nonstop' : `${val} max`}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {sortedOffers.map((offer, i) => (
           <FlightOfferCard
             key={offer.id || i}
             offer={offer}
