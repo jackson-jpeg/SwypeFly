@@ -10,9 +10,10 @@ import { cors } from '../_cors.js';
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
 
-// Each Duffel search takes ~1-1.5s. Hobby plan has 60s timeout, so ~40 destinations per run.
+// Each Duffel search takes ~2-2.5s (search + upsert). Hobby plan has 60s timeout.
+// 20 destinations × ~2.5s = ~50s, leaving margin for cold start + DB queries.
 // When upgrading to Pro with */30 cron, reduce to 8 for faster rotation.
-const BATCH_SIZE = 40;
+const BATCH_SIZE = 20;
 
 // 5% threshold for price direction tracking
 const PRICE_CHANGE_THRESHOLD = 0.05;
