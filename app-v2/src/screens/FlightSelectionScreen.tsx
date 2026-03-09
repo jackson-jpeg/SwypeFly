@@ -463,6 +463,9 @@ export default function FlightSelectionScreen() {
     return () => clearInterval(id);
   }, [checkExpiry]);
 
+  // Must be before early returns to maintain consistent hook call order
+  const badges = useMemo(() => (offers ? computeBadges(offers) : []), [offers]);
+
   if (isLoading || (!offers?.length && !isError)) {
     return (
       <div
@@ -503,8 +506,6 @@ export default function FlightSelectionScreen() {
   const adjustedPrice = useCachedOffer && cachedOffer
     ? parseFloat(cachedOffer.total_amount)
     : selectedOffer!.totalAmount;
-
-  const badges = useMemo(() => computeBadges(offers), [offers]);
 
   const data = {
     destination: dest?.city ?? 'Destination',
