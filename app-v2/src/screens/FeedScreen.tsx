@@ -247,7 +247,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
               {'\u2191'}
             </span>
           )}
-          {destination.departureDate && destination.returnDate && (
+          {destination.departureDate && destination.returnDate && new Date(destination.departureDate + 'T00:00:00') > new Date() && (
             <span style={{
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 11, lineHeight: '14px', color: '#FFFFFFAA',
