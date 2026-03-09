@@ -11,6 +11,7 @@ import BottomNav from '@/components/BottomNav';
 import FilterBar from '@/components/feed/FilterBar';
 import SearchOverlay from '@/components/feed/SearchOverlay';
 import SkeletonCard from '@/components/feed/SkeletonCard';
+import MapView from '@/components/feed/MapView';
 import AirlineLogo from '@/components/AirlineLogo';
 
 function FeedCard({ destination, onSave }: { destination: Destination; onSave?: (id: string) => void }) {
@@ -284,6 +285,8 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
 
 export default function FeedScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
   const { scrollIndex: currentIndex, setScrollIndex: setCurrentIndex, filters, isSearchOpen, setSearchOpen, clearFilters, hasActiveFilters } = useFeedStore();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useFeed();
   const { trackView, trackSave } = useSwipeTracking();
@@ -432,53 +435,121 @@ export default function FeedScreen() {
       {/* Filter bar at top */}
       <FilterBar />
 
-      {/* Search button (top-right) */}
-      <button
-        aria-label="Search destinations"
-        onClick={() => setSearchOpen(true)}
-        style={{
-          ...glassButton,
-          position: 'absolute',
-          top: 52,
-          right: 12,
-          zIndex: 10,
-        }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFFCC" strokeWidth="2" strokeLinecap="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      </button>
+      {/* Top-right controls: view toggle + search */}
+      <div style={{ position: 'absolute', top: 52, right: 12, zIndex: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+        {/* View mode toggle */}
+        <div
+          style={{
+            display: 'flex',
+            borderRadius: 20,
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            backgroundColor: '#FFFFFF14',
+            border: '1px solid #FFFFFF1F',
+            overflow: 'hidden',
+          }}
+        >
+          <button
+            aria-label="Card view"
+            onClick={() => setViewMode('cards')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 36,
+              padding: 0,
+              border: 'none',
+              background: viewMode === 'cards' ? '#FFFFFF20' : 'transparent',
+              borderRadius: '18px 0 0 18px',
+              cursor: 'pointer',
+              transition: 'background 0.2s ease',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={viewMode === 'cards' ? colors.sageDrift : '#FFFFFF80'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </button>
+          <button
+            aria-label="Map view"
+            onClick={() => setViewMode('map')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 36,
+              padding: 0,
+              border: 'none',
+              background: viewMode === 'map' ? '#FFFFFF20' : 'transparent',
+              borderRadius: '0 18px 18px 0',
+              cursor: 'pointer',
+              transition: 'background 0.2s ease',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={viewMode === 'map' ? colors.sageDrift : '#FFFFFF80'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M2 12h20" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </button>
+        </div>
 
-      {/* Vertical scroll container */}
-      <div
-        ref={scrollRef}
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          scrollSnapType: 'y mandatory',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
-        {destinations.map((dest) => (
-          <FeedCard key={dest.id} destination={dest} onSave={(id) => trackSave(id, dest.flightPrice)} />
-        ))}
+        {/* Search button */}
+        <button
+          aria-label="Search destinations"
+          onClick={() => setSearchOpen(true)}
+          style={glassButton}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFFCC" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
       </div>
 
-      {/* Scroll progress bar */}
-      {destinations.length > 1 && (
-        <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 3, height: 80, borderRadius: 2, backgroundColor: '#FFFFFF20', zIndex: 20, overflow: 'hidden' }}>
+      {/* Content area: cards or map */}
+      {viewMode === 'cards' ? (
+        <>
+          {/* Vertical scroll container */}
           <div
+            ref={scrollRef}
             style={{
-              width: '100%',
-              height: `${Math.max(10, 100 / destinations.length)}%`,
-              borderRadius: 2,
-              backgroundColor: '#FFFFFF',
-              transform: `translateY(${(currentIndex / Math.max(1, destinations.length - 1)) * (80 - 80 * Math.max(10, 100 / destinations.length) / 100)}px)`,
-              transition: 'transform 0.2s',
+              flex: 1,
+              overflowY: 'auto',
+              scrollSnapType: 'y mandatory',
+              WebkitOverflowScrolling: 'touch',
             }}
-          />
-        </div>
+          >
+            {destinations.map((dest) => (
+              <FeedCard key={dest.id} destination={dest} onSave={(id) => trackSave(id, dest.flightPrice)} />
+            ))}
+          </div>
+
+          {/* Scroll progress bar */}
+          {destinations.length > 1 && (
+            <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 3, height: 80, borderRadius: 2, backgroundColor: '#FFFFFF20', zIndex: 20, overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: '100%',
+                  height: `${Math.max(10, 100 / destinations.length)}%`,
+                  borderRadius: 2,
+                  backgroundColor: '#FFFFFF',
+                  transform: `translateY(${(currentIndex / Math.max(1, destinations.length - 1)) * (80 - 80 * Math.max(10, 100 / destinations.length) / 100)}px)`,
+                  transition: 'transform 0.2s',
+                }}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <MapView
+          destinations={destinations}
+          onSelect={(dest) => navigate(`/destination/${dest.id}`)}
+        />
       )}
 
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
