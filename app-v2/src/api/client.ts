@@ -57,7 +57,6 @@ export async function apiFetch<T>(
 
     if (res.status === 429) throw new Error('Too many requests. Please wait a moment and try again.');
     if (res.status === 403) throw new Error('Access denied.');
-    if (res.status >= 500) throw new Error(`Server error — please try again later.`);
     throw new Error(detail || `Request failed (${res.status})`);
   }
 

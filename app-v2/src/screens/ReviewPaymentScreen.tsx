@@ -267,7 +267,7 @@ export default function ReviewPaymentScreen() {
       const offerId = booking.selectedOffer?.id ?? 'unknown';
       const pi = await createPaymentIntent.mutateAsync({
         offerId,
-        amount: total * 100, // cents
+        amount: Math.round(total * 100), // cents (round to avoid float issues)
         currency: 'USD',
       });
       setClientSecret(pi.clientSecret);

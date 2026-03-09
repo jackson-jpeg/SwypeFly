@@ -419,9 +419,11 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
       offerId: v.data.offerId,
     });
     return res.status(200).json(result);
-  } catch (err) {
+  } catch (err: any) {
     logApiError('api/booking/payment-intent', err);
-    return res.status(500).json({ error: 'Failed to create payment intent' });
+    const detail = err?.message ?? String(err);
+    console.error('[booking/payment-intent] Error detail:', detail);
+    return res.status(500).json({ error: `Payment intent failed: ${detail}` });
   }
 }
 
