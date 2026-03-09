@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
@@ -7,25 +7,16 @@ import { useUIStore } from '@/stores/uiStore';
 import { useDestination } from '@/hooks/useDestination';
 import QRCode from '@/components/QRCode';
 import AirlineLogo from '@/components/AirlineLogo';
+import Confetti from '@/components/Confetti';
 
-/* ───── confetti CSS keyframes (injected once) ───── */
-const CONFETTI_STYLE_ID = 'sogojet-confetti-keyframes';
+/* ───── CSS keyframes for card/check animations ───── */
+const CONFETTI_STYLE_ID = 'sogojet-confirm-keyframes';
 
 function injectConfettiStyles() {
   if (document.getElementById(CONFETTI_STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = CONFETTI_STYLE_ID;
   style.textContent = `
-    @keyframes confetti-fall {
-      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-      80% { opacity: 1; }
-      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-    }
-    @keyframes confetti-sway {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(15px); }
-      75% { transform: translateX(-15px); }
-    }
     @keyframes card-slide-up {
       0% { transform: translateY(40px); opacity: 0; }
       100% { transform: translateY(0); opacity: 1; }
@@ -41,60 +32,6 @@ function injectConfettiStyles() {
     }
   `;
   document.head.appendChild(style);
-}
-
-const CONFETTI_COLORS = [
-  colors.confirmGreen,
-  colors.sageDrift,
-  colors.sunriseButter,
-  colors.terracotta,
-  colors.paleHorizon,
-  colors.warmDusk,
-  '#E8A0C9',
-  '#A0C4E8',
-];
-
-function ConfettiOverlay() {
-  const particles = useRef(
-    Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      delay: Math.random() * 2.5,
-      duration: 2.5 + Math.random() * 2,
-      size: 6 + Math.random() * 6,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      shape: Math.random() > 0.5 ? 'circle' : 'rect',
-      swayDuration: 1.5 + Math.random() * 2,
-    })),
-  ).current;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        overflow: 'hidden',
-        pointerEvents: 'none',
-        zIndex: 10,
-      }}
-    >
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          style={{
-            position: 'absolute',
-            left: `${p.left}%`,
-            top: -12,
-            width: p.size,
-            height: p.shape === 'rect' ? p.size * 1.4 : p.size,
-            borderRadius: p.shape === 'circle' ? '50%' : 2,
-            backgroundColor: p.color,
-            animation: `confetti-fall ${p.duration}s ${p.delay}s ease-in forwards, confetti-sway ${p.swayDuration}s ${p.delay}s ease-in-out infinite`,
-          }}
-        />
-      ))}
-    </div>
-  );
 }
 
 /* ───── screen ───── */
@@ -117,6 +54,7 @@ export default function ConfirmationScreen() {
   const airlineCode = outboundSlice?.flightNumber?.match(/^([A-Z]{2})/)?.[1] ?? '';
 
   const [shareLabel, setShareLabel] = useState('Share Your Trip');
+  const [showConfetti, setShowConfetti] = useState(true);
 
   useEffect(() => {
     injectConfettiStyles();
@@ -153,8 +91,8 @@ export default function ConfirmationScreen() {
         position: 'relative',
       }}
     >
-      {/* confetti */}
-      <ConfettiOverlay />
+      {/* canvas confetti explosion */}
+      {showConfetti && <Confetti onComplete={() => setShowConfetti(false)} />}
 
       {/* background photo at 8% opacity */}
       <div
