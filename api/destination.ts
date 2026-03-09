@@ -134,6 +134,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       airline: (price?.airline as string) || undefined,
       priceDirection: (price?.price_direction as string) || undefined,
       previousPrice: (price?.previous_price as number) ?? undefined,
+      latitude: (dest.latitude as number) ?? undefined,
+      longitude: (dest.longitude as number) ?? undefined,
       otherPrices,
       similarDestinations,
     };

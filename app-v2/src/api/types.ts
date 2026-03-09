@@ -53,6 +53,8 @@ export interface Destination {
   offerJson?: string;
   offerExpiresAt?: string;
   hotels?: HotelListing[];
+  latitude?: number;
+  longitude?: number;
   photographerAttribution?: { name: string; url: string };
   travelTips?: {
     visa: string;

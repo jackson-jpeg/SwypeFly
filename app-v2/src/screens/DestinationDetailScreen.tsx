@@ -9,6 +9,7 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import PriceAlertButton from '@/components/PriceAlertButton';
+import { useWeather } from '@/hooks/useWeather';
 import type { TripPlan, Destination, HotelListing } from '@/api/types';
 
 function getDefaultDetail(dest: Destination) {
@@ -130,6 +131,7 @@ export default function DestinationDetailScreen() {
   const [tripPlanText, setTripPlanText] = useState('');
   const [tripPlanLoading, setTripPlanLoading] = useState(false);
   const [tripPlanError, setTripPlanError] = useState(false);
+  const { data: weather } = useWeather(stubDest?.latitude, stubDest?.longitude);
 
   if (isLoading) {
     return (
@@ -729,6 +731,62 @@ export default function DestinationDetailScreen() {
           {stubDest.bestMonths.join(', ')}
         </span>
       </div>}
+
+      {/* ─── Current Weather ───────────────────────────────────── */}
+      {weather && (
+        <div style={{ padding: '16px 24px 0' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              borderRadius: 14,
+              padding: 16,
+              backgroundColor: colors.offWhite,
+              border: '1px solid #C9A99A20',
+            }}
+          >
+            {/* Emoji + temperature */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <span style={{ fontSize: 32, lineHeight: 1 }}>{weather.icon}</span>
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 28,
+                  fontWeight: 800,
+                  lineHeight: '28px',
+                  color: colors.deepDusk,
+                }}
+              >
+                {weather.temperature}&deg;F
+              </span>
+            </div>
+            {/* Details */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 12,
+                  lineHeight: '16px',
+                  color: colors.mutedText,
+                }}
+              >
+                {weather.description} &middot; Wind {weather.windSpeed}mph &middot; {weather.humidity}% humidity
+              </span>
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 11,
+                  lineHeight: '14px',
+                  color: colors.borderTint,
+                }}
+              >
+                Current weather in {dest.city}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── About Section ────────────────────────────────────── */}
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>

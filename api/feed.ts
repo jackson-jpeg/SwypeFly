@@ -125,6 +125,8 @@ interface ScoredDest {
   live_hotel_price?: number | null;
   hotel_price_source?: string;
   available_flight_days?: string[];
+  latitude?: number;
+  longitude?: number;
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number }[];
   hotels_data?: any[];
@@ -366,6 +368,8 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       average_temp: (d.average_temp as number) || 0,
       flight_duration: (d.flight_duration as string) || '',
       available_flight_days: (d.available_flight_days as string[]) || undefined,
+      latitude: (d.latitude as number) ?? undefined,
+      longitude: (d.longitude as number) ?? undefined,
       beach_score: (d.beach_score as number) || 0,
       city_score: (d.city_score as number) || 0,
       adventure_score: (d.adventure_score as number) || 0,
@@ -429,6 +433,8 @@ function toFrontend(d: ScoredDest) {
       : 'estimate',
     hotels: d.hotels_data ?? undefined,
     available_flight_days: d.available_flight_days || undefined,
+    latitude: d.latitude ?? undefined,
+    longitude: d.longitude ?? undefined,
     itinerary: d.itinerary || undefined,
     restaurants: d.restaurants || undefined,
     departureDate: d.departure_date || undefined,
