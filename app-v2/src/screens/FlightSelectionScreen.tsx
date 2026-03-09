@@ -168,11 +168,31 @@ export default function FlightSelectionScreen() {
 
   const searchParams = useMemo(() => {
     if (!dest) return null;
+
+    const depDateStr = dest?.departureDate ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    const depDate = new Date(depDateStr + 'T00:00:00');
+
+    // Always ensure round-trip: compute return date (min 2 days, max 10 days from departure)
+    let retDate: Date;
+    if (dest?.returnDate) {
+      retDate = new Date(dest.returnDate + 'T00:00:00');
+      const tripDays = Math.round((retDate.getTime() - depDate.getTime()) / 86400000);
+      if (tripDays < 2) {
+        retDate = new Date(depDate.getTime() + 2 * 86400000);
+      } else if (tripDays > 10) {
+        retDate = new Date(depDate.getTime() + 7 * 86400000);
+      }
+    } else {
+      // Default: 5-day trip
+      retDate = new Date(depDate.getTime() + 5 * 86400000);
+    }
+    const retDateStr = retDate.toISOString().slice(0, 10);
+
     return {
       origin: departureCode,
       destination: dest.iataCode,
-      departureDate: dest?.departureDate ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-      returnDate: dest?.returnDate,
+      departureDate: depDateStr,
+      returnDate: retDateStr,
       passengers: Array.from({ length: passengers }, () => ({ type: 'adult' as const })),
       cabinClass: CABIN_CLASSES[selectedCabin],
       priceHint: feedPrice ?? dest.flightPrice,
