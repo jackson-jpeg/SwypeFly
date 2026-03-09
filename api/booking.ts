@@ -560,9 +560,11 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     };
 
     return res.status(200).json(responseData);
-  } catch (err) {
+  } catch (err: any) {
     logApiError('api/booking/create-order', err);
-    return res.status(500).json({ error: 'Failed to create booking' });
+    const detail = err?.message ?? String(err);
+    console.error('[booking/create-order] Error detail:', detail);
+    return res.status(500).json({ error: `Booking failed: ${detail}` });
   }
 }
 
