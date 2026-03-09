@@ -18,6 +18,7 @@ interface BookingState {
   promoCode: string | null;
   promoDiscount: number;
   orderResponse: CreateOrderResponse | null;
+  cachedOfferJson: string | null;
 
   // Actions
   setDestination: (id: string, feedPrice?: number) => void;
@@ -32,6 +33,7 @@ interface BookingState {
   setInsurance: (has: boolean) => void;
   setMeal: (id: string | null) => void;
   setOrderResponse: (order: CreateOrderResponse) => void;
+  setCachedOffer: (json: string | null) => void;
   reset: () => void;
 
   // Computed
@@ -40,7 +42,7 @@ interface BookingState {
 
 const INITIAL: Pick<
   BookingState,
-  'destinationId' | 'feedPrice' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'seatPrice' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse'
+  'destinationId' | 'feedPrice' | 'selectedOffer' | 'cabinClass' | 'passengers' | 'selectedSeat' | 'seatPrice' | 'selectedBaggage' | 'hasInsurance' | 'selectedMeal' | 'passengerCount' | 'promoCode' | 'promoDiscount' | 'orderResponse' | 'cachedOfferJson'
 > = {
   destinationId: null,
   feedPrice: null,
@@ -56,6 +58,7 @@ const INITIAL: Pick<
   promoCode: null,
   promoDiscount: 0,
   orderResponse: null,
+  cachedOfferJson: null,
 };
 
 export const useBookingStore = create<BookingState>()(
@@ -76,6 +79,7 @@ export const useBookingStore = create<BookingState>()(
       setInsurance: (has) => set({ hasInsurance: has }),
       setMeal: (id) => set({ selectedMeal: id }),
       setOrderResponse: (order) => set({ orderResponse: order }),
+      setCachedOffer: (json) => set({ cachedOfferJson: json }),
       setPassengerCount: (count) => set({ passengerCount: count, passengers: [] }),
       applyPromo: () => {
         // Promo code validation will be wired to a backend endpoint.
@@ -134,6 +138,7 @@ export const useBookingStore = create<BookingState>()(
         promoCode: state.promoCode,
         promoDiscount: state.promoDiscount,
         orderResponse: state.orderResponse,
+        cachedOfferJson: state.cachedOfferJson,
       }),
     },
   ),

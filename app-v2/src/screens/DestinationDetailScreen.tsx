@@ -163,6 +163,7 @@ export default function DestinationDetailScreen() {
       return;
     }
     setBookingDestination(stubDest.id, stubDest.flightPrice);
+    useBookingStore.getState().setCachedOffer(stubDest.offerJson ?? null);
     navigate('/booking/flights');
   };
 
