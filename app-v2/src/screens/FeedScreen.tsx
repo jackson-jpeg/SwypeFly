@@ -447,7 +447,7 @@ export default function FeedScreen() {
       />
 
       {/* Top-right controls: view toggle + search */}
-      <div style={{ position: 'absolute', top: 52, right: 12, zIndex: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ position: 'absolute', top: 6, right: 12, zIndex: 11, display: 'flex', gap: 8, alignItems: 'center' }}>
         {/* View mode toggle */}
         <div
           style={{
