@@ -243,7 +243,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       Query.limit(500),
     ]).catch(() => ({ documents: [] })),
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
-      Query.equal('is_primary', true), Query.limit(500),
+      Query.limit(2500),
     ]).catch(() => ({ documents: [] })),
   ]);
 
@@ -301,12 +301,31 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     });
   }
 
-  // Build image lookup by destination ID
-  const imageMap = new Map<string, { url: string; blurHash?: string }>();
+  // Build image lookup by destination ID (all images, primary first)
+  const imageMap = new Map<string, { url: string; urls: string[]; blurHash?: string }>();
+  // Group images by destination_id
+  const imageGroups = new Map<string, (typeof imageResult.documents)[number][]>();
   for (const img of imageResult.documents) {
-    imageMap.set(img.destination_id as string, {
-      url: (img.url_regular as string) || (img.url_small as string) || '',
-      blurHash: (img.blur_hash as string) || undefined,
+    const destId = img.destination_id as string;
+    if (!imageGroups.has(destId)) imageGroups.set(destId, []);
+    imageGroups.get(destId)!.push(img);
+  }
+  // Sort each group: is_primary first, then by fetched_at desc
+  for (const [destId, imgs] of imageGroups) {
+    imgs.sort((a, b) => {
+      if (a.is_primary && !b.is_primary) return -1;
+      if (!a.is_primary && b.is_primary) return 1;
+      const aTime = (a.fetched_at as string) || '';
+      const bTime = (b.fetched_at as string) || '';
+      return bTime.localeCompare(aTime);
+    });
+    const urls = imgs.map(
+      (img) => (img.url_regular as string) || (img.url_small as string) || '',
+    ).filter(Boolean);
+    imageMap.set(destId, {
+      url: urls[0] || '',
+      urls,
+      blurHash: (imgs[0].blur_hash as string) || undefined,
     });
   }
 
@@ -336,7 +355,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       tagline: (d.tagline as string) || '',
       description: (d.description as string) || '',
       image_url: imageMap.get(d.$id)?.url || (d.image_url as string) || '',
-      image_urls: (d.image_urls as string[]) || [],
+      image_urls: imageMap.get(d.$id)?.urls || (d.image_urls as string[]) || [],
       flight_price: d.flight_price as number,
       hotel_price_per_night: (d.hotel_price_per_night as number) || 0,
       currency: (d.currency as string) || 'USD',
