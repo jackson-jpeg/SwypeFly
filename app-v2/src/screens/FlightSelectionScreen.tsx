@@ -181,6 +181,32 @@ export default function FlightSelectionScreen() {
 
   const { data: offers, isLoading, isError } = useBookingSearch(searchParams);
 
+  // ─── Offer expiration tracking (hooks must be before any early returns) ───
+  const [timeLeft, setTimeLeft] = useState('');
+  const [offerExpired, setOfferExpired] = useState(false);
+
+  const selectedOffer = offers?.[selectedDateIdx] ?? offers?.[0] ?? null;
+
+  const checkExpiry = useCallback(() => {
+    if (!selectedOffer?.expiresAt) return;
+    const diff = new Date(selectedOffer.expiresAt).getTime() - Date.now();
+    if (diff <= 0) {
+      setOfferExpired(true);
+      setTimeLeft('Expired');
+      return;
+    }
+    setOfferExpired(false);
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    setTimeLeft(mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
+  }, [selectedOffer?.expiresAt]);
+
+  useEffect(() => {
+    checkExpiry();
+    const id = setInterval(checkExpiry, 1000);
+    return () => clearInterval(id);
+  }, [checkExpiry]);
+
   if (isLoading || (!offers?.length && !isError)) {
     return (
       <div
@@ -217,35 +243,10 @@ export default function FlightSelectionScreen() {
     );
   }
 
-  const selectedOffer = offers[selectedDateIdx] ?? offers[0]!;
   // No artificial multipliers — offers already reflect cabin class pricing from search
   const adjustedPrice = useCachedOffer && cachedOffer
     ? parseFloat(cachedOffer.total_amount)
-    : selectedOffer.totalAmount;
-
-  // ─── Offer expiration tracking ──────────────────────────────────
-  const [timeLeft, setTimeLeft] = useState('');
-  const [offerExpired, setOfferExpired] = useState(false);
-
-  const checkExpiry = useCallback(() => {
-    if (!selectedOffer.expiresAt) return;
-    const diff = new Date(selectedOffer.expiresAt).getTime() - Date.now();
-    if (diff <= 0) {
-      setOfferExpired(true);
-      setTimeLeft('Expired');
-      return;
-    }
-    setOfferExpired(false);
-    const mins = Math.floor(diff / 60000);
-    const secs = Math.floor((diff % 60000) / 1000);
-    setTimeLeft(mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
-  }, [selectedOffer.expiresAt]);
-
-  useEffect(() => {
-    checkExpiry();
-    const id = setInterval(checkExpiry, 1000);
-    return () => clearInterval(id);
-  }, [checkExpiry]);
+    : selectedOffer!.totalAmount;
 
   const data = {
     destination: dest?.city ?? 'Destination',
@@ -726,7 +727,7 @@ export default function FlightSelectionScreen() {
               };
               setOffer(converted);
             } else {
-              setOffer(selectedOffer);
+              setOffer(selectedOffer!);
             }
             setCabinClass(CABIN_CLASSES[selectedCabin] ?? 'economy');
             navigate('/booking/passengers');
