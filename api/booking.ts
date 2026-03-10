@@ -340,6 +340,65 @@ function transformSeatMap(raw: any): { columns: string[]; exitRows: number[]; ai
   };
 }
 
+// ─── Offer expiration helper ─────────────────────────────────────────────────
+
+async function refreshExpiredOffer(
+  offerId: string,
+  origin: string,
+  destination: string,
+  departureDate: string,
+  returnDate?: string,
+  cabinClass?: string,
+): Promise<{ newOfferId: string; priceChanged: boolean; oldPrice: number; newPrice: number } | null> {
+  try {
+    const { getOffer, searchFlights } = await import('../services/duffel.js');
+
+    // Try to fetch the offer — if it throws, the offer has expired
+    let oldPrice = 0;
+    try {
+      const existingOffer = await getOffer(offerId);
+      // Offer is still valid — no refresh needed
+      oldPrice = parseFloat(existingOffer.total_amount) || 0;
+      return { newOfferId: offerId, priceChanged: false, oldPrice, newPrice: oldPrice };
+    } catch {
+      // Offer expired or invalid — proceed with re-search
+      console.log(`[booking] Offer ${offerId} expired, attempting re-search: ${origin} → ${destination}`);
+    }
+
+    // Re-search with the same parameters
+    const result = await searchFlights({
+      origin,
+      destination,
+      departureDate,
+      returnDate,
+      passengers: [{ type: 'adult' }],
+      cabinClass: (cabinClass as 'economy' | 'premium_economy' | 'business' | 'first') || 'economy',
+    });
+
+    const offers = result.offers || [];
+    if (offers.length === 0) {
+      console.warn('[booking] Re-search returned no offers');
+      return null;
+    }
+
+    // Sort by price and pick the cheapest
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    offers.sort((a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount));
+    const bestOffer = offers[0];
+    const newPrice = parseFloat(bestOffer.total_amount) || 0;
+
+    return {
+      newOfferId: bestOffer.id,
+      priceChanged: oldPrice > 0 ? Math.abs(newPrice - oldPrice) > 0.01 : true,
+      oldPrice,
+      newPrice,
+    };
+  } catch (err) {
+    console.error('[booking] Failed to refresh expired offer:', err);
+    return null;
+  }
+}
+
 // ─── Live action handlers ───────────────────────────────────────────────────
 
 async function handleSearch(req: VercelRequest, res: VercelResponse) {
@@ -404,7 +463,45 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
       getSeatMap(v.data.offerId).catch(() => null),
     ]);
     return res.status(200).json({ offer: transformOffer(rawOffer), seatMap: transformSeatMap(seatMap) });
-  } catch (err) {
+  } catch (err: any) {
+    // Check if the offer expired — try to refresh if we have route info in query params
+    const origin = String(req.query.origin || '');
+    const destination = String(req.query.destination || '');
+    const departureDate = String(req.query.departureDate || '');
+    const cabinClass = String(req.query.cabinClass || 'economy');
+
+    if (origin && destination && departureDate) {
+      console.log(`[booking/offer] Offer ${v.data.offerId} failed, attempting refresh`);
+      const refreshed = await refreshExpiredOffer(
+        v.data.offerId,
+        origin,
+        destination,
+        departureDate,
+        req.query.returnDate ? String(req.query.returnDate) : undefined,
+        cabinClass,
+      );
+
+      if (refreshed) {
+        try {
+          const { getOffer: getRefreshedOffer, getSeatMap: getRefreshedSeatMap } = await import('../services/duffel.js');
+          const [newRawOffer, newSeatMap] = await Promise.all([
+            getRefreshedOffer(refreshed.newOfferId),
+            getRefreshedSeatMap(refreshed.newOfferId).catch(() => null),
+          ]);
+          return res.status(200).json({
+            offer: transformOffer(newRawOffer),
+            seatMap: transformSeatMap(newSeatMap),
+            refreshed: true,
+            priceChanged: refreshed.priceChanged,
+            oldPrice: refreshed.oldPrice,
+            newPrice: refreshed.newPrice,
+          });
+        } catch (refreshErr) {
+          logApiError('api/booking/offer-refresh', refreshErr);
+        }
+      }
+    }
+
     logApiError('api/booking/offer', err);
     return res.status(500).json({ error: 'Failed to get offer details' });
   }
@@ -462,9 +559,40 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Payment not completed' });
     }
 
+    // Check if the offer has expired before attempting to create the order
+    // If origin/destination/departureDate are provided, we can attempt a re-search
+    let activeOfferId = v.data.offerId;
+    if (v.data.originIata && v.data.destinationIata && v.data.departureDate) {
+      const refreshResult = await refreshExpiredOffer(
+        v.data.offerId,
+        v.data.originIata,
+        v.data.destinationIata,
+        v.data.departureDate,
+        v.data.returnDate,
+      );
+      if (refreshResult === null) {
+        return res.status(410).json({
+          error: 'Offer expired and no replacement found. Please search again.',
+          code: 'OFFER_EXPIRED',
+        });
+      }
+      if (refreshResult.priceChanged) {
+        // Price changed — inform the client so they can confirm
+        return res.status(409).json({
+          error: 'Offer expired and price has changed',
+          code: 'PRICE_CHANGED',
+          newOfferId: refreshResult.newOfferId,
+          oldPrice: refreshResult.oldPrice,
+          newPrice: refreshResult.newPrice,
+          priceChanged: true,
+        });
+      }
+      activeOfferId = refreshResult.newOfferId;
+    }
+
     const { createOrder } = await import('../services/duffel.js');
     const duffelOrder = await createOrder({
-      offerId: v.data.offerId,
+      offerId: activeOfferId,
       passengers: v.data.passengers,
       selectedServices: v.data.selectedServices,
       paymentAmount: (paymentIntent.amount / 100).toFixed(2),

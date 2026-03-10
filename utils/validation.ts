@@ -65,6 +65,22 @@ export const priceCalendarQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Must be YYYY-MM').optional(),
 });
 
+// ─── Week matrix query ──────────────────────────────────────────────
+
+export const weekMatrixQuerySchema = z.object({
+  action: z.literal('week-matrix'),
+  origin: iataCode,
+  destination: iataCode,
+  departDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+// ─── Detect origin query ────────────────────────────────────────────
+
+export const detectOriginQuerySchema = z.object({
+  action: z.literal('detect-origin'),
+});
+
 // ─── Budget discovery query ─────────────────────────────────────────
 
 export const budgetDiscoveryQuerySchema = z.object({

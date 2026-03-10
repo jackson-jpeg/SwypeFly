@@ -328,6 +328,96 @@ export async function fetchByPriceRange(
   }
 }
 
+export interface WeekMatrixEntry {
+  departDate: string;
+  returnDate: string;
+  price: number;
+  airline: string;
+  transfers: number;
+}
+
+/**
+ * Fetch week flexibility matrix: prices for ±3 days around chosen dates.
+ * Returns sorted by price (cheapest first).
+ */
+export async function fetchWeekMatrix(
+  origin: string,
+  destination: string,
+  departDate: string,
+  returnDate: string,
+  currency = 'USD',
+): Promise<WeekMatrixEntry[]> {
+  if (!TRAVELPAYOUTS_TOKEN) return [];
+
+  try {
+    const res = await fetch(
+      `${BASE_URL}/v2/prices/week-matrix?origin=${origin}&destination=${destination}&depart_date=${departDate}&return_date=${returnDate}&currency=${currency}&market=us`,
+      { headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN } },
+    );
+    if (!res.ok) {
+      console.warn(`[travelpayouts] week-matrix ${origin}->${destination}: ${res.status}`);
+      return [];
+    }
+    const json = (await res.json()) as {
+      success: boolean;
+      data: Array<{
+        depart_date: string;
+        return_date: string;
+        value: number;
+        airline: string;
+        number_of_changes: number;
+      }>;
+    };
+    if (!json.success || !json.data) return [];
+
+    return json.data
+      .map((entry) => ({
+        departDate: entry.depart_date || '',
+        returnDate: entry.return_date || '',
+        price: Math.round(entry.value),
+        airline: entry.airline || '',
+        transfers: entry.number_of_changes ?? 0,
+      }))
+      .sort((a, b) => a.price - b.price);
+  } catch (err) {
+    console.error(`[travelpayouts] week-matrix ${origin}->${destination} error:`, err);
+    return [];
+  }
+}
+
+/**
+ * Detect nearest airport from user's IP address using Travelpayouts geolocation.
+ * Returns null on failure (graceful fallback).
+ */
+export async function detectOriginAirport(
+  ip: string,
+): Promise<{ iata: string; name: string; country: string } | null> {
+  try {
+    const res = await fetch(
+      `http://www.travelpayouts.com/whereami?locale=en&ip=${encodeURIComponent(ip)}`,
+    );
+    if (!res.ok) {
+      console.warn(`[travelpayouts] whereami ${ip}: ${res.status}`);
+      return null;
+    }
+    const json = (await res.json()) as {
+      iata?: string;
+      name?: string;
+      country_name?: string;
+    };
+    if (!json.iata) return null;
+
+    return {
+      iata: json.iata,
+      name: json.name || '',
+      country: json.country_name || '',
+    };
+  } catch (err) {
+    console.error('[travelpayouts] whereami error:', err);
+    return null;
+  }
+}
+
 export interface PriceCalendarEntry {
   date: string;
   price: number;

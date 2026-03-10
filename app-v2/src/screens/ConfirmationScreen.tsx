@@ -434,6 +434,113 @@ export default function ConfirmationScreen() {
         </div>
       </div>
 
+      {/* Hotel cross-sell */}
+      {dest?.latitude && dest?.longitude && (
+        <div
+          style={{
+            position: 'relative',
+            paddingInline: 24,
+            zIndex: 1,
+            animation: 'card-slide-up 0.7s 0.6s ease-out both',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              backgroundColor: colors.offWhite,
+              border: '1px solid #C9A99A20',
+              borderRadius: 16,
+              padding: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  backgroundColor: `${colors.sageDrift}20`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.sageDrift} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 21h18" />
+                  <path d="M5 21V7l8-4v18" />
+                  <path d="M19 21V11l-6-4" />
+                  <path d="M9 9v.01" />
+                  <path d="M9 12v.01" />
+                  <path d="M9 15v.01" />
+                  <path d="M9 18v.01" />
+                </svg>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span
+                  style={{
+                    fontFamily: `"${fonts.display}", system-ui, sans-serif`,
+                    fontSize: 14,
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    color: colors.deepDusk,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Complete Your Trip
+                </span>
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 13,
+                    color: colors.mutedText,
+                  }}
+                >
+                  Find hotels in {destCity}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const depDate = booking.selectedOffer?.slices?.[0]?.departureTime?.split('T')[0] ?? '';
+                const retDate = booking.selectedOffer?.slices?.[1]?.departureTime?.split('T')[0] ?? '';
+                navigate(`/booking/hotels?lat=${dest.latitude}&lng=${dest.longitude}&checkIn=${depDate}&checkOut=${retDate}&city=${encodeURIComponent(destCity)}`);
+              }}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: 'transparent',
+                border: `1.5px solid ${colors.sageDrift}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colors.sageDrift} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span
+                style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: colors.sageDrift,
+                }}
+              >
+                Browse Hotels
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* CTAs */}
       <div
         style={{

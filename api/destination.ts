@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
-import { destinationQuerySchema, priceCalendarQuerySchema, validateRequest } from '../utils/validation';
-import { fetchPriceCalendar, fetchMonthlyPrices } from '../services/travelpayouts';
+import { destinationQuerySchema, priceCalendarQuerySchema, weekMatrixQuerySchema, validateRequest } from '../utils/validation';
+import { fetchPriceCalendar, fetchMonthlyPrices, fetchWeekMatrix } from '../services/travelpayouts';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
 
@@ -61,6 +61,30 @@ async function handleMonthly(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Week flexibility matrix handler ─────────────────────────────────
+
+async function handleWeekMatrix(req: VercelRequest, res: VercelResponse) {
+  const v = validateRequest(weekMatrixQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const { origin, destination, departDate, returnDate } = v.data;
+
+  try {
+    const matrix = await fetchWeekMatrix(origin, destination, departDate, returnDate);
+    const cheapest = matrix.length > 0 ? matrix[0] : null;
+
+    res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate=14400');
+    return res.status(200).json({
+      matrix,
+      cheapest: cheapest
+        ? { departDate: cheapest.departDate, returnDate: cheapest.returnDate, price: cheapest.price }
+        : null,
+    });
+  } catch (err) {
+    logApiError('api/destination?action=week-matrix', err);
+    return res.status(500).json({ error: 'Failed to load week matrix' });
+  }
+}
+
 // ─── Main handler ────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -75,6 +99,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (req.query.action === 'monthly') {
     return handleMonthly(req, res);
+  }
+  if (req.query.action === 'week-matrix') {
+    return handleWeekMatrix(req, res);
   }
 
   const v = validateRequest(destinationQuerySchema, req.query);

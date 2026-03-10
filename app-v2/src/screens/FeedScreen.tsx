@@ -15,6 +15,7 @@ import MapView from '@/components/feed/MapView';
 import TrendingStories from '@/components/feed/TrendingStories';
 import AirlineLogo from '@/components/AirlineLogo';
 import { getAirlineName } from '@/utils/airlines';
+import { formatFreshness } from '@/utils/formatFreshness';
 
 function FeedCard({ destination, onSave }: { destination: Destination; onSave?: (id: string) => void }) {
   const navigate = useNavigate();
@@ -282,6 +283,20 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           }}>
             {destination.priceSource !== 'estimate' ? 'LIVE' : 'EST.'}
           </span>
+          {destination.tpFoundAt && (() => {
+            const freshness = formatFreshness(destination.tpFoundAt!);
+            return freshness ? (
+              <>
+                <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFFFFF30', flexShrink: 0 }} />
+                <span style={{
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  fontSize: 10, lineHeight: '12px', color: '#FFFFFF60',
+                }}>
+                  Seen {freshness}
+                </span>
+              </>
+            ) : null;
+          })()}
         </div>
       </div>
     </div>

@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
-import { feedQuerySchema, budgetDiscoveryQuerySchema, validateRequest } from '../utils/validation';
+import { feedQuerySchema, budgetDiscoveryQuerySchema, detectOriginQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { generateAviasalesLink } from '../utils/affiliateLinks';
-import { fetchByPriceRange } from '../services/travelpayouts';
+import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
 import { cors } from './_cors.js';
 
 const PAGE_SIZE = 10;
@@ -456,6 +456,9 @@ function toFrontend(d: ScoredDest, origin?: string) {
     offerJson: d.offer_json || undefined,
     offerExpiresAt: d.offer_expires_at || undefined,
     tpFoundAt: d.tp_found_at || undefined,
+    airlineLogoUrl: d.live_airline
+      ? `https://pics.avs.io/200/80/${d.live_airline}.png`
+      : undefined,
     affiliateUrl:
       d.price_source === 'travelpayouts' && origin
         ? generateAviasalesLink(origin, d.iata_code, d.departure_date, d.return_date)
@@ -508,6 +511,53 @@ async function handleBudgetDiscovery(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Detect origin airport handler ────────────────────────────────────
+
+const originCache = new Map<string, { data: { iata: string; name: string; country: string }; ts: number }>();
+const ORIGIN_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+async function handleDetectOrigin(req: VercelRequest, res: VercelResponse) {
+  const v = validateRequest(detectOriginQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+
+  const fallback = { iata: 'TPA', name: 'Tampa', country: 'US' };
+
+  try {
+    const forwarded = req.headers['x-forwarded-for'];
+    const realIp = req.headers['x-real-ip'];
+    const ipRaw = typeof forwarded === 'string'
+      ? forwarded.split(',')[0].trim()
+      : typeof realIp === 'string'
+        ? realIp.trim()
+        : null;
+
+    if (!ipRaw) {
+      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+      return res.status(200).json({ origin: fallback });
+    }
+
+    // Check cache
+    const cached = originCache.get(ipRaw);
+    if (cached && Date.now() - cached.ts < ORIGIN_CACHE_TTL) {
+      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+      return res.status(200).json({ origin: cached.data });
+    }
+
+    const result = await detectOriginAirport(ipRaw);
+    if (result) {
+      originCache.set(ipRaw, { data: result, ts: Date.now() });
+      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+      return res.status(200).json({ origin: result });
+    }
+
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+    return res.status(200).json({ origin: fallback });
+  } catch (err) {
+    logApiError('api/feed?action=detect-origin', err);
+    return res.status(200).json({ origin: fallback });
+  }
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -519,6 +569,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Route by action param
   if (req.query.action === 'budget') {
     return handleBudgetDiscovery(req, res);
+  }
+  if (req.query.action === 'detect-origin') {
+    return handleDetectOrigin(req, res);
   }
 
   try {

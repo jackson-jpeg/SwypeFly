@@ -66,6 +66,8 @@ export interface Destination {
   };
   similarDestinations?: { id: string; city: string; flightPrice: number; imageUrl: string }[];
   affiliateUrl?: string;
+  airlineLogoUrl?: string;
+  tpFoundAt?: string;
 }
 
 export interface HotelListing {
