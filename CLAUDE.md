@@ -199,25 +199,7 @@ User-specific collections use document-level permissions (set at creation time w
 
 ## Environment Variables
 
-Required variables (see `.env.example`):
-
-| Variable | Used By | Purpose |
-|---|---|---|
-| `EXPO_PUBLIC_APPWRITE_ENDPOINT` | Client + Server | Appwrite API endpoint |
-| `EXPO_PUBLIC_APPWRITE_PROJECT_ID` | Client + Server | Appwrite project ID |
-| `APPWRITE_ENDPOINT` | Server only | Appwrite API endpoint (server override) |
-| `APPWRITE_PROJECT_ID` | Server only | Appwrite project ID (server override) |
-| `APPWRITE_API_KEY` | Server only | Appwrite API key (server-side DB access) |
-| `TRAVELPAYOUTS_API_TOKEN` | Server | Flight price data |
-| `AMADEUS_API_KEY` / `AMADEUS_API_SECRET` | Server | Flight price fallback |
-| `LITEAPI_API_KEY` | Server | Hotel pricing |
-| `GOOGLE_GEMINI_API_KEY` | Server | AI content generation |
-| `ANTHROPIC_API_KEY` | Server | Trip plan generation (Claude) |
-| `UNSPLASH_ACCESS_KEY` | Server | Destination photos |
-| `CRON_SECRET` | Server | Cron job authentication |
-| `NEXT_PUBLIC_SENTRY_DSN` | Client | Error monitoring |
-
-**Important:** Variables prefixed with `EXPO_PUBLIC_` are exposed to the client bundle. Never put secrets (like `APPWRITE_API_KEY`) in `EXPO_PUBLIC_` variables.
+See `.env.example` for the full list. **Security note:** Variables prefixed with `EXPO_PUBLIC_` are exposed to the client bundle — never put secrets in `EXPO_PUBLIC_` variables.
 
 ## Coding Conventions
 

@@ -77,8 +77,12 @@ async function sendAlertEmail(
   } catch {
     // Use ID as fallback
   }
-  const { sendPriceAlertEmail } = await import('../utils/email.js');
-  await sendPriceAlertEmail(email, destName, currentPrice, targetPrice);
+  try {
+    const { sendPriceAlertEmail } = await import('../utils/email.js');
+    await sendPriceAlertEmail(email, destName, currentPrice, targetPrice);
+  } catch (importErr) {
+    console.warn(`[alerts] Email utility not available, skipping send for ${destName}:`, importErr);
+  }
 }
 
 async function handleCheck(req: VercelRequest, res: VercelResponse) {
@@ -156,6 +160,42 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── List alerts ────────────────────────────────────────────────────────────
+
+async function handleList(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+  const authResult = await verifyClerkToken(req.headers.authorization);
+  if (!authResult) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const userId = authResult.userId;
+
+  try {
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
+      Query.equal('user_id', userId),
+      Query.orderDesc('created_at'),
+      Query.limit(50),
+    ]);
+
+    const alerts = result.documents.map((doc) => ({
+      id: doc.$id,
+      destinationId: doc.destination_id,
+      targetPrice: doc.target_price,
+      isActive: doc.is_active,
+      createdAt: doc.created_at,
+      triggeredAt: doc.triggered_at || null,
+      triggeredPrice: doc.triggered_price || null,
+    }));
+
+    res.json({ alerts, total: result.total });
+  } catch (err: unknown) {
+    logApiError('api/alerts/list', err);
+    const message = err instanceof Error ? err.message : 'Failed to list alerts';
+    res.status(500).json({ error: message });
+  }
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -165,9 +205,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   switch (action) {
     case 'create':
       return handleCreate(req, res);
+    case 'list':
+      return handleList(req, res);
     case 'check':
       return handleCheck(req, res);
     default:
-      return res.status(400).json({ error: 'Missing or invalid action parameter. Use ?action=create or ?action=check' });
+      return res.status(400).json({ error: 'Missing or invalid action parameter. Use ?action=create, ?action=list, or ?action=check' });
   }
 }

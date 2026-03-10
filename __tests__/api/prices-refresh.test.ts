@@ -33,8 +33,10 @@ jest.mock('../../services/duffel', () => ({
 }));
 
 const mockFetchCheapPrices = jest.fn();
+const mockFetchAllCheapPrices = jest.fn().mockResolvedValue(new Map());
 jest.mock('../../services/travelpayouts', () => ({
   fetchCheapPrices: (...args: unknown[]) => mockFetchCheapPrices(...args),
+  fetchAllCheapPrices: (...args: unknown[]) => mockFetchAllCheapPrices(...args),
 }));
 
 jest.mock('../../utils/validation', () => ({

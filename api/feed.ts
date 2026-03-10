@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
 import { feedQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
+import { generateAviasalesLink } from '../utils/affiliateLinks';
 import { cors } from './_cors.js';
 
 const PAGE_SIZE = 10;
@@ -405,7 +406,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
 
 // ─── Transform DB row → frontend Destination shape ───────────────────
 
-function toFrontend(d: ScoredDest) {
+function toFrontend(d: ScoredDest, origin?: string) {
   return {
     id: d.id,
     iataCode: d.iata_code,
@@ -449,6 +450,10 @@ function toFrontend(d: ScoredDest) {
         : undefined,
     offerJson: d.offer_json || undefined,
     offerExpiresAt: d.offer_expires_at || undefined,
+    affiliateUrl:
+      d.price_source === 'travelpayouts' && origin
+        ? generateAviasalesLink(origin, d.iata_code, d.departure_date, d.return_date)
+        : undefined,
   };
 }
 
@@ -533,7 +538,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       scored = softShuffle(scored, rand, 5);
     }
 
-    const page = scored.slice(cursor, cursor + PAGE_SIZE).map(toFrontend);
+    const page = scored.slice(cursor, cursor + PAGE_SIZE).map((d) => toFrontend(d, origin));
     const nextCursor = cursor + PAGE_SIZE < scored.length ? String(cursor + PAGE_SIZE) : null;
 
     const cacheTime = sessionId ? 0 : 60;

@@ -30,7 +30,7 @@ export async function fetchCityDirections(
 
   try {
     const res = await fetch(
-      `${BASE_URL}/v1/city-directions?origin=${origin}&currency=${currency}`,
+      `${BASE_URL}/v1/city-directions?origin=${origin}&currency=${currency}&market=us`,
       { headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN } },
     );
     if (!res.ok) {
@@ -77,7 +77,7 @@ export async function fetchCheapPrices(
 
   try {
     const res = await fetch(
-      `${BASE_URL}/v1/prices/cheap?origin=${origin}&destination=${destination}&currency=${currency}`,
+      `${BASE_URL}/v1/prices/cheap?origin=${origin}&destination=${destination}&currency=${currency}&market=us`,
       { headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN } },
     );
     if (!res.ok) return null;
@@ -126,7 +126,7 @@ export async function fetchLatestPrices(
 
   try {
     const res = await fetch(
-      `${BASE_URL}/v2/prices/latest?origin=${origin}&period_type=year&limit=50&show_to_affiliates=true&sorting=price&currency=${currency}`,
+      `${BASE_URL}/v2/prices/latest?origin=${origin}&period_type=year&limit=50&show_to_affiliates=true&sorting=price&currency=${currency}&market=us`,
       { headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN } },
     );
     if (!res.ok) return results;
@@ -153,4 +153,110 @@ export async function fetchLatestPrices(
     console.error('[travelpayouts] latest-prices error:', err);
   }
   return results;
+}
+
+/**
+ * Fetch cheapest flights from an origin to ALL destinations in one call.
+ * Uses destination=- wildcard — returns 100+ routes per origin.
+ */
+export async function fetchAllCheapPrices(
+  origin: string,
+  currency = 'USD',
+): Promise<Map<string, CheapPriceResult>> {
+  const results = new Map<string, CheapPriceResult>();
+  if (!TRAVELPAYOUTS_TOKEN) return results;
+
+  try {
+    const res = await fetch(
+      `${BASE_URL}/v1/prices/cheap?origin=${origin}&destination=-&currency=${currency}&market=us`,
+      { headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN } },
+    );
+    if (!res.ok) {
+      console.warn(`[travelpayouts] all-cheap-prices ${origin}: ${res.status}`);
+      return results;
+    }
+    const json = (await res.json()) as {
+      success: boolean;
+      data: Record<string, Record<string, {
+        price: number;
+        airline: string;
+        departure_at: string;
+        return_at: string;
+      }>>;
+    };
+    if (!json.success || !json.data) return results;
+
+    for (const [iata, routes] of Object.entries(json.data)) {
+      let cheapest: CheapPriceResult | null = null;
+      for (const entry of Object.values(routes)) {
+        if (!cheapest || entry.price < cheapest.price) {
+          cheapest = {
+            destination: iata,
+            price: Math.round(entry.price),
+            airline: entry.airline || '',
+            departureAt: entry.departure_at || '',
+            returnAt: entry.return_at || '',
+          };
+        }
+      }
+      if (cheapest) results.set(iata, cheapest);
+    }
+    console.log(`[travelpayouts] bulk discovery ${origin}: ${results.size} destinations`);
+  } catch (err) {
+    console.error('[travelpayouts] all-cheap-prices error:', err);
+  }
+  return results;
+}
+
+export interface PriceCalendarEntry {
+  date: string;
+  price: number;
+  airline: string;
+  transferCount: number;
+}
+
+/**
+ * Fetch daily price calendar for a specific route.
+ * Returns prices by departure date for the given (or current) month.
+ */
+export async function fetchPriceCalendar(
+  origin: string,
+  destination: string,
+  currency = 'USD',
+  month?: string,
+): Promise<PriceCalendarEntry[]> {
+  if (!TRAVELPAYOUTS_TOKEN) return [];
+
+  try {
+    let url = `${BASE_URL}/v1/prices/calendar?origin=${origin}&destination=${destination}&calendar_type=departure_date&currency=${currency}&market=us`;
+    if (month) url += `&depart_date=${month}`;
+
+    const res = await fetch(url, {
+      headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN },
+    });
+    if (!res.ok) {
+      console.warn(`[travelpayouts] price-calendar ${origin}->${destination}: ${res.status}`);
+      return [];
+    }
+    const json = (await res.json()) as {
+      success: boolean;
+      data: Record<string, {
+        price: number;
+        airline: string;
+        transfers: number;
+        departure_at: string;
+      }>;
+    };
+    if (!json.success || !json.data) return [];
+
+    return Object.values(json.data).map((entry) => ({
+      date: entry.departure_at?.split('T')[0] || '',
+      price: Math.round(entry.price),
+      airline: entry.airline || '',
+      transferCount: entry.transfers ?? 0,
+    })).sort((a, b) => a.date.localeCompare(b.date));
+  } catch (err) {
+    console.error(`[travelpayouts] price-calendar ${origin}->${destination} error:`, err);
+    return [];
+  }
 }

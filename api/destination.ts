@@ -1,13 +1,49 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
-import { destinationQuerySchema, validateRequest } from '../utils/validation';
+import { destinationQuerySchema, priceCalendarQuerySchema, validateRequest } from '../utils/validation';
+import { fetchPriceCalendar } from '../services/travelpayouts';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
+
+// ─── Price calendar handler ──────────────────────────────────────────
+
+async function handleCalendar(req: VercelRequest, res: VercelResponse) {
+  const v = validateRequest(priceCalendarQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const { origin, destination, month } = v.data;
+
+  try {
+    const calendar = await fetchPriceCalendar(origin, destination, 'USD', month);
+    if (calendar.length === 0) {
+      return res.status(200).json({ calendar: [], cheapestDate: null, cheapestPrice: null });
+    }
+
+    const cheapest = calendar.reduce((min, entry) =>
+      entry.price < min.price ? entry : min, calendar[0]);
+
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+    return res.status(200).json({
+      calendar,
+      cheapestDate: cheapest.date,
+      cheapestPrice: cheapest.price,
+    });
+  } catch (err) {
+    logApiError('api/destination?action=calendar', err);
+    return res.status(500).json({ error: 'Failed to load price calendar' });
+  }
+}
+
+// ─── Main handler ────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Route by action param
+  if (req.query.action === 'calendar') {
+    return handleCalendar(req, res);
   }
 
   const v = validateRequest(destinationQuerySchema, req.query);

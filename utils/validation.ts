@@ -56,6 +56,21 @@ export const destinationQuerySchema = z.object({
   origin: iataCode.default('TPA'),
 });
 
+// ─── Price calendar query ────────────────────────────────────────────
+
+export const priceCalendarQuerySchema = z.object({
+  action: z.literal('calendar'),
+  origin: iataCode,
+  destination: iataCode,
+  month: z.string().regex(/^\d{4}-\d{2}$/, 'Must be YYYY-MM').optional(),
+});
+
+// ─── Price alert list query ─────────────────────────────────────────
+
+export const priceAlertListQuerySchema = z.object({
+  action: z.literal('list'),
+});
+
 // ─── Prices refresh endpoint ─────────────────────────────────────────
 
 export const pricesQuerySchema = z.object({

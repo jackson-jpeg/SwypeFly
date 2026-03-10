@@ -65,6 +65,7 @@ export interface Destination {
     costLevel: 1 | 2 | 3 | 4;
   };
   similarDestinations?: { id: string; city: string; flightPrice: number; imageUrl: string }[];
+  affiliateUrl?: string;
 }
 
 export interface HotelListing {

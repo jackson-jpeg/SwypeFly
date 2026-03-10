@@ -9,6 +9,7 @@ import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import PriceAlertButton from '@/components/PriceAlertButton';
+import PriceCalendar from '@/components/PriceCalendar';
 import PhotoGallery from '@/components/PhotoGallery';
 import { useWeather } from '@/hooks/useWeather';
 import type { TripPlan, Destination, HotelListing } from '@/api/types';
@@ -559,6 +560,50 @@ export default function DestinationDetailScreen() {
           </button>
         </div>
       </div>
+
+      {/* ─── Price Calendar ──────────────────────────────────── */}
+      {stubDest.iataCode && departureCode && (
+        <div style={{ paddingTop: 8, paddingBottom: 16 }}>
+          <PriceCalendar
+            origin={departureCode}
+            destination={stubDest.iataCode}
+          />
+        </div>
+      )}
+
+      {/* ─── Affiliate Compare Button ─────────────────────────── */}
+      {stubDest.affiliateUrl && (
+        <div style={{ padding: '0 24px 16px' }}>
+          <a
+            href={stubDest.affiliateUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 44,
+              borderRadius: 12,
+              border: `1.5px solid ${colors.borderTint}`,
+              backgroundColor: 'transparent',
+              textDecoration: 'none',
+              gap: 6,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>🔍</span>
+            <span
+              style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 13,
+                fontWeight: 500,
+                color: colors.bodyText,
+              }}
+            >
+              Compare prices on Aviasales
+            </span>
+          </a>
+        </div>
+      )}
 
       {/* ─── Hotel Snapshot ───────────────────────────────────── */}
       {stubDest.hotels && stubDest.hotels.length > 0 ? (
