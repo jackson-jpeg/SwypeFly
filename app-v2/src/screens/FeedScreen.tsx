@@ -309,7 +309,8 @@ export default function FeedScreen() {
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
   const { scrollIndex: currentIndex, setScrollIndex: setCurrentIndex, filters, isSearchOpen, setSearchOpen, clearFilters, hasActiveFilters } = useFeedStore();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useFeed();
-  const { trackView, trackSave } = useSwipeTracking();
+  const { trackView, trackSave, trackSkip } = useSwipeTracking();
+  const { isSaved } = useSavedStore();
 
   const destinations = useMemo(
     () => data?.pages.flatMap((p) => p.destinations) ?? [],
@@ -336,8 +337,18 @@ export default function FeedScreen() {
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    let prevIdx = currentIndex;
     const handleScroll = () => {
       const idx = Math.round(el.scrollTop / el.clientHeight);
+      if (idx === prevIdx) return;
+      // Track skip when scrolling forward past an unsaved card
+      if (idx > prevIdx) {
+        const prevDest = destinations[prevIdx];
+        if (prevDest && !isSaved(prevDest.id)) {
+          trackSkip(prevDest.id, prevDest.flightPrice);
+        }
+      }
+      prevIdx = idx;
       setCurrentIndex(idx);
       // Track view when card comes into focus
       const dest = destinations[idx];
@@ -351,7 +362,7 @@ export default function FeedScreen() {
     // Track first card on mount
     if (destinations[0]) trackView(destinations[0].id, destinations[0].flightPrice);
     return () => el.removeEventListener('scroll', handleScroll);
-  }, [destinations.length, hasNextPage, isFetchingNextPage, fetchNextPage, trackView]);
+  }, [destinations.length, hasNextPage, isFetchingNextPage, fetchNextPage, trackView, trackSkip, isSaved, currentIndex]);
 
   const restoredRef = useRef(false);
   useEffect(() => {

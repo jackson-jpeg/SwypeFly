@@ -98,8 +98,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           Query.limit(1),
         ]);
 
-        if (dest && prefsResult.documents.length > 0) {
-          const prefs = prefsResult.documents[0];
+        if (dest) {
+          let prefs = prefsResult.documents[0];
+
+          if (!prefs) {
+            // Create default preferences for new user
+            const defaults: Record<string, unknown> = { user_id: user.$id };
+            for (const key of PREF_KEYS) defaults[key] = 0.5;
+            prefs = await db.createDocument(
+              DATABASE_ID,
+              COLLECTIONS.userPreferences,
+              ID.unique(),
+              defaults,
+            );
+          }
+
           const updates: Record<string, number> = {};
 
           for (let i = 0; i < FEATURE_KEYS.length; i++) {

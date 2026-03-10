@@ -10,27 +10,36 @@ interface SavedState {
   syncFromServer: (userId?: string) => Promise<void>;
 }
 
-/** Fire-and-forget API call — errors are silently ignored to keep UX snappy */
-async function syncSave(destId: string) {
-  try {
-    await apiFetch('/api/saved?action=save', {
-      method: 'POST',
-      body: JSON.stringify({ destination_id: destId }),
-    });
-  } catch {
-    // Best-effort sync
+/** Retry wrapper with exponential backoff — gives up silently after all retries */
+async function withRetry(fn: () => Promise<void>, retries = 2): Promise<void> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await fn();
+      return;
+    } catch {
+      if (attempt === retries) return; // give up silently after all retries
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1))); // 1s, 2s backoff
+    }
   }
 }
 
-async function syncUnsave(destId: string) {
-  try {
-    await apiFetch('/api/saved?action=unsave', {
+/** Fire-and-forget API call with retry — keeps UX snappy */
+async function syncSave(destId: string) {
+  await withRetry(() =>
+    apiFetch('/api/saved?action=save', {
       method: 'POST',
       body: JSON.stringify({ destination_id: destId }),
-    });
-  } catch {
-    // Best-effort sync
-  }
+    }),
+  );
+}
+
+async function syncUnsave(destId: string) {
+  await withRetry(() =>
+    apiFetch('/api/saved?action=unsave', {
+      method: 'POST',
+      body: JSON.stringify({ destination_id: destId }),
+    }),
+  );
 }
 
 export const useSavedStore = create<SavedState>()(

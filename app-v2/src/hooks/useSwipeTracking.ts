@@ -40,5 +40,21 @@ export function useSwipeTracking() {
     }).catch(() => {}); // best-effort
   }, []);
 
-  return { trackView, trackSave };
+  const trackSkip = useCallback((destinationId: string, priceShown?: number) => {
+    if (!hasAuthToken()) return;
+    const startTime = viewTimers.current.get(destinationId);
+    const timeSpent = startTime ? Date.now() - startTime : 0;
+
+    apiFetch('/api/swipe', {
+      method: 'POST',
+      body: JSON.stringify({
+        destination_id: destinationId,
+        action: 'skipped',
+        time_spent_ms: timeSpent,
+        price_shown: priceShown ?? 0,
+      }),
+    }).catch(() => {}); // best-effort
+  }, []);
+
+  return { trackView, trackSave, trackSkip };
 }
