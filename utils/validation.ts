@@ -27,6 +27,11 @@ export const feedQuerySchema = z.object({
   minPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
   search: z.string().max(100).optional(),
   durationFilter: z.enum(['any', 'weekend', 'week', 'extended']).optional(),
+  // Quiz-based personalization (optional — feed works without these)
+  travelStyle: z.enum(['budget', 'comfort', 'luxury']).optional(),
+  budgetLevel: z.enum(['low', 'medium', 'high']).optional(),
+  preferredSeason: z.enum(['spring', 'summer', 'fall', 'winter']).optional(),
+  preferredVibes: z.string().max(200).optional(),
 });
 
 // ─── Search deals endpoint ──────────────────────────────────────────

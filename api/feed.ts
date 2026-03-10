@@ -137,9 +137,95 @@ interface ScoredDest {
 
 // ─── Generic scoring (for anonymous users) ──────────────────────────
 
+// ─── Quiz preference types ────────────────────────────────────────
+
+interface QuizPrefs {
+  travelStyle?: 'budget' | 'comfort' | 'luxury';
+  budgetLevel?: 'low' | 'medium' | 'high';
+  preferredSeason?: 'spring' | 'summer' | 'fall' | 'winter';
+  preferredVibes?: string[]; // e.g. ['adventure', 'culture']
+}
+
+// Map season name → month names that fall in that season
+const SEASON_MONTHS: Record<string, string[]> = {
+  spring: ['march', 'april', 'may'],
+  summer: ['june', 'july', 'august'],
+  fall: ['september', 'october', 'november'],
+  winter: ['december', 'january', 'february'],
+};
+
+// Map quiz vibe IDs → destination vibe_tags they should match
+const QUIZ_VIBE_MAP: Record<string, string[]> = {
+  adventure: ['adventure', 'nature', 'mountain', 'winter'],
+  culture: ['culture', 'historic', 'foodie', 'city'],
+  romance: ['romantic', 'beach', 'tropical', 'luxury'],
+  relaxation: ['beach', 'tropical', 'nature'],
+};
+
+function computeQuizBonus(d: ScoredDest, prefs: QuizPrefs, minPrice: number, maxPrice: number): number {
+  let bonus = 0;
+  const effectivePrice = d.live_price ?? d.flight_price;
+  const priceRange = maxPrice - minPrice || 1;
+  const priceNorm = (effectivePrice - minPrice) / priceRange; // 0 = cheapest, 1 = most expensive
+
+  // Travel style bonus (+0.15)
+  if (prefs.travelStyle === 'budget') {
+    // Boost cheap destinations (lower price → higher bonus)
+    bonus += (1 - priceNorm) * 0.15;
+  } else if (prefs.travelStyle === 'luxury') {
+    // Boost high-rated, higher-priced destinations
+    const ratingNorm = Math.min((d.rating || 0) / 5, 1);
+    bonus += (ratingNorm * 0.5 + priceNorm * 0.5) * 0.15;
+  }
+  // 'comfort' gets no style bonus — middle ground
+
+  // Budget level bonus (+0.12)
+  if (prefs.budgetLevel) {
+    const budgetThresholds: Record<string, [number, number]> = {
+      low: [0, 0.33],
+      medium: [0.2, 0.7],
+      high: [0.5, 1.0],
+    };
+    const [lo, hi] = budgetThresholds[prefs.budgetLevel];
+    if (priceNorm >= lo && priceNorm <= hi) {
+      bonus += 0.12;
+    }
+  }
+
+  // Preferred season bonus (+0.10)
+  if (prefs.preferredSeason && d.best_months.length > 0) {
+    const seasonMonths = SEASON_MONTHS[prefs.preferredSeason] || [];
+    const bestMonthsLower = d.best_months.map((m) => m.toLowerCase());
+    const hasSeasonMatch = seasonMonths.some((m) => bestMonthsLower.includes(m));
+    if (hasSeasonMatch) {
+      bonus += 0.10;
+    }
+  }
+
+  // Preferred vibes bonus (+0.20)
+  if (prefs.preferredVibes && prefs.preferredVibes.length > 0) {
+    const destTags = d.vibe_tags.map((t) => t.toLowerCase());
+    let vibeMatches = 0;
+    for (const pref of prefs.preferredVibes) {
+      // Expand quiz vibe to destination tags
+      const matchTags = QUIZ_VIBE_MAP[pref] || [pref];
+      if (matchTags.some((t) => destTags.includes(t))) {
+        vibeMatches++;
+      }
+    }
+    if (vibeMatches > 0) {
+      // Scale: 1 match = +0.12, 2+ matches = up to +0.20
+      bonus += Math.min(vibeMatches * 0.10, 0.20);
+    }
+  }
+
+  return bonus;
+}
+
 function scoreFeedGeneric(
   destinations: ScoredDest[],
   rand: () => number = Math.random,
+  quizPrefs?: QuizPrefs,
 ): ScoredDest[] {
   if (destinations.length <= 1) return destinations;
 
@@ -150,6 +236,11 @@ function scoreFeedGeneric(
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   const priceRange = maxPrice - minPrice || 1;
+
+  const hasQuizPrefs = quizPrefs && (
+    quizPrefs.travelStyle || quizPrefs.budgetLevel ||
+    quizPrefs.preferredSeason || (quizPrefs.preferredVibes && quizPrefs.preferredVibes.length > 0)
+  );
 
   const recentRegions: string[] = [];
   const recentVibes: string[] = [];
@@ -186,8 +277,12 @@ function scoreFeedGeneric(
         if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
       const jitter = rand() * 0.35;
+
+      // Quiz personalization bonus (additive, optional)
+      const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
+
       const score =
-        priceScore * 0.30 - regionPenalty * 0.30 - vibePenalty * 0.15 + jitter;
+        priceScore * 0.30 - regionPenalty * 0.30 - vibePenalty * 0.15 + jitter + quizBonus;
 
       if (score > bestScore) {
         bestScore = score;
@@ -577,8 +672,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
-    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter, maxPrice, minPrice, search, durationFilter } = v.data;
+    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter, maxPrice, minPrice, search, durationFilter, travelStyle, budgetLevel, preferredSeason, preferredVibes: preferredVibesRaw } = v.data;
     const cursor = parsedCursor ?? 0;
+
+    // Build quiz prefs from query params (all optional)
+    const quizPrefs: QuizPrefs = {};
+    if (travelStyle) quizPrefs.travelStyle = travelStyle;
+    if (budgetLevel) quizPrefs.budgetLevel = budgetLevel;
+    if (preferredSeason) quizPrefs.preferredSeason = preferredSeason;
+    if (preferredVibesRaw) {
+      quizPrefs.preferredVibes = preferredVibesRaw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    }
 
     const allDestinations = await getDestinationsWithPrices(origin);
 
@@ -656,7 +760,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         (a, b) => (b.popularity_score ?? 0) - (a.popularity_score ?? 0),
       );
     } else {
-      scored = scoreFeedGeneric(destinations, rand);
+      scored = scoreFeedGeneric(destinations, rand, quizPrefs);
       scored = softShuffle(scored, rand, 5);
     }
 

@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { queryClient } from '@/api/client';
 
+export type TravelStyle = 'budget' | 'comfort' | 'luxury';
+export type BudgetLevel = 'low' | 'medium' | 'high';
+export type PreferredSeason = 'spring' | 'summer' | 'fall' | 'winter';
+
 interface UIState {
   hapticsEnabled: boolean;
   theme: 'dark' | 'light' | 'system';
@@ -12,9 +16,15 @@ interface UIState {
   notifications: boolean;
   priceAlerts: boolean;
   vibePrefs: string[];
+  travelStyle: TravelStyle | null;
+  budgetLevel: BudgetLevel | null;
+  preferredSeason: PreferredSeason | null;
   isGuest: boolean;
   hasOnboarded: boolean;
   setVibePrefs: (vibes: string[]) => void;
+  setTravelStyle: (style: TravelStyle | null) => void;
+  setBudgetLevel: (level: BudgetLevel | null) => void;
+  setPreferredSeason: (season: PreferredSeason | null) => void;
   setOnboarded: () => void;
   toggleHaptics: () => void;
   setTheme: (theme: 'dark' | 'light' | 'system') => void;
@@ -38,9 +48,15 @@ export const useUIStore = create<UIState>()(
       notifications: true,
       priceAlerts: false,
       vibePrefs: [],
+      travelStyle: null,
+      budgetLevel: null,
+      preferredSeason: null,
       isGuest: false,
       hasOnboarded: false,
       setVibePrefs: (vibes) => set({ vibePrefs: vibes }),
+      setTravelStyle: (style) => set({ travelStyle: style }),
+      setBudgetLevel: (level) => set({ budgetLevel: level }),
+      setPreferredSeason: (season) => set({ preferredSeason: season }),
       setOnboarded: () => set({ hasOnboarded: true }),
       toggleHaptics: () => set((s) => ({ hapticsEnabled: !s.hapticsEnabled })),
       setTheme: (theme) => set({ theme }),
@@ -68,6 +84,9 @@ export const useUIStore = create<UIState>()(
         notifications: s.notifications,
         priceAlerts: s.priceAlerts,
         vibePrefs: s.vibePrefs,
+        travelStyle: s.travelStyle,
+        budgetLevel: s.budgetLevel,
+        preferredSeason: s.preferredSeason,
         isGuest: s.isGuest,
         hasOnboarded: s.hasOnboarded,
       }),

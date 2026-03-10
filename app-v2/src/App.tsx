@@ -26,6 +26,7 @@ const HotelBookingScreen = lazy(() => import('@/screens/HotelBookingScreen'));
 const AlertsScreen = lazy(() => import('@/screens/AlertsScreen'));
 const QuizScreen = lazy(() => import('@/screens/QuizScreen'));
 const LegalScreen = lazy(() => import('@/screens/LegalScreen'));
+const DealsScreen = lazy(() => import('@/screens/DealsScreen'));
 const NotFoundScreen = lazy(() => import('@/screens/NotFoundScreen'));
 
 function LoadingScreen() {
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="/legal/:type" element={<LegalScreen />} />
         <Route path="/saved" element={<Navigate to="/wishlist" replace />} />
         <Route path="/auth" element={<Navigate to="/login" replace />} />
+        <Route path="/deals" element={<DealsScreen />} />
         <Route path="/quiz" element={<QuizScreen />} />
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>

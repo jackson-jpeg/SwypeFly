@@ -38,6 +38,7 @@ export default function SearchScreen() {
   const [sort, setSort] = useState<'cheapest' | 'trending' | 'newest'>('cheapest');
   const [maxPrice, setMaxPrice] = useState(5000);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedAirlines, setSelectedAirlines] = useState<Set<string>>(new Set());
 
   const queryParams = useMemo(
     () => ({
@@ -53,10 +54,36 @@ export default function SearchScreen() {
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSearchDeals(queryParams);
 
-  const deals = useMemo(
+  const allDeals = useMemo(
     () => data?.pages.flatMap((p) => p.deals) ?? [],
     [data],
   );
+
+  // Extract unique airlines from current results
+  const availableAirlines = useMemo(() => {
+    const codes = new Set<string>();
+    for (const d of allDeals) {
+      if (d.airline) codes.add(d.airline);
+    }
+    return Array.from(codes).sort((a, b) =>
+      getAirlineName(a).localeCompare(getAirlineName(b)),
+    );
+  }, [allDeals]);
+
+  const toggleAirline = useCallback((code: string) => {
+    setSelectedAirlines((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  }, []);
+
+  // Apply client-side airline filter
+  const deals = useMemo(() => {
+    if (selectedAirlines.size === 0) return allDeals;
+    return allDeals.filter((d) => selectedAirlines.has(d.airline));
+  }, [allDeals, selectedAirlines]);
 
   const handleBookDeal = useCallback(
     (deal: Deal) => {
@@ -212,6 +239,74 @@ export default function SearchScreen() {
             {maxPrice >= 5000 ? 'Any' : `$${maxPrice}`}
           </span>
         </div>
+
+        {/* Airline filter chips */}
+        {availableAirlines.length > 0 && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span
+                style={{
+                  ...typography.sectionLabel,
+                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                  color: colors.mutedText,
+                }}
+              >
+                AIRLINES
+              </span>
+              {selectedAirlines.size > 0 && (
+                <button
+                  onClick={() => setSelectedAirlines(new Set())}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: colors.terracotta,
+                    padding: 0,
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {availableAirlines.map((code) => {
+                const isSelected = selectedAirlines.has(code);
+                return (
+                  <button
+                    key={code}
+                    onClick={() => toggleAirline(code)}
+                    style={{
+                      height: 30,
+                      borderRadius: radius.pill,
+                      border: isSelected
+                        ? `1.5px solid ${colors.darkerGreen}`
+                        : `1px solid ${colors.borderTint}40`,
+                      background: isSelected ? `${colors.sageDrift}30` : colors.offWhite,
+                      padding: '0 12px',
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 11,
+                      fontWeight: isSelected ? 600 : 500,
+                      color: isSelected ? colors.darkerGreen : colors.bodyText,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {getAirlineName(code)}
+                    {isSelected && (
+                      <span style={{ fontSize: 13, lineHeight: 1 }}>x</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}

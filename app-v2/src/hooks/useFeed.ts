@@ -11,6 +11,9 @@ const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 export function useFeed() {
   const departureCode = useUIStore((s) => s.departureCode);
   const vibePrefs = useUIStore((s) => s.vibePrefs);
+  const travelStyle = useUIStore((s) => s.travelStyle);
+  const budgetLevel = useUIStore((s) => s.budgetLevel);
+  const preferredSeason = useUIStore((s) => s.preferredSeason);
   const { filters, searchQuery } = useFeedStore();
 
   // Feed store vibes override UI store vibePrefs when active
@@ -18,8 +21,11 @@ export function useFeed() {
   const regionFilter = filters.region.join(',');
   const { minPrice, maxPrice, durationFilter } = filters;
 
+  // Quiz-based personalization params (comma-separated vibes from quiz)
+  const preferredVibes = vibePrefs.length > 0 ? vibePrefs.join(',') : '';
+
   return useInfiniteQuery({
-    queryKey: ['feed', departureCode, vibeFilter, regionFilter, minPrice, maxPrice, searchQuery, durationFilter],
+    queryKey: ['feed', departureCode, vibeFilter, regionFilter, minPrice, maxPrice, searchQuery, durationFilter, travelStyle, budgetLevel, preferredSeason, preferredVibes],
     queryFn: async ({ pageParam = '0' }) => {
       if (USE_STUBS) {
         return getStubFeed(Number(pageParam), 5);
@@ -35,6 +41,11 @@ export function useFeed() {
       if (maxPrice !== null) params.set('maxPrice', String(maxPrice));
       if (searchQuery.trim()) params.set('search', searchQuery.trim());
       if (durationFilter && durationFilter !== 'any') params.set('durationFilter', durationFilter);
+      // Quiz personalization params
+      if (travelStyle) params.set('travelStyle', travelStyle);
+      if (budgetLevel) params.set('budgetLevel', budgetLevel);
+      if (preferredSeason) params.set('preferredSeason', preferredSeason);
+      if (preferredVibes) params.set('preferredVibes', preferredVibes);
       return apiFetch<DestinationFeedPage>(`/api/feed?${params.toString()}`);
     },
     initialPageParam: '0',
