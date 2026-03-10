@@ -10,6 +10,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import PriceAlertButton from '@/components/PriceAlertButton';
 import PriceCalendar from '@/components/PriceCalendar';
+import PriceHistoryChart from '@/components/PriceHistoryChart';
 import PhotoGallery from '@/components/PhotoGallery';
 import { useWeather } from '@/hooks/useWeather';
 import type { TripPlan, Destination, HotelListing } from '@/api/types';
@@ -565,6 +566,16 @@ export default function DestinationDetailScreen() {
       {stubDest.iataCode && departureCode && (
         <div style={{ paddingTop: 8, paddingBottom: 16 }}>
           <PriceCalendar
+            origin={departureCode}
+            destination={stubDest.iataCode}
+          />
+        </div>
+      )}
+
+      {/* ─── Price History Chart ──────────────────────────────── */}
+      {stubDest.iataCode && departureCode && (
+        <div style={{ paddingTop: 4, paddingBottom: 16 }}>
+          <PriceHistoryChart
             origin={departureCode}
             destination={stubDest.iataCode}
           />

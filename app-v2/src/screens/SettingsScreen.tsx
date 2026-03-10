@@ -242,6 +242,16 @@ export default function SettingsScreen() {
               <span style={rowTitleStyle}>Price Alerts</span>
               <Toggle on={priceAlerts} onToggle={togglePriceAlerts} />
             </div>
+            <button onClick={() => navigate('/alerts')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span style={rowTitleStyle}>Manage Alerts</span>
+              </div>
+              <ChevronRight />
+            </button>
           </div>
         </div>
 

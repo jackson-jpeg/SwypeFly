@@ -26,6 +26,7 @@ export const feedQuerySchema = z.object({
   maxPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
   minPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
   search: z.string().max(100).optional(),
+  durationFilter: z.enum(['any', 'weekend', 'week', 'extended']).optional(),
 });
 
 // ─── Search deals endpoint ──────────────────────────────────────────
@@ -73,6 +74,14 @@ export const weekMatrixQuerySchema = z.object({
   destination: iataCode,
   departDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+// ─── Price history query ────────────────────────────────────────────
+
+export const priceHistoryQuerySchema = z.object({
+  action: z.literal('price-history'),
+  origin: iataCode,
+  destination: iataCode,
 });
 
 // ─── Detect origin query ────────────────────────────────────────────
@@ -153,6 +162,12 @@ export const priceAlertBodySchema = z.object({
   destination_id: z.string().min(1).max(100),
   target_price: z.number().positive().max(100000),
   email: z.string().email().max(255).optional(),
+});
+
+// ─── Price alert delete ─────────────────────────────────────────────
+
+export const priceAlertDeleteSchema = z.object({
+  alertId: z.string().min(1).max(100),
 });
 
 // ─── Subscribe endpoint ─────────────────────────────────────────────

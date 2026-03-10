@@ -577,7 +577,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
-    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter, maxPrice, minPrice, search } = v.data;
+    const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter, maxPrice, minPrice, search, durationFilter } = v.data;
     const cursor = parsedCursor ?? 0;
 
     const allDestinations = await getDestinationsWithPrices(origin);
@@ -622,6 +622,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const country = ((d.country as string) || '').toLowerCase();
         const tags = ((d.vibe_tags as string[]) || []).join(' ').toLowerCase();
         return city.includes(searchLower) || country.includes(searchLower) || tags.includes(searchLower);
+      });
+    }
+
+    if (durationFilter && durationFilter !== 'any') {
+      destinations = destinations.filter((d) => {
+        const days = d.trip_duration_days;
+        if (days == null) return false; // exclude destinations without duration data
+        switch (durationFilter) {
+          case 'weekend': return days >= 1 && days <= 3;
+          case 'week': return days >= 4 && days <= 8;
+          case 'extended': return days >= 9;
+          default: return true;
+        }
       });
     }
 

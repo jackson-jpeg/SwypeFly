@@ -1,11 +1,14 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+export type DurationFilter = 'any' | 'weekend' | 'week' | 'extended';
+
 export interface FeedFilters {
   vibes: string[];
   region: string[];
   minPrice: number | null;
   maxPrice: number | null;
+  durationFilter: DurationFilter;
 }
 
 const DEFAULT_FILTERS: FeedFilters = {
@@ -13,6 +16,7 @@ const DEFAULT_FILTERS: FeedFilters = {
   region: [],
   minPrice: null,
   maxPrice: null,
+  durationFilter: 'any',
 };
 
 interface FeedState {
@@ -22,6 +26,7 @@ interface FeedState {
   // Filters
   filters: FeedFilters;
   setFilters: (filters: Partial<FeedFilters>) => void;
+  setDurationFilter: (duration: DurationFilter) => void;
   clearFilters: () => void;
   hasActiveFilters: () => boolean;
 
@@ -44,6 +49,8 @@ export const useFeedStore = create<FeedState>()(
       filters: { ...DEFAULT_FILTERS },
       setFilters: (partial) =>
         set((s) => ({ filters: { ...s.filters, ...partial } })),
+      setDurationFilter: (duration) =>
+        set((s) => ({ filters: { ...s.filters, durationFilter: duration } })),
       clearFilters: () => set({ filters: { ...DEFAULT_FILTERS } }),
       hasActiveFilters: () => {
         const f = get().filters;
@@ -51,7 +58,8 @@ export const useFeedStore = create<FeedState>()(
           f.vibes.length > 0 ||
           f.region.length > 0 ||
           f.minPrice !== null ||
-          f.maxPrice !== null
+          f.maxPrice !== null ||
+          f.durationFilter !== 'any'
         );
       },
 

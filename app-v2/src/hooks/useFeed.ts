@@ -16,10 +16,10 @@ export function useFeed() {
   // Feed store vibes override UI store vibePrefs when active
   const vibeFilter = filters.vibes.length > 0 ? filters.vibes.join(',') : vibePrefs.join(',');
   const regionFilter = filters.region.join(',');
-  const { minPrice, maxPrice } = filters;
+  const { minPrice, maxPrice, durationFilter } = filters;
 
   return useInfiniteQuery({
-    queryKey: ['feed', departureCode, vibeFilter, regionFilter, minPrice, maxPrice, searchQuery],
+    queryKey: ['feed', departureCode, vibeFilter, regionFilter, minPrice, maxPrice, searchQuery, durationFilter],
     queryFn: async ({ pageParam = '0' }) => {
       if (USE_STUBS) {
         return getStubFeed(Number(pageParam), 5);
@@ -34,6 +34,7 @@ export function useFeed() {
       if (minPrice !== null) params.set('minPrice', String(minPrice));
       if (maxPrice !== null) params.set('maxPrice', String(maxPrice));
       if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      if (durationFilter && durationFilter !== 'any') params.set('durationFilter', durationFilter);
       return apiFetch<DestinationFeedPage>(`/api/feed?${params.toString()}`);
     },
     initialPageParam: '0',

@@ -23,6 +23,7 @@ const SettingsScreen = lazy(() => import('@/screens/SettingsScreen'));
 const SearchScreen = lazy(() => import('@/screens/SearchScreen'));
 const HotelSearchScreen = lazy(() => import('@/screens/HotelSearchScreen'));
 const HotelBookingScreen = lazy(() => import('@/screens/HotelBookingScreen'));
+const AlertsScreen = lazy(() => import('@/screens/AlertsScreen'));
 const QuizScreen = lazy(() => import('@/screens/QuizScreen'));
 const LegalScreen = lazy(() => import('@/screens/LegalScreen'));
 const NotFoundScreen = lazy(() => import('@/screens/NotFoundScreen'));
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="/booking/hotel" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/hotel' }} /> : <HotelBookingScreen />} />
         <Route path="/trips" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/trips' }} /> : <TripsScreen />} />
         <Route path="/wishlist" element={needsAuth ? <Navigate to="/login" /> : <WishlistScreen />} />
+        <Route path="/alerts" element={needsAuth ? <Navigate to="/login" /> : <AlertsScreen />} />
         <Route path="/settings" element={needsAuth ? <Navigate to="/login" /> : <SettingsScreen />} />
         <Route path="/legal/:type" element={<LegalScreen />} />
         <Route path="/saved" element={<Navigate to="/wishlist" replace />} />

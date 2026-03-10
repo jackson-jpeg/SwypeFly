@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
+import { API_BASE } from '@/api/client';
 import { useDestination } from '@/hooks/useDestination';
 import { useBookingSearch } from '@/hooks/useBooking';
 import { useBookingStore } from '@/stores/bookingStore';
@@ -416,6 +417,9 @@ export default function FlightSelectionScreen() {
   const [useCachedOffer, setUseCachedOffer] = useState(false);
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'departure'>('price');
   const [maxStops, setMaxStops] = useState<number | null>(null); // null = any
+  const [flexibleDates, setFlexibleDates] = useState(false);
+  const [weekMatrix, setWeekMatrix] = useState<{ date: string; price: number }[] | null>(null);
+  const [matrixLoading, setMatrixLoading] = useState(false);
 
   // Parse cached Duffel offer from feed (if available and not expired)
   const cachedOffer = useMemo(() => {
@@ -518,6 +522,34 @@ export default function FlightSelectionScreen() {
     const id = setInterval(checkExpiry, 1000);
     return () => clearInterval(id);
   }, [checkExpiry]);
+
+  // ─── Flexible dates: fetch week matrix ───
+  const matrixAbort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (!flexibleDates || !searchParams) {
+      setWeekMatrix(null);
+      return;
+    }
+    matrixAbort.current?.abort();
+    const ctrl = new AbortController();
+    matrixAbort.current = ctrl;
+    setMatrixLoading(true);
+    const url = `${API_BASE}/api/destination?action=week-matrix&origin=${searchParams.origin}&destination=${searchParams.destination}&departDate=${searchParams.departureDate}&returnDate=${searchParams.returnDate}`;
+    fetch(url, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!ctrl.signal.aborted && Array.isArray(data?.matrix)) {
+          setWeekMatrix(data.matrix);
+        }
+      })
+      .catch(() => {
+        if (!ctrl.signal.aborted) setWeekMatrix(null);
+      })
+      .finally(() => {
+        if (!ctrl.signal.aborted) setMatrixLoading(false);
+      });
+    return () => ctrl.abort();
+  }, [flexibleDates, searchParams]);
 
   // Sort & filter offers (must be before early returns for hook ordering)
   const sortedOffers = useMemo(() => {
@@ -767,6 +799,175 @@ export default function FlightSelectionScreen() {
           </div>
         </div>
       </div>
+
+      {/* ─── Flexible Dates Toggle + Matrix ──────────────────── */}
+      {searchParams && (
+        <div style={{ padding: '12px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Toggle chip */}
+          <button
+            onClick={() => setFlexibleDates((v) => !v)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              alignSelf: 'flex-start',
+              height: 32,
+              paddingLeft: 12,
+              paddingRight: 14,
+              borderRadius: 20,
+              backgroundColor: flexibleDates ? '#7BAF8E20' : colors.offWhite,
+              border: flexibleDates ? '1.5px solid #7BAF8E' : `1px solid ${colors.borderTint}`,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={flexibleDates ? '#5A8F6B' : colors.mutedText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span
+              style={{
+                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                fontSize: 12,
+                fontWeight: 600,
+                color: flexibleDates ? '#5A8F6B' : colors.mutedText,
+              }}
+            >
+              Flexible &plusmn;3 days
+            </span>
+          </button>
+
+          {/* Week matrix grid */}
+          {flexibleDates && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {matrixLoading && (
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 12,
+                    color: colors.mutedText,
+                    textAlign: 'center',
+                    padding: '8px 0',
+                  }}
+                >
+                  Loading flexible dates...
+                </span>
+              )}
+              {!matrixLoading && weekMatrix && weekMatrix.length > 0 && (() => {
+                const cheapest = Math.min(...weekMatrix.map((m) => m.price));
+                return (
+                  <>
+                    <span
+                      style={{
+                        fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: colors.mutedText,
+                      }}
+                    >
+                      Nearby departure dates
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                      {weekMatrix.map((entry) => {
+                        const d = new Date(entry.date + 'T00:00:00');
+                        const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
+                        const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const isCheapest = entry.price === cheapest;
+                        const isSelected = entry.date === searchParams.departureDate;
+                        return (
+                          <button
+                            key={entry.date}
+                            onClick={() => {
+                              // Update departure date by navigating with new state
+                              const newState = {
+                                ...searchState,
+                                fromSearch: true,
+                                departureDate: entry.date,
+                                returnDate: searchParams.returnDate,
+                                destinationIata: searchParams.destination,
+                              };
+                              navigate('.', { replace: true, state: newState });
+                              window.location.reload();
+                            }}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 2,
+                              padding: '6px 2px',
+                              borderRadius: 8,
+                              border: isSelected
+                                ? '1.5px solid #7BAF8E'
+                                : isCheapest
+                                  ? '1px solid #7BAF8E80'
+                                  : '1px solid #D4CCC0',
+                              backgroundColor: isSelected
+                                ? '#7BAF8E15'
+                                : isCheapest
+                                  ? '#7BAF8E08'
+                                  : 'transparent',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                                fontSize: 9,
+                                fontWeight: 600,
+                                color: colors.mutedText,
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {dayLabel}
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                                fontSize: 10,
+                                color: colors.deepDusk,
+                              }}
+                            >
+                              {dateLabel}
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: isCheapest ? '#5A8F6B' : colors.deepDusk,
+                              }}
+                            >
+                              ${entry.price}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+              {!matrixLoading && weekMatrix && weekMatrix.length === 0 && (
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 12,
+                    color: colors.mutedText,
+                    textAlign: 'center',
+                    padding: '8px 0',
+                  }}
+                >
+                  No nearby date prices available
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Price Display ────────────────────────────────────── */}
       <div style={{ padding: '20px 20px 0' }}>

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
-import { destinationQuerySchema, priceCalendarQuerySchema, weekMatrixQuerySchema, validateRequest } from '../utils/validation';
+import { destinationQuerySchema, priceCalendarQuerySchema, weekMatrixQuerySchema, priceHistoryQuerySchema, validateRequest } from '../utils/validation';
 import { fetchPriceCalendar, fetchMonthlyPrices, fetchWeekMatrix } from '../services/travelpayouts';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
@@ -85,6 +85,110 @@ async function handleWeekMatrix(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Price history handler ───────────────────────────────────────────
+
+// In-memory cache for price history (30 min TTL)
+const priceHistoryCache = new Map<string, { data: unknown; expires: number }>();
+
+async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
+  const v = validateRequest(priceHistoryQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const { origin, destination } = v.data;
+
+  const cacheKey = `${origin}-${destination}`;
+  const cached = priceHistoryCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+    return res.status(200).json(cached.data);
+  }
+
+  try {
+    // Query ai_cache for price_history documents matching this destination
+    const result = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.aiCache,
+      [
+        Query.equal('type', 'price_history'),
+        Query.search('key', destination),
+        Query.orderAsc('created_at'),
+        Query.limit(100),
+      ],
+    );
+
+    // Also pull current cached_prices for this route
+    const currentPriceResult = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.cachedPrices,
+      [
+        Query.equal('origin', origin),
+        Query.equal('destination_iata', destination),
+        Query.limit(1),
+      ],
+    ).catch(() => ({ documents: [] }));
+
+    const currentPriceDoc = currentPriceResult.documents[0];
+    const currentPrice = (currentPriceDoc?.price as number) ?? null;
+
+    // Parse history entries
+    const history: { date: string; price: number; source: string; airline: string }[] = [];
+    for (const doc of result.documents) {
+      try {
+        // Filter: key must end with the destination code
+        const key = doc.key as string;
+        if (!key.endsWith(`-${destination}`)) continue;
+
+        const content = JSON.parse(doc.content as string);
+        history.push({
+          date: content.timestamp || (doc.created_at as string),
+          price: content.price as number,
+          source: (content.source as string) || 'unknown',
+          airline: (content.airline as string) || '',
+        });
+      } catch {
+        // Skip malformed entries
+      }
+    }
+
+    // Compute stats
+    const prices = history.map((h) => h.price).filter((p) => p > 0);
+    const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+    const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
+    const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null;
+
+    // Determine trend from last few data points
+    let trend: 'up' | 'down' | 'stable' = 'stable';
+    if (prices.length >= 3) {
+      const recent = prices.slice(-3);
+      const older = prices.slice(-6, -3);
+      if (older.length > 0) {
+        const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+        const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+        const pctChange = (recentAvg - olderAvg) / olderAvg;
+        if (pctChange > 0.05) trend = 'up';
+        else if (pctChange < -0.05) trend = 'down';
+      }
+    }
+
+    const responseData = {
+      history,
+      currentPrice,
+      avgPrice,
+      minPrice,
+      maxPrice,
+      trend,
+    };
+
+    // Cache for 30 minutes
+    priceHistoryCache.set(cacheKey, { data: responseData, expires: Date.now() + 30 * 60 * 1000 });
+
+    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+    return res.status(200).json(responseData);
+  } catch (err) {
+    logApiError('api/destination?action=price-history', err);
+    return res.status(500).json({ error: 'Failed to load price history' });
+  }
+}
+
 // ─── Main handler ────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -102,6 +206,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (req.query.action === 'week-matrix') {
     return handleWeekMatrix(req, res);
+  }
+  if (req.query.action === 'price-history') {
+    return handlePriceHistory(req, res);
   }
 
   const v = validateRequest(destinationQuerySchema, req.query);

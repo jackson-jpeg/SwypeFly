@@ -1,8 +1,8 @@
-// Consolidated alerts API — dispatches on ?action=create|check
+// Consolidated alerts API — dispatches on ?action=create|check|list|delete
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Query, ID } from 'node-appwrite';
 import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
-import { priceAlertBodySchema, validateRequest } from '../utils/validation';
+import { priceAlertBodySchema, priceAlertDeleteSchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { verifyClerkToken } from '../utils/clerkAuth';
@@ -281,6 +281,38 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Delete alert ─────────────────────────────────────────────────────────────
+
+async function handleDelete(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'DELETE' && req.method !== 'POST')
+    return res.status(405).json({ error: 'DELETE or POST only' });
+
+  const authResult = await verifyClerkToken(req.headers.authorization);
+  if (!authResult) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const userId = authResult.userId;
+
+  const v = validateRequest(priceAlertDeleteSchema, req.body);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const { alertId } = v.data;
+
+  try {
+    // Fetch the alert first to verify ownership
+    const doc = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.priceAlerts, alertId);
+    if (doc.user_id !== userId) {
+      return res.status(403).json({ error: 'Not authorized to delete this alert' });
+    }
+
+    await serverDatabases.deleteDocument(DATABASE_ID, COLLECTIONS.priceAlerts, alertId);
+    res.json({ deleted: true, alertId });
+  } catch (err: unknown) {
+    logApiError('api/alerts/delete', err);
+    const message = err instanceof Error ? err.message : 'Failed to delete alert';
+    res.status(500).json({ error: message });
+  }
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -294,7 +326,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleList(req, res);
     case 'check':
       return handleCheck(req, res);
+    case 'delete':
+      return handleDelete(req, res);
     default:
-      return res.status(400).json({ error: 'Missing or invalid action parameter. Use ?action=create, ?action=list, or ?action=check' });
+      return res.status(400).json({ error: 'Missing or invalid action parameter. Use ?action=create, ?action=list, ?action=check, or ?action=delete' });
   }
 }

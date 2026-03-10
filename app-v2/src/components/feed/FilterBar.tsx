@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { colors, fonts } from '@/tokens';
 import { useFeedStore } from '@/stores/feedStore';
+import type { DurationFilter } from '@/stores/feedStore';
 
 const PRICE_RANGES = [
   { label: 'Under $300', min: null, max: 300 },
@@ -12,6 +13,12 @@ const PRICE_RANGES = [
 const VIBES = ['beach', 'city', 'nature', 'culture', 'adventure', 'romantic', 'foodie', 'luxury', 'budget'] as const;
 
 const REGIONS = ['Americas', 'Europe', 'Asia', 'Africa', 'Middle East', 'Oceania'] as const;
+
+const DURATIONS: { label: string; value: DurationFilter }[] = [
+  { label: 'Weekend', value: 'weekend' },
+  { label: 'Week', value: 'week' },
+  { label: 'Extended', value: 'extended' },
+];
 
 const chipBase: React.CSSProperties = {
   display: 'inline-flex',
@@ -48,7 +55,7 @@ const activeChip: React.CSSProperties = {
 
 export default function FilterBar() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { filters, setFilters, clearFilters, hasActiveFilters } = useFeedStore();
+  const { filters, setFilters, setDurationFilter, clearFilters, hasActiveFilters } = useFeedStore();
   const active = hasActiveFilters();
 
   const isPriceActive = (range: (typeof PRICE_RANGES)[number]) =>
@@ -184,6 +191,28 @@ export default function FilterBar() {
               style={isActive ? activeChip : inactiveChip}
             >
               {region}
+              {isActive && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              )}
+            </button>
+          );
+        })}
+
+        <div style={divider} />
+
+        {/* Duration chips */}
+        {DURATIONS.map(({ label, value }) => {
+          const isActive = filters.durationFilter === value;
+          return (
+            <button
+              key={value}
+              onClick={() => setDurationFilter(isActive ? 'any' : value)}
+              style={isActive ? activeChip : inactiveChip}
+            >
+              {label}
               {isActive && (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
