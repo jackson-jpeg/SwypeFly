@@ -3,6 +3,7 @@ import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/ap
 import { feedQuerySchema, budgetDiscoveryQuerySchema, detectOriginQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { generateAviasalesLink } from '../utils/affiliateLinks';
+import { verifyClerkToken } from '../utils/clerkAuth';
 import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
 import { cors } from './_cors.js';
 
@@ -313,6 +314,173 @@ function softShuffle<T>(items: T[], rand: () => number, windowSize = 10): T[] {
     const j = minJ + Math.floor(rand() * (maxJ - minJ + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
+  return result;
+}
+
+// ─── User preference vectors (personalized scoring) ─────────────────
+
+interface UserPrefs {
+  beach: number;
+  city: number;
+  adventure: number;
+  culture: number;
+  nightlife: number;
+  nature: number;
+  food: number;
+}
+
+const prefCache = new Map<string, { data: UserPrefs | null; ts: number }>();
+const PREF_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function fetchUserPrefs(userId: string): Promise<UserPrefs | null> {
+  const cached = prefCache.get(userId);
+  if (cached && Date.now() - cached.ts < PREF_CACHE_TTL) return cached.data;
+
+  try {
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
+      Query.equal('user_id', userId),
+      Query.limit(1),
+    ]);
+    if (result.documents.length === 0) {
+      prefCache.set(userId, { data: null, ts: Date.now() });
+      return null;
+    }
+    const doc = result.documents[0];
+    const prefs: UserPrefs = {
+      beach: (doc.pref_beach as number) ?? 0.5,
+      city: (doc.pref_city as number) ?? 0.5,
+      adventure: (doc.pref_adventure as number) ?? 0.5,
+      culture: (doc.pref_culture as number) ?? 0.5,
+      nightlife: (doc.pref_nightlife as number) ?? 0.5,
+      nature: (doc.pref_nature as number) ?? 0.5,
+      food: (doc.pref_food as number) ?? 0.5,
+    };
+    prefCache.set(userId, { data: prefs, ts: Date.now() });
+    return prefs;
+  } catch (err) {
+    logApiError('api/feed/fetchUserPrefs', err);
+    return null;
+  }
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(magA) * Math.sqrt(magB);
+  return denom > 0 ? dot / denom : 0;
+}
+
+function getDestFeatureVector(d: ScoredDest): number[] {
+  return [
+    d.beach_score ?? 0,
+    d.city_score ?? 0,
+    d.adventure_score ?? 0,
+    d.culture_score ?? 0,
+    d.nightlife_score ?? 0,
+    d.nature_score ?? 0,
+    d.food_score ?? 0,
+  ];
+}
+
+function getUserPrefVector(prefs: UserPrefs): number[] {
+  return [prefs.beach, prefs.city, prefs.adventure, prefs.culture, prefs.nightlife, prefs.nature, prefs.food];
+}
+
+function scorePersonalized(
+  destinations: ScoredDest[],
+  prefs: UserPrefs,
+  rand: () => number = Math.random,
+  quizPrefs?: QuizPrefs,
+): ScoredDest[] {
+  if (destinations.length <= 1) return destinations;
+
+  const remaining = [...destinations];
+  const result: ScoredDest[] = [];
+
+  const prices = remaining.map((d) => d.live_price ?? d.flight_price);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const priceRange = maxPrice - minPrice || 1;
+
+  const hasQuizPrefs = quizPrefs && (
+    quizPrefs.travelStyle || quizPrefs.budgetLevel ||
+    quizPrefs.preferredSeason || (quizPrefs.preferredVibes && quizPrefs.preferredVibes.length > 0)
+  );
+
+  const userVec = getUserPrefVector(prefs);
+  const recentRegions: string[] = [];
+  const recentVibes: string[] = [];
+  const WINDOW = 4;
+
+  // Seed with the destination that best matches user preferences
+  let bestSeedIdx = 0;
+  let bestSeedSim = -Infinity;
+  for (let i = 0; i < remaining.length; i++) {
+    const sim = cosineSimilarity(userVec, getDestFeatureVector(remaining[i]));
+    if (sim > bestSeedSim) {
+      bestSeedSim = sim;
+      bestSeedIdx = i;
+    }
+  }
+  const seed = remaining.splice(bestSeedIdx, 1)[0];
+  result.push(seed);
+  recentRegions.push(getRegion(seed));
+  recentVibes.push(getVibeBucket(seed.vibe_tags));
+
+  while (remaining.length > 0) {
+    let bestIdx = 0;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < remaining.length; i++) {
+      const d = remaining[i];
+      const effectivePrice = d.live_price ?? d.flight_price;
+      const region = getRegion(d);
+      const vibe = getVibeBucket(d.vibe_tags);
+
+      // Preference similarity (0-1)
+      const prefScore = cosineSimilarity(userVec, getDestFeatureVector(d));
+
+      // Price score (0-1, lower price = higher score)
+      const priceScore = 1 - (effectivePrice - minPrice) / priceRange;
+
+      // Diversity penalties
+      let regionPenalty = 0;
+      for (let j = 0; j < recentRegions.length; j++) {
+        if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
+      }
+      let vibePenalty = 0;
+      for (let j = 0; j < recentVibes.length; j++) {
+        if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
+      }
+
+      const jitter = rand() * 0.15;
+
+      // Quiz bonus (additive, optional)
+      const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
+
+      const score =
+        prefScore * 0.35 + priceScore * 0.20 - regionPenalty * 0.20 - vibePenalty * 0.10 + jitter + quizBonus;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+
+    // 10% exploration: pick a random item instead of the highest-scoring one
+    const pickIdx = rand() < 0.1 ? Math.floor(rand() * remaining.length) : bestIdx;
+    const pick = remaining.splice(pickIdx, 1)[0];
+    result.push(pick);
+    recentRegions.unshift(getRegion(pick));
+    recentVibes.unshift(getVibeBucket(pick.vibe_tags));
+    if (recentRegions.length > WINDOW) recentRegions.pop();
+    if (recentVibes.length > WINDOW) recentVibes.pop();
+  }
+
   return result;
 }
 
@@ -749,6 +917,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       destinations = destinations.filter((d) => !excludeSet.has(d.id));
     }
 
+    // Try to extract user ID for personalized scoring (non-blocking)
+    let userPrefs: UserPrefs | null = null;
+    try {
+      const authResult = await verifyClerkToken(req.headers.authorization as string | undefined);
+      if (authResult) {
+        userPrefs = await fetchUserPrefs(authResult.userId);
+      }
+    } catch {
+      // Auth failure is non-fatal — fall back to generic scoring
+    }
+
     let scored: ScoredDest[];
 
     if (sortPreset === 'cheapest') {
@@ -761,6 +940,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       scored = [...destinations].sort(
         (a, b) => (b.popularity_score ?? 0) - (a.popularity_score ?? 0),
       );
+    } else if (userPrefs) {
+      scored = scorePersonalized(destinations, userPrefs, rand, quizPrefs);
+      scored = softShuffle(scored, rand, 5);
     } else {
       scored = scoreFeedGeneric(destinations, rand, quizPrefs);
       scored = softShuffle(scored, rand, 5);
