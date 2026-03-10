@@ -5,6 +5,7 @@ import { useAuthContext } from '@/hooks/AuthContext';
 import { useUIStore } from '@/stores/uiStore';
 import { colors } from '@/tokens';
 import DesktopShell from '@/components/DesktopShell';
+import GuestGate from '@/components/GuestGate';
 
 // Lazy-load all screens for code splitting
 const LoginScreen = lazy(() => import('@/screens/LoginScreen'));
@@ -64,14 +65,14 @@ export default function App() {
         <Route path="/search" element={needsAuth ? <Navigate to="/login" /> : <SearchScreen />} />
         <Route path="/destination/:id" element={needsAuth ? <Navigate to="/login" /> : <DestinationDetailScreen />} />
         <Route path="/booking/flights" element={needsAuth ? <Navigate to="/login" state={{ returnTo: '/booking/flights' }} /> : <FlightSelectionScreen />} />
-        <Route path="/booking/passengers" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/passengers' }} /> : <PassengerDetailsScreen />} />
-        <Route path="/booking/seats" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/seats' }} /> : <SeatSelectionScreen />} />
-        <Route path="/booking/extras" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/extras' }} /> : <BagsExtrasScreen />} />
-        <Route path="/booking/review" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/review' }} /> : <ReviewPaymentScreen />} />
-        <Route path="/booking/confirmation" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/confirmation' }} /> : <ConfirmationScreen />} />
+        <Route path="/booking/passengers" element={needsRealAuth ? <GuestGate action="Book This Flight" description="Sign in to complete your booking. Your flight selection will be saved." /> : <PassengerDetailsScreen />} />
+        <Route path="/booking/seats" element={needsRealAuth ? <GuestGate action="Book This Flight" description="Sign in to complete your booking. Your flight selection will be saved." /> : <SeatSelectionScreen />} />
+        <Route path="/booking/extras" element={needsRealAuth ? <GuestGate action="Book This Flight" description="Sign in to complete your booking. Your flight selection will be saved." /> : <BagsExtrasScreen />} />
+        <Route path="/booking/review" element={needsRealAuth ? <GuestGate action="Book This Flight" description="Sign in to complete your booking. Your flight selection will be saved." /> : <ReviewPaymentScreen />} />
+        <Route path="/booking/confirmation" element={needsRealAuth ? <GuestGate action="Book This Flight" description="Sign in to complete your booking. Your flight selection will be saved." /> : <ConfirmationScreen />} />
         <Route path="/booking/hotels" element={needsAuth ? <Navigate to="/login" state={{ returnTo: '/booking/hotels' }} /> : <HotelSearchScreen />} />
-        <Route path="/booking/hotel" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/hotel' }} /> : <HotelBookingScreen />} />
-        <Route path="/trips" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/trips' }} /> : <TripsScreen />} />
+        <Route path="/booking/hotel" element={needsRealAuth ? <GuestGate action="Book a Hotel" description="Sign in to complete your hotel booking." /> : <HotelBookingScreen />} />
+        <Route path="/trips" element={needsRealAuth ? <GuestGate action="View Your Trips" description="Sign in to see your booked trips, itineraries, and travel history." /> : <TripsScreen />} />
         <Route path="/wishlist" element={needsAuth ? <Navigate to="/login" /> : <WishlistScreen />} />
         <Route path="/alerts" element={needsAuth ? <Navigate to="/login" /> : <AlertsScreen />} />
         <Route path="/settings" element={needsAuth ? <Navigate to="/login" /> : <SettingsScreen />} />

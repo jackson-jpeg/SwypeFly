@@ -1037,7 +1037,7 @@ export default function DestinationDetailScreen() {
             style={{
               display: 'flex',
               gap: 12,
-              overflowX: stubDest.restaurants.length > 3 ? 'auto' : 'visible',
+              overflowX: 'auto',
               paddingBottom: 4,
             }}
           >
@@ -1047,7 +1047,7 @@ export default function DestinationDetailScreen() {
                 style={{
                   minWidth: 160,
                   maxWidth: 200,
-                  flex: stubDest.restaurants!.length > 3 ? '0 0 auto' : '1 1 0%',
+                  flex: '0 0 auto',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 6,
@@ -1334,12 +1334,18 @@ export default function DestinationDetailScreen() {
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    backgroundImage: `url(${s.image})`,
+                    backgroundImage: s.image ? `url(${s.image})` : undefined,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    backgroundColor: colors.deepDusk,
+                    background: s.image ? undefined : `linear-gradient(135deg, ${colors.sageDrift} 0%, ${colors.deepDusk} 100%)`,
+                    display: !s.image ? 'flex' : undefined,
+                    alignItems: !s.image ? 'center' : undefined,
+                    justifyContent: !s.image ? 'center' : undefined,
+                    fontSize: !s.image ? 28 : undefined,
                   }}
-                />
+                >
+                  {!s.image && '✈️'}
+                </div>
                 {/* Gradient overlay */}
                 <div
                   style={{
