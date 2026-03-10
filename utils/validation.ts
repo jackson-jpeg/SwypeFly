@@ -130,28 +130,6 @@ export const hotelPricesQuerySchema = z.object({
 
 // ─── AI endpoint schemas ─────────────────────────────────────────────
 
-export const liveUpdatesQuerySchema = z.object({
-  city: z.string().min(1).max(100),
-  country: z.string().min(1).max(100),
-});
-
-export const destinationGuideQuerySchema = z.object({
-  city: z.string().min(1).max(100),
-  country: z.string().min(1).max(100),
-});
-
-export const nearbyGemsQuerySchema = z.object({
-  city: z.string().min(1).max(100),
-  country: z.string().min(1).max(100),
-  lat: z.string().transform(Number).pipe(z.number()).optional(),
-  lng: z.string().transform(Number).pipe(z.number()).optional(),
-});
-
-export const priceCheckQuerySchema = z.object({
-  origin: iataCode,
-  destination: iataCode,
-});
-
 export const tripPlanBodySchema = z.object({
   destination_id: z.string().min(1).max(100).optional(),
   city: z.string().min(1).max(100),

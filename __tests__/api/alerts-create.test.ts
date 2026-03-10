@@ -14,6 +14,7 @@ jest.mock('node-appwrite', () => ({
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
     limit: jest.fn((n: number) => `limit:${n}`),
+    offset: jest.fn((n: number) => `offset:${n}`),
     orderAsc: jest.fn((f: string) => `orderAsc:${f}`),
   },
   ID: { unique: jest.fn(() => 'unique-id') },

@@ -149,15 +149,25 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
   if (secret !== cronSecret) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const alerts = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
-      Query.equal('is_active', true),
-      Query.limit(100),
-    ]);
+    // Paginate through all active alerts (Appwrite max 100 per query)
+    let allAlerts: typeof (await serverDatabases.listDocuments('', '', [])).documents = [];
+    let offset = 0;
+    const BATCH = 100;
+    while (true) {
+      const batch = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
+        Query.equal('is_active', true),
+        Query.limit(BATCH),
+        ...(offset > 0 ? [Query.offset(offset)] : []),
+      ]);
+      allAlerts = allAlerts.concat(batch.documents);
+      if (batch.documents.length < BATCH) break;
+      offset += BATCH;
+    }
 
     let triggered = 0;
     let checked = 0;
 
-    for (const alert of alerts.documents) {
+    for (const alert of allAlerts) {
       checked++;
       try {
         // Look up destination to get IATA code (alert.destination_id is an Appwrite doc ID)
