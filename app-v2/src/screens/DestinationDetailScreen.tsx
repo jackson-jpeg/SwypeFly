@@ -11,6 +11,7 @@ import { useAuthContext } from '@/hooks/AuthContext';
 import PriceAlertButton from '@/components/PriceAlertButton';
 import PriceCalendar from '@/components/PriceCalendar';
 import PriceHistoryChart from '@/components/PriceHistoryChart';
+import MonthlyPriceBar from '@/components/MonthlyPriceBar';
 import PhotoGallery from '@/components/PhotoGallery';
 import { useWeather } from '@/hooks/useWeather';
 import type { TripPlan, Destination, HotelListing } from '@/api/types';
@@ -134,6 +135,8 @@ export default function DestinationDetailScreen() {
   const [tripPlanText, setTripPlanText] = useState('');
   const [tripPlanLoading, setTripPlanLoading] = useState(false);
   const [tripPlanError, setTripPlanError] = useState(false);
+  const [itineraryExpanded, setItineraryExpanded] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const { data: weather } = useWeather(stubDest?.latitude, stubDest?.longitude);
 
   /* ── Parallax scroll tracking ────────────────────────────────── */
@@ -357,24 +360,46 @@ export default function DestinationDetailScreen() {
               {isSaved(stubDest.id) ? <HeartFilled /> : <HeartOutline />}
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
+                const shareUrl = `https://sogojet.com/destination/${stubDest.id}`;
+                const shareText = `Check out ${stubDest.city}, ${stubDest.country} on SoGoJet — flights from $${stubDest.flightPrice}!`;
                 if (navigator.share) {
-                  navigator.share({ title: `${dest.city} — SoGoJet`, text: dest.tagline, url: window.location.href }).catch(() => {});
+                  try {
+                    await navigator.share({ title: `${stubDest.city} — SoGoJet`, text: shareText, url: shareUrl });
+                  } catch {
+                    // User cancelled or share failed — ignore
+                  }
+                } else {
+                  try {
+                    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                    setShareCopied(true);
+                    setTimeout(() => setShareCopied(false), 2000);
+                  } catch {
+                    // Clipboard unavailable
+                  }
                 }
               }}
               style={{
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: 'rgba(0,0,0,0.25)',
+                backgroundColor: shareCopied ? 'rgba(75,139,122,0.6)' : 'rgba(0,0,0,0.25)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                transition: 'background-color 0.2s ease',
               }}
+              title={shareCopied ? 'Link copied!' : 'Share destination'}
             >
-              <ShareIcon />
+              {shareCopied ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <ShareIcon />
+              )}
             </button>
           </div>
         </div>
@@ -561,6 +586,16 @@ export default function DestinationDetailScreen() {
           </button>
         </div>
       </div>
+
+      {/* ─── Cheapest Month Bar Chart ─────────────────────────── */}
+      {stubDest.iataCode && departureCode && (
+        <div style={{ paddingTop: 16, paddingBottom: 8 }}>
+          <MonthlyPriceBar
+            origin={departureCode}
+            destination={stubDest.iataCode}
+          />
+        </div>
+      )}
 
       {/* ─── Price Calendar ──────────────────────────────────── */}
       {stubDest.iataCode && departureCode && (
@@ -900,7 +935,179 @@ export default function DestinationDetailScreen() {
         ))}
       </div>
 
-      {/* ─── Suggested Itinerary — only shown after AI generates a plan ─── */}
+      {/* ─── Suggested Itinerary ─────────────────────────────── */}
+      {stubDest.itinerary && stubDest.itinerary.length > 0 && (
+        <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button
+            onClick={() => setItineraryExpanded((v) => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+            }}
+          >
+            <h2 style={sectionTitle}>Suggested Itinerary</h2>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={colors.deepDusk}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                transform: itineraryExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+              }}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {itineraryExpanded && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {stubDest.itinerary.map((item) => (
+                <div
+                  key={item.day}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    padding: 16,
+                    borderRadius: 12,
+                    backgroundColor: colors.offWhite,
+                    border: `1px solid ${colors.borderTint}20`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: colors.sageDrift,
+                    }}
+                  >
+                    Day {item.day}
+                  </span>
+                  {item.activities.map((activity, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <span
+                        style={{
+                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                          fontSize: 13,
+                          lineHeight: '14px',
+                          color: colors.sageDrift,
+                          flexShrink: 0,
+                          marginTop: 2,
+                        }}
+                      >
+                        &bull;
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                          fontSize: 14,
+                          lineHeight: '21px',
+                          color: colors.bodyText,
+                        }}
+                      >
+                        {activity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Top Restaurants ──────────────────────────────────── */}
+      {stubDest.restaurants && stubDest.restaurants.length > 0 && (
+        <div style={{ padding: '16px 24px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <span style={sectionLabel}>Top Restaurants</span>
+          <div
+            style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: stubDest.restaurants.length > 3 ? 'auto' : 'visible',
+              paddingBottom: 4,
+            }}
+          >
+            {stubDest.restaurants.map((restaurant) => (
+              <div
+                key={restaurant.name}
+                style={{
+                  minWidth: 160,
+                  maxWidth: 200,
+                  flex: stubDest.restaurants!.length > 3 ? '0 0 auto' : '1 1 0%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  padding: 14,
+                  borderRadius: 12,
+                  backgroundColor: colors.offWhite,
+                  border: `1px solid ${colors.borderTint}20`,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    lineHeight: '18px',
+                    color: colors.deepDusk,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {restaurant.name}
+                </span>
+                <span
+                  style={{
+                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                    fontSize: 11,
+                    lineHeight: '14px',
+                    color: colors.mutedText,
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {restaurant.type}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span
+                    style={{
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: colors.confirmGreen,
+                    }}
+                  >
+                    {restaurant.rating.toFixed(1)}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+                      fontSize: 11,
+                      color: colors.borderTint,
+                    }}
+                  >
+                    {Array.from({ length: Math.round(restaurant.rating) }, () => '\u2605').join('')}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ─── AI Trip Planner ──────────────────────────────────── */}
       <div style={{ padding: 24 }}>
