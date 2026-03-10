@@ -14,6 +14,7 @@ jest.mock('node-appwrite', () => ({
   Users: jest.fn().mockImplementation(() => ({})),
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
+    orderAsc: jest.fn((field: string) => `orderAsc:${field}`),
     limit: jest.fn((n: number) => `limit:${n}`),
   },
 }));
