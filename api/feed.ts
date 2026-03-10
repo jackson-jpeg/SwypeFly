@@ -337,7 +337,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   // Fetch cached prices, hotel prices, and refreshed images in parallel
   const [priceResult, hotelPriceResult, imageResult] = await Promise.all([
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.equal('origin', origin), Query.limit(500),
+      Query.equal('origin', origin), Query.orderAsc('price'), Query.limit(500),
     ]).catch(() => ({ documents: [] })),
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedHotelPrices, [
       Query.limit(500),
@@ -369,6 +369,8 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     }
   >();
   for (const p of prices) {
+    // Keep the cheapest price per destination (results are ordered by price ASC)
+    if (priceMap.has(p.destination_iata as string)) continue;
     priceMap.set(p.destination_iata as string, {
       price: p.price as number,
       airline: (p.airline as string) || '',

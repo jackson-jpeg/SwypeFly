@@ -233,6 +233,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [
           Query.equal('origin', origin),
           Query.equal('destination_iata', dest.iata_code as string),
+          Query.orderAsc('price'),
           Query.limit(1),
         ],
       );
