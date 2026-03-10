@@ -208,6 +208,121 @@ export async function fetchAllCheapPrices(
   return results;
 }
 
+export interface MonthlyPriceEntry {
+  month: string;
+  price: number;
+  airline: string;
+  transferCount: number;
+}
+
+/**
+ * Fetch cheapest price per month for a route over the next year.
+ */
+export async function fetchMonthlyPrices(
+  origin: string,
+  destination: string,
+  currency = 'USD',
+): Promise<MonthlyPriceEntry[]> {
+  if (!TRAVELPAYOUTS_TOKEN) return [];
+
+  try {
+    const res = await fetch(
+      `${BASE_URL}/v1/prices/monthly?origin=${origin}&destination=${destination}&currency=${currency}&market=us`,
+      { headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN } },
+    );
+    if (!res.ok) {
+      console.warn(`[travelpayouts] monthly-prices ${origin}->${destination}: ${res.status}`);
+      return [];
+    }
+    const json = (await res.json()) as {
+      success: boolean;
+      data: Record<string, {
+        price: number;
+        airline: string;
+        transfers: number;
+        departure_at: string;
+      }>;
+    };
+    if (!json.success || !json.data) return [];
+
+    return Object.values(json.data).map((entry) => ({
+      month: entry.departure_at?.slice(0, 7) || '',
+      price: Math.round(entry.price),
+      airline: entry.airline || '',
+      transferCount: entry.transfers ?? 0,
+    })).sort((a, b) => a.month.localeCompare(b.month));
+  } catch (err) {
+    console.error(`[travelpayouts] monthly-prices ${origin}->${destination} error:`, err);
+    return [];
+  }
+}
+
+export interface BudgetFlightResult {
+  destination: string;
+  origin: string;
+  price: number;
+  airline: string;
+  departureDate: string;
+  returnDate: string;
+  transfers: number;
+  tripDuration: number;
+  gate: string;
+}
+
+/**
+ * Fetch flights within a price range from origin to all destinations.
+ * Uses the v3 search_by_price_range endpoint — great for "flights under $200".
+ */
+export async function fetchByPriceRange(
+  origin: string,
+  minPrice: number,
+  maxPrice: number,
+  currency = 'usd',
+): Promise<BudgetFlightResult[]> {
+  if (!TRAVELPAYOUTS_TOKEN) return [];
+
+  try {
+    const res = await fetch(
+      `${BASE_URL}/aviasales/v3/search_by_price_range?origin=${origin}&destination=-&value_min=${minPrice}&value_max=${maxPrice}&currency=${currency}&market=us&limit=50&sorting=price`,
+      { headers: { 'X-Access-Token': TRAVELPAYOUTS_TOKEN } },
+    );
+    if (!res.ok) {
+      console.warn(`[travelpayouts] price-range ${origin} $${minPrice}-$${maxPrice}: ${res.status}`);
+      return [];
+    }
+    const json = (await res.json()) as {
+      success: boolean;
+      data: Array<{
+        destination: string;
+        origin: string;
+        value: number;
+        gate: string;
+        depart_date: string;
+        return_date: string;
+        number_of_changes: number;
+        trip_duration: number;
+        airline: string;
+      }>;
+    };
+    if (!json.success || !json.data) return [];
+
+    return json.data.map((d) => ({
+      destination: d.destination,
+      origin: d.origin,
+      price: d.value,
+      airline: d.airline || '',
+      departureDate: d.depart_date || '',
+      returnDate: d.return_date || '',
+      transfers: d.number_of_changes ?? 0,
+      tripDuration: d.trip_duration ?? 0,
+      gate: d.gate || '',
+    }));
+  } catch (err) {
+    console.error(`[travelpayouts] price-range error:`, err);
+    return [];
+  }
+}
+
 export interface PriceCalendarEntry {
   date: string;
   price: number;

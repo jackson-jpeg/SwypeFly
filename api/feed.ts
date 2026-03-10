@@ -1,8 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
-import { feedQuerySchema, validateRequest } from '../utils/validation';
+import { feedQuerySchema, budgetDiscoveryQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { generateAviasalesLink } from '../utils/affiliateLinks';
+import { fetchByPriceRange } from '../services/travelpayouts';
 import { cors } from './_cors.js';
 
 const PAGE_SIZE = 10;
@@ -457,12 +458,62 @@ function toFrontend(d: ScoredDest, origin?: string) {
   };
 }
 
+// ─── Budget discovery handler ────────────────────────────────────────
+
+async function handleBudgetDiscovery(req: VercelRequest, res: VercelResponse) {
+  const v = validateRequest(budgetDiscoveryQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const { origin, minPrice, maxPrice } = v.data;
+
+  try {
+    const results = await fetchByPriceRange(origin, minPrice ?? 1, maxPrice);
+
+    // Enrich with destination metadata from our DB
+    const allDests = await getDestinationsWithPrices(origin);
+    const destMap = new Map(allDests.map((d) => [d.iata_code, d]));
+
+    const enriched = results
+      .map((r) => {
+        const dest = destMap.get(r.destination);
+        if (!dest) return null;
+        return {
+          ...toFrontend(dest, origin),
+          // Override price with the budget search result
+          flightPrice: r.price,
+          livePrice: r.price,
+          priceSource: 'travelpayouts' as const,
+          departureDate: r.departureDate,
+          returnDate: r.returnDate,
+          airline: r.airline,
+          affiliateUrl: generateAviasalesLink(origin, r.destination, r.departureDate, r.returnDate),
+        };
+      })
+      .filter(Boolean);
+
+    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+    return res.status(200).json({
+      destinations: enriched,
+      budget: { min: minPrice ?? 1, max: maxPrice },
+      totalResults: results.length,
+      matchedDestinations: enriched.length,
+    });
+  } catch (err) {
+    logApiError('api/feed?action=budget', err);
+    return res.status(500).json({ error: 'Failed to load budget deals' });
+  }
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Route by action param
+  if (req.query.action === 'budget') {
+    return handleBudgetDiscovery(req, res);
   }
 
   try {

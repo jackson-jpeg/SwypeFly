@@ -657,6 +657,123 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Duffel webhook handler ──────────────────────────────────────────────────
+
+const DUFFEL_WEBHOOK_SECRET = (process.env.DUFFEL_WEBHOOK_SECRET || '').trim();
+
+async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Duffel sends a signature in the x-duffel-signature header
+  const signature = req.headers['x-duffel-signature'];
+
+  // Read raw body for signature verification
+  const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+
+  // Verify webhook signature if secret is configured
+  if (DUFFEL_WEBHOOK_SECRET && signature) {
+    const crypto = await import('crypto');
+    const expected = crypto
+      .createHmac('sha256', DUFFEL_WEBHOOK_SECRET)
+      .update(rawBody)
+      .digest('hex');
+    if (signature !== expected) {
+      console.warn('[booking/duffel-webhook] Invalid signature');
+      return res.status(401).json({ error: 'Invalid webhook signature' });
+    }
+  }
+
+  try {
+    const event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const eventType = event?.type || event?.data?.type || '';
+    const databases = getServerDatabases();
+
+    console.log(`[booking/duffel-webhook] Received event: ${eventType}`);
+
+    switch (eventType) {
+      case 'order.created': {
+        // Confirm booking if we received a 202 earlier
+        const orderId = event?.data?.id;
+        if (orderId) {
+          const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
+            Query.equal('duffel_order_id', orderId),
+            Query.limit(1),
+          ]);
+          if (bookings.documents.length > 0) {
+            await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, bookings.documents[0].$id, {
+              status: 'confirmed',
+            });
+            console.log(`[booking/duffel-webhook] Order ${orderId} confirmed`);
+          }
+        }
+        break;
+      }
+
+      case 'order.airline_initiated_change_detected': {
+        // Airline changed the schedule — update booking and notify user
+        const orderId = event?.data?.order_id || event?.data?.id;
+        const changes = event?.data?.changes || [];
+        if (orderId) {
+          const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
+            Query.equal('duffel_order_id', orderId),
+            Query.limit(1),
+          ]);
+          if (bookings.documents.length > 0) {
+            const booking = bookings.documents[0];
+            await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, booking.$id, {
+              status: 'schedule_changed',
+            });
+            console.log(`[booking/duffel-webhook] Schedule change detected for order ${orderId}: ${changes.length} changes`);
+
+            // Attempt to send notification email
+            try {
+              const passengers = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookingPassengers, [
+                Query.equal('booking_id', booking.$id),
+                Query.limit(1),
+              ]);
+              if (passengers.documents.length > 0) {
+                const email = passengers.documents[0].email as string;
+                if (email) {
+                  console.log(`[booking/duffel-webhook] Would notify ${email} about schedule change for ${booking.booking_reference}`);
+                  // TODO: Send actual email when email service is configured
+                }
+              }
+            } catch (notifyErr) {
+              console.warn('[booking/duffel-webhook] Failed to look up passenger for notification:', notifyErr);
+            }
+          }
+        }
+        break;
+      }
+
+      case 'order_cancellation.confirmed': {
+        const orderId = event?.data?.order_id;
+        if (orderId) {
+          const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
+            Query.equal('duffel_order_id', orderId),
+            Query.limit(1),
+          ]);
+          if (bookings.documents.length > 0) {
+            await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, bookings.documents[0].$id, {
+              status: 'cancelled',
+            });
+            console.log(`[booking/duffel-webhook] Order ${orderId} cancelled`);
+          }
+        }
+        break;
+      }
+
+      default:
+        console.log(`[booking/duffel-webhook] Unhandled event type: ${eventType}`);
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (err) {
+    logApiError('api/booking/duffel-webhook', err);
+    return res.status(400).json({ error: 'Webhook processing failed' });
+  }
+}
+
 // ─── Booking history ─────────────────────────────────────────────────────────
 
 async function handleHistory(req: VercelRequest, res: VercelResponse) {
@@ -753,6 +870,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleHistory(req, res);
     case 'webhook':
       return handleWebhook(req, res);
+    case 'duffel-webhook':
+      return handleDuffelWebhook(req, res);
     default:
       return res.status(400).json({ error: 'Missing or invalid action parameter' });
   }

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
 import { destinationQuerySchema, priceCalendarQuerySchema, validateRequest } from '../utils/validation';
-import { fetchPriceCalendar } from '../services/travelpayouts';
+import { fetchPriceCalendar, fetchMonthlyPrices } from '../services/travelpayouts';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
 
@@ -33,6 +33,34 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Monthly price overview handler ──────────────────────────────────
+
+async function handleMonthly(req: VercelRequest, res: VercelResponse) {
+  const v = validateRequest(priceCalendarQuerySchema, req.query);
+  if (!v.success) return res.status(400).json({ error: v.error });
+  const { origin, destination } = v.data;
+
+  try {
+    const monthly = await fetchMonthlyPrices(origin, destination, 'USD');
+    if (monthly.length === 0) {
+      return res.status(200).json({ months: [], cheapestMonth: null, cheapestPrice: null });
+    }
+
+    const cheapest = monthly.reduce((min, entry) =>
+      entry.price < min.price ? entry : min, monthly[0]);
+
+    res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate=14400');
+    return res.status(200).json({
+      months: monthly,
+      cheapestMonth: cheapest.month,
+      cheapestPrice: cheapest.price,
+    });
+  } catch (err) {
+    logApiError('api/destination?action=monthly', err);
+    return res.status(500).json({ error: 'Failed to load monthly prices' });
+  }
+}
+
 // ─── Main handler ────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -44,6 +72,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Route by action param
   if (req.query.action === 'calendar') {
     return handleCalendar(req, res);
+  }
+  if (req.query.action === 'monthly') {
+    return handleMonthly(req, res);
   }
 
   const v = validateRequest(destinationQuerySchema, req.query);

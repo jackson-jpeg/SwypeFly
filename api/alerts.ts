@@ -121,17 +121,24 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
         ]);
 
         let currentPrice: number | null = null;
+        let priceSource = 'estimate';
         if (priceResults.documents.length > 0) {
           currentPrice = priceResults.documents[0].price as number;
+          priceSource = (priceResults.documents[0].source as string) || 'cached';
         } else {
           currentPrice = (dest.flight_price as number) || null;
         }
 
         if (currentPrice && currentPrice <= alert.target_price) {
+          const dropPercent = alert.target_price > 0
+            ? Math.round(((alert.target_price as number) - currentPrice) / (alert.target_price as number) * 100)
+            : 0;
           await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.priceAlerts, alert.$id, {
             is_active: false,
             triggered_at: new Date().toISOString(),
             triggered_price: currentPrice,
+            price_source: priceSource,
+            drop_percent: dropPercent,
           });
           triggered++;
 

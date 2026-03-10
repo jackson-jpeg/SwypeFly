@@ -59,10 +59,19 @@ export const destinationQuerySchema = z.object({
 // ─── Price calendar query ────────────────────────────────────────────
 
 export const priceCalendarQuerySchema = z.object({
-  action: z.literal('calendar'),
+  action: z.enum(['calendar', 'monthly']),
   origin: iataCode,
   destination: iataCode,
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Must be YYYY-MM').optional(),
+});
+
+// ─── Budget discovery query ─────────────────────────────────────────
+
+export const budgetDiscoveryQuerySchema = z.object({
+  action: z.literal('budget'),
+  origin: iataCode.default('TPA'),
+  minPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
+  maxPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)),
 });
 
 // ─── Price alert list query ─────────────────────────────────────────
