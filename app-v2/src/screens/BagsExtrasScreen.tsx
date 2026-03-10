@@ -81,7 +81,7 @@ const mealIcon = (
 /* ───── screen ───── */
 export default function BagsExtrasScreen() {
   const navigate = useNavigate();
-  const { selectedOffer, destinationId, setBaggage, setInsurance: storeSetInsurance, setMeal: storeSetMeal } = useBookingStore();
+  const { selectedOffer, destinationId, passengerCount, setBaggage, setInsurance: storeSetInsurance, setMeal: storeSetMeal } = useBookingStore();
   const { data: dest } = useDestination(destinationId ?? undefined);
   const { departureCode } = useUIStore();
   const { data: offerDetail } = useOfferDetail(
@@ -135,11 +135,12 @@ export default function BagsExtrasScreen() {
   const [insurance, setInsurance] = useState(false);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
 
+  const pax = passengerCount;
   const flightPrice = selectedOffer?.totalAmount ?? 0;
   const bagPrice = bagOptions.find((b) => b.key === selectedBagId)?.amount ?? 0;
   const insurancePrice = insurance ? 29 : 0;
   const mealPrice = mealOptions.find((m) => m.key === selectedMealId)?.amount ?? 0;
-  const total = flightPrice + bagPrice + insurancePrice + mealPrice;
+  const total = (flightPrice + bagPrice + insurancePrice + mealPrice) * pax;
 
   return (
     <div
@@ -331,10 +332,10 @@ export default function BagsExtrasScreen() {
             gap: 8,
           }}
         >
-          <LineItem label="Flight" price={`$${flightPrice}`} />
-          {bagPrice > 0 && <LineItem label={bagOptions.find((b) => b.key === selectedBagId)?.label ?? 'Checked bag'} price={`$${bagPrice}`} />}
-          {insurancePrice > 0 && <LineItem label="Insurance" price={`$${insurancePrice}`} />}
-          {selectedMealId && mealPrice > 0 && <LineItem label={mealOptions.find((m) => m.key === selectedMealId)?.label ?? 'Meal'} price={`$${mealPrice}`} />}
+          <LineItem label={pax > 1 ? `Flight × ${pax}` : 'Flight'} price={`$${flightPrice * pax}`} />
+          {bagPrice > 0 && <LineItem label={pax > 1 ? `${bagOptions.find((b) => b.key === selectedBagId)?.label ?? 'Checked bag'} × ${pax}` : bagOptions.find((b) => b.key === selectedBagId)?.label ?? 'Checked bag'} price={`$${bagPrice * pax}`} />}
+          {insurancePrice > 0 && <LineItem label={pax > 1 ? `Insurance × ${pax}` : 'Insurance'} price={`$${insurancePrice * pax}`} />}
+          {selectedMealId && mealPrice > 0 && <LineItem label={pax > 1 ? `${mealOptions.find((m) => m.key === selectedMealId)?.label ?? 'Meal'} × ${pax}` : mealOptions.find((m) => m.key === selectedMealId)?.label ?? 'Meal'} price={`$${mealPrice * pax}`} />}
           <div style={{ height: 1, backgroundColor: '#C9A99A40' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 700, color: colors.deepDusk }}>

@@ -254,12 +254,15 @@ export default function ReviewPaymentScreen() {
   const mealLabel = mealSvc ? `In-flight meal (${mealSvc.name})` : 'In-flight meal';
   const mealPrice = mealSvc?.amount ?? 0;
 
+  const pax = booking.passengerCount;
+  const paxSuffix = pax > 1 ? ` × ${pax}` : '';
+
   const lineItems = [
-    { label: `Flight (${booking.selectedOffer?.cabinClass ?? 'Economy'}, ${booking.passengerCount} ${booking.passengerCount > 1 ? 'adults' : 'adult'})`, price: `$${(booking.selectedOffer?.totalAmount ?? 0) * booking.passengerCount}`, color: colors.bodyText },
-    { label: booking.selectedSeat ? `Seat ${booking.selectedSeat}` : 'Seat', price: booking.seatPrice > 0 ? `+$${booking.seatPrice}` : booking.selectedSeat ? 'Free' : 'Assigned at check-in', color: booking.seatPrice > 0 ? colors.bodyText : booking.selectedSeat ? colors.confirmGreen : colors.sageDrift },
-    ...(booking.selectedBaggage ? [{ label: bagLabel, price: `$${bagPrice}`, color: colors.bodyText }] : []),
-    ...(booking.hasInsurance ? [{ label: 'Trip Protection', price: '$29', color: colors.bodyText }] : []),
-    ...(booking.selectedMeal ? [{ label: mealLabel, price: `$${mealPrice}`, color: colors.bodyText }] : []),
+    { label: `Flight (${booking.selectedOffer?.cabinClass ?? 'Economy'}, ${pax} ${pax > 1 ? 'adults' : 'adult'})`, price: `$${(booking.selectedOffer?.totalAmount ?? 0) * pax}`, color: colors.bodyText },
+    { label: booking.selectedSeat ? `Seat ${booking.selectedSeat}${paxSuffix}` : 'Seat', price: booking.seatPrice > 0 ? `+$${booking.seatPrice * pax}` : booking.selectedSeat ? 'Free' : 'Assigned at check-in', color: booking.seatPrice > 0 ? colors.bodyText : booking.selectedSeat ? colors.confirmGreen : colors.sageDrift },
+    ...(booking.selectedBaggage ? [{ label: `${bagLabel}${paxSuffix}`, price: `$${bagPrice * pax}`, color: colors.bodyText }] : []),
+    ...(booking.hasInsurance ? [{ label: `Trip Protection${paxSuffix}`, price: `$${29 * pax}`, color: colors.bodyText }] : []),
+    ...(booking.selectedMeal ? [{ label: `${mealLabel}${paxSuffix}`, price: `$${mealPrice * pax}`, color: colors.bodyText }] : []),
   ];
 
   // Create payment intent and get clientSecret for Stripe
@@ -398,7 +401,7 @@ export default function ReviewPaymentScreen() {
                 color: colors.deepDusk,
               }}
             >
-              {departureCode} → {dest?.city ?? 'Santorini'}
+              {departureCode} → {dest?.city ?? 'Destination'}
             </span>
             <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.borderTint }}>
               Round trip
