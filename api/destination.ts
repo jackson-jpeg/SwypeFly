@@ -122,6 +122,7 @@ async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
       [
         Query.equal('origin', origin),
         Query.equal('destination_iata', destination),
+        Query.orderAsc('price'),
         Query.limit(1),
       ],
     ).catch(() => ({ documents: [] }));
