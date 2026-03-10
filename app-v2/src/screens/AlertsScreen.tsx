@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
+import { useUIStore } from '@/stores/uiStore';
 import { apiFetch } from '@/api/client';
 import BottomNav from '@/components/BottomNav';
 
@@ -59,6 +60,7 @@ function formatDate(iso: string): string {
 export default function AlertsScreen() {
   const navigate = useNavigate();
   const { session, isGuest } = useAuthContext();
+  const departureCode = useUIStore((s) => s.departureCode);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [destInfo, setDestInfo] = useState<Record<string, DestinationInfo>>({});
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,7 @@ export default function AlertsScreen() {
         uniqueIds.map(async (id) => {
           try {
             const dest = await apiFetch<{ id: string; city: string; country: string }>(
-              `/api/destination?id=${id}&origin=TPA`,
+              `/api/destination?id=${id}&origin=${departureCode}`,
             );
             infoMap[id] = { city: dest.city, country: dest.country };
           } catch {
@@ -92,7 +94,7 @@ export default function AlertsScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [departureCode]);
 
   useEffect(() => {
     if (!session && !isGuest) return;

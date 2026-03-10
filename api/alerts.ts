@@ -150,7 +150,8 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Paginate through all active alerts (Appwrite max 100 per query)
-    let allAlerts: typeof (await serverDatabases.listDocuments('', '', [])).documents = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let allAlerts: any[] = [];
     let offset = 0;
     const BATCH = 100;
     while (true) {
@@ -248,7 +249,7 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    res.json({ checked, triggered, total: alerts.total });
+    res.json({ checked, triggered, total: allAlerts.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to check alerts';
     res.status(500).json({ error: message });

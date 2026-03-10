@@ -12,7 +12,15 @@ const PRICE_RANGES = [
 
 const VIBES = ['beach', 'city', 'nature', 'culture', 'adventure', 'romantic', 'foodie', 'luxury', 'budget'] as const;
 
-const REGIONS = ['Americas', 'Europe', 'Asia', 'Africa', 'Middle East', 'Oceania'] as const;
+const REGIONS = [
+  { value: 'domestic', label: 'Domestic' },
+  { value: 'caribbean', label: 'Caribbean' },
+  { value: 'latam', label: 'Latin America' },
+  { value: 'europe', label: 'Europe' },
+  { value: 'asia', label: 'Asia' },
+  { value: 'africa-me', label: 'Africa & ME' },
+  { value: 'oceania', label: 'Oceania' },
+] as const;
 
 const DURATIONS: { label: string; value: DurationFilter }[] = [
   { label: 'Weekend', value: 'weekend' },
@@ -76,10 +84,10 @@ export default function FilterBar() {
     setFilters({ vibes: next });
   };
 
-  const toggleRegion = (region: string) => {
-    const next = filters.region.includes(region)
-      ? filters.region.filter((r) => r !== region)
-      : [...filters.region, region];
+  const toggleRegion = (value: string) => {
+    const next = filters.region.includes(value)
+      ? filters.region.filter((r) => r !== value)
+      : [...filters.region, value];
     setFilters({ region: next });
   };
 
@@ -183,14 +191,14 @@ export default function FilterBar() {
 
         {/* Region chips */}
         {REGIONS.map((region) => {
-          const isActive = filters.region.includes(region);
+          const isActive = filters.region.includes(region.value);
           return (
             <button
-              key={region}
-              onClick={() => toggleRegion(region)}
+              key={region.value}
+              onClick={() => toggleRegion(region.value)}
               style={isActive ? activeChip : inactiveChip}
             >
-              {region}
+              {region.label}
               {isActive && (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" />

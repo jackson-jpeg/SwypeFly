@@ -11,7 +11,7 @@ const REGIONS = [
   { value: '', label: 'All Regions' },
   { value: 'domestic', label: 'Domestic' },
   { value: 'caribbean', label: 'Caribbean' },
-  { value: 'latin-america', label: 'Latin America' },
+  { value: 'latam', label: 'Latin America' },
   { value: 'europe', label: 'Europe' },
   { value: 'asia', label: 'Asia' },
   { value: 'africa-me', label: 'Africa & ME' },
