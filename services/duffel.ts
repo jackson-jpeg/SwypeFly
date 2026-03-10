@@ -160,6 +160,115 @@ export interface StaysHotelResult {
   boardType: string | null;
 }
 
+// ─── Stays Quote ───────────────────────────────────────────────────────────
+
+export interface StaysQuoteParams {
+  accommodationId: string;
+  roomId: string;
+  checkIn: string;
+  checkOut: string;
+}
+
+export interface StaysQuoteResult {
+  quoteId: string;
+  accommodationId: string;
+  roomId: string;
+  totalAmount: number;
+  currency: string;
+  checkIn: string;
+  checkOut: string;
+  cancellationPolicy: string | null;
+  expiresAt: string;
+  hotelName: string;
+  roomName: string;
+}
+
+export async function getStaysQuote(params: StaysQuoteParams): Promise<StaysQuoteResult> {
+  const client = getClient();
+
+  // Duffel Stays quotes endpoint
+  const response = await (client.stays as any).quotes.create({
+    accommodation_id: params.accommodationId,
+    room_id: params.roomId,
+    check_in_date: params.checkIn,
+    check_out_date: params.checkOut,
+    guests: [{ type: 'adult' as const }],
+  });
+
+  const data = response.data as any;
+
+  return {
+    quoteId: data.id ?? '',
+    accommodationId: data.accommodation?.id ?? params.accommodationId,
+    roomId: data.room?.id ?? params.roomId,
+    totalAmount: parseFloat(data.total_amount ?? '0'),
+    currency: data.total_currency ?? 'USD',
+    checkIn: data.check_in_date ?? params.checkIn,
+    checkOut: data.check_out_date ?? params.checkOut,
+    cancellationPolicy: data.cancellation_policy?.summary ?? null,
+    expiresAt: data.expires_at ?? new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    hotelName: data.accommodation?.name ?? '',
+    roomName: data.room?.name ?? '',
+  };
+}
+
+// ─── Stays Booking ─────────────────────────────────────────────────────────
+
+export interface StaysBookingParams {
+  quoteId: string;
+  guestName: string;
+  guestEmail: string;
+  paymentAmount: string;
+  paymentCurrency: string;
+}
+
+export interface StaysBookingResult {
+  bookingId: string;
+  confirmationReference: string;
+  status: string;
+  hotelName: string;
+  checkIn: string;
+  checkOut: string;
+  totalAmount: number;
+  currency: string;
+}
+
+export async function createStaysBooking(params: StaysBookingParams): Promise<StaysBookingResult> {
+  const client = getClient();
+
+  const [givenName, ...rest] = params.guestName.split(' ');
+  const familyName = rest.join(' ') || givenName;
+
+  const response = await (client.stays as any).bookings.create({
+    quote_id: params.quoteId,
+    guests: [{
+      given_name: givenName,
+      family_name: familyName,
+      email: params.guestEmail,
+    }],
+    payments: [{
+      type: 'balance' as const,
+      amount: params.paymentAmount,
+      currency: params.paymentCurrency,
+    }],
+  });
+
+  const data = response.data as any;
+
+  return {
+    bookingId: data.id ?? '',
+    confirmationReference: data.booking_reference ?? data.confirmation_code ?? '',
+    status: data.status ?? 'confirmed',
+    hotelName: data.accommodation?.name ?? '',
+    checkIn: data.check_in_date ?? '',
+    checkOut: data.check_out_date ?? '',
+    totalAmount: parseFloat(data.total_amount ?? '0'),
+    currency: data.total_currency ?? 'USD',
+  };
+}
+
+// ─── Stays Search ───────────────────────────────────────────────────────────
+
 export async function searchStays(params: StaysSearchParams): Promise<StaysHotelResult[]> {
   const client = getClient();
 

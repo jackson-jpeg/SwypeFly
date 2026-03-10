@@ -8,6 +8,63 @@ import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { cors } from './_cors.js';
 
+// ─── Price history helpers ──────────────────────────────────────────────────
+
+interface PriceSnapshot {
+  price: number;
+  source: string;
+  airline: string;
+  timestamp: string;
+}
+
+/**
+ * Fetch recent price history snapshots from ai_cache for a route.
+ * Returns snapshots from the last `days` days.
+ */
+async function getPriceHistory(
+  destinationIata: string,
+  days = 7,
+): Promise<PriceSnapshot[]> {
+  const snapshots: PriceSnapshot[] = [];
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    // Query ai_cache for price_history entries matching this destination
+    // The key format is `${origin}-${destination_iata}`, so we match the suffix
+    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.aiCache, [
+      Query.equal('type', 'price_history'),
+      Query.greaterThan('created_at', cutoff),
+      Query.limit(500),
+    ]);
+
+    for (const doc of result.documents) {
+      const key = doc.key as string;
+      // Match any origin for this destination (key ends with -IATA)
+      if (key.endsWith(`-${destinationIata}`)) {
+        try {
+          const parsed = JSON.parse(doc.content as string) as PriceSnapshot;
+          snapshots.push(parsed);
+        } catch {
+          // Skip malformed entries
+        }
+      }
+    }
+  } catch {
+    // ai_cache query failed — return empty
+  }
+
+  return snapshots;
+}
+
+/**
+ * Calculate rolling average from price snapshots.
+ */
+function calculateRollingAverage(snapshots: PriceSnapshot[]): number | null {
+  if (snapshots.length === 0) return null;
+  const sum = snapshots.reduce((acc, s) => acc + s.price, 0);
+  return Math.round(sum / snapshots.length);
+}
+
 // ─── Create alert ────────────────────────────────────────────────────────────
 
 async function handleCreate(req: VercelRequest, res: VercelResponse) {
@@ -129,9 +186,27 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
           currentPrice = (dest.flight_price as number) || null;
         }
 
-        if (currentPrice && currentPrice <= alert.target_price) {
+        // Check trigger conditions:
+        // 1. Current price <= user's target price
+        // 2. Current price is >15% below the 7-day rolling average
+        const belowTarget = currentPrice != null && currentPrice <= alert.target_price;
+
+        let rollingAvg: number | null = null;
+        let dropFromAvgPercent = 0;
+        let belowRollingAvg = false;
+
+        if (currentPrice != null) {
+          const snapshots = await getPriceHistory(iataCode, 7);
+          rollingAvg = calculateRollingAverage(snapshots);
+          if (rollingAvg != null && rollingAvg > 0) {
+            dropFromAvgPercent = Math.round(((rollingAvg - currentPrice) / rollingAvg) * 100);
+            belowRollingAvg = dropFromAvgPercent > 15;
+          }
+        }
+
+        if (belowTarget || belowRollingAvg) {
           const dropPercent = alert.target_price > 0
-            ? Math.round(((alert.target_price as number) - currentPrice) / (alert.target_price as number) * 100)
+            ? Math.round(((alert.target_price as number) - (currentPrice as number)) / (alert.target_price as number) * 100)
             : 0;
           await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.priceAlerts, alert.$id, {
             is_active: false,
@@ -139,6 +214,9 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
             triggered_price: currentPrice,
             price_source: priceSource,
             drop_percent: dropPercent,
+            rolling_avg: rollingAvg ?? 0,
+            drop_from_avg_percent: dropFromAvgPercent,
+            trigger_reason: belowTarget ? 'target_price' : 'rolling_avg_drop',
           });
           triggered++;
 
@@ -147,7 +225,7 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
               await sendAlertEmail(
                 alert.email as string,
                 alert.destination_id as string,
-                currentPrice,
+                currentPrice as number,
                 alert.target_price as number,
               );
             } catch (emailErr) {

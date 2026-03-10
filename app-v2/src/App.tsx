@@ -21,6 +21,8 @@ const TripsScreen = lazy(() => import('@/screens/TripsScreen'));
 const WishlistScreen = lazy(() => import('@/screens/WishlistScreen'));
 const SettingsScreen = lazy(() => import('@/screens/SettingsScreen'));
 const SearchScreen = lazy(() => import('@/screens/SearchScreen'));
+const HotelSearchScreen = lazy(() => import('@/screens/HotelSearchScreen'));
+const HotelBookingScreen = lazy(() => import('@/screens/HotelBookingScreen'));
 const QuizScreen = lazy(() => import('@/screens/QuizScreen'));
 const LegalScreen = lazy(() => import('@/screens/LegalScreen'));
 const NotFoundScreen = lazy(() => import('@/screens/NotFoundScreen'));
@@ -65,6 +67,8 @@ export default function App() {
         <Route path="/booking/extras" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/extras' }} /> : <BagsExtrasScreen />} />
         <Route path="/booking/review" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/review' }} /> : <ReviewPaymentScreen />} />
         <Route path="/booking/confirmation" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/confirmation' }} /> : <ConfirmationScreen />} />
+        <Route path="/booking/hotels" element={needsAuth ? <Navigate to="/login" state={{ returnTo: '/booking/hotels' }} /> : <HotelSearchScreen />} />
+        <Route path="/booking/hotel" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/booking/hotel' }} /> : <HotelBookingScreen />} />
         <Route path="/trips" element={needsRealAuth ? <Navigate to="/login" state={{ returnTo: '/trips' }} /> : <TripsScreen />} />
         <Route path="/wishlist" element={needsAuth ? <Navigate to="/login" /> : <WishlistScreen />} />
         <Route path="/settings" element={needsAuth ? <Navigate to="/login" /> : <SettingsScreen />} />

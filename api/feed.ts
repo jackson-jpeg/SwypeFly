@@ -124,6 +124,7 @@ interface ScoredDest {
   offer_json?: string;
   offer_expires_at?: string;
   flight_number?: string;
+  tp_found_at?: string;
   live_hotel_price?: number | null;
   hotel_price_source?: string;
   available_flight_days?: string[];
@@ -269,6 +270,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       offer_json?: string;
       offer_expires_at?: string;
       flight_number?: string;
+      tp_found_at?: string;
     }
   >();
   for (const p of prices) {
@@ -286,6 +288,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       offer_json: (p.offer_json as string) || undefined,
       offer_expires_at: (p.offer_expires_at as string) || undefined,
       flight_number: (p.flight_number as string) || undefined,
+      tp_found_at: (p.tp_found_at as string) || undefined,
     });
   }
 
@@ -393,6 +396,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       offer_json: lp?.offer_json,
       offer_expires_at: lp?.offer_expires_at,
       flight_number: lp?.flight_number,
+      tp_found_at: lp?.tp_found_at,
       live_hotel_price: hotelPriceMap.get(d.iata_code as string)?.price ?? null,
       hotel_price_source: hotelPriceMap.get(d.iata_code as string)?.source ?? undefined,
       hotels_data: hotelPriceMap.get(d.iata_code as string)?.hotels ?? undefined,
@@ -451,6 +455,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
         : undefined,
     offerJson: d.offer_json || undefined,
     offerExpiresAt: d.offer_expires_at || undefined,
+    tpFoundAt: d.tp_found_at || undefined,
     affiliateUrl:
       d.price_source === 'travelpayouts' && origin
         ? generateAviasalesLink(origin, d.iata_code, d.departure_date, d.return_date)

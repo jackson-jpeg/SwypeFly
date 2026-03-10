@@ -183,6 +183,48 @@ export interface CreateOrderResponse {
   currency: string;
 }
 
+// ─── Hotel Booking Types ─────────────────────────────────────────────
+
+export interface HotelSearchResult {
+  accommodationId: string;
+  name: string;
+  rating: number | null;
+  reviewScore: number | null;
+  reviewCount: number | null;
+  photoUrl: string | null;
+  cheapestTotalAmount: number;
+  currency: string;
+  boardType: string | null;
+  rooms?: { id: string; name: string; pricePerNight: number }[];
+}
+
+export interface HotelQuoteResponse {
+  quoteId: string;
+  accommodationId: string;
+  roomId: string;
+  totalAmount: number;
+  currency: string;
+  checkIn: string;
+  checkOut: string;
+  cancellationPolicy: string | null;
+  expiresAt: string;
+  hotelName: string;
+  roomName: string;
+  pricePerNight?: number;
+  nights?: number;
+}
+
+export interface HotelBookingResponse {
+  bookingId: string;
+  confirmationReference: string;
+  status: string;
+  hotelName: string;
+  checkIn: string;
+  checkOut: string;
+  totalAmount: number;
+  currency: string;
+}
+
 // ─── AI Types ───────────────────────────────────────────────────────
 
 export interface TripPlan {

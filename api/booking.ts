@@ -8,6 +8,9 @@ import {
   paymentIntentSchema,
   createOrderSchema,
   bookingOrderSchema,
+  hotelSearchSchema,
+  hotelQuoteSchema,
+  hotelBookSchema,
   validateRequest,
 } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
@@ -842,6 +845,207 @@ async function handleHistory(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Hotel search ─────────────────────────────────────────────────────────
+
+function stubHotelSearch() {
+  return [
+    {
+      accommodationId: 'stub_hotel_1',
+      name: 'Grand Sunset Resort',
+      rating: 4,
+      reviewScore: 8.7,
+      reviewCount: 1243,
+      photoUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600',
+      cheapestTotalAmount: 156,
+      currency: 'USD',
+      boardType: 'breakfast_included',
+      rooms: [{ id: 'room_1a', name: 'Deluxe King', pricePerNight: 156 }, { id: 'room_1b', name: 'Ocean Suite', pricePerNight: 289 }],
+    },
+    {
+      accommodationId: 'stub_hotel_2',
+      name: 'Boutique City Hotel',
+      rating: 3,
+      reviewScore: 8.2,
+      reviewCount: 876,
+      photoUrl: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600',
+      cheapestTotalAmount: 98,
+      currency: 'USD',
+      boardType: 'room_only',
+      rooms: [{ id: 'room_2a', name: 'Standard Double', pricePerNight: 98 }, { id: 'room_2b', name: 'Junior Suite', pricePerNight: 175 }],
+    },
+    {
+      accommodationId: 'stub_hotel_3',
+      name: 'Luxury Palace & Spa',
+      rating: 5,
+      reviewScore: 9.4,
+      reviewCount: 2156,
+      photoUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600',
+      cheapestTotalAmount: 342,
+      currency: 'USD',
+      boardType: 'half_board',
+      rooms: [{ id: 'room_3a', name: 'Premium King', pricePerNight: 342 }, { id: 'room_3b', name: 'Presidential Suite', pricePerNight: 589 }],
+    },
+  ];
+}
+
+function stubHotelQuote(accommodationId: string, roomId: string) {
+  return {
+    quoteId: 'stub_quote_' + Date.now(),
+    accommodationId,
+    roomId,
+    totalAmount: 468,
+    currency: 'USD',
+    checkIn: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    checkOut: new Date(Date.now() + 17 * 86400000).toISOString().slice(0, 10),
+    cancellationPolicy: 'Free cancellation until 24h before check-in',
+    expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    hotelName: 'Grand Sunset Resort',
+    roomName: 'Deluxe King',
+    pricePerNight: 156,
+    nights: 3,
+  };
+}
+
+function stubHotelBook() {
+  const ref = 'SGH' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  return {
+    bookingId: 'stub_hotel_booking_' + Date.now(),
+    confirmationReference: ref,
+    status: 'confirmed',
+    hotelName: 'Grand Sunset Resort',
+    checkIn: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    checkOut: new Date(Date.now() + 17 * 86400000).toISOString().slice(0, 10),
+    totalAmount: 468,
+    currency: 'USD',
+  };
+}
+
+async function handleHotelSearch(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const v = validateRequest(hotelSearchSchema, req.body);
+  if (!v.success) return res.status(400).json({ error: v.error });
+
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — hotel search returning stubs');
+    return res.status(200).json(stubHotelSearch());
+  }
+
+  try {
+    const { searchStays } = await import('../services/duffel.js');
+    const results = await searchStays({
+      latitude: v.data.latitude,
+      longitude: v.data.longitude,
+      radius: 10,
+      checkIn: v.data.checkIn,
+      checkOut: v.data.checkOut,
+      guests: Array.from({ length: v.data.guests ?? 1 }, () => ({ type: 'adult' as const })),
+    });
+    return res.status(200).json(results);
+  } catch (err: any) {
+    logApiError('api/booking/hotel-search', err);
+    const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);
+    console.error('[booking/hotel-search] Duffel error detail:', JSON.stringify(detail, null, 2));
+    return res.status(500).json({ error: 'Failed to search hotels' });
+  }
+}
+
+async function handleHotelQuote(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const v = validateRequest(hotelQuoteSchema, req.body);
+  if (!v.success) return res.status(400).json({ error: v.error });
+
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — hotel quote returning stub');
+    return res.status(200).json(stubHotelQuote(v.data.accommodationId, v.data.roomId));
+  }
+
+  try {
+    const { getStaysQuote } = await import('../services/duffel.js');
+    const quote = await getStaysQuote({
+      accommodationId: v.data.accommodationId,
+      roomId: v.data.roomId,
+      checkIn: v.data.checkIn,
+      checkOut: v.data.checkOut,
+    });
+    return res.status(200).json(quote);
+  } catch (err: any) {
+    logApiError('api/booking/hotel-quote', err);
+    const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);
+    console.error('[booking/hotel-quote] Duffel error detail:', JSON.stringify(detail, null, 2));
+    return res.status(500).json({ error: 'Failed to get hotel quote' });
+  }
+}
+
+async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const jwt = getJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  const v = validateRequest(hotelBookSchema, req.body);
+  if (!v.success) return res.status(400).json({ error: v.error });
+
+  if (STUB_MODE) {
+    console.warn('[booking] Stub mode — hotel book returning stub');
+    return res.status(200).json(stubHotelBook());
+  }
+
+  try {
+    const user = await verifyUser(jwt);
+
+    // Verify Stripe payment
+    const { getPaymentIntent } = await import('../services/stripe.js');
+    const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment not completed' });
+    }
+
+    const { createStaysBooking } = await import('../services/duffel.js');
+    const booking = await createStaysBooking({
+      quoteId: v.data.quoteId,
+      guestName: v.data.guestName,
+      guestEmail: v.data.guestEmail,
+      paymentAmount: (paymentIntent.amount / 100).toFixed(2),
+      paymentCurrency: paymentIntent.currency.toUpperCase(),
+    });
+
+    // Save booking record to Appwrite
+    const databases = getServerDatabases();
+    await databases.createDocument(
+      DATABASE_ID,
+      'bookings',
+      ID.unique(),
+      {
+        user_id: user.$id,
+        duffel_order_id: booking.bookingId,
+        status: booking.status,
+        total_amount: booking.totalAmount,
+        currency: booking.currency,
+        passenger_count: 1,
+        stripe_payment_intent_id: v.data.paymentIntentId,
+        created_at: new Date().toISOString(),
+        destination_city: booking.hotelName,
+        departure_date: booking.checkIn,
+        return_date: booking.checkOut,
+        booking_reference: booking.confirmationReference,
+        booking_type: 'hotel',
+      },
+      [Permission.read(Role.user(user.$id)), Permission.delete(Role.user(user.$id))],
+    );
+
+    return res.status(200).json(booking);
+  } catch (err: any) {
+    logApiError('api/booking/hotel-book', err);
+    const detail = err?.errors
+      ? JSON.stringify(err.errors)
+      : err?.message || String(err);
+    console.error('[booking/hotel-book] Error detail:', detail);
+    return res.status(500).json({ error: `Hotel booking failed: ${detail}` });
+  }
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -872,6 +1076,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleWebhook(req, res);
     case 'duffel-webhook':
       return handleDuffelWebhook(req, res);
+    case 'hotel-search':
+      return handleHotelSearch(req, res);
+    case 'hotel-quote':
+      return handleHotelQuote(req, res);
+    case 'hotel-book':
+      return handleHotelBook(req, res);
     default:
       return res.status(400).json({ error: 'Missing or invalid action parameter' });
   }

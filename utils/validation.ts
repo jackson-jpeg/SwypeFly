@@ -202,6 +202,30 @@ export const bookingOrderSchema = z.object({
   orderId: z.string().min(1).max(200),
 });
 
+// ─── Hotel booking schemas ──────────────────────────────────────────
+
+export const hotelSearchSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  checkIn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  checkOut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  guests: z.number().int().min(1).max(10).optional(),
+});
+
+export const hotelQuoteSchema = z.object({
+  accommodationId: z.string().min(1).max(200),
+  roomId: z.string().min(1).max(200),
+  checkIn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  checkOut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+});
+
+export const hotelBookSchema = z.object({
+  quoteId: z.string().min(1).max(200),
+  paymentIntentId: z.string().min(1).max(200),
+  guestName: z.string().min(1).max(200),
+  guestEmail: z.string().email().max(255),
+});
+
 // ─── Validate helper ─────────────────────────────────────────────────
 
 type ValidationSuccess<T> = { success: true; data: T; error?: undefined };

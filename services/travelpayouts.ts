@@ -15,6 +15,7 @@ interface CheapPriceResult {
   airline: string;
   departureAt: string;
   returnAt: string;
+  foundAt: string;
 }
 
 /**
@@ -88,6 +89,7 @@ export async function fetchCheapPrices(
         airline: string;
         departure_at: string;
         return_at: string;
+        found_at: string;
       }>>;
     };
     if (!json.success || !json.data?.[destination]) return null;
@@ -103,6 +105,7 @@ export async function fetchCheapPrices(
           airline: entry.airline || '',
           departureAt: entry.departure_at || '',
           returnAt: entry.return_at || '',
+          foundAt: entry.found_at || '',
         };
       }
     }
@@ -182,6 +185,7 @@ export async function fetchAllCheapPrices(
         airline: string;
         departure_at: string;
         return_at: string;
+        found_at: string;
       }>>;
     };
     if (!json.success || !json.data) return results;
@@ -196,6 +200,7 @@ export async function fetchAllCheapPrices(
             airline: entry.airline || '',
             departureAt: entry.departure_at || '',
             returnAt: entry.return_at || '',
+            foundAt: entry.found_at || '',
           };
         }
       }

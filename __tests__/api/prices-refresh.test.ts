@@ -12,6 +12,7 @@ jest.mock('../../services/appwriteServer', () => ({
     destinations: 'destinations',
     cachedPrices: 'cached_prices',
     userPreferences: 'user_preferences',
+    aiCache: 'ai_cache',
   },
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
@@ -189,12 +190,16 @@ describe('api/prices/refresh', () => {
     // Verify Duffel was called for each destination
     expect(mockSearchFlights).toHaveBeenCalledTimes(2);
 
-    // Verify createDocument was called with Duffel source and offer_json
+    // Verify createDocument was called: 2 for cached_prices + 2 for price_history snapshots
     const createCalls = mockDatabases.createDocument.mock.calls;
-    expect(createCalls.length).toBe(2);
+    expect(createCalls.length).toBe(4);
+    // First two calls are for cached_prices (Duffel source)
     expect(createCalls[0][3].source).toBe('duffel');
     expect(createCalls[0][3].offer_json).toBeTruthy();
     expect(createCalls[0][3].offer_expires_at).toBeTruthy();
+    // Next two calls are price_history snapshots in ai_cache
+    expect(createCalls[2][1]).toBe('ai_cache');
+    expect(createCalls[2][3].type).toBe('price_history');
   });
 
   test('falls back to Travelpayouts when Duffel fails', async () => {
@@ -231,10 +236,13 @@ describe('api/prices/refresh', () => {
     // Verify fallback was called
     expect(mockFetchCheapPrices).toHaveBeenCalledWith('JFK', 'BCN');
 
-    // Verify stored with travelpayouts source
+    // Verify stored with travelpayouts source (first call is cached_prices, second is price_history)
     const createCalls = mockDatabases.createDocument.mock.calls;
     expect(createCalls[0][3].source).toBe('travelpayouts');
     expect(createCalls[0][3].offer_json).toBe('');
+    // Snapshot also recorded
+    expect(createCalls[1][1]).toBe('ai_cache');
+    expect(createCalls[1][3].type).toBe('price_history');
   });
 
   test('tracks price history with direction', async () => {
@@ -269,6 +277,7 @@ describe('api/prices/refresh', () => {
     });
 
     mockDatabases.updateDocument.mockResolvedValue({ $id: 'price-bcn' });
+    mockDatabases.createDocument.mockResolvedValue({ $id: 'snapshot-1' });
 
     const req = makeReq({
       headers: { authorization: 'Bearer test-secret' } as any,
@@ -278,11 +287,18 @@ describe('api/prices/refresh', () => {
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
 
-    // Verify update (not create) with price direction
+    // Verify update (not create for cached_prices) with price direction
     const updateCalls = mockDatabases.updateDocument.mock.calls;
     expect(updateCalls.length).toBe(1);
     expect(updateCalls[0][3].price).toBe(350);
     expect(updateCalls[0][3].previous_price).toBe(400);
     expect(updateCalls[0][3].price_direction).toBe('down');
+
+    // Verify price snapshot was also recorded in ai_cache
+    const createCalls = mockDatabases.createDocument.mock.calls;
+    expect(createCalls.length).toBeGreaterThanOrEqual(1);
+    const snapshotCall = createCalls.find((c: any[]) => c[1] === 'ai_cache');
+    expect(snapshotCall).toBeTruthy();
+    expect(snapshotCall![3].type).toBe('price_history');
   });
 });

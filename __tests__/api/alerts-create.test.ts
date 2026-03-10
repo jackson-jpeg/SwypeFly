@@ -30,7 +30,7 @@ jest.mock('../../utils/rateLimit', () => ({
 
 jest.mock('../../services/appwriteServer', () => ({
   DATABASE_ID: 'sogojet',
-  COLLECTIONS: { priceAlerts: 'price_alerts' },
+  COLLECTIONS: { priceAlerts: 'price_alerts', aiCache: 'ai_cache' },
   serverDatabases: {
     listDocuments: (...args: unknown[]) => mockListDocuments(...args),
     createDocument: (...args: unknown[]) => mockCreateDocument(...args),

@@ -7,6 +7,29 @@ import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { cors } from '../_cors.js';
 
+// ─── Price history snapshot (stored in ai_cache with 30-day TTL) ─────
+
+async function recordPriceSnapshot(
+  origin: string,
+  destinationIata: string,
+  price: number,
+  source: string,
+  airline: string,
+): Promise<void> {
+  try {
+    await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.aiCache, ID.unique(), {
+      type: 'price_history',
+      key: `${origin}-${destinationIata}`,
+      content: JSON.stringify({ price, source, airline, timestamp: new Date().toISOString() }),
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+  } catch (err) {
+    // Non-critical — don't fail the refresh if snapshot recording fails
+    console.warn(`[refresh] Price snapshot failed for ${origin}->${destinationIata}:`, err);
+  }
+}
+
 // Hobby plan allows up to 60s for serverless functions
 export const maxDuration = 60;
 
@@ -145,6 +168,7 @@ async function refreshOneDest(
   let retDate = returnDate;
   let offerJson = '';
   let offerExpiresAt = '';
+  let tpFoundAt = '';
 
   // Primary: Duffel
   try {
@@ -201,6 +225,7 @@ async function refreshOneDest(
         airline = tp.airline;
         depDate = tp.departureAt ? tp.departureAt.split('T')[0] : departureDate;
         retDate = tp.returnAt ? tp.returnAt.split('T')[0] : returnDate;
+        tpFoundAt = tp.foundAt || '';
         source = 'travelpayouts';
       }
     } catch (err) {
@@ -244,6 +269,7 @@ async function refreshOneDest(
     price_direction: priceDirection,
     offer_json: offerJson,
     offer_expires_at: offerExpiresAt,
+    tp_found_at: tpFoundAt,
   };
 
   try {
@@ -256,6 +282,9 @@ async function refreshOneDest(
     console.error(`[refresh] Upsert error for ${origin}->${dest}:`, err);
     return { source: null };
   }
+
+  // Record price snapshot for history tracking (non-blocking)
+  await recordPriceSnapshot(origin, dest, price, source, airline);
 
   return { source };
 }
@@ -318,6 +347,7 @@ async function bulkUpsertTPPrices(
       price_direction: priceDirection,
       offer_json: '',
       offer_expires_at: '',
+      tp_found_at: tp.foundAt || '',
     };
 
     try {
@@ -328,6 +358,9 @@ async function bulkUpsertTPPrices(
       }
       currentPriceMap.set(iata, { price: tp.price, docId: existing?.docId || '' });
       upserted++;
+
+      // Record price snapshot for history tracking (non-blocking)
+      await recordPriceSnapshot(origin, iata, tp.price, 'travelpayouts', tp.airline);
     } catch (err) {
       console.error(`[refresh] TP bulk upsert error for ${origin}->${iata}:`, err);
     }
