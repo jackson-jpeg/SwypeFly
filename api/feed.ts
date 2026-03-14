@@ -868,7 +868,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let destinations = [...allDestinations];
 
     if (regionFilter && regionFilter !== 'all') {
-      destinations = destinations.filter((d) => getRegion(d) === regionFilter);
+      const regionSet = new Set(regionFilter.split(',').map((r) => r.trim()));
+      destinations = destinations.filter((d) => regionSet.has(getRegion(d)));
     }
 
     if (vibeFilter) {

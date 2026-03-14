@@ -7,8 +7,6 @@ const iataCode = z
   .length(3)
   .regex(/^[A-Z]{3}$/, 'Must be a 3-letter IATA code');
 
-const uuid = z.string().uuid();
-
 // ─── Feed endpoint ───────────────────────────────────────────────────
 
 export const feedQuerySchema = z.object({
@@ -22,7 +20,7 @@ export const feedQuerySchema = z.object({
   excludeIds: z.string().max(5000).optional(),
   vibeFilter: z.string().max(50).optional(),
   sortPreset: z.enum(['default', 'cheapest', 'trending']).optional(),
-  regionFilter: z.enum(['all', 'domestic', 'caribbean', 'latam', 'europe', 'asia', 'africa-me', 'oceania']).optional(),
+  regionFilter: z.string().max(100).optional(),
   maxPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
   minPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
   search: z.string().max(100).optional(),

@@ -83,7 +83,7 @@ export const useBookingStore = create<BookingState>()(
       setOrderResponse: (order) => set({ orderResponse: order }),
       setCachedOffer: (json) => set({ cachedOfferJson: json }),
       setPassengerCount: (count) => set({ passengerCount: count, passengers: [] }),
-      applyPromo: () => {
+      applyPromo: (_code) => {
         // Promo code validation will be wired to a backend endpoint.
         // No hardcoded codes — always returns false until backend is ready.
         return false;
