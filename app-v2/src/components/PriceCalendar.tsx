@@ -71,8 +71,8 @@ export default function PriceCalendar({ origin, destination, onSelectDate }: Pro
     const sorted = [...entries].map((e) => e.price).sort((a, b) => a - b);
     const q1 = sorted[Math.floor(sorted.length * 0.2)];
     const q3 = sorted[Math.floor(sorted.length * 0.8)];
-    if (price <= q1) return colors.darkerGreen;
-    if (price >= q3) return colors.terracotta;
+    if (q1 != null && price <= q1) return colors.darkerGreen;
+    if (q3 != null && price >= q3) return colors.terracotta;
     return colors.sageDrift;
   };
 

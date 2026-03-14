@@ -4,7 +4,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useSearchDeals, type Deal } from '@/hooks/useSearchDeals';
 import { getAirlineName } from '@/utils/airlines';
-import { colors, typography, fonts, spacing, radius, surfaces } from '@/tokens';
+import { colors, typography, fonts, spacing, radius, surfaces, useThemeColors } from '@/tokens';
 import BottomNav from '@/components/BottomNav';
 
 const REGIONS = [
@@ -28,6 +28,7 @@ const IMAGE_FALLBACK =
   'linear-gradient(135deg, #1a2a3a 0%, #2d1b3d 40%, #1a3a2a 70%, #0A0F1E 100%)';
 
 export default function SearchScreen() {
+  const t = useThemeColors();
   const departureCode = useUIStore((s) => s.departureCode);
   const navigate = useNavigate();
   const setDestination = useBookingStore((s) => s.setDestination);
@@ -105,7 +106,7 @@ export default function SearchScreen() {
     <div
       className="screen"
       style={{
-        background: colors.duskSand,
+        background: t.canvas,
         minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
@@ -117,7 +118,7 @@ export default function SearchScreen() {
           style={{
             ...typography.pageTitle,
             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-            color: colors.deepDusk,
+            color: t.primary,
             margin: 0,
           }}
         >
@@ -145,12 +146,12 @@ export default function SearchScreen() {
               flex: 1,
               height: 42,
               borderRadius: radius.md,
-              border: `1px solid ${colors.borderTint}40`,
-              background: colors.offWhite,
+              border: `1px solid ${t.border}`,
+              background: t.surface,
               padding: '0 12px',
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 14,
-              color: colors.deepDusk,
+              color: t.primary,
               outline: 'none',
             }}
           />
@@ -160,12 +161,12 @@ export default function SearchScreen() {
             style={{
               height: 42,
               borderRadius: radius.md,
-              border: `1px solid ${colors.borderTint}40`,
-              background: colors.offWhite,
+              border: `1px solid ${t.border}`,
+              background: t.surface,
               padding: '0 10px',
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 13,
-              color: colors.deepDusk,
+              color: t.primary,
               outline: 'none',
               cursor: 'pointer',
             }}
@@ -189,14 +190,14 @@ export default function SearchScreen() {
                 borderRadius: radius.pill,
                 border:
                   sort === opt.value
-                    ? `1.5px solid ${colors.darkerGreen}`
-                    : `1px solid ${colors.borderTint}40`,
-                background: sort === opt.value ? `${colors.sageDrift}30` : colors.offWhite,
+                    ? `1.5px solid ${t.accent}`
+                    : `1px solid ${t.border}`,
+                background: sort === opt.value ? t.accentSoft : t.surface,
                 padding: '0 14px',
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 12,
                 fontWeight: sort === opt.value ? 600 : 500,
-                color: sort === opt.value ? colors.darkerGreen : colors.bodyText,
+                color: sort === opt.value ? t.accent : t.body,
                 cursor: 'pointer',
               }}
             >
@@ -211,7 +212,7 @@ export default function SearchScreen() {
             style={{
               ...typography.sectionLabel,
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              color: colors.mutedText,
+              color: t.muted,
               whiteSpace: 'nowrap',
             }}
           >
@@ -224,13 +225,13 @@ export default function SearchScreen() {
             step={50}
             value={maxPrice}
             onChange={(e) => setMaxPrice(Number(e.target.value))}
-            style={{ flex: 1, accentColor: colors.darkerGreen }}
+            style={{ flex: 1, accentColor: t.accent }}
           />
           <span
             style={{
               ...typography.secondary,
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              color: colors.deepDusk,
+              color: t.primary,
               fontWeight: 700,
               minWidth: 50,
               textAlign: 'right',
@@ -248,7 +249,7 @@ export default function SearchScreen() {
                 style={{
                   ...typography.sectionLabel,
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  color: colors.mutedText,
+                  color: t.muted,
                 }}
               >
                 AIRLINES
@@ -282,14 +283,14 @@ export default function SearchScreen() {
                       height: 30,
                       borderRadius: radius.pill,
                       border: isSelected
-                        ? `1.5px solid ${colors.darkerGreen}`
-                        : `1px solid ${colors.borderTint}40`,
-                      background: isSelected ? `${colors.sageDrift}30` : colors.offWhite,
+                        ? `1.5px solid ${t.accent}`
+                        : `1px solid ${t.border}`,
+                      background: isSelected ? t.accentSoft : t.surface,
                       padding: '0 12px',
                       fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                       fontSize: 11,
                       fontWeight: isSelected ? 600 : 500,
-                      color: isSelected ? colors.darkerGreen : colors.bodyText,
+                      color: isSelected ? t.accent : t.body,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -318,7 +319,7 @@ export default function SearchScreen() {
               padding: 40,
               ...typography.secondary,
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              color: colors.mutedText,
+              color: t.muted,
             }}
           >
             Finding deals...
@@ -354,7 +355,7 @@ export default function SearchScreen() {
               style={{
                 ...typography.subheadline,
                 fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-                color: colors.deepDusk,
+                color: t.primary,
               }}
             >
               No deals found
@@ -363,7 +364,7 @@ export default function SearchScreen() {
               style={{
                 ...typography.secondary,
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                color: colors.mutedText,
+                color: t.muted,
               }}
             >
               Try adjusting your filters or search for a different destination
@@ -442,7 +443,7 @@ export default function SearchScreen() {
                           left: 8,
                           background:
                             deal.priceDirection === 'down'
-                              ? colors.confirmGreen
+                              ? t.accent
                               : colors.terracotta,
                           borderRadius: radius.sm,
                           padding: '2px 6px',
@@ -491,7 +492,7 @@ export default function SearchScreen() {
                           style={{
                             ...typography.subheadline,
                             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-                            color: colors.deepDusk,
+                            color: t.primary,
                           }}
                         >
                           {deal.city}
@@ -500,7 +501,7 @@ export default function SearchScreen() {
                           style={{
                             ...typography.secondary,
                             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                            color: colors.mutedText,
+                            color: t.muted,
                             fontSize: 12,
                           }}
                         >
@@ -511,7 +512,7 @@ export default function SearchScreen() {
                         style={{
                           ...typography.secondary,
                           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                          color: colors.mutedText,
+                          color: t.muted,
                           fontSize: 11,
                           textAlign: 'right',
                         }}
@@ -537,7 +538,7 @@ export default function SearchScreen() {
                         style={{
                           marginTop: 12,
                           paddingTop: 12,
-                          borderTop: `1px solid ${colors.borderTint}30`,
+                          borderTop: `1px solid ${t.border}`,
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 10,
@@ -577,8 +578,8 @@ export default function SearchScreen() {
                                   fontSize: 10,
                                   fontWeight: 600,
                                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                                  color: colors.darkerGreen,
-                                  background: `${colors.sageDrift}25`,
+                                  color: t.accent,
+                                  background: t.accentSoft,
                                   borderRadius: radius.pill,
                                   padding: '3px 8px',
                                   textTransform: 'uppercase',
@@ -600,8 +601,8 @@ export default function SearchScreen() {
                             height: 44,
                             borderRadius: radius.md,
                             border: 'none',
-                            background: colors.deepDusk,
-                            color: colors.paleHorizon,
+                            background: t.ctaBg,
+                            color: t.ctaText,
                             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                             fontWeight: 600,
                             fontSize: 15,
@@ -629,13 +630,13 @@ export default function SearchScreen() {
               style={{
                 height: 40,
                 borderRadius: radius.pill,
-                border: `1.5px solid ${colors.borderTint}`,
+                border: `1.5px solid ${t.border}`,
                 background: 'transparent',
                 padding: '0 24px',
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 13,
                 fontWeight: 600,
-                color: colors.bodyText,
+                color: t.body,
                 cursor: isFetchingNextPage ? 'default' : 'pointer',
                 opacity: isFetchingNextPage ? 0.6 : 1,
               }}
@@ -661,12 +662,13 @@ function InfoChip({
   value: string;
   strike?: boolean;
 }) {
+  const t = useThemeColors();
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        background: `${colors.borderTint}15`,
+        background: t.border,
         borderRadius: radius.sm,
         padding: '4px 10px',
       }}
@@ -675,7 +677,7 @@ function InfoChip({
         style={{
           ...typography.sectionLabel,
           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-          color: colors.mutedText,
+          color: t.muted,
           fontSize: 9,
         }}
       >
@@ -686,7 +688,7 @@ function InfoChip({
           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
           fontSize: 13,
           fontWeight: 600,
-          color: colors.deepDusk,
+          color: t.primary,
           textDecoration: strike ? 'line-through' : undefined,
         }}
       >

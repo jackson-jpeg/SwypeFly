@@ -1,6 +1,7 @@
-import { colors, fonts } from '@/tokens';
+import { fonts, useThemeColors } from '@/tokens';
 
 export default function DesktopShell({ children }: { children: React.ReactNode }) {
+  const t = useThemeColors();
   return (
     <div className="desktop-shell">
       {/* Left branding panel — hidden on mobile */}
@@ -14,7 +15,7 @@ export default function DesktopShell({ children }: { children: React.ReactNode }
                 fontSize: 32,
                 letterSpacing: '-0.01em',
                 textTransform: 'uppercase',
-                color: colors.deepDusk,
+                color: t.primary,
               }}
             >
               SoGo
@@ -26,7 +27,7 @@ export default function DesktopShell({ children }: { children: React.ReactNode }
                 fontSize: 32,
                 letterSpacing: '-0.01em',
                 textTransform: 'uppercase',
-                color: colors.sageDrift,
+                color: t.accent,
               }}
             >
               Jet
@@ -38,7 +39,7 @@ export default function DesktopShell({ children }: { children: React.ReactNode }
               fontStyle: 'italic',
               fontSize: 22,
               lineHeight: '32px',
-              color: colors.bodyText,
+              color: t.body,
               maxWidth: 320,
             }}
           >
@@ -58,7 +59,7 @@ export default function DesktopShell({ children }: { children: React.ReactNode }
                     fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                     fontSize: 14,
                     lineHeight: '20px',
-                    color: colors.mutedText,
+                    color: t.muted,
                   }}
                 >
                   {item.text}
@@ -72,7 +73,7 @@ export default function DesktopShell({ children }: { children: React.ReactNode }
               style={{
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 12,
-                color: colors.borderTint,
+                color: t.muted,
               }}
             >
               sogojet.com

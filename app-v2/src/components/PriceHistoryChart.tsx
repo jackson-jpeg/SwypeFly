@@ -165,14 +165,14 @@ export default function PriceHistoryChart({ origin, destination }: Props) {
   // Area path (fill under line)
   const areaPath =
     linePath +
-    ` L${coords[coords.length - 1].x.toFixed(1)},${(CHART_PADDING.top + plotHeight).toFixed(1)}` +
-    ` L${coords[0].x.toFixed(1)},${(CHART_PADDING.top + plotHeight).toFixed(1)} Z`;
+    ` L${coords[coords.length - 1]!.x.toFixed(1)},${(CHART_PADDING.top + plotHeight).toFixed(1)}` +
+    ` L${coords[0]!.x.toFixed(1)},${(CHART_PADDING.top + plotHeight).toFixed(1)} Z`;
 
   // X-axis labels: first, middle, last
   const xLabels = [
-    { x: coords[0].x, label: formatShortDate(points[0].date) },
-    { x: coords[Math.floor(coords.length / 2)].x, label: formatShortDate(points[Math.floor(points.length / 2)].date) },
-    { x: coords[coords.length - 1].x, label: formatShortDate(points[points.length - 1].date) },
+    { x: coords[0]!.x, label: formatShortDate(points[0]!.date) },
+    { x: coords[Math.floor(coords.length / 2)]!.x, label: formatShortDate(points[Math.floor(points.length / 2)]!.date) },
+    { x: coords[coords.length - 1]!.x, label: formatShortDate(points[points.length - 1]!.date) },
   ];
 
   const gradientId = `ph-gradient-${origin}-${destination}`;
@@ -183,7 +183,7 @@ export default function PriceHistoryChart({ origin, destination }: Props) {
     const mouseX = e.clientX - rect.left;
 
     // Find closest point
-    let closest = coords[0];
+    let closest = coords[0]!;
     let closestDist = Infinity;
     for (const c of coords) {
       const dist = Math.abs(c.x - mouseX);

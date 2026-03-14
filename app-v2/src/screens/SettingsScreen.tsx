@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { colors, fonts } from '@/tokens';
+import { colors, fonts, useThemeColors } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
 import { useUIStore } from '@/stores/uiStore';
 import BottomNav from '@/components/BottomNav';
 
-function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
+function Toggle({ on, onToggle, disabled, accentColor, mutedColor }: { on: boolean; onToggle: () => void; disabled?: boolean; accentColor?: string; mutedColor?: string }) {
   return (
     <button
       onClick={disabled ? undefined : onToggle}
       style={{
-        backgroundColor: on ? colors.sageDrift : '#C9A99A40',
+        backgroundColor: on ? (accentColor ?? colors.sageDrift) : '#C9A99A40',
         borderRadius: 13,
         border: 'none',
         cursor: disabled ? 'default' : 'pointer',
@@ -24,7 +24,7 @@ function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void;
     >
       <div
         style={{
-          backgroundColor: on ? '#FFFFFF' : colors.borderTint,
+          backgroundColor: on ? '#FFFFFF' : (mutedColor ?? colors.borderTint),
           borderRadius: 11,
           height: 22,
           width: 22,
@@ -46,45 +46,47 @@ function ChevronRight() {
   );
 }
 
-const sectionLabelStyle: React.CSSProperties = {
+const baseSectionLabelStyle: React.CSSProperties = {
   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
   fontSize: 10,
   fontWeight: 600,
   letterSpacing: '0.12em',
   lineHeight: '12px',
   textTransform: 'uppercase',
-  color: colors.sageDrift,
 };
 
-const rowStyle: React.CSSProperties = {
+const baseRowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  backgroundColor: colors.offWhite,
   paddingBlock: 14,
   paddingInline: 16,
 };
 
-const rowTitleStyle: React.CSSProperties = {
+const baseRowTitleStyle: React.CSSProperties = {
   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
   fontSize: 15,
   fontWeight: 500,
   lineHeight: '18px',
-  color: colors.deepDusk,
 };
 
-const rowValueStyle: React.CSSProperties = {
+const baseRowValueStyle: React.CSSProperties = {
   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
   fontSize: 14,
   lineHeight: '18px',
-  color: colors.sageDrift,
 };
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
   const { signOut, user, isGuest } = useAuthContext();
+  const t = useThemeColors();
   const displayName = user?.name || (isGuest ? 'Guest' : 'User');
   const displayEmail = user?.email || (isGuest ? 'Browsing as guest' : '');
+
+  const sectionLabelStyle: React.CSSProperties = { ...baseSectionLabelStyle, color: t.accent };
+  const rowStyle: React.CSSProperties = { ...baseRowStyle, backgroundColor: t.surface };
+  const rowTitleStyle: React.CSSProperties = { ...baseRowTitleStyle, color: t.primary };
+  const rowValueStyle: React.CSSProperties = { ...baseRowValueStyle, color: t.accent };
   const initials = displayName
     .split(' ')
     .map((w) => w[0])
@@ -110,7 +112,7 @@ export default function SettingsScreen() {
     <div
       className="screen"
       style={{
-        background: colors.duskSand,
+        background: t.canvas,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'auto',
@@ -126,7 +128,7 @@ export default function SettingsScreen() {
             lineHeight: '40px',
             letterSpacing: '-0.01em',
             textTransform: 'uppercase',
-            color: colors.deepDusk,
+            color: t.primary,
             margin: 0,
           }}
         >
@@ -139,8 +141,8 @@ export default function SettingsScreen() {
             display: 'flex',
             alignItems: 'center',
             gap: 14,
-            backgroundColor: '#F2CEBC',
-            border: '1px solid #C9A99A40',
+            backgroundColor: t.accentSoft,
+            border: `1px solid ${t.border}`,
             borderRadius: 16,
             padding: 16,
           }}
@@ -170,10 +172,10 @@ export default function SettingsScreen() {
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 500, lineHeight: '20px', color: colors.deepDusk }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, fontWeight: 500, lineHeight: '20px', color: t.primary }}>
               {displayName}
             </span>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, lineHeight: '16px', color: colors.borderTint }}>
+            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, lineHeight: '16px', color: t.muted }}>
               {displayEmail}
             </span>
           </div>
@@ -189,7 +191,7 @@ export default function SettingsScreen() {
             {/* Departure City */}
             <button onClick={() => navigate('/onboarding')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-2 2 4 1 1 4 2-2v-3l3-2 3.8 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.7.5-1.1z" />
                 </svg>
                 <span style={rowTitleStyle}>Departure City</span>
@@ -202,7 +204,7 @@ export default function SettingsScreen() {
             {/* Currency */}
             <button onClick={() => setCurrency(currency === 'USD' ? 'EUR' : currency === 'EUR' ? 'GBP' : 'USD')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="1" x2="12" y2="23" />
                   <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                 </svg>
@@ -213,7 +215,7 @@ export default function SettingsScreen() {
             {/* Temperature */}
             <button onClick={() => setTempUnit(tempUnit === '°F' ? '°C' : '°F')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
                 </svg>
                 <span style={rowTitleStyle}>Temperature</span>
@@ -236,15 +238,15 @@ export default function SettingsScreen() {
                   </span>
                 )}
               </div>
-              <Toggle on={notifications} onToggle={handleToggleNotifications} disabled={notifBlocked} />
+              <Toggle on={notifications} onToggle={handleToggleNotifications} disabled={notifBlocked} accentColor={t.accent} mutedColor={t.muted} />
             </div>
             <div style={rowStyle}>
               <span style={rowTitleStyle}>Price Alerts</span>
-              <Toggle on={priceAlerts} onToggle={togglePriceAlerts} />
+              <Toggle on={priceAlerts} onToggle={togglePriceAlerts} accentColor={t.accent} mutedColor={t.muted} />
             </div>
             <button onClick={() => navigate('/alerts')} style={{ ...rowStyle, cursor: 'pointer', border: 'none', width: '100%', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.borderTint} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
@@ -283,7 +285,7 @@ export default function SettingsScreen() {
             justifyContent: 'center',
             height: 52,
             borderRadius: 14,
-            backgroundColor: '#A8C4B830',
+            backgroundColor: t.accentSoft,
             border: 'none',
             cursor: 'pointer',
             width: '100%',
@@ -295,7 +297,7 @@ export default function SettingsScreen() {
               fontSize: 16,
               fontWeight: 600,
               lineHeight: '20px',
-              color: colors.sageDrift,
+              color: t.accent,
             }}
           >
             Log Out
@@ -309,7 +311,7 @@ export default function SettingsScreen() {
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 13,
               lineHeight: '16px',
-              color: colors.borderTint,
+              color: t.muted,
             }}
           >
             SoGoJet v2.0 · Made with love

@@ -5,7 +5,7 @@ import { apiFetch } from '@/api/client';
 import { useUIStore } from '@/stores/uiStore';
 import { getAirlineName } from '@/utils/airlines';
 import type { Destination } from '@/api/types';
-import { colors, typography, fonts, spacing, radius, surfaces } from '@/tokens';
+import { colors, typography, fonts, spacing, radius, surfaces, useThemeColors } from '@/tokens';
 import BottomNav from '@/components/BottomNav';
 
 const IMAGE_FALLBACK =
@@ -21,6 +21,7 @@ interface BudgetResponse {
 type SortMode = 'price' | 'destination';
 
 export default function DealsScreen() {
+  const t = useThemeColors();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const storeOrigin = useUIStore((s) => s.departureCode);
@@ -77,7 +78,7 @@ export default function DealsScreen() {
     <div
       className="screen"
       style={{
-        background: colors.duskSand,
+        background: t.canvas,
         minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
@@ -110,7 +111,7 @@ export default function DealsScreen() {
               height="24"
               viewBox="0 0 24 24"
               fill="none"
-              stroke={colors.deepDusk}
+              stroke={t.primary}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -123,7 +124,7 @@ export default function DealsScreen() {
               style={{
                 ...typography.pageTitle,
                 fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-                color: colors.deepDusk,
+                color: t.primary,
                 margin: 0,
                 fontSize: 28,
               }}
@@ -136,7 +137,7 @@ export default function DealsScreen() {
                 alignItems: 'center',
                 gap: 4,
                 marginTop: 4,
-                background: `${colors.sageDrift}30`,
+                background: t.accentSoft,
                 borderRadius: radius.pill,
                 padding: '3px 10px',
               }}
@@ -146,7 +147,7 @@ export default function DealsScreen() {
                 height="12"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke={colors.darkerGreen}
+                stroke={t.accent}
                 strokeWidth="2"
               >
                 <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-2 2 4 1 1 4 2-2v-3l3-2 3.8 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.7.5-1.1z" />
@@ -156,7 +157,7 @@ export default function DealsScreen() {
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 11,
                   fontWeight: 600,
-                  color: colors.darkerGreen,
+                  color: t.accent,
                 }}
               >
                 From {origin}
@@ -172,13 +173,13 @@ export default function DealsScreen() {
           style={{
             height: 36,
             borderRadius: radius.pill,
-            border: `1.5px solid ${colors.borderTint}`,
-            background: copied ? `${colors.confirmGreen}20` : 'transparent',
+            border: `1.5px solid ${t.border}`,
+            background: copied ? t.accentSoft : 'transparent',
             padding: '0 14px',
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
             fontSize: 12,
             fontWeight: 600,
-            color: copied ? colors.confirmGreen : colors.bodyText,
+            color: copied ? t.accent : t.body,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -223,14 +224,14 @@ export default function DealsScreen() {
               borderRadius: radius.pill,
               border:
                 sortMode === mode
-                  ? `1.5px solid ${colors.darkerGreen}`
-                  : `1px solid ${colors.borderTint}40`,
-              background: sortMode === mode ? `${colors.sageDrift}30` : colors.offWhite,
+                  ? `1.5px solid ${t.accent}`
+                  : `1px solid ${t.border}`,
+              background: sortMode === mode ? t.accentSoft : t.surface,
               padding: '0 14px',
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 12,
               fontWeight: sortMode === mode ? 600 : 500,
-              color: sortMode === mode ? colors.darkerGreen : colors.bodyText,
+              color: sortMode === mode ? t.accent : t.body,
               cursor: 'pointer',
               textTransform: 'capitalize',
             }}
@@ -245,7 +246,7 @@ export default function DealsScreen() {
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 12,
               fontWeight: 500,
-              color: colors.mutedText,
+              color: t.muted,
               alignSelf: 'center',
             }}
           >
@@ -263,7 +264,7 @@ export default function DealsScreen() {
               padding: 40,
               ...typography.secondary,
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              color: colors.mutedText,
+              color: t.muted,
             }}
           >
             Finding hot deals...
@@ -300,7 +301,7 @@ export default function DealsScreen() {
               height="48"
               viewBox="0 0 24 24"
               fill="none"
-              stroke={colors.borderTint}
+              stroke={t.muted}
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -312,7 +313,7 @@ export default function DealsScreen() {
               style={{
                 ...typography.subheadline,
                 fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-                color: colors.deepDusk,
+                color: t.primary,
               }}
             >
               No deals under ${max}
@@ -321,7 +322,7 @@ export default function DealsScreen() {
               style={{
                 ...typography.secondary,
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                color: colors.mutedText,
+                color: t.muted,
                 maxWidth: 280,
               }}
             >
@@ -421,7 +422,7 @@ export default function DealsScreen() {
                       style={{
                         ...typography.subheadline,
                         fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-                        color: colors.deepDusk,
+                        color: t.primary,
                       }}
                     >
                       {deal.city}
@@ -430,7 +431,7 @@ export default function DealsScreen() {
                       style={{
                         ...typography.secondary,
                         fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                        color: colors.mutedText,
+                        color: t.muted,
                         fontSize: 12,
                       }}
                     >
@@ -452,7 +453,7 @@ export default function DealsScreen() {
                             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                             fontSize: 11,
                             fontWeight: 600,
-                            color: colors.bodyText,
+                            color: t.body,
                           }}
                         >
                           {getAirlineName(deal.airline)}
@@ -462,7 +463,7 @@ export default function DealsScreen() {
                         style={{
                           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                           fontSize: 10,
-                          color: colors.mutedText,
+                          color: t.muted,
                         }}
                       >
                         {deal.departureDate
@@ -490,11 +491,11 @@ export default function DealsScreen() {
                           textAlign: 'center',
                           padding: '6px 0',
                           borderRadius: radius.sm,
-                          background: `${colors.sageDrift}25`,
+                          background: t.accentSoft,
                           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                           fontSize: 11,
                           fontWeight: 600,
-                          color: colors.darkerGreen,
+                          color: t.accent,
                           textDecoration: 'none',
                         }}
                       >

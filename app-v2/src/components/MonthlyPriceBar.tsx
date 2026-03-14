@@ -128,7 +128,7 @@ export default function MonthlyPriceBar({ origin, destination, onMonthSelect }: 
   };
 
   const getMonthLabel = (monthStr: string) => {
-    const monthIndex = parseInt(monthStr.split('-')[1], 10) - 1;
+    const monthIndex = parseInt(monthStr.split('-')[1] ?? '01', 10) - 1;
     return MONTH_LABELS[monthIndex] ?? monthStr;
   };
 

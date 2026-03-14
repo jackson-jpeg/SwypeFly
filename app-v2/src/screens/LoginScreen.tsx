@@ -1,25 +1,24 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { colors, fonts } from '@/tokens';
+import { colors, fonts, useThemeColors } from '@/tokens';
 import { useAuthContext } from '@/hooks/AuthContext';
 
-const emailInputStyle: React.CSSProperties = {
+const baseEmailInputStyle: React.CSSProperties = {
   width: '100%',
   height: 44,
   borderRadius: 10,
-  border: '1px solid #C9A99A60',
   paddingInline: 14,
   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
   fontSize: 15,
-  color: colors.deepDusk,
   outline: 'none',
-  backgroundColor: colors.duskSand,
   boxSizing: 'border-box',
 };
 
 export default function LoginScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const t = useThemeColors();
+  const emailInputStyle: React.CSSProperties = { ...baseEmailInputStyle, color: t.primary, backgroundColor: t.canvas, border: `1px solid ${t.border}` };
   const {
     signInWithGoogle, signInWithTikTok,
     signInWithEmail, signUpWithEmail, verifyEmail, resendVerification,
@@ -156,7 +155,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="screen-fixed" style={{ background: colors.duskSand, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
+    <div className="screen-fixed" style={{ background: t.canvas, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'clip' }}>
       {/* Background destination photo — 15% opacity */}
       <div
         style={{
@@ -194,7 +193,7 @@ export default function LoginScreen() {
               lineHeight: '36px',
               letterSpacing: '-0.01em',
               textTransform: 'uppercase',
-              color: colors.deepDusk,
+              color: t.primary,
               textAlign: 'center',
               margin: 0,
             }}
@@ -206,7 +205,7 @@ export default function LoginScreen() {
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 14,
               lineHeight: '18px',
-              color: colors.borderTint,
+              color: t.muted,
               textAlign: 'center',
               margin: 0,
             }}
@@ -241,7 +240,7 @@ export default function LoginScreen() {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 12,
-                backgroundColor: colors.offWhite,
+                backgroundColor: t.surface,
                 border: '1px solid #C9A99A40',
                 borderRadius: 14,
                 padding: 20,
@@ -249,23 +248,23 @@ export default function LoginScreen() {
               }}
             >
               <div style={{ textAlign: 'center' }}>
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.deepDusk }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: t.primary }}>
                   Reset your password
                 </span>
               </div>
 
               {resetSuccess ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingBlock: 12 }}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.confirmGreen} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.confirmGreen }}>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: t.accent }}>
                     Password reset successfully!
                   </span>
                 </div>
               ) : !resetSent ? (
                 <>
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.mutedText, textAlign: 'center' }}>
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: t.muted, textAlign: 'center' }}>
                     Enter your email and we'll send a reset code
                   </span>
                   <input
@@ -288,7 +287,7 @@ export default function LoginScreen() {
                       width: '100%',
                       height: 48,
                       borderRadius: 12,
-                      backgroundColor: colors.deepDusk,
+                      backgroundColor: t.ctaBg,
                       border: 'none',
                       cursor: resetLoading ? 'wait' : 'pointer',
                       opacity: resetLoading ? 0.7 : 1,
@@ -297,15 +296,15 @@ export default function LoginScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.paleHorizon }}>
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: t.ctaText }}>
                       {resetLoading ? 'Sending...' : 'Send Reset Code'}
                     </span>
                   </button>
                 </>
               ) : (
                 <>
-                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.mutedText, textAlign: 'center' }}>
-                    Enter the code sent to <strong style={{ color: colors.deepDusk }}>{email}</strong> and your new password
+                  <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: t.muted, textAlign: 'center' }}>
+                    Enter the code sent to <strong style={{ color: t.primary }}>{email}</strong> and your new password
                   </span>
                   <input
                     type="text"
@@ -336,7 +335,7 @@ export default function LoginScreen() {
                       width: '100%',
                       height: 48,
                       borderRadius: 12,
-                      backgroundColor: colors.deepDusk,
+                      backgroundColor: t.ctaBg,
                       border: 'none',
                       cursor: resetLoading ? 'wait' : 'pointer',
                       opacity: resetLoading ? 0.7 : 1,
@@ -345,7 +344,7 @@ export default function LoginScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.paleHorizon }}>
+                    <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: t.ctaText }}>
                       {resetLoading ? 'Resetting...' : 'Reset Password'}
                     </span>
                   </button>
@@ -356,7 +355,7 @@ export default function LoginScreen() {
                 onClick={() => { setForgotMode(false); setResetSent(false); setResetCode(''); setNewPassword(''); setResetError(null); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, alignSelf: 'center' }}
               >
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.sageDrift }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: t.accent }}>
                   Back to sign in
                 </span>
               </button>
@@ -367,7 +366,7 @@ export default function LoginScreen() {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 12,
-                backgroundColor: colors.offWhite,
+                backgroundColor: t.surface,
                 border: '1px solid #C9A99A40',
                 borderRadius: 14,
                 padding: 20,
@@ -375,12 +374,12 @@ export default function LoginScreen() {
               }}
             >
               <div style={{ textAlign: 'center' }}>
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.deepDusk }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: t.primary }}>
                   Verify your email
                 </span>
               </div>
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.mutedText, textAlign: 'center' }}>
-                We sent a 6-digit code to <strong style={{ color: colors.deepDusk }}>{email}</strong>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: t.muted, textAlign: 'center' }}>
+                We sent a 6-digit code to <strong style={{ color: t.primary }}>{email}</strong>
               </span>
 
               <input
@@ -410,7 +409,7 @@ export default function LoginScreen() {
                 </span>
               )}
               {resendMsg && (
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.confirmGreen, textAlign: 'center' }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: t.accent, textAlign: 'center' }}>
                   {resendMsg}
                 </span>
               )}
@@ -422,7 +421,7 @@ export default function LoginScreen() {
                   width: '100%',
                   height: 48,
                   borderRadius: 12,
-                  backgroundColor: colors.deepDusk,
+                  backgroundColor: t.ctaBg,
                   border: 'none',
                   cursor: verifyLoading ? 'wait' : 'pointer',
                   opacity: verifyLoading ? 0.7 : 1,
@@ -431,7 +430,7 @@ export default function LoginScreen() {
                   justifyContent: 'center',
                 }}
               >
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: colors.paleHorizon }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 15, fontWeight: 600, color: t.ctaText }}>
                   {verifyLoading ? 'Verifying...' : 'Verify'}
                 </span>
               </button>
@@ -446,7 +445,7 @@ export default function LoginScreen() {
                   alignSelf: 'center',
                 }}
               >
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.sageDrift }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: t.accent }}>
                   Resend code
                 </span>
               </button>
@@ -486,7 +485,7 @@ export default function LoginScreen() {
                     fontSize: 15,
                     fontWeight: 600,
                     lineHeight: '18px',
-                    color: colors.deepDusk,
+                    color: t.primary,
                   }}
                 >
                   Continue with Google
@@ -536,13 +535,13 @@ export default function LoginScreen() {
                     gap: 12,
                     height: 56,
                     borderRadius: 14,
-                    backgroundColor: colors.offWhite,
+                    backgroundColor: t.surface,
                     border: '1px solid #C9A99A40',
                     cursor: 'pointer',
                     width: '100%',
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={colors.deepDusk} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="4" width="20" height="16" rx="2" />
                     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                   </svg>
@@ -552,7 +551,7 @@ export default function LoginScreen() {
                       fontSize: 15,
                       fontWeight: 600,
                       lineHeight: '18px',
-                      color: colors.deepDusk,
+                      color: t.primary,
                     }}
                   >
                     Continue with Email
@@ -564,7 +563,7 @@ export default function LoginScreen() {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 10,
-                    backgroundColor: colors.offWhite,
+                    backgroundColor: t.surface,
                     border: '1px solid #C9A99A40',
                     borderRadius: 14,
                     padding: 16,
@@ -604,7 +603,7 @@ export default function LoginScreen() {
                       width: '100%',
                       height: 48,
                       borderRadius: 12,
-                      backgroundColor: colors.deepDusk,
+                      backgroundColor: t.ctaBg,
                       border: 'none',
                       cursor: emailLoading ? 'wait' : 'pointer',
                       opacity: emailLoading ? 0.7 : 1,
@@ -618,7 +617,7 @@ export default function LoginScreen() {
                         fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                         fontSize: 15,
                         fontWeight: 600,
-                        color: colors.paleHorizon,
+                        color: t.ctaText,
                       }}
                     >
                       {emailLoading ? 'Signing in...' : isSignUp ? 'Create Account' : 'Sign In'}
@@ -638,7 +637,7 @@ export default function LoginScreen() {
                       style={{
                         fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                         fontSize: 13,
-                        color: colors.sageDrift,
+                        color: t.accent,
                       }}
                     >
                       {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
@@ -659,7 +658,7 @@ export default function LoginScreen() {
                         style={{
                           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                           fontSize: 13,
-                          color: colors.borderTint,
+                          color: t.muted,
                         }}
                       >
                         Forgot password?
@@ -709,7 +708,7 @@ export default function LoginScreen() {
                 fontSize: 15,
                 fontWeight: 600,
                 lineHeight: '18px',
-                color: colors.sageDrift,
+                color: t.accent,
               }}
             >
               Continue as Guest
@@ -721,15 +720,15 @@ export default function LoginScreen() {
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
             fontSize: 11,
             lineHeight: '14px',
-            color: colors.borderTint,
+            color: t.muted,
             textAlign: 'center',
             margin: 0,
           }}
         >
           By continuing, you agree to our{' '}
-          <a href="/legal/terms" style={{ color: colors.sageDrift, textDecoration: 'underline' }}>Terms</a>
+          <a href="/legal/terms" style={{ color: t.accent, textDecoration: 'underline' }}>Terms</a>
           {' & '}
-          <a href="/legal/privacy" style={{ color: colors.sageDrift, textDecoration: 'underline' }}>Privacy Policy</a>
+          <a href="/legal/privacy" style={{ color: t.accent, textDecoration: 'underline' }}>Privacy Policy</a>
         </p>
       </div>
     </div>

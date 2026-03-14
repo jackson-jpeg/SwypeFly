@@ -26,8 +26,7 @@ export default function HotelBookingScreen() {
   const checkOut = params.get('checkOut') ?? '';
   const hotelName = params.get('hotelName') ?? 'Hotel';
   const photoUrl = params.get('photoUrl') ?? '';
-  const hintPrice = params.get('price') ?? '';
-  const currency = params.get('currency') ?? 'USD';
+  // price and currency available via params when needed
 
   const [step, setStep] = useState<BookingStep>('quote');
   const [quote, setQuote] = useState<HotelQuoteResponse | null>(null);

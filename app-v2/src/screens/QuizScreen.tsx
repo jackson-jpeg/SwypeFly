@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { colors, fonts } from '@/tokens';
 import { useUIStore } from '@/stores/uiStore';
-import type { TravelStyle, BudgetLevel, PreferredSeason } from '@/stores/uiStore';
+import type { TravelStyle, PreferredSeason } from '@/stores/uiStore';
 
 const TRIP_OPTIONS = [
   { id: 'adventure', label: 'Adventure', subtitle: 'Hiking, diving, thrills', gradient: 'linear-gradient(135deg, #37654E 0%, #5BAF73 100%)' },

@@ -1,20 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { colors, fonts } from '@/tokens';
-import { API_BASE } from '@/api/client';
+import { fonts, useThemeColors } from '@/tokens';
 import { STUB_DESTINATIONS } from '@/api/stubs';
 import { useDestination } from '@/hooks/useDestination';
 import { useSavedStore } from '@/stores/savedStore';
-import { useBookingStore } from '@/stores/bookingStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthContext } from '@/hooks/AuthContext';
-import PriceAlertButton from '@/components/PriceAlertButton';
-import PriceCalendar from '@/components/PriceCalendar';
-import PriceHistoryChart from '@/components/PriceHistoryChart';
-import MonthlyPriceBar from '@/components/MonthlyPriceBar';
 import PhotoGallery from '@/components/PhotoGallery';
-import { useWeather } from '@/hooks/useWeather';
-import type { TripPlan, Destination, HotelListing } from '@/api/types';
+import type { Destination } from '@/api/types';
 
 function getDefaultDetail(dest: Destination) {
   // Build itinerary from destination data if available
@@ -99,28 +92,7 @@ function ShareIcon() {
   );
 }
 
-/* ── section label ─────────────────────────────────────────────── */
-const sectionLabel: React.CSSProperties = {
-  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-  fontSize: 10,
-  fontWeight: 600,
-  lineHeight: '12px',
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: colors.sageDrift,
-  margin: 0,
-};
-
-const sectionTitle: React.CSSProperties = {
-  fontFamily: `"${fonts.display}", system-ui, sans-serif`,
-  fontSize: 24,
-  fontWeight: 800,
-  lineHeight: '28px',
-  letterSpacing: '-0.01em',
-  textTransform: 'uppercase',
-  color: colors.deepDusk,
-  margin: 0,
-};
+/* ── section styles (now using theme) ─────────────────────────── */
 
 /* ── component ─────────────────────────────────────────────────── */
 export default function DestinationDetailScreen() {
@@ -129,15 +101,10 @@ export default function DestinationDetailScreen() {
   const { data: stubDest, isLoading } = useDestination(id);
   const { isSaved, toggle } = useSavedStore();
   const { session } = useAuthContext();
-  const setBookingDestination = useBookingStore((s) => s.setDestination);
   const { departureCode } = useUIStore();
-  const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
-  const [tripPlanText, setTripPlanText] = useState('');
-  const [tripPlanLoading, setTripPlanLoading] = useState(false);
-  const [tripPlanError, setTripPlanError] = useState(false);
+  const t = useThemeColors();
   const [itineraryExpanded, setItineraryExpanded] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
-  const { data: weather } = useWeather(stubDest?.latitude, stubDest?.longitude);
 
   /* ── Parallax scroll tracking ────────────────────────────────── */
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -149,16 +116,16 @@ export default function DestinationDetailScreen() {
 
   if (isLoading) {
     return (
-      <div className="screen" style={{ background: colors.duskSand, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: colors.mutedText }}>Loading...</span>
+      <div className="screen" style={{ background: t.canvas, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: t.muted }}>Loading...</span>
       </div>
     );
   }
 
   if (!stubDest) {
     return (
-      <div className="screen" style={{ background: colors.duskSand, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: colors.mutedText }}>Destination not found</span>
+      <div className="screen" style={{ background: t.canvas, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: t.muted }}>Destination not found</span>
       </div>
     );
   }
@@ -173,81 +140,30 @@ export default function DestinationDetailScreen() {
   };
 
   const handleBooking = () => {
-    // Guest users can't complete payment — redirect to login first
-    if (!session?.userId) {
-      navigate('/login', { state: { returnTo: `/destination/${stubDest.id}` } });
-      return;
-    }
-    setBookingDestination(stubDest.id, stubDest.flightPrice);
-    useBookingStore.getState().setCachedOffer(stubDest.offerJson ?? null);
-    navigate('/booking/flights');
+    const affiliateUrl = stubDest.affiliateUrl
+      || `https://www.aviasales.com/search/${departureCode}${stubDest.iataCode}1`;
+    window.open(affiliateUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const generateLocalPlan = (): TripPlan => {
-    const itinerary = stubDest.itinerary ?? [];
-    const restaurants = stubDest.restaurants ?? [];
-    return {
-      days: itinerary.length > 0
-        ? itinerary.map((item) => ({
-            day: item.day,
-            title: item.activities[0] ?? `Day ${item.day}`,
-            activities: item.activities.map((a, i) => ({
-              time: i === 0 ? 'Morning' : i === 1 ? 'Afternoon' : 'Evening',
-              activity: a,
-            })),
-          }))
-        : [
-            { day: 1, title: `Arrive in ${stubDest.city}`, activities: [{ time: 'Morning', activity: 'Arrive and settle in' }, { time: 'Afternoon', activity: 'Explore the city center' }, { time: 'Evening', activity: restaurants[0] ? `Dinner at ${restaurants[0].name}` : 'Local dinner' }] },
-            { day: 2, title: 'Local Highlights', activities: [{ time: 'Morning', activity: 'Visit top attractions' }, { time: 'Afternoon', activity: stubDest.vibeTags.includes('beach') ? 'Beach afternoon' : 'Cultural exploration' }, { time: 'Evening', activity: restaurants[1] ? `Try ${restaurants[1].name}` : 'Evening stroll' }] },
-            { day: 3, title: 'Hidden Gems & Departure', activities: [{ time: 'Morning', activity: 'Off-the-beaten-path exploration' }, { time: 'Afternoon', activity: 'Souvenir shopping & last bites' }, { time: 'Evening', activity: `Depart ${stubDest.city}` }] },
-          ],
-      estimatedBudget: {
-        min: Math.round(stubDest.flightPrice * 1.5),
-        max: Math.round(stubDest.flightPrice * 3),
-        currency: 'USD',
-      },
-    };
+  // Theme-aware section styles
+  const sectionLabel: React.CSSProperties = {
+    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+    fontSize: 10,
+    fontWeight: 600,
+    lineHeight: '12px',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    color: t.labelText,
+    margin: 0,
   };
 
-  const handleGeneratePlan = async () => {
-    setTripPlanLoading(true);
-    setTripPlanText('');
-    setTripPlan(null);
-    setTripPlanError(false);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/ai/trip-plan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          city: stubDest.city,
-          country: stubDest.country,
-          duration: 3,
-          style: 'comfort',
-          interests: stubDest.vibeTags.slice(0, 3).join(', '),
-        }),
-      });
-
-      if (!res.ok || !res.body) throw new Error('API unavailable');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let text = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        text += decoder.decode(value, { stream: true });
-        setTripPlanText(text);
-      }
-    } catch {
-      // Fallback to local plan generation with error notice
-      setTripPlanText('');
-      setTripPlan(generateLocalPlan());
-      setTripPlanError(true);
-    }
-
-    setTripPlanLoading(false);
+  const sectionTitleStyle: React.CSSProperties = {
+    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
+    fontSize: 18,
+    fontWeight: 700,
+    lineHeight: '22px',
+    color: t.primary,
+    margin: 0,
   };
 
   return (
@@ -256,7 +172,7 @@ export default function DestinationDetailScreen() {
       onScroll={handleScroll}
       className="screen"
       style={{
-        background: colors.duskSand,
+        background: t.canvas,
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
@@ -295,7 +211,7 @@ export default function DestinationDetailScreen() {
                 backgroundImage: `url(${heroImages[0]})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                backgroundColor: colors.deepDusk,
+                backgroundColor: t.ctaBg,
               }}
             />
           );
@@ -308,7 +224,7 @@ export default function DestinationDetailScreen() {
             left: 0,
             right: 0,
             height: 250,
-            background: `linear-gradient(to top, ${colors.duskSand} 0%, ${colors.duskSand}99 30%, transparent 100%)`,
+            background: `linear-gradient(to top, ${t.canvas} 0%, ${t.canvas}99 30%, transparent 100%)`,
             pointerEvents: 'none',
           }}
         />
@@ -414,7 +330,7 @@ export default function DestinationDetailScreen() {
               lineHeight: 1.05,
               letterSpacing: '-0.01em',
               textTransform: 'uppercase',
-              color: colors.deepDusk,
+              color: t.primary,
               margin: 0,
               wordBreak: 'break-word',
             }}
@@ -427,7 +343,7 @@ export default function DestinationDetailScreen() {
               fontSize: 13,
               lineHeight: '16px',
               letterSpacing: '0.05em',
-              color: colors.specText,
+              color: t.muted,
               margin: '4px 0 0',
             }}
           >
@@ -445,7 +361,7 @@ export default function DestinationDetailScreen() {
             fontStyle: 'italic',
             fontWeight: 400,
             lineHeight: '30px',
-            color: colors.bodyText,
+            color: t.body,
             margin: 0,
           }}
         >
@@ -458,7 +374,7 @@ export default function DestinationDetailScreen() {
             fontWeight: 600,
             lineHeight: '16px',
             letterSpacing: '0.1em',
-            color: colors.mutedText,
+            color: t.muted,
           }}
         >
           &mdash; SoGoJet Editors
@@ -481,13 +397,13 @@ export default function DestinationDetailScreen() {
           {/* Header row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ ...sectionLabel, color: colors.sageDrift }}>Best Flight Deal</span>
+              <span style={{ ...sectionLabel, color: t.accent }}>Best Flight Deal</span>
               <span
                 style={{
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 13,
                   lineHeight: '16px',
-                  color: colors.borderTint,
+                  color: t.muted,
                 }}
               >
                 {departureCode} → {dest.flightRoute}
@@ -499,7 +415,7 @@ export default function DestinationDetailScreen() {
                   width: 6,
                   height: 6,
                   borderRadius: 3,
-                  backgroundColor: stubDest.priceSource === 'estimate' ? colors.borderTint : colors.seafoamMist,
+                  backgroundColor: stubDest.priceSource === 'estimate' ? t.border : t.accentSoft,
                   flexShrink: 0,
                 }}
               />
@@ -508,7 +424,7 @@ export default function DestinationDetailScreen() {
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 10,
                   lineHeight: '12px',
-                  color: stubDest.priceSource === 'estimate' ? colors.borderTint : colors.darkerGreen,
+                  color: stubDest.priceSource === 'estimate' ? t.border : t.accent,
                 }}
               >
                 {stubDest.priceSource === 'travelpayouts' || stubDest.priceSource === 'amadeus' || stubDest.priceSource === 'duffel' ? 'Live price' : 'Estimated'}
@@ -524,7 +440,7 @@ export default function DestinationDetailScreen() {
                 fontSize: 48,
                 fontWeight: 800,
                 lineHeight: '48px',
-                color: colors.deepDusk,
+                color: t.primary,
               }}
             >
               ${dest.flightPrice}
@@ -535,7 +451,7 @@ export default function DestinationDetailScreen() {
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 14,
                   lineHeight: '18px',
-                  color: colors.borderTint,
+                  color: t.muted,
                   textDecoration: 'line-through',
                 }}
               >
@@ -550,16 +466,13 @@ export default function DestinationDetailScreen() {
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 12,
               lineHeight: '16px',
-              color: colors.borderTint,
+              color: t.muted,
             }}
           >
             {dest.flightDates}
           </span>
 
-          {/* Price alert */}
-          <PriceAlertButton destinationId={stubDest.id} currentPrice={dest.flightPrice} />
-
-          {/* Select button */}
+          {/* CTA button */}
           <button
             onClick={handleBooking}
             style={{
@@ -568,7 +481,7 @@ export default function DestinationDetailScreen() {
               justifyContent: 'center',
               height: 48,
               borderRadius: 12,
-              backgroundColor: colors.deepDusk,
+              backgroundColor: t.ctaBg,
               flexShrink: 0,
             }}
           >
@@ -578,44 +491,16 @@ export default function DestinationDetailScreen() {
                 fontSize: 15,
                 fontWeight: 600,
                 lineHeight: '20px',
-                color: colors.paleHorizon,
+                color: t.ctaText,
               }}
             >
-              Select This Flight
+              Find Flights
             </span>
           </button>
         </div>
       </div>
 
-      {/* ─── Cheapest Month Bar Chart ─────────────────────────── */}
-      {stubDest.iataCode && departureCode && (
-        <div style={{ paddingTop: 16, paddingBottom: 8 }}>
-          <MonthlyPriceBar
-            origin={departureCode}
-            destination={stubDest.iataCode}
-          />
-        </div>
-      )}
-
-      {/* ─── Price Calendar ──────────────────────────────────── */}
-      {stubDest.iataCode && departureCode && (
-        <div style={{ paddingTop: 8, paddingBottom: 16 }}>
-          <PriceCalendar
-            origin={departureCode}
-            destination={stubDest.iataCode}
-          />
-        </div>
-      )}
-
-      {/* ─── Price History Chart ──────────────────────────────── */}
-      {stubDest.iataCode && departureCode && (
-        <div style={{ paddingTop: 4, paddingBottom: 16 }}>
-          <PriceHistoryChart
-            origin={departureCode}
-            destination={stubDest.iataCode}
-          />
-        </div>
-      )}
+      {/* Price charts hidden for v1 — enable with VITE_SHOW_ADVANCED_DETAIL=true */}
 
       {/* ─── Affiliate Compare Button ─────────────────────────── */}
       {stubDest.affiliateUrl && (
@@ -630,7 +515,7 @@ export default function DestinationDetailScreen() {
               justifyContent: 'center',
               height: 44,
               borderRadius: 12,
-              border: `1.5px solid ${colors.borderTint}`,
+              border: `1.5px solid ${t.border}`,
               backgroundColor: 'transparent',
               textDecoration: 'none',
               gap: 6,
@@ -642,7 +527,7 @@ export default function DestinationDetailScreen() {
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 13,
                 fontWeight: 500,
-                color: colors.bodyText,
+                color: t.body,
               }}
             >
               Compare prices on Aviasales
@@ -651,198 +536,7 @@ export default function DestinationDetailScreen() {
         </div>
       )}
 
-      {/* ─── Hotel Snapshot ───────────────────────────────────── */}
-      {stubDest.hotels && stubDest.hotels.length > 0 ? (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={sectionLabel}>Nearby Hotels</span>
-            <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 10, color: colors.darkerGreen }}>
-              Live rates via Duffel
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
-            {(stubDest.hotels as HotelListing[]).map((hotel) => (
-              <div
-                key={hotel.accommodationId || hotel.name}
-                style={{
-                  minWidth: 180,
-                  maxWidth: 220,
-                  flex: '0 0 auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  backgroundColor: colors.offWhite,
-                  border: `1px solid ${colors.borderTint}40`,
-                }}
-              >
-                {/* Hotel photo */}
-                <div
-                  style={{
-                    width: '100%',
-                    height: 100,
-                    backgroundImage: hotel.photoUrl ? `url(${hotel.photoUrl})` : undefined,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundColor: colors.warmDusk,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    padding: 8,
-                  }}
-                >
-                  {/* Star rating overlay */}
-                  {hotel.rating != null && hotel.rating > 0 && (
-                    <span
-                      style={{
-                        fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                        fontSize: 10,
-                        fontWeight: 600,
-                        color: '#FFFFFF',
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        backdropFilter: 'blur(8px)',
-                        WebkitBackdropFilter: 'blur(8px)',
-                        borderRadius: 6,
-                        padding: '2px 6px',
-                      }}
-                    >
-                      {'★'.repeat(hotel.rating)}
-                    </span>
-                  )}
-                </div>
-                {/* Hotel info */}
-                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span
-                    style={{
-                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      lineHeight: '16px',
-                      color: colors.deepDusk,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {hotel.name}
-                  </span>
-                  {/* Review score + count */}
-                  {hotel.reviewScore != null && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span
-                        style={{
-                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: colors.confirmGreen,
-                        }}
-                      >
-                        {hotel.reviewScore.toFixed(1)}
-                      </span>
-                      {hotel.reviewCount != null && (
-                        <span
-                          style={{
-                            fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                            fontSize: 10,
-                            color: colors.mutedText,
-                          }}
-                        >
-                          ({hotel.reviewCount.toLocaleString()})
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {/* Board type badge */}
-                  {hotel.boardType && hotel.boardType !== 'room_only' && (
-                    <span
-                      style={{
-                        fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                        fontSize: 9,
-                        fontWeight: 600,
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        color: colors.darkerGreen,
-                        backgroundColor: '#C8DDD430',
-                        borderRadius: 4,
-                        padding: '2px 6px',
-                        alignSelf: 'flex-start',
-                      }}
-                    >
-                      {hotel.boardType.replace(/_/g, ' ')}
-                    </span>
-                  )}
-                  {/* Price */}
-                  <span
-                    style={{
-                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                      fontSize: 16,
-                      fontWeight: 800,
-                      lineHeight: '20px',
-                      color: colors.deepDusk,
-                      marginTop: 2,
-                    }}
-                  >
-                    ${hotel.pricePerNight}<span style={{ fontSize: 11, fontWeight: 500, color: colors.mutedText }}>/nt</span>
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : dest.hotels.length > 0 ? (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <span style={sectionLabel}>Hotel Snapshot</span>
-          <div style={{ display: 'flex', gap: 12 }}>
-            {dest.hotels.map((hotel) => (
-              <div
-                key={hotel.name}
-                style={{
-                  flex: '1 1 0%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  borderRadius: 12,
-                  padding: 14,
-                  gap: 8,
-                  backgroundColor: colors.offWhite,
-                  border: `1px solid ${colors.borderTint}40`,
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: 60,
-                    borderRadius: 8,
-                    backgroundImage: `url(${hotel.image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundColor: colors.duskSand,
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                    fontSize: 12,
-                    lineHeight: '16px',
-                    color: colors.specText,
-                  }}
-                >
-                  {hotel.name}
-                </span>
-                <span
-                  style={{
-                    fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    lineHeight: '18px',
-                    color: colors.deepDusk,
-                  }}
-                >
-                  {hotel.price}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      {/* Hotel snapshot hidden for v1 */}
 
       {/* ─── Best Time to Visit ──────────────────────────────── */}
       {stubDest.bestMonths?.length > 0 && <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -852,72 +546,18 @@ export default function DestinationDetailScreen() {
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
             fontSize: 14,
             lineHeight: '20px',
-            color: colors.bodyText,
+            color: t.body,
           }}
         >
           {stubDest.bestMonths.join(', ')}
         </span>
       </div>}
 
-      {/* ─── Current Weather ───────────────────────────────────── */}
-      {weather && (
-        <div style={{ padding: '16px 24px 0' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              borderRadius: 14,
-              padding: 16,
-              backgroundColor: colors.offWhite,
-              border: '1px solid #C9A99A20',
-            }}
-          >
-            {/* Emoji + temperature */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              <span style={{ fontSize: 32, lineHeight: 1 }}>{weather.icon}</span>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 28,
-                  fontWeight: 800,
-                  lineHeight: '28px',
-                  color: colors.deepDusk,
-                }}
-              >
-                {weather.temperature}&deg;F
-              </span>
-            </div>
-            {/* Details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 12,
-                  lineHeight: '16px',
-                  color: colors.mutedText,
-                }}
-              >
-                {weather.description} &middot; Wind {weather.windSpeed}mph &middot; {weather.humidity}% humidity
-              </span>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 11,
-                  lineHeight: '14px',
-                  color: colors.borderTint,
-                }}
-              >
-                Current weather in {dest.city}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Weather widget hidden for v1 */}
 
       {/* ─── About Section ────────────────────────────────────── */}
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <h2 style={sectionTitle}>About {dest.city}</h2>
+        <h2 style={sectionTitleStyle}>About {dest.city}</h2>
         {dest.aboutParas.map((p, i) => (
           <p
             key={i}
@@ -926,7 +566,7 @@ export default function DestinationDetailScreen() {
               fontSize: 15,
               fontWeight: 400,
               lineHeight: '24px',
-              color: colors.bodyText,
+              color: t.body,
               margin: 0,
             }}
           >
@@ -950,13 +590,13 @@ export default function DestinationDetailScreen() {
               cursor: 'pointer',
             }}
           >
-            <h2 style={sectionTitle}>Suggested Itinerary</h2>
+            <h2 style={sectionTitleStyle}>Suggested Itinerary</h2>
             <svg
               width="18"
               height="18"
               viewBox="0 0 24 24"
               fill="none"
-              stroke={colors.deepDusk}
+              stroke={t.primary}
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -980,8 +620,8 @@ export default function DestinationDetailScreen() {
                     gap: 8,
                     padding: 16,
                     borderRadius: 12,
-                    backgroundColor: colors.offWhite,
-                    border: `1px solid ${colors.borderTint}20`,
+                    backgroundColor: t.surface,
+                    border: `1px solid ${t.border}20`,
                   }}
                 >
                   <span
@@ -991,7 +631,7 @@ export default function DestinationDetailScreen() {
                       fontWeight: 600,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
-                      color: colors.sageDrift,
+                      color: t.accent,
                     }}
                   >
                     Day {item.day}
@@ -1003,7 +643,7 @@ export default function DestinationDetailScreen() {
                           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                           fontSize: 13,
                           lineHeight: '14px',
-                          color: colors.sageDrift,
+                          color: t.accent,
                           flexShrink: 0,
                           marginTop: 2,
                         }}
@@ -1015,7 +655,7 @@ export default function DestinationDetailScreen() {
                           fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                           fontSize: 14,
                           lineHeight: '21px',
-                          color: colors.bodyText,
+                          color: t.body,
                         }}
                       >
                         {activity}
@@ -1053,8 +693,8 @@ export default function DestinationDetailScreen() {
                   gap: 6,
                   padding: 14,
                   borderRadius: 12,
-                  backgroundColor: colors.offWhite,
-                  border: `1px solid ${colors.borderTint}20`,
+                  backgroundColor: t.surface,
+                  border: `1px solid ${t.border}20`,
                 }}
               >
                 <span
@@ -1063,7 +703,7 @@ export default function DestinationDetailScreen() {
                     fontSize: 14,
                     fontWeight: 600,
                     lineHeight: '18px',
-                    color: colors.deepDusk,
+                    color: t.primary,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -1076,7 +716,7 @@ export default function DestinationDetailScreen() {
                     fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                     fontSize: 11,
                     lineHeight: '14px',
-                    color: colors.mutedText,
+                    color: t.muted,
                     textTransform: 'capitalize',
                   }}
                 >
@@ -1088,7 +728,7 @@ export default function DestinationDetailScreen() {
                       fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                       fontSize: 12,
                       fontWeight: 700,
-                      color: colors.confirmGreen,
+                      color: t.accent,
                     }}
                   >
                     {restaurant.rating.toFixed(1)}
@@ -1097,7 +737,7 @@ export default function DestinationDetailScreen() {
                     style={{
                       fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                       fontSize: 11,
-                      color: colors.borderTint,
+                      color: t.muted,
                     }}
                   >
                     {Array.from({ length: Math.round(restaurant.rating) }, () => '\u2605').join('')}
@@ -1109,208 +749,11 @@ export default function DestinationDetailScreen() {
         </div>
       )}
 
-      {/* ─── AI Trip Planner ──────────────────────────────────── */}
-      <div style={{ padding: 24 }}>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 16,
-            padding: 20,
-            gap: 14,
-            backgroundColor: '#7BAF8E15',
-            backgroundImage: 'linear-gradient(135deg, rgba(168,196,184,0.25) 0%, rgba(168,196,184,0.12) 100%)',
-            border: '1px solid #7BAF8E40',
-          }}
-        >
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                backgroundColor: colors.confirmGreen,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  lineHeight: '18px',
-                  color: colors.deepDusk,
-                }}
-              >
-                AI Trip Planner
-              </span>
-              <span
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 10,
-                  lineHeight: '12px',
-                  color: colors.confirmGreen,
-                }}
-              >
-                Powered by Claude
-              </span>
-            </div>
-          </div>
-
-          <p
-            style={{
-              fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 14,
-              lineHeight: '21px',
-              color: colors.bodyText,
-              margin: 0,
-            }}
-          >
-            Get a personalized day-by-day itinerary based on your travel style, budget, and interests.
-          </p>
-
-          <button
-            onClick={handleGeneratePlan}
-            disabled={tripPlanLoading}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 44,
-              borderRadius: 10,
-              backgroundColor: colors.confirmGreen,
-              flexShrink: 0,
-              opacity: tripPlanLoading ? 0.7 : 1,
-              cursor: tripPlanLoading ? 'wait' : 'pointer',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: '18px',
-                color: '#FFFFFF',
-              }}
-            >
-              {tripPlanLoading ? 'Generating...' : (tripPlan || tripPlanText) ? 'Regenerate Plan' : 'Generate My Trip Plan'}
-            </span>
-          </button>
-
-          {/* AI-Streamed Trip Plan */}
-          {tripPlanText && (
-            <div
-              style={{
-                marginTop: 4,
-                padding: '16px',
-                backgroundColor: colors.offWhite,
-                borderRadius: 12,
-                border: `1px solid ${colors.borderTint}`,
-              }}
-            >
-              <pre
-                style={{
-                  fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 13,
-                  lineHeight: '21px',
-                  color: colors.bodyText,
-                  whiteSpace: 'pre-wrap',
-                  wordWrap: 'break-word',
-                  margin: 0,
-                }}
-              >
-                {tripPlanText}
-              </pre>
-            </div>
-          )}
-
-          {/* AI error notice */}
-          {tripPlanError && (
-            <div style={{ padding: '10px 14px', backgroundColor: '#C9A99A15', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 13, color: colors.borderTint }}>
-                AI unavailable — showing a suggested itinerary instead
-              </span>
-            </div>
-          )}
-
-          {/* Structured Trip Plan Fallback */}
-          {tripPlan && !tripPlanText && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 4 }}>
-              {tripPlan.days.map((day) => (
-                <div key={day.day} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span
-                    style={{
-                      fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: colors.confirmGreen,
-                    }}
-                  >
-                    Day {day.day} — {day.title}
-                  </span>
-                  {day.activities.map((act, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 10 }}>
-                      <span
-                        style={{
-                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                          fontSize: 11,
-                          fontWeight: 500,
-                          color: colors.sageDrift,
-                          width: 60,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {act.time}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                          fontSize: 13,
-                          lineHeight: '20px',
-                          color: colors.bodyText,
-                        }}
-                      >
-                        {act.activity}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  backgroundColor: '#7BAF8E15',
-                  borderRadius: 10,
-                  padding: '10px 14px',
-                }}
-              >
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, color: colors.mutedText }}>
-                  Est. budget
-                </span>
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, fontWeight: 600, color: colors.deepDusk }}>
-                  ${tripPlan.estimatedBudget.min}–${tripPlan.estimatedBudget.max}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* AI trip planner hidden for v1 */}
 
       {/* ─── Similar Destinations ─────────────────────────────── */}
       {dest.similar.length > 0 && <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <h2 style={sectionTitle}>Similar Destinations</h2>
+        <h2 style={sectionTitleStyle}>Similar Destinations</h2>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto' }}>
           {dest.similar.map((s) => (
             <div
@@ -1337,7 +780,7 @@ export default function DestinationDetailScreen() {
                     backgroundImage: s.image ? `url(${s.image})` : undefined,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    background: s.image ? undefined : `linear-gradient(135deg, ${colors.sageDrift} 0%, ${colors.deepDusk} 100%)`,
+                    background: s.image ? undefined : `linear-gradient(135deg, ${t.accent} 0%, ${t.primary} 100%)`,
                     display: !s.image ? 'flex' : undefined,
                     alignItems: !s.image ? 'center' : undefined,
                     justifyContent: !s.image ? 'center' : undefined,
@@ -1378,7 +821,7 @@ export default function DestinationDetailScreen() {
                   fontSize: 14,
                   fontWeight: 700,
                   lineHeight: '18px',
-                  color: colors.deepDusk,
+                  color: t.primary,
                 }}
               >
                 ${s.price}
@@ -1395,7 +838,7 @@ export default function DestinationDetailScreen() {
           display: 'flex',
           flexDirection: 'column',
           gap: 12,
-          background: `linear-gradient(to top, ${colors.offWhite} 0%, ${colors.offWhite}F7 100%)`,
+          background: `linear-gradient(to top, ${t.surface} 0%, ${t.surface}F7 100%)`,
           marginTop: 24,
         }}
       >
@@ -1406,7 +849,7 @@ export default function DestinationDetailScreen() {
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
               fontSize: 12,
               lineHeight: '16px',
-              color: colors.borderTint,
+              color: t.muted,
             }}
           >
             Round trip from {departureCode}
@@ -1417,7 +860,7 @@ export default function DestinationDetailScreen() {
               fontSize: 20,
               fontWeight: 700,
               lineHeight: '24px',
-              color: colors.deepDusk,
+              color: t.primary,
             }}
           >
             ${dest.flightPrice}
@@ -1432,7 +875,7 @@ export default function DestinationDetailScreen() {
             justifyContent: 'center',
             height: 52,
             borderRadius: 14,
-            backgroundColor: colors.deepDusk,
+            backgroundColor: t.primary,
             flexShrink: 0,
           }}
         >
@@ -1442,10 +885,10 @@ export default function DestinationDetailScreen() {
               fontSize: 17,
               fontWeight: 600,
               lineHeight: '20px',
-              color: colors.paleHorizon,
+              color: t.ctaText,
             }}
           >
-            Book This Trip
+            Find Flights
           </span>
         </button>
       </div>

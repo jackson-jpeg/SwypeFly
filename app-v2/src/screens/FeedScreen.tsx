@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { colors, fonts } from '@/tokens';
+import { colors, fonts, useThemeColors } from '@/tokens';
 import { useFeed } from '@/hooks/useFeed';
 import { useSavedStore } from '@/stores/savedStore';
 import { useFeedStore } from '@/stores/feedStore';
@@ -21,6 +21,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
   const navigate = useNavigate();
   const { isSaved, toggle } = useSavedStore();
   const { session } = useAuthContext();
+  const t = useThemeColors();
   const saved = isSaved(destination.id);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -43,8 +44,8 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
     borderRadius: 24,
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    backgroundColor: '#FFFFFF14',
-    border: '1px solid #FFFFFF1F',
+    backgroundColor: t.actionBtnBg,
+    border: `1px solid ${t.border}`,
     cursor: 'pointer',
     padding: 0,
   };
@@ -68,8 +69,8 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           inset: 0,
           ...(hasImage
             ? { backgroundImage: `url(${destination.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-            : { background: `linear-gradient(135deg, #1a2a3a 0%, #2d1b3d 40%, #1a3a2a 70%, #0A0F1E 100%)` }),
-          backgroundColor: '#0A0F1E',
+            : { background: `linear-gradient(135deg, #1a2a3a 0%, #2d1b3d 40%, #1a3a2a 70%, ${t.canvas} 100%)` }),
+          backgroundColor: t.canvas,
           filter: imageLoaded ? 'none' : 'blur(20px)',
           transform: imageLoaded ? 'scale(1)' : 'scale(1.1)',
           transition: 'filter 0.5s ease, transform 0.5s ease',
@@ -83,7 +84,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           left: 0,
           width: '100%',
           height: '65%',
-          background: 'linear-gradient(to top, rgba(10,15,30,1) 0%, rgba(10,15,30,0.95) 20%, rgba(10,15,30,0.7) 45%, transparent 100%)',
+          background: t.heroGradient,
         }}
       />
 
@@ -139,15 +140,17 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           style={{
             fontFamily: `"${fonts.display}", system-ui, sans-serif`,
             fontWeight: 800,
-            fontSize: 'clamp(26px, 8vw, 36px)',
+            fontSize: 'clamp(26px, 8vw, 32px)',
             lineHeight: 1.05,
             letterSpacing: '-0.02em',
             textTransform: 'uppercase',
-            color: '#FFFFFF',
+            color: t.primary,
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap' as const,
           }}
         >
           {destination.city}
@@ -157,7 +160,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
             fontSize: 15,
             lineHeight: '20px',
-            color: '#FFFFFFB3',
+            color: t.body,
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
@@ -168,13 +171,13 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
         </div>
         {/* Tags row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: '#FFFFFF73' }}>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: t.muted }}>
             {destination.country}
           </span>
           {destination.vibeTags.slice(0, 2).map((tag) => (
             <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFFFFF40', flexShrink: 0 }} />
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: '#FFFFFF73' }}>
+              <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: t.muted, flexShrink: 0 }} />
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 11, letterSpacing: '0.08em', lineHeight: '14px', textTransform: 'uppercase', color: t.muted }}>
                 {tag}
               </span>
             </span>
@@ -196,8 +199,8 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           borderRadius: 16,
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          backgroundColor: '#2C1F1AE6',
-          border: '1px solid #FFFFFF1A',
+          backgroundColor: t.priceBadge,
+          border: `1px solid ${t.border}`,
         }}
       >
         {/* Row 1: Price + dates */}
@@ -205,7 +208,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           {destination.priceSource === 'estimate' && (
             <span style={{
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 11, lineHeight: '14px', color: colors.borderTint,
+              fontSize: 11, lineHeight: '14px', color: t.muted,
             }}>
               From
             </span>
@@ -213,7 +216,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           <span style={{
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
             fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em',
-            lineHeight: '26px', color: colors.sunriseButter,
+            lineHeight: '26px', color: t.priceText,
           }}>
             ${destination.flightPrice}
           </span>
@@ -255,7 +258,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           {destination.departureDate && destination.returnDate && new Date(destination.departureDate + 'T00:00:00') > new Date() && (
             <span style={{
               fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-              fontSize: 11, lineHeight: '14px', color: '#FFFFFFAA',
+              fontSize: 11, lineHeight: '14px', color: t.body,
             }}>
               {new Date(destination.departureDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               {' \u2013 '}
@@ -270,7 +273,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
               <AirlineLogo code={destination.airline} size={14} />
               <span style={{
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                fontSize: 10, lineHeight: '12px', color: '#FFFFFF80',
+                fontSize: 10, lineHeight: '12px', color: t.muted,
               }}>
                 {getAirlineName(destination.airline!)}
               </span>
@@ -279,7 +282,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
           <span style={{
             fontFamily: `"${fonts.body}", system-ui, sans-serif`,
             fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', lineHeight: '12px',
-            color: destination.priceSource === 'estimate' ? '#FFFFFF60' : colors.confirmGreen,
+            color: destination.priceSource === 'estimate' ? t.muted : t.priceBadgeText,
           }}>
             {destination.priceSource !== 'estimate' ? 'LIVE' : 'EST.'}
           </span>
@@ -287,10 +290,10 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
             const freshness = formatFreshness(destination.tpFoundAt!);
             return freshness ? (
               <>
-                <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFFFFF30', flexShrink: 0 }} />
+                <span style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: t.muted, flexShrink: 0 }} />
                 <span style={{
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
-                  fontSize: 10, lineHeight: '12px', color: '#FFFFFF60',
+                  fontSize: 10, lineHeight: '12px', color: t.muted,
                 }}>
                   Seen {freshness}
                 </span>
@@ -304,6 +307,7 @@ function FeedCard({ destination, onSave }: { destination: Destination; onSave?: 
 }
 
 export default function FeedScreen() {
+  const t = useThemeColors();
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
@@ -383,8 +387,8 @@ export default function FeedScreen() {
     borderRadius: 20,
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    backgroundColor: '#FFFFFF14',
-    border: '1px solid #FFFFFF1F',
+    backgroundColor: t.actionBtnBg,
+    border: `1px solid ${t.border}`,
     cursor: 'pointer',
     padding: 0,
   };
@@ -392,13 +396,13 @@ export default function FeedScreen() {
   // Loading state with skeleton
   if (isLoading) {
     return (
-      <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="screen-fixed" style={{ background: t.canvas, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <FilterBar />
         <div style={{ flex: 1 }}>
           <SkeletonCard />
         </div>
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
-          <BottomNav dark />
+          <BottomNav />
         </div>
       </div>
     );
@@ -406,20 +410,20 @@ export default function FeedScreen() {
 
   if (isError) {
     return (
-      <div className="screen-fixed" style={{ background: '#0A0F1E', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: '#FFFFFF90' }}>Could not load destinations</span>
+      <div className="screen-fixed" style={{ background: t.canvas, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: t.body }}>Could not load destinations</span>
         <button
           onClick={() => refetch()}
           style={{
             paddingBlock: 10,
             paddingInline: 24,
             borderRadius: 10,
-            backgroundColor: '#FFFFFF14',
-            border: '1px solid #FFFFFF1F',
+            backgroundColor: t.actionBtnBg,
+            border: `1px solid ${t.border}`,
             cursor: 'pointer',
           }}
         >
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFFB3' }}>Try Again</span>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: t.body }}>Try Again</span>
         </button>
       </div>
     );
@@ -428,14 +432,14 @@ export default function FeedScreen() {
   // Empty state (filters active but no results)
   if (destinations.length === 0) {
     return (
-      <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="screen-fixed" style={{ background: t.canvas, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <FilterBar />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF30" strokeWidth="1.5" strokeLinecap="round">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="1.5" strokeLinecap="round">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: '#FFFFFF80', textAlign: 'center' }}>
+          <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 16, color: t.muted, textAlign: 'center' }}>
             No destinations match your filters
           </span>
           {hasActiveFilters() && (
@@ -445,24 +449,24 @@ export default function FeedScreen() {
                 paddingBlock: 10,
                 paddingInline: 24,
                 borderRadius: 10,
-                backgroundColor: '#FFFFFF14',
-                border: '1px solid #FFFFFF1F',
+                backgroundColor: t.actionBtnBg,
+                border: `1px solid ${t.border}`,
                 cursor: 'pointer',
               }}
             >
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: '#FFFFFFB3' }}>Clear Filters</span>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 14, color: t.body }}>Clear Filters</span>
             </button>
           )}
         </div>
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
-          <BottomNav dark />
+          <BottomNav />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="screen-fixed" style={{ background: '#0A0F1E', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div className="screen-fixed" style={{ background: t.canvas, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Filter bar at top */}
       <FilterBar />
 
@@ -481,8 +485,8 @@ export default function FeedScreen() {
             borderRadius: 20,
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            backgroundColor: '#FFFFFF14',
-            border: '1px solid #FFFFFF1F',
+            backgroundColor: t.actionBtnBg,
+            border: `1px solid ${t.border}`,
             overflow: 'hidden',
           }}
         >
@@ -568,13 +572,13 @@ export default function FeedScreen() {
 
           {/* Scroll progress bar */}
           {destinations.length > 1 && (
-            <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 3, height: 80, borderRadius: 2, backgroundColor: '#FFFFFF20', zIndex: 20, overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 3, height: 80, borderRadius: 2, backgroundColor: t.border, zIndex: 20, overflow: 'hidden' }}>
               <div
                 style={{
                   width: '100%',
                   height: `${Math.max(10, 100 / destinations.length)}%`,
                   borderRadius: 2,
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: t.primary,
                   transform: `translateY(${(currentIndex / Math.max(1, destinations.length - 1)) * (80 - 80 * Math.max(10, 100 / destinations.length) / 100)}px)`,
                   transition: 'transform 0.2s',
                 }}
@@ -590,7 +594,7 @@ export default function FeedScreen() {
       )}
 
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
-        <BottomNav dark />
+        <BottomNav />
       </div>
 
       {/* Search overlay */}

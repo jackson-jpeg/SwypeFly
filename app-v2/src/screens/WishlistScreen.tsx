@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
-import { colors, fonts } from '@/tokens';
+import { colors, fonts, useThemeColors } from '@/tokens';
 import { useSavedStore } from '@/stores/savedStore';
 import { useAuthContext } from '@/hooks/AuthContext';
 import { apiFetch, USE_STUBS } from '@/api/client';
@@ -10,9 +10,10 @@ import { useUIStore } from '@/stores/uiStore';
 import type { Destination } from '@/api/types';
 import BottomNav from '@/components/BottomNav';
 
-function HeartFilled({ size = 16 }: { size?: number }) {
+function HeartFilled({ size = 16, color }: { size?: number; color?: string }) {
+  const fill = color ?? colors.deepDusk;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={colors.deepDusk} stroke={colors.deepDusk}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={fill}>
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   );
@@ -27,6 +28,7 @@ export default function WishlistScreen() {
   const departureCode = useUIStore((s) => s.departureCode);
   const [sort, setSort] = useState<SortMode>('all');
   const userId = session?.userId;
+  const t = useThemeColors();
 
   // Fetch destination details for each saved ID
   const destQueries = useQueries({
@@ -73,7 +75,7 @@ export default function WishlistScreen() {
     <div
       className="screen"
       style={{
-        background: colors.duskSand,
+        background: t.canvas,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -90,7 +92,7 @@ export default function WishlistScreen() {
             lineHeight: '40px',
             letterSpacing: '-0.01em',
             textTransform: 'uppercase',
-            color: colors.deepDusk,
+            color: t.primary,
             margin: 0,
           }}
         >
@@ -112,8 +114,8 @@ export default function WishlistScreen() {
                 paddingInline: 12,
               }}
             >
-              <HeartFilled size={14} />
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.borderTint }}>
+              <HeartFilled size={14} color={t.primary} />
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: t.muted }}>
                 {WISHLIST_DATA.length} saved
               </span>
             </div>
@@ -128,7 +130,7 @@ export default function WishlistScreen() {
                 paddingInline: 12,
               }}
             >
-              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: colors.borderTint }}>
+              <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, lineHeight: '16px', color: t.muted }}>
                 Avg ${Math.round(WISHLIST_DATA.reduce((s, d) => s + d.price, 0) / WISHLIST_DATA.length)}
               </span>
             </div>
@@ -149,13 +151,13 @@ export default function WishlistScreen() {
                   justifyContent: 'center',
                   height: 32,
                   paddingInline: 14,
-                  backgroundColor: active ? colors.deepDusk : '#F2CEBC40',
+                  backgroundColor: active ? t.ctaBg : '#F2CEBC40',
                   border: active ? 'none' : '1px solid #C9A99A40',
                   borderRadius: 16,
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, fontWeight: active ? 600 : 400, lineHeight: '16px', color: active ? colors.paleHorizon : colors.bodyText }}>
+                <span style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, fontSize: 12, fontWeight: active ? 600 : 400, lineHeight: '16px', color: active ? t.ctaText : t.body }}>
                   {label}
                 </span>
               </button>
@@ -169,10 +171,10 @@ export default function WishlistScreen() {
         {WISHLIST_DATA.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', width: '100%' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>✈️</div>
-            <h3 style={{ fontFamily: `"${fonts.display}", system-ui, sans-serif`, color: '#FFFFFF', fontSize: 20, fontWeight: 700, marginBottom: 8, margin: 0 }}>
+            <h3 style={{ fontFamily: `"${fonts.display}", system-ui, sans-serif`, color: t.primary, fontSize: 20, fontWeight: 700, marginBottom: 8, margin: 0 }}>
               No saved destinations yet
             </h3>
-            <p style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, margin: '8px 0 0 0' }}>
+            <p style={{ fontFamily: `"${fonts.body}", system-ui, sans-serif`, color: t.muted, fontSize: 14, lineHeight: 1.6, margin: '8px 0 0 0' }}>
               Swipe through destinations and tap the heart to save your favorites here.
             </p>
           </div>
@@ -198,7 +200,7 @@ export default function WishlistScreen() {
                   backgroundImage: `url(${dest.image})`,
                   backgroundPosition: 'center',
                   backgroundSize: 'cover',
-                  backgroundColor: colors.deepDusk,
+                  backgroundColor: t.primary,
                   position: 'absolute',
                   inset: 0,
                 }}
@@ -253,7 +255,7 @@ export default function WishlistScreen() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 3,
-                    backgroundColor: colors.confirmGreen,
+                    backgroundColor: t.accent,
                     borderRadius: 20,
                     paddingBlock: 3,
                     paddingInline: 8,
@@ -275,14 +277,14 @@ export default function WishlistScreen() {
               )}
             </div>
             {/* Info area */}
-            <div style={{ backgroundColor: colors.offWhite, paddingBlock: 10, paddingInline: 10 }}>
+            <div style={{ backgroundColor: t.surface, paddingBlock: 10, paddingInline: 10 }}>
               <div
                 style={{
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 16,
                   fontWeight: 700,
                   lineHeight: '20px',
-                  color: colors.deepDusk,
+                  color: t.primary,
                 }}
               >
                 ${dest.price}
@@ -292,7 +294,7 @@ export default function WishlistScreen() {
                   fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                   fontSize: 11,
                   lineHeight: '14px',
-                  color: colors.borderTint,
+                  color: t.muted,
                 }}
               >
                 {dest.country} · {dest.vibe}

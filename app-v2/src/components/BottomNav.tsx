@@ -1,19 +1,18 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { colors, fonts } from '@/tokens';
+import { fonts, useThemeColors } from '@/tokens';
 
-type Tab = 'explore' | 'search' | 'trips' | 'saved' | 'settings';
+type Tab = 'explore' | 'deals' | 'saved' | 'settings';
 
 const tabs: { key: Tab; label: string; path: string }[] = [
   { key: 'explore', label: 'Explore', path: '/' },
-  { key: 'search', label: 'Search', path: '/search' },
-  { key: 'trips', label: 'Trips', path: '/trips' },
+  { key: 'deals', label: 'Deals', path: '/deals' },
   { key: 'saved', label: 'Saved', path: '/wishlist' },
   { key: 'settings', label: 'Settings', path: '/settings' },
 ];
 
-function tabIcon(tab: Tab, active: boolean) {
-  const stroke = active ? colors.sageDrift : '#6B7280';
-  const fill = active ? colors.sageDrift : 'none';
+function tabIcon(tab: Tab, active: boolean, activeColor: string, inactiveColor: string) {
+  const stroke = active ? activeColor : inactiveColor;
+  const fill = active ? activeColor : 'none';
 
   switch (tab) {
     case 'explore':
@@ -24,17 +23,11 @@ function tabIcon(tab: Tab, active: boolean) {
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
       );
-    case 'search':
+    case 'deals':
       return (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      );
-    case 'trips':
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-2 2 4 1 1 4 2-2v-3l3-2 3.8 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.7.5-1.1z" />
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+          <line x1="7" y1="7" x2="7.01" y2="7" />
         </svg>
       );
     case 'saved':
@@ -53,20 +46,19 @@ function tabIcon(tab: Tab, active: boolean) {
   }
 }
 
-export default function BottomNav({ dark = false }: { dark?: boolean }) {
+export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
+  const t = useThemeColors();
 
   const activeTab: Tab =
-    location.pathname === '/search'
-      ? 'search'
+    location.pathname === '/deals'
+      ? 'deals'
       : location.pathname === '/wishlist' || location.pathname === '/saved'
         ? 'saved'
-        : location.pathname === '/trips'
-          ? 'trips'
-          : location.pathname === '/settings'
-            ? 'settings'
-            : 'explore';
+        : location.pathname === '/settings'
+          ? 'settings'
+          : 'explore';
 
   return (
     <nav
@@ -75,9 +67,7 @@ export default function BottomNav({ dark = false }: { dark?: boolean }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
-        background: dark
-          ? 'linear-gradient(to top, #0A0F1E 60%, transparent 100%)'
-          : `linear-gradient(to top, ${colors.duskSand} 60%, transparent 100%)`,
+        background: t.navBg,
         paddingBottom: 32,
         paddingTop: 12,
         paddingLeft: 40,
@@ -106,14 +96,14 @@ export default function BottomNav({ dark = false }: { dark?: boolean }) {
               padding: 0,
             }}
           >
-            {tabIcon(tab.key, active)}
+            {tabIcon(tab.key, active, t.navActive, t.navInactive)}
             <span
               style={{
                 fontFamily: `"${fonts.body}", system-ui, sans-serif`,
                 fontSize: 10,
                 fontWeight: active ? 600 : 400,
                 lineHeight: '12px',
-                color: active ? colors.sageDrift : dark ? '#FFFFFF80' : colors.borderTint,
+                color: active ? t.navActive : t.navInactive,
               }}
             >
               {tab.label}
