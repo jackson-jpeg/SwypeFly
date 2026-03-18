@@ -11,7 +11,7 @@ interface SplitFlapCharProps {
   target: string;
   delay: number;
   duration?: number;
-  size: 'sm' | 'md';
+  size: 'sm' | 'md' | 'lg';
   color: string;
   animate: boolean;
   isFirstInColumn?: boolean;
@@ -21,6 +21,7 @@ interface SplitFlapCharProps {
 const SIZES = {
   sm: { width: 13, height: 22, fontSize: 16 },
   md: { width: 17, height: 28, fontSize: 22 },
+  lg: { width: 28, height: 44, fontSize: 36 },
 } as const;
 
 function SplitFlapChar({

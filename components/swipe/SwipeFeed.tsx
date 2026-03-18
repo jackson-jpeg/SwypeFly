@@ -1,5 +1,5 @@
-import { useCallback, useRef } from 'react';
-import { View, FlatList, Dimensions, StyleSheet, Platform } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { View, FlatList, Dimensions, StyleSheet, Platform, ViewToken } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
@@ -19,6 +19,17 @@ export default function SwipeFeed() {
   const toggle = useSavedStore((s) => s.toggle);
   const listRef = useRef<FlatList<BoardDeal>>(null);
   const router = useRouter();
+
+  // Track which card is currently visible for split-flap animation
+  const [visibleIndex, setVisibleIndex] = useState(0);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0 && viewableItems[0].index != null) {
+      setVisibleIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
   const handleSave = useCallback(
     (deal: BoardDeal) => {
@@ -47,12 +58,13 @@ export default function SwipeFeed() {
         deal={item}
         isSaved={savedIds.includes(item.id)}
         isFirst={index === 0}
+        animate={index === visibleIndex}
         onSave={() => handleSave(item)}
         onBook={() => handleBook(item)}
         onTap={() => router.push(`/destination/${item.id}`)}
       />
     ),
-    [savedIds, handleSave, handleBook, router],
+    [savedIds, handleSave, handleBook, router, visibleIndex],
   );
 
   const getItemLayout = useCallback(
@@ -84,6 +96,8 @@ export default function SwipeFeed() {
         maxToRenderPerBatch={3}
         windowSize={5}
         initialNumToRender={2}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
       />
     </View>
   );

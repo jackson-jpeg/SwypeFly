@@ -1,59 +1,20 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  runOnJS,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useDealStore } from '../../stores/dealStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import SwipeFeed from '../../components/swipe/SwipeFeed';
-import DepartureBoard from '../../components/board/DepartureBoard';
-import SegmentedControl from '../../components/SegmentedControl';
 import SkeletonCard from '../../components/swipe/SkeletonCard';
 import { colors, fonts } from '../../theme/tokens';
-import type { BoardDeal } from '../../types/deal';
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { deals, isLoading, error, fetchDeals } = useDealStore();
   const departureCode = useSettingsStore((s) => s.departureCode);
-  const preferredView = useSettingsStore((s) => s.preferredView);
-  const setPreferredView = useSettingsStore((s) => s.setPreferredView);
-  const router = useRouter();
-
-  // Crossfade animation
-  const contentOpacity = useSharedValue(1);
 
   useEffect(() => {
     fetchDeals(departureCode);
   }, [departureCode, fetchDeals]);
-
-  const handleViewChange = useCallback(
-    (view: 'swipe' | 'board') => {
-      // Fade out → switch view on JS thread → fade in
-      contentOpacity.value = withTiming(0, { duration: 150 }, () => {
-        runOnJS(setPreferredView)(view);
-        contentOpacity.value = withTiming(1, { duration: 150 });
-      });
-    },
-    [contentOpacity, setPreferredView],
-  );
-
-  const handleTapDeal = useCallback(
-    (deal: BoardDeal) => {
-      router.push(`/destination/${deal.id}`);
-    },
-    [router],
-  );
-
-  const contentAnimStyle = useAnimatedStyle(() => ({
-    opacity: contentOpacity.value,
-    flex: 1,
-  }));
 
   return (
     <View style={styles.container}>
@@ -65,36 +26,22 @@ export default function FeedScreen() {
         </View>
       </View>
 
-      {/* Spacer for header */}
-      <View style={{ height: insets.top + 52 }} />
-
-      {/* Segmented control */}
-      <SegmentedControl value={preferredView} onChange={handleViewChange} />
-
-      {/* Content area with crossfade */}
-      <Animated.View style={contentAnimStyle}>
-        {isLoading ? (
-          preferredView === 'board' ? (
-            <DepartureBoard deals={[]} onTapDeal={handleTapDeal} isLoading />
-          ) : (
-            <SkeletonCard />
-          )
-        ) : deals.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🌎</Text>
-            <Text style={styles.emptyTitle}>No deals found</Text>
-            <Text style={styles.emptySubtitle}>
-              {error
-                ? 'Check your connection and try again'
-                : 'Try a different departure city'}
-            </Text>
-          </View>
-        ) : preferredView === 'swipe' ? (
-          <SwipeFeed />
-        ) : (
-          <DepartureBoard deals={deals} onTapDeal={handleTapDeal} />
-        )}
-      </Animated.View>
+      {/* Content */}
+      {isLoading ? (
+        <SkeletonCard />
+      ) : deals.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyIcon}>🌎</Text>
+          <Text style={styles.emptyTitle}>No deals found</Text>
+          <Text style={styles.emptySubtitle}>
+            {error
+              ? 'Check your connection and try again'
+              : 'Try a different departure city'}
+          </Text>
+        </View>
+      ) : (
+        <SwipeFeed />
+      )}
     </View>
   );
 }
@@ -115,7 +62,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 8,
-    backgroundColor: colors.bg,
     ...Platform.select({
       web: { pointerEvents: 'box-none' as const },
       default: {},

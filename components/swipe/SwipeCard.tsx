@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts, spacing } from '../../theme/tokens';
+import SplitFlapRow from '../board/SplitFlapRow';
 import type { BoardDeal } from '../../types/deal';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -17,12 +18,13 @@ interface SwipeCardProps {
   deal: BoardDeal;
   isSaved: boolean;
   isFirst?: boolean;
+  animate: boolean;
   onSave: () => void;
   onBook: () => void;
   onTap?: () => void;
 }
 
-export default function SwipeCard({ deal, isSaved, isFirst, onSave, onBook, onTap }: SwipeCardProps) {
+export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
   return (
     <Pressable style={styles.card} onPress={onTap}>
       {/* Background image */}
@@ -41,48 +43,82 @@ export default function SwipeCard({ deal, isSaved, isFirst, onSave, onBook, onTa
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Status badge */}
-      <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[deal.status] }]}>
-        <Text style={styles.statusText}>{deal.status}</Text>
+      {/* Status badge — split-flap */}
+      <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[deal.status] + '20', borderColor: STATUS_COLORS[deal.status] + '60' }]}>
+        <SplitFlapRow
+          text={deal.status}
+          maxLength={4}
+          size="sm"
+          color={STATUS_COLORS[deal.status]}
+          align="left"
+          startDelay={320}
+          animate={animate}
+        />
       </View>
 
-      {/* Price tag — top right */}
+      {/* Price tag — top right, split-flap digits */}
       {deal.price != null && (
         <View style={styles.priceTag}>
           <Text style={styles.priceLabel}>from</Text>
-          <Text style={styles.priceValue}>{deal.priceFormatted}</Text>
+          <SplitFlapRow
+            text={deal.priceFormatted}
+            maxLength={6}
+            size="md"
+            color={colors.yellow}
+            align="right"
+            startDelay={240}
+            animate={animate}
+          />
           <Text style={styles.priceLabel}>round trip</Text>
         </View>
       )}
       {deal.price == null && (
         <View style={styles.priceTag}>
           <Ionicons name="search-outline" size={18} color={colors.yellow} />
-          <Text style={[styles.priceValue, { fontSize: 16, lineHeight: 20 }]}>Tap to{'\n'}check price</Text>
+          <Text style={[styles.priceLabel, { color: colors.yellow, fontSize: 12 }]}>Tap to{'\n'}check price</Text>
         </View>
       )}
 
       {/* Bottom content */}
       <View style={styles.bottomContent}>
-        {/* Destination */}
-        <Text style={styles.destination}>{deal.destination}</Text>
+        {/* Destination — split-flap city name */}
+        <View style={styles.destinationRow}>
+          <SplitFlapRow
+            text={deal.destination}
+            maxLength={12}
+            size="lg"
+            color={colors.white}
+            align="left"
+            startDelay={0}
+            staggerMs={35}
+            animate={animate}
+          />
+        </View>
         <Text style={styles.country}>{deal.country}</Text>
 
         {/* Tagline */}
         <Text style={styles.tagline} numberOfLines={2}>{deal.tagline}</Text>
 
-        {/* Flight info row */}
+        {/* Flight info row — flight code in split-flap */}
         <View style={styles.infoRow}>
           <View style={styles.infoChip}>
             <Ionicons name="airplane" size={12} color={colors.yellow} />
             <Text style={styles.infoText}>{deal.airline}</Text>
           </View>
+          <View style={styles.flightCodeChip}>
+            <SplitFlapRow
+              text={deal.flightCode}
+              maxLength={6}
+              size="sm"
+              color={colors.whiteDim}
+              align="left"
+              startDelay={160}
+              animate={animate}
+            />
+          </View>
           <View style={styles.infoChip}>
             <Ionicons name="time-outline" size={12} color={colors.yellow} />
             <Text style={styles.infoText}>{deal.flightDuration}</Text>
-          </View>
-          <View style={styles.infoChip}>
-            <Ionicons name="calendar-outline" size={12} color={colors.yellow} />
-            <Text style={styles.infoText}>{deal.tripDays}d trip</Text>
           </View>
         </View>
 
@@ -141,20 +177,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
 
-  // Status badge — top left
+  // Status badge — top left, split-flap
   statusBadge: {
     position: 'absolute',
     top: Platform.OS === 'web' ? 70 : 60,
     left: spacing.md,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
     paddingVertical: 4,
     borderRadius: 4,
-  },
-  statusText: {
-    fontFamily: fonts.display,
-    fontSize: 13,
-    color: colors.bg,
-    letterSpacing: 1,
+    borderWidth: 1,
   },
 
   // Price tag — top right
@@ -177,12 +208,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  priceValue: {
-    fontFamily: fonts.display,
-    fontSize: 32,
-    color: colors.yellow,
-    lineHeight: 36,
-  },
 
   // Bottom content
   bottomContent: {
@@ -194,18 +219,14 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'web' ? 100 : 120,
   },
 
-  destination: {
-    fontFamily: fonts.display,
-    fontSize: 48,
-    color: colors.white,
-    letterSpacing: 2,
-    lineHeight: 50,
+  destinationRow: {
+    flexDirection: 'row',
   },
   country: {
     fontFamily: fonts.body,
     fontSize: 14,
     color: colors.muted,
-    marginTop: 2,
+    marginTop: 4,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -222,6 +243,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
+    alignItems: 'center',
   },
   infoChip: {
     flexDirection: 'row',
@@ -230,6 +252,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,8,6,0.5)',
     paddingHorizontal: 8,
     paddingVertical: 4,
+    borderRadius: 4,
+  },
+  flightCodeChip: {
+    backgroundColor: 'rgba(10,8,6,0.5)',
+    paddingHorizontal: 4,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   infoText: {

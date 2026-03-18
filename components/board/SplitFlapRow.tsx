@@ -5,7 +5,7 @@ import SplitFlapChar from './SplitFlapChar';
 interface SplitFlapRowProps {
   text: string;
   maxLength: number;
-  size: 'sm' | 'md';
+  size: 'sm' | 'md' | 'lg';
   color: string;
   align: 'left' | 'right';
   staggerMs?: number;
