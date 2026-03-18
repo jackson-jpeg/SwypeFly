@@ -13,6 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
 import { useDealStore } from '../../../stores/dealStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
+import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../../theme/tokens';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
@@ -330,9 +331,10 @@ export default function FlightSelectionScreen() {
       {!loading && !error && offers.length > 0 && selectedId && (
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.md }]}>
           <Pressable
-            onPress={() =>
-              router.push(`/booking/${id}/passengers?offerId=${selectedId}` as never)
-            }
+            onPress={() => {
+              useBookingFlowStore.getState().setOfferId(selectedId);
+              router.push(`/booking/${id}/seats?offerId=${selectedId}` as never);
+            }}
             style={styles.continueBtn}
           >
             <Text style={styles.continueBtnText}>Continue</Text>
