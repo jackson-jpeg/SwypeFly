@@ -117,6 +117,13 @@ export const pricesQuerySchema = z.object({
     .optional(),
 });
 
+// ─── Live search endpoint ───────────────────────────────────────────
+
+export const searchQuerySchema = z.object({
+  origin: iataCode,
+  destination: iataCode,
+});
+
 // ─── Hotel prices refresh endpoint ───────────────────────────────────
 
 export const hotelPricesQuerySchema = z.object({
