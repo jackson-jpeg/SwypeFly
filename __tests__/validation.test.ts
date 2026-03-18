@@ -79,8 +79,8 @@ describe('feedQuerySchema', () => {
     }
   });
 
-  it('rejects invalid regionFilter', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK', regionFilter: 'mars' });
+  it('rejects regionFilter exceeding max length', () => {
+    const result = validateRequest(feedQuerySchema, { origin: 'JFK', regionFilter: 'a'.repeat(101) });
     expect(result.success).toBe(false);
   });
 });

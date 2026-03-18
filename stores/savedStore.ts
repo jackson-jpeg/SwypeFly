@@ -1,70 +1,44 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createPersistStorage } from '../utils/storage';
+import type { BoardDeal } from '../types/deal';
 
 interface SavedState {
-  savedIds: Set<string>;
-  savedAt: Record<string, number>; // id → timestamp
-  toggleSaved: (id: string) => void;
+  savedIds: string[];
+  savedDeals: BoardDeal[];
+  toggle: (deal: BoardDeal) => void;
   isSaved: (id: string) => boolean;
-  getSavedAt: (id: string) => number | undefined;
-  hydrate: (ids: string[]) => void;
-  clearAll: () => void;
+  clear: () => void;
 }
-
-const storage = createPersistStorage({
-  reviver: (_key: string, value: unknown) => {
-    if (typeof value === 'object' && value !== null && (value as Record<string, unknown>).__set === true) {
-      return new Set((value as { items: string[] }).items);
-    }
-    return value;
-  },
-  replacer: (_key: string, value: unknown) => {
-    if (value instanceof Set) {
-      return { __set: true, items: [...value] };
-    }
-    return value;
-  },
-});
 
 export const useSavedStore = create<SavedState>()(
   persist(
     (set, get) => ({
-      savedIds: new Set(),
-      savedAt: {},
-      toggleSaved: (id) =>
-        set((state) => {
-          const next = new Set(state.savedIds);
-          const nextAt = { ...state.savedAt };
-          if (next.has(id)) {
-            next.delete(id);
-            delete nextAt[id];
-          } else {
-            next.add(id);
-            nextAt[id] = Date.now();
-          }
-          return { savedIds: next, savedAt: nextAt };
-        }),
-      isSaved: (id) => get().savedIds.has(id),
-      getSavedAt: (id) => get().savedAt[id],
-      clearAll: () => set({ savedIds: new Set(), savedAt: {} }),
-      hydrate: (ids) =>
-        set((state) => {
-          // Merge server IDs with any locally saved IDs (preserves guest saves on login)
-          const merged = new Set(state.savedIds);
-          const mergedAt = { ...state.savedAt };
-          const now = Date.now();
-          for (const id of ids) {
-            merged.add(id);
-            if (!mergedAt[id]) mergedAt[id] = now;
-          }
-          return { savedIds: merged, savedAt: mergedAt };
-        }),
+      savedIds: [],
+      savedDeals: [],
+
+      toggle: (deal) => {
+        const { savedIds, savedDeals } = get();
+        if (savedIds.includes(deal.id)) {
+          set({
+            savedIds: savedIds.filter((id) => id !== deal.id),
+            savedDeals: savedDeals.filter((d) => d.id !== deal.id),
+          });
+        } else {
+          set({
+            savedIds: [...savedIds, deal.id],
+            savedDeals: [...savedDeals, deal],
+          });
+        }
+      },
+
+      isSaved: (id) => get().savedIds.includes(id),
+
+      clear: () => set({ savedIds: [], savedDeals: [] }),
     }),
     {
       name: 'sogojet-saved',
-      storage,
-      partialize: (state) => ({ savedIds: state.savedIds, savedAt: state.savedAt }),
+      storage: createPersistStorage(),
     },
   ),
 );

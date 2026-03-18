@@ -1,18 +1,17 @@
-const TRAVELPAYOUTS_MARKER = (process.env.TRAVELPAYOUTS_MARKER || '').trim();
+const TRAVELPAYOUTS_MARKER = (
+  process.env.EXPO_PUBLIC_TRAVELPAYOUTS_MARKER || ''
+).trim();
 
 /**
  * Generate an Aviasales affiliate search link for a flight route.
- * Format: https://www.aviasales.com/search/{origin}{DDMM}{destination}{DDMM}1?marker={MARKER}
- * Returns null if no marker is configured.
+ * Uses EXPO_PUBLIC_TRAVELPAYOUTS_MARKER for client-side access.
  */
 export function generateAviasalesLink(
   origin: string,
   destination: string,
   departureDate?: string,
   returnDate?: string,
-): string | null {
-  if (!TRAVELPAYOUTS_MARKER) return null;
-
+): string {
   const formatDDMM = (dateStr: string): string => {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return '';
@@ -23,9 +22,8 @@ export function generateAviasalesLink(
 
   const depPart = departureDate ? formatDDMM(departureDate) : '';
   const retPart = returnDate ? formatDDMM(returnDate) : '';
-
-  // Build search route: {origin}{DDMM}{destination}{DDMM}{passengers}
   const route = `${origin}${depPart}${destination}${retPart}1`;
+  const marker = TRAVELPAYOUTS_MARKER || 'sogojet';
 
-  return `https://www.aviasales.com/search/${route}?marker=${TRAVELPAYOUTS_MARKER}`;
+  return `https://www.aviasales.com/search/${route}?marker=${marker}`;
 }

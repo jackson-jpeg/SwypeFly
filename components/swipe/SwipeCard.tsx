@@ -1,571 +1,310 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  withSequence,
-  withDelay,
-  Easing,
-  runOnJS,
-} from 'react-native-reanimated';
-import { CardGradient } from './CardGradient';
-import { shareDestination } from '../../utils/share';
-import { successHaptic } from '../../utils/haptics';
-import { colors, layout, fonts } from '../../constants/theme';
-import type { Destination } from '../../types/destination';
+import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { colors, fonts, spacing } from '../../theme/tokens';
+import type { BoardDeal } from '../../types/deal';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+const STATUS_COLORS: Record<BoardDeal['status'], string> = {
+  DEAL: colors.green,
+  HOT: '#E85D4A',
+  NEW: colors.yellow,
+};
 
 interface SwipeCardProps {
-  destination: Destination;
-  isActive: boolean;
-  isPreloaded: boolean;
+  deal: BoardDeal;
   isSaved: boolean;
-  onToggleSave: () => void;
-  index?: number;
+  isFirst?: boolean;
+  onSave: () => void;
+  onBook: () => void;
+  onTap?: () => void;
 }
 
-const DOUBLE_TAP_DELAY = 300;
-const SLIDESHOW_INTERVAL = 4500;
-const STAGGER_DURATION = 350;
-const STAGGER_EASE = Easing.out(Easing.cubic);
-
-// ── SVG Icons (web only) ──
-
-const HeartOutline = (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const HeartFilled = (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-      fill={colors.primary} stroke={colors.primary} strokeWidth="1.8" />
-  </svg>
-);
-
-const ShareIcon = (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
-      stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-function SwipeCardInner({ destination, isActive, isPreloaded, isSaved, onToggleSave, index }: SwipeCardProps) {
-  const shouldLoadImage = isActive || isPreloaded;
-
-  // ── Image slideshow ──
-  const imageList = destination.imageUrls?.length ? destination.imageUrls : [destination.imageUrl];
-  const hasMultipleImages = imageList.length > 1;
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const slideshowTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => { setActiveImageIndex(0); }, [destination.id]);
-
-  useEffect(() => {
-    if (isActive && hasMultipleImages) {
-      slideshowTimerRef.current = setInterval(() => {
-        setActiveImageIndex((prev) => (prev + 1) % imageList.length);
-      }, SLIDESHOW_INTERVAL);
-    }
-    return () => {
-      if (slideshowTimerRef.current) {
-        clearInterval(slideshowTimerRef.current);
-        slideshowTimerRef.current = null;
-      }
-    };
-  }, [isActive, hasMultipleImages, imageList.length]);
-
-  // ── Double-tap (native) ──
-  const lastTapRef = useRef(0);
-
-  // ── Heart burst ──
-  const heartScale = useSharedValue(0);
-  const heartOpacity = useSharedValue(0);
-
-  // ── Card scale (native) ──
-  const cardScale = useSharedValue(isActive ? 1 : 0.97);
-  const prevIsActive = useRef(isActive);
-
-  // ── Native stagger shared values ──
-  const cityY = useSharedValue(isActive ? 0 : 20);
-  const metaY = useSharedValue(isActive ? 0 : 15);
-  const actionsX = useSharedValue(isActive ? 0 : 20);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-
-    if (isActive && !prevIsActive.current) {
-      cardScale.value = 0.97;
-      cardScale.value = withSpring(1, { damping: 20, stiffness: 300, mass: 0.8 });
-      cityY.value = 20;
-      cityY.value = withDelay(50, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
-      metaY.value = 15;
-      metaY.value = withDelay(100, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
-      actionsX.value = 20;
-      actionsX.value = withDelay(80, withTiming(0, { duration: STAGGER_DURATION, easing: STAGGER_EASE }));
-    }
-    prevIsActive.current = isActive;
-  }, [isActive, cardScale, cityY, metaY, actionsX]);
-
-  const cardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
-  const cityAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateY: cityY.value }] }));
-  const metaAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateY: metaY.value }] }));
-  const actionsAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateX: actionsX.value }] }));
-
-  // ── Heart burst (web) ──
-  const [showWebHeart, setShowWebHeart] = useState(false);
-
-  const triggerHeartBurst = useCallback(() => {
-    if (!isSaved) onToggleSave();
-    successHaptic();
-    if (Platform.OS === 'web') {
-      setShowWebHeart(true);
-      setTimeout(() => setShowWebHeart(false), 800);
-    } else {
-      heartOpacity.value = 1;
-      heartScale.value = withSequence(
-        withTiming(1.5, { duration: 300, easing: Easing.out(Easing.back(2)) }),
-        withTiming(0, { duration: 400, easing: Easing.in(Easing.ease) }),
-      );
-      heartOpacity.value = withSequence(
-        withTiming(1, { duration: 300 }),
-        withTiming(0, { duration: 400 }),
-      );
-    }
-  }, [isSaved, onToggleSave, heartScale, heartOpacity]);
-
-  const heartAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
-    opacity: heartOpacity.value,
-  }));
-
-  const handleCardTap = () => { router.push(`/destination/${destination.id}`); };
-  const handleShare = () => {
-    shareDestination(destination.city, destination.country, destination.tagline, destination.id, destination.livePrice ?? destination.flightPrice, destination.currency);
-  };
-
-  const effectivePrice = destination.livePrice ?? destination.flightPrice;
-  const isDeal = destination.livePrice != null && destination.livePrice < destination.flightPrice * 0.85;
-  const savings = isDeal ? Math.round(((destination.flightPrice - destination.livePrice!) / destination.flightPrice) * 100) : 0;
-  // ── Ken Burns effect — cycle through different pan/zoom combos ──
-  const kenBurnsVariants = [
-    { from: 'scale(1) translate(0%, 0%)', to: 'scale(1.15) translate(-2%, -1%)' },
-    { from: 'scale(1.1) translate(-3%, 0%)', to: 'scale(1) translate(1%, 2%)' },
-    { from: 'scale(1) translate(2%, 1%)', to: 'scale(1.12) translate(-1%, -2%)' },
-    { from: 'scale(1.08) translate(0%, -2%)', to: 'scale(1.02) translate(2%, 1%)' },
-  ];
-
-  // ── Horizontal swipe gesture (web) ──
-  const [swipeX, setSwipeX] = useState(0);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const isDragging = useRef(false);
-
-  const SWIPE_THRESHOLD = 80;
-  const swipeLabel = swipeX > SWIPE_THRESHOLD ? 'SAVE' : swipeX < -SWIPE_THRESHOLD ? 'SKIP' : null;
-  const swipeColor = swipeX > SWIPE_THRESHOLD ? '#22C55E' : swipeX < -SWIPE_THRESHOLD ? '#EF4444' : 'transparent';
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const t = e.touches[0];
-    touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
-    isDragging.current = false;
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const t = e.touches[0];
-    const dx = t.clientX - touchStartRef.current.x;
-    const dy = t.clientY - touchStartRef.current.y;
-    if (!isDragging.current && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      isDragging.current = true;
-    }
-    if (isDragging.current) {
-      setSwipeX(dx * 0.6);
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    if (swipeX > SWIPE_THRESHOLD) {
-      if (!isSaved) onToggleSave();
-      successHaptic();
-    }
-    setSwipeX(0);
-    touchStartRef.current = null;
-    isDragging.current = false;
-  }, [swipeX, isSaved, onToggleSave]);
-
-  // ── Web ──
-  if (Platform.OS === 'web') {
-    // Generate unique animation name per card for Ken Burns
-    const kbId = `kb-${destination.id}`;
-
-    return (
-      <div
-        onClick={(e) => { if (!isDragging.current) handleCardTap(); }}
-        onDoubleClick={(e) => { e.stopPropagation(); triggerHeartBurst(); }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          cursor: 'pointer', overflow: 'hidden', backgroundColor: colors.navy,
-          transition: swipeX === 0 ? 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
-          transform: swipeX !== 0
-            ? `translateX(${swipeX}px) rotate(${swipeX * 0.02}deg)`
-            : isActive ? 'scale(1)' : 'scale(0.97)',
-        }}
-      >
-        {/* Dynamic Ken Burns keyframes — per-card unique variants */}
-        <style>{kenBurnsVariants.map((v, i) => `
-          @keyframes ${kbId}-${i} {
-            0% { transform: ${v.from}; }
-            100% { transform: ${v.to}; }
-          }
-        `).join('')}</style>
-
-        {/* Images — stack with crossfade + Ken Burns */}
-        {shouldLoadImage && imageList.map((url, idx) => {
-          const kbVariant = kenBurnsVariants[idx % kenBurnsVariants.length];
-          const isActiveImg = idx === activeImageIndex;
-          return (
-            <img
-              key={url}
-              src={url}
-              alt={idx === 0 ? destination.city : ''}
-              style={{
-                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                objectFit: 'cover',
-                opacity: isActiveImg ? 1 : 0,
-                transition: 'opacity 0.8s ease',
-                zIndex: isActiveImg ? 1 : 0,
-                backgroundColor: colors.navy,
-                animation: isActiveImg && isActive ? `${kbId}-${idx % kenBurnsVariants.length} ${SLIDESHOW_INTERVAL}ms ease-out forwards` : 'none',
-                willChange: isActiveImg ? 'transform' : 'auto',
-              }}
-              loading={idx === 0 ? (isActive ? 'eager' : 'lazy') : 'lazy'}
-              draggable={false}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750';
-              }}
-            />
-          );
-        })}
-
-        {/* Vignette overlay — linear gradient per Paper (bottom-heavy, 500px tall) */}
-        <div style={{
-          position: 'absolute', left: 0, right: 0, bottom: 0, height: 500, zIndex: 2, pointerEvents: 'none',
-          background: 'linear-gradient(to top, rgba(44,31,26,0.95) 0%, rgba(44,31,26,0.7) 30%, rgba(44,31,26,0.3) 60%, transparent 100%)',
-        }} />
-
-        {/* Image indicator dots — bottom of photo area, small circles per Paper */}
-        {hasMultipleImages && (
-          <div style={{
-            position: 'absolute', bottom: 270, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', gap: 6, zIndex: 5, pointerEvents: 'none',
-          }}>
-            {imageList.map((_, i) => (
-              <div key={i} style={{
-                width: i === activeImageIndex ? 8 : 3, height: 3, borderRadius: 1.5,
-                backgroundColor: i === activeImageIndex ? '#fff' : 'rgba(255,255,255,0.3)',
-                transition: 'all 0.3s ease',
-              }} />
-            ))}
-          </div>
-        )}
-
-        {/* Minimal gradient — just enough for text */}
-        <CardGradient />
-
-        {/* Heart burst overlay */}
-        {showWebHeart && (
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%', zIndex: 20, pointerEvents: 'none',
-            animation: 'sg-heart-burst 0.8s ease-out forwards',
-          }}>
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                fill={colors.primary} stroke={colors.primary} strokeWidth="1.2" />
-            </svg>
-          </div>
-        )}
-
-        {/* Swipe label overlay */}
-        {swipeLabel && (
-          <div style={{
-            position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)',
-            zIndex: 25, pointerEvents: 'none',
-            padding: '12px 32px', borderRadius: 16,
-            border: `3px solid ${swipeColor}`,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-          }}>
-            <span style={{
-              color: swipeColor, fontSize: 32, fontWeight: 900, letterSpacing: 4,
-            }}>{swipeLabel}</span>
-          </div>
-        )}
-
-        {/* Right side: action column — Paper spec: right 16, top 340, white 8% bg */}
-        <div
-          style={{
-            position: 'absolute', right: 16, top: 340, zIndex: 10,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Save */}
-          <button
-            onClick={() => onToggleSave()}
-            aria-label={isSaved ? 'Unsave destination' : 'Save destination'}
-            style={{
-              width: 52, height: 52, borderRadius: 26,
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              padding: 0, fontFamily: 'inherit',
-            }}
-          >
-            {isSaved ? HeartFilled : HeartOutline}
-          </button>
-          {/* Share */}
-          <button
-            onClick={handleShare}
-            aria-label="Share destination"
-            style={{
-              width: 52, height: 52, borderRadius: 26,
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,0.12)',
-              padding: 0, fontFamily: 'inherit',
-            }}
-          >
-            {ShareIcon}
-          </button>
-        </div>
-
-        {/* Hero text container — Paper: absolute, bottom 160, left 24, width 280 */}
-        <div
-          style={{
-            position: 'absolute', bottom: 160, left: 24, width: 280, zIndex: 5,
-            display: 'flex', flexDirection: 'column', gap: 8,
-          }}
-        >
-          {/* City — Syne 800, 60px, -0.01em, uppercase */}
-          <h1
-            style={{
-              margin: 0, color: '#fff',
-              fontFamily: `${fonts.display}, sans-serif`, fontWeight: 800,
-              fontSize: 60, letterSpacing: '-0.01em', lineHeight: '58px',
-              textTransform: 'uppercase' as const,
-              textShadow: '0 2px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)',
-              animation: isActive ? 'sg-city-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both' : 'none',
-            }}
-          >
-            {destination.city}
-          </h1>
-
-          {/* Tagline — Inter 400, 16px, lineHeight 20px, white 70% */}
-          <p style={{
-            margin: 0,
-            fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
-            fontSize: 16, lineHeight: '20px',
-            color: 'rgba(255,255,255,0.7)',
-            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-            animation: isActive ? 'sg-meta-enter 0.5s 0.15s ease-out both' : 'none',
-          }}>
-            {destination.tagline}
-          </p>
-
-          {/* Metadata strip — Inter 400, 11px, 0.08em, uppercase, white 45% */}
-          <p style={{
-            margin: 0, fontSize: 11, lineHeight: '14px', display: 'flex', alignItems: 'center',
-            fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
-            textTransform: 'uppercase' as const, letterSpacing: '0.08em',
-            animation: isActive ? 'sg-meta-enter 0.4s 0.2s ease-out both' : 'none',
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.45)' }}>{destination.country}</span>
-            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px', fontSize: 3, lineHeight: '3px' }}>●</span>
-            <span style={{ color: 'rgba(255,255,255,0.45)' }}>{destination.flightDuration?.replace(/\s/g, '') || 'Direct'}</span>
-            <span style={{ color: 'rgba(255,255,255,0.25)', margin: '0 8px', fontSize: 3, lineHeight: '3px' }}>●</span>
-            <span style={{ color: 'rgba(255,255,255,0.45)' }}>{destination.vibeTags?.[0] || 'Travel'}</span>
-          </p>
-        </div>
-
-        {/* Price pill — Paper: absolute, bottom 100, left 24, deepDusk 90%, blur */}
-        <div style={{
-          position: 'absolute', bottom: 100, left: 24, zIndex: 5,
-          display: 'flex', alignItems: 'center', gap: 8,
-          animation: isActive ? 'sg-price-enter 0.5s 0.3s ease-out both' : 'none',
-        }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '12px 22px', borderRadius: 24,
-            backgroundColor: '#2C1F1AE6',
-            border: '1px solid rgba(255,255,255,0.1)',
-            backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          }}>
-            <span style={{
-              fontFamily: `${fonts.body}, sans-serif`, fontWeight: 400,
-              color: '#C9A99A', fontSize: 12,
-            }}>From</span>
-            <span style={{
-              fontFamily: `${fonts.body}, sans-serif`, fontWeight: 700,
-              color: '#F7E8A0', fontSize: 22, letterSpacing: '-0.02em',
-            }}>
-              ${effectivePrice}
-            </span>
-            {destination.priceSource && destination.priceSource !== 'estimate' && (
-              <span style={{
-                fontFamily: `${fonts.body}, sans-serif`, fontWeight: 700,
-                fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-                color: '#7BAF8E',
-              }}>
-                LIVE PRICE
-              </span>
-            )}
-          </div>
-          {isDeal && (
-            <span style={{
-              padding: '6px 12px', borderRadius: 9999,
-              backgroundColor: colors.sunriseButter,
-              color: colors.deepDusk,
-              fontFamily: `${fonts.display}, sans-serif`,
-              fontSize: 12, fontWeight: 700,
-            }}>
-              {savings}% OFF
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Native ──
-  const handleNativeTap = () => {
-    const now = Date.now();
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      lastTapRef.current = 0;
-      triggerHeartBurst();
-    } else {
-      lastTapRef.current = now;
-      setTimeout(() => {
-        if (lastTapRef.current !== 0) { lastTapRef.current = 0; runOnJS(handleCardTap)(); }
-      }, DOUBLE_TAP_DELAY);
-    }
-  };
-
+export default function SwipeCard({ deal, isSaved, isFirst, onSave, onBook, onTap }: SwipeCardProps) {
   return (
-    <Animated.View style={[{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: colors.navy }, cardAnimStyle]}>
-      <Pressable onPress={handleNativeTap} style={{ flex: 1, position: 'relative' }}
-        accessibilityRole="button"
-        accessibilityLabel={`${destination.city}, ${destination.country}. From $${effectivePrice}.`}
-        accessibilityHint="Tap to view details, double tap to save"
-      >
-        {shouldLoadImage && imageList.map((url, idx) => (
-          <Image key={url} source={{ uri: url }}
-            style={{
-              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-              width: '100%', height: '100%',
-              opacity: idx === activeImageIndex ? 1 : 0,
-              zIndex: idx === activeImageIndex ? 1 : 0,
-            }}
-            contentFit="cover"
-            transition={idx === 0 ? (isActive ? 300 : 0) : 800}
-            priority={idx === 0 ? (isActive ? 'high' : 'low') : 'low'}
-            placeholder={idx === 0 ? (destination.blurHash || undefined) : undefined}
-          />
-        ))}
+    <Pressable style={styles.card} onPress={onTap}>
+      {/* Background image */}
+      <Image
+        source={{ uri: deal.imageUrl }}
+        style={StyleSheet.absoluteFillObject}
+        contentFit="cover"
+        placeholder={deal.blurHash ? { blurhash: deal.blurHash } : undefined}
+        transition={400}
+      />
 
-        <CardGradient />
+      {/* Gradient overlay */}
+      <LinearGradient
+        colors={[...colors.cardGradient]}
+        locations={[...colors.cardGradientLocations]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-        {/* Heart burst (native) */}
-        <Animated.View
-          style={[{
-            position: 'absolute', top: '50%', left: '50%',
-            marginLeft: -40, marginTop: -40, zIndex: 20,
-          }, heartAnimStyle]}
-          pointerEvents="none"
-        >
-          <Text style={{ fontSize: 64, textAlign: 'center' }}>❤️</Text>
-        </Animated.View>
+      {/* Status badge */}
+      <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[deal.status] }]}>
+        <Text style={styles.statusText}>{deal.status}</Text>
+      </View>
 
-        {/* Right side: action column — Paper: right 16, top 340, 52×52, white 8% */}
-        <Animated.View style={[{
-          position: 'absolute', right: 16, top: 340, zIndex: 10,
-          alignItems: 'center', gap: 14,
-        }, actionsAnimStyle]}>
-          <Pressable onPress={onToggleSave} hitSlop={12}
-            style={{
-              width: 52, height: 52, borderRadius: 26,
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              alignItems: 'center', justifyContent: 'center',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-            }}>
-            <Text style={{ fontSize: 24 }}>{isSaved ? '❤️' : '🤍'}</Text>
-          </Pressable>
-          <Pressable onPress={handleShare} hitSlop={12}
-            style={{
-              width: 52, height: 52, borderRadius: 26,
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              alignItems: 'center', justifyContent: 'center',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-            }}>
-            <Text style={{ fontSize: 22 }}>↗</Text>
-          </Pressable>
-        </Animated.View>
+      {/* Price tag — top right */}
+      <View style={styles.priceTag}>
+        <Text style={styles.priceLabel}>from</Text>
+        <Text style={styles.priceValue}>{deal.priceFormatted}</Text>
+        <Text style={styles.priceLabel}>round trip</Text>
+      </View>
 
-        {/* Bottom-left: minimal content */}
-        <View style={{
-          position: 'absolute', bottom: 0, left: 0, right: 80, zIndex: 5,
-          paddingHorizontal: layout.cardPaddingHorizontal,
-          paddingBottom: layout.cardPaddingBottomNative,
-        }}>
-          <Animated.View style={cityAnimStyle}>
-            <Text style={{
-              color: '#fff', fontSize: 38, fontWeight: '800', letterSpacing: -0.5,
-              textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 16,
-            }}>
-              {destination.city}
-            </Text>
-          </Animated.View>
+      {/* Bottom content */}
+      <View style={styles.bottomContent}>
+        {/* Destination */}
+        <Text style={styles.destination}>{deal.destination}</Text>
+        <Text style={styles.country}>{deal.country}</Text>
 
-          <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 10 }, metaAnimStyle]}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{destination.country}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>·</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{destination.flightDuration}</Text>
-          </Animated.View>
+        {/* Tagline */}
+        <Text style={styles.tagline} numberOfLines={2}>{deal.tagline}</Text>
 
-          <Animated.View style={[{ marginTop: 14 }, metaAnimStyle]}>
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999,
-              backgroundColor: 'rgba(0,0,0,0.3)', alignSelf: 'flex-start',
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-            }}>
-              <Text style={{ fontSize: 14 }}>{isDeal ? '🔥' : '✈️'}</Text>
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>From ${effectivePrice}</Text>
-            </View>
-          </Animated.View>
+        {/* Flight info row */}
+        <View style={styles.infoRow}>
+          <View style={styles.infoChip}>
+            <Ionicons name="airplane" size={12} color={colors.yellow} />
+            <Text style={styles.infoText}>{deal.airline}</Text>
+          </View>
+          <View style={styles.infoChip}>
+            <Ionicons name="time-outline" size={12} color={colors.yellow} />
+            <Text style={styles.infoText}>{deal.flightDuration}</Text>
+          </View>
+          <View style={styles.infoChip}>
+            <Ionicons name="calendar-outline" size={12} color={colors.yellow} />
+            <Text style={styles.infoText}>{deal.tripDays}d trip</Text>
+          </View>
         </View>
-      </Pressable>
-    </Animated.View>
+
+        {/* Vibe tags */}
+        {deal.vibeTags.length > 0 && (
+          <View style={styles.vibeRow}>
+            {deal.vibeTags.slice(0, 3).map((tag) => (
+              <View key={tag} style={styles.vibeChip}>
+                <Text style={styles.vibeText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Action buttons */}
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={onSave}
+            style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
+          >
+            <Ionicons
+              name={isSaved ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isSaved ? '#E85D4A' : colors.white}
+            />
+            <Text style={[styles.actionLabel, isSaved && { color: '#E85D4A' }]}>
+              {isSaved ? 'Saved' : 'Save'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={onBook}
+            style={({ pressed }) => [styles.bookBtn, pressed && styles.bookPressed]}
+          >
+            <Text style={styles.bookLabel}>Book {deal.priceFormatted}</Text>
+            <Ionicons name="arrow-forward" size={16} color={colors.bg} />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Scroll hint on first card */}
+      {isFirst && (
+        <View style={styles.scrollHint}>
+          <Ionicons name="chevron-up" size={20} color={colors.faint} />
+          <Text style={styles.scrollHintText}>Swipe up for more</Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
-export const SwipeCard = React.memo(SwipeCardInner, (prev, next) => {
-  return (
-    prev.destination.id === next.destination.id &&
-    prev.isActive === next.isActive &&
-    prev.isPreloaded === next.isPreloaded &&
-    prev.isSaved === next.isSaved &&
-    prev.index === next.index
-  );
+const styles = StyleSheet.create({
+  card: {
+    width: SCREEN_W,
+    height: SCREEN_H,
+    backgroundColor: colors.surface,
+  },
+
+  // Status badge — top left
+  statusBadge: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 70 : 60,
+    left: spacing.md,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontFamily: fonts.display,
+    fontSize: 13,
+    color: colors.bg,
+    letterSpacing: 1,
+  },
+
+  // Price tag — top right
+  priceTag: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 70 : 60,
+    right: spacing.md,
+    alignItems: 'center',
+    backgroundColor: 'rgba(10,8,6,0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.yellow + '40',
+  },
+  priceLabel: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  priceValue: {
+    fontFamily: fonts.display,
+    fontSize: 32,
+    color: colors.yellow,
+    lineHeight: 36,
+  },
+
+  // Bottom content
+  bottomContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.md,
+    paddingBottom: Platform.OS === 'web' ? 100 : 120,
+  },
+
+  destination: {
+    fontFamily: fonts.display,
+    fontSize: 48,
+    color: colors.white,
+    letterSpacing: 2,
+    lineHeight: 50,
+  },
+  country: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.muted,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  tagline: {
+    fontFamily: fonts.accent,
+    fontSize: 16,
+    color: colors.whiteDim,
+    marginTop: spacing.sm,
+    lineHeight: 22,
+  },
+
+  // Info chips
+  infoRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(10,8,6,0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  infoText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.whiteDim,
+  },
+
+  // Vibe tags
+  vibeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: spacing.sm,
+  },
+  vibeChip: {
+    backgroundColor: colors.yellow + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  vibeText: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.yellow,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  // Action buttons
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: spacing.lg,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(10,8,6,0.6)',
+  },
+  actionPressed: { opacity: 0.7 },
+  actionLabel: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+    color: colors.white,
+  },
+  bookBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: colors.yellow,
+  },
+  bookPressed: { opacity: 0.85 },
+  bookLabel: {
+    fontFamily: fonts.display,
+    fontSize: 16,
+    color: colors.bg,
+    letterSpacing: 0.5,
+  },
+
+  // Scroll hint
+  scrollHint: {
+    position: 'absolute',
+    bottom: Platform.OS === 'web' ? 70 : 90,
+    alignSelf: 'center',
+    alignItems: 'center',
+    opacity: 0.5,
+  },
+  scrollHintText: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    color: colors.faint,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
 });

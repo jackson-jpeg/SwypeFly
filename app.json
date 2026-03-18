@@ -2,24 +2,22 @@
   "expo": {
     "name": "SoGoJet",
     "slug": "SoGoJet",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "scheme": "sogojet",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "description": "Swipe through incredible travel deals. Discover destinations matched to your style and budget.",
-    "githubUrl": "https://github.com/jacksoncamp/SwypeFly",
+    "description": "Two ways to find your next trip — swipe through deals or flip the departure board.",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F172A"
+      "backgroundColor": "#0A0806"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sogojet.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "SoGoJet needs camera access to scan boarding passes.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
@@ -29,7 +27,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F172A"
+        "backgroundColor": "#0A0806"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.sogojet.app",
@@ -44,8 +42,7 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      "@sentry/react-native"
+      "expo-font"
     ],
     "extra": {
       "eas": {

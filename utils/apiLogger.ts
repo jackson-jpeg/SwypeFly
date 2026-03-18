@@ -1,4 +1,7 @@
-import { captureException } from './sentry';
+// Sentry removed in v2 — log errors to console only
+function captureException(error: unknown, _context?: Record<string, unknown>) {
+  console.error('[Sentry stub]', error);
+}
 
 interface LogEntry {
   level: 'error' | 'warn' | 'info';
