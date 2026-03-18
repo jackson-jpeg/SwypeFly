@@ -962,6 +962,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ destinations: page, nextCursor });
   } catch (err) {
     logApiError('api/feed', err);
-    return res.status(500).json({ error: 'Failed to load feed' });
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: 'Failed to load feed', debug: message });
   }
 }
