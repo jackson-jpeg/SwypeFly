@@ -18,6 +18,7 @@ import { useSavedStore } from '../../stores/savedStore';
 import { airports, type Airport } from '../../data/airports';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { successHaptic } from '../../utils/haptics';
+import SplitFlapRow from '../../components/board/SplitFlapRow';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -107,9 +108,16 @@ export default function SettingsScreen() {
             <Text style={styles.rowHint}>Deals are priced from this city</Text>
           </View>
           <View style={styles.rowRight}>
-            <Text style={styles.rowValue}>
-              {settings.departureCode} · {settings.departureCity}
-            </Text>
+            <SplitFlapRow
+              text={settings.departureCode}
+              maxLength={3}
+              size="md"
+              color={colors.yellow}
+              align="left"
+              startDelay={0}
+              animate={true}
+            />
+            <Text style={styles.rowCityLabel}> · {settings.departureCity}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />
           </View>
         </Pressable>
@@ -237,6 +245,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 28,
     marginBottom: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.green + '30',
+    paddingBottom: 6,
   },
   row: {
     backgroundColor: colors.surface,
@@ -254,6 +265,7 @@ const styles = StyleSheet.create({
   rowHint: { fontFamily: fonts.body, fontSize: 11, color: colors.faint, marginTop: 2 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowValue: { fontFamily: fonts.body, fontSize: 14, color: colors.green },
+  rowCityLabel: { fontFamily: fonts.body, fontSize: 14, color: colors.green },
 
   // Airport picker inline
   inputWrapper: {

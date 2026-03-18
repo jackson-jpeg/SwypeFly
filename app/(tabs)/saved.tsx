@@ -21,9 +21,10 @@ export default function SavedScreen() {
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: BoardDeal }) => (
+    ({ item, index }: { item: BoardDeal; index: number }) => (
       <SavedCard
         deal={item}
+        index={index}
         onPress={() => handlePress(item)}
         onRemove={() => toggle(item)}
       />

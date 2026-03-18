@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts, spacing } from '../../theme/tokens';
+import SplitFlapRow from '../board/SplitFlapRow';
 import type { BoardDeal } from '../../types/deal';
 
 const CARD_GAP = 12;
@@ -11,11 +12,12 @@ const CARD_H = CARD_W * 1.35;
 
 interface SavedCardProps {
   deal: BoardDeal;
+  index?: number;
   onPress: () => void;
   onRemove: () => void;
 }
 
-export default function SavedCard({ deal, onPress, onRemove }: SavedCardProps) {
+export default function SavedCard({ deal, index = 0, onPress, onRemove }: SavedCardProps) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <Image
@@ -38,12 +40,28 @@ export default function SavedCard({ deal, onPress, onRemove }: SavedCardProps) {
 
       {/* Price */}
       <View style={styles.priceBadge}>
-        <Text style={styles.priceText}>{deal.priceFormatted}</Text>
+        <SplitFlapRow
+          text={deal.priceFormatted || ''}
+          maxLength={6}
+          size="sm"
+          color={colors.yellow}
+          align="left"
+          startDelay={index * 50 + 100}
+          animate={true}
+        />
       </View>
 
       {/* Bottom info */}
       <View style={styles.bottom}>
-        <Text style={styles.city} numberOfLines={1}>{deal.destination}</Text>
+        <SplitFlapRow
+          text={deal.destination || ''}
+          maxLength={10}
+          size="sm"
+          color={colors.white}
+          align="left"
+          startDelay={index * 50}
+          animate={true}
+        />
         <Text style={styles.country} numberOfLines={1}>{deal.country}</Text>
         <View style={styles.metaRow}>
           <Text style={styles.meta}>{deal.airline}</Text>
@@ -86,24 +104,12 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 4,
   },
-  priceText: {
-    fontFamily: fonts.display,
-    fontSize: 16,
-    color: colors.yellow,
-  },
-
   bottom: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     padding: 10,
-  },
-  city: {
-    fontFamily: fonts.display,
-    fontSize: 18,
-    color: colors.white,
-    letterSpacing: 1,
   },
   country: {
     fontFamily: fonts.body,

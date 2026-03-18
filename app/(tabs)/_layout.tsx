@@ -21,7 +21,7 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontFamily: fonts.display,
           fontSize: 10,
-          letterSpacing: 1,
+          letterSpacing: 1.5,
         },
       }}
     >

@@ -5,6 +5,7 @@ import { useDealStore } from '../../stores/dealStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import SwipeFeed from '../../components/swipe/SwipeFeed';
 import SkeletonCard from '../../components/swipe/SkeletonCard';
+import SplitFlapRow from '../../components/board/SplitFlapRow';
 import { colors, fonts } from '../../theme/tokens';
 
 export default function FeedScreen() {
@@ -31,8 +32,16 @@ export default function FeedScreen() {
         <SkeletonCard />
       ) : deals.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🌎</Text>
-          <Text style={styles.emptyTitle}>No deals found</Text>
+          <SplitFlapRow
+            text="NO FLIGHTS"
+            maxLength={12}
+            size="lg"
+            color={colors.muted}
+            align="left"
+            startDelay={0}
+            staggerMs={50}
+            animate={true}
+          />
           <Text style={styles.emptySubtitle}>
             {error
               ? 'Check your connection and try again'
@@ -95,12 +104,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 80,
-  },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: {
-    fontFamily: fonts.display,
-    fontSize: 22,
-    color: colors.muted,
   },
   emptySubtitle: {
     fontFamily: fonts.body,
