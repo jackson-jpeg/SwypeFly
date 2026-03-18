@@ -1,8 +1,7 @@
 {
-  "buildCommand": "cd app-v2 && npm install && npx vite build",
-  "outputDirectory": "app-v2/dist",
+  "buildCommand": "npx expo export --platform web",
+  "outputDirectory": "dist",
   "framework": null,
-  "installCommand": "echo 'install handled in buildCommand'",
   "headers": [
     {
       "source": "/assets/(.*).map",
