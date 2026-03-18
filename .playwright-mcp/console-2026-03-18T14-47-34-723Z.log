@@ -1,0 +1,27 @@
+[     254ms] [WARNING] "textShadow*" style props are deprecated. Use "textShadow". @ http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:23599
+[     344ms] [WARNING] props.pointerEvents is deprecated. Use style.pointerEvents @ http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:23599
+[   85707ms] [ERROR] %o
+
+%s
+
+%s
+ ReferenceError: isSaved is not defined
+    at SwipeFeed (http://localhost:8082/components/swipe/SwipeFeed.bundle//&platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable&minify=false&modulesOnly=true&runModule=false&shallow=true:92:16)
+    at react-stack-bottom-frame (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:16658:20)
+    at renderWithHooks (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:6868:22)
+    at updateFunctionComponent (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:8561:19)
+    at beginWork (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:9147:18)
+    at runWithFiberInDEV (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:4640:70)
+    at performUnitOfWork (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:11220:95)
+    at workLoopSync (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:11113:40)
+    at renderRootSync (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:11097:9)
+    at performWorkOnRoot (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:10861:44)
+    at performSyncWorkOnRoot (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:11825:7)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:11744:308)
+    at flushSyncWork$1 (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:10975:84)
+    at Object.scheduleRefresh (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:3608:9)
+    at http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:70735:23
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:70727:32)
+    at Object.performReactRefresh (http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:70494:27)
+    at http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:429:21 The above error occurred in the <SwipeFeed> component. React will try to recreate this component tree from scratch using the error boundary you provided, LogBoxStateSubscription. @ http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:906

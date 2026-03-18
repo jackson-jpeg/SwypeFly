@@ -1,0 +1,3 @@
+[     966ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://www.sogojet.com/api/booking?action=search:0
+[    2151ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://www.sogojet.com/api/booking?action=search:0
+[    4363ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://www.sogojet.com/api/booking?action=search:0

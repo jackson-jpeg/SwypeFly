@@ -1,0 +1,2 @@
+[     665ms] [WARNING] "textShadow*" style props are deprecated. Use "textShadow". @ http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:23599
+[     873ms] [WARNING] props.pointerEvents is deprecated. Use style.pointerEvents @ http://localhost:8082/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:23599

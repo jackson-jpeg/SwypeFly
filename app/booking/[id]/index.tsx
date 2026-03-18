@@ -333,7 +333,7 @@ export default function FlightSelectionScreen() {
           <Pressable
             onPress={() => {
               useBookingFlowStore.getState().setOfferId(selectedId);
-              router.push(`/booking/${id}/seats?offerId=${selectedId}` as never);
+              router.push(`/booking/${id}/passengers?offerId=${selectedId}` as never);
             }}
             style={styles.continueBtn}
           >

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoGoJet — Typography Refined</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a1a; color: #fff; font-family: 'Inter', system-ui, sans-serif; }
+  .header { padding: 32px 24px 16px; text-align: center; }
+  .header h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: rgba(255,255,255,0.45); }
+
+  .phone-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 16px 24px 40px;
+  }
+  .phone {
+    width: 375px;
+    background: #FAFAF7;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    padding: 32px 24px;
+  }
+  .divider { height: 1px; background: #E8E4DC; margin: 22px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Typography — Refined</h1>
+  <p>Current fonts (Syne + Inter + Playfair) with fixes: city title fits, section headings softened</p>
+</div>
+
+<div class="phone-wrapper">
+  <div class="phone">
+
+    <!-- Section label -->
+    <span style="font-family: 'Inter'; font-size: 10px; font-weight: 600; color: #8B9D95; text-transform: uppercase; letter-spacing: 0.12em;">Destination</span>
+
+    <!-- City name — Syne, scaled to fit -->
+    <h2 style="font-family: 'Syne', sans-serif; font-size: 34px; font-weight: 800; color: #1A2F27; line-height: 1.05; letter-spacing: -0.02em; text-transform: uppercase; margin-top: 6px;">BARCELONA</h2>
+    <p style="font-family: 'Inter'; font-size: 13px; color: #8B9D95; margin-top: 6px;">Spain · Culture · Coastal · Mediterranean</p>
+
+    <div class="divider"></div>
+
+    <!-- Price section -->
+    <span style="font-family: 'Inter'; font-size: 10px; font-weight: 600; color: #8B9D95; text-transform: uppercase; letter-spacing: 0.12em;">Best Flight Deal</span>
+    <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+      <span style="font-family: 'Inter'; font-size: 48px; font-weight: 800; color: #1A2F27; letter-spacing: -0.03em; line-height: 1;">$347</span>
+      <span style="font-family: 'Inter'; font-size: 14px; color: #C9A99A; text-decoration: line-through;">$449</span>
+    </div>
+    <p style="font-family: 'Inter'; font-size: 12px; color: #8B9D95; margin-top: 4px;">TPA → BCN · Jun 12–17 · Delta · Economy</p>
+
+    <div class="divider"></div>
+
+    <!-- Quote — Playfair -->
+    <p style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; color: #5C4033; line-height: 1.5; font-style: italic;">
+      "A city where Gothic spires meet Gaudí's dreamscapes, and every alley leads to another perfect bite."
+    </p>
+    <span style="font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 600; color: #8B9D95; margin-top: 6px; display: block; letter-spacing: 0.08em;">— SOGOJET EDITORS</span>
+
+    <div class="divider"></div>
+
+    <!-- Section heading — Inter medium weight, not Syne uppercase -->
+    <h3 style="font-family: 'Inter'; font-size: 18px; font-weight: 700; color: #1A2F27; line-height: 1.2;">About Barcelona</h3>
+    <p style="font-family: 'Inter'; font-size: 15px; color: #5C4033; line-height: 1.65; margin-top: 8px;">
+      Barcelona awaits with incredible experiences and unforgettable moments. From the beaches of Barceloneta to the streets of the Gothic Quarter, this city blends history with modern energy.
+    </p>
+
+    <div class="divider"></div>
+
+    <!-- Another section to show the pattern -->
+    <h3 style="font-family: 'Inter'; font-size: 18px; font-weight: 700; color: #1A2F27; line-height: 1.2;">Suggested Itinerary</h3>
+    <div style="margin-top: 10px; padding: 14px; background: #F5F2EC; border-radius: 12px;">
+      <span style="font-family: 'Inter'; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8B9D95;">Day 1</span>
+      <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-family: 'Inter'; font-size: 14px; color: #5C4033;">• La Sagrada Familia</span>
+        <span style="font-family: 'Inter'; font-size: 14px; color: #5C4033;">• Gothic Quarter walking tour</span>
+        <span style="font-family: 'Inter'; font-size: 14px; color: #5C4033;">• Tapas at Can Paixano</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Top Restaurants -->
+    <h3 style="font-family: 'Inter'; font-size: 18px; font-weight: 700; color: #1A2F27; line-height: 1.2;">Top Restaurants</h3>
+    <div style="display: flex; gap: 10px; margin-top: 10px; overflow-x: auto;">
+      <div style="min-width: 140px; padding: 12px; background: #F5F2EC; border-radius: 12px;">
+        <span style="font-family: 'Inter'; font-size: 13px; font-weight: 600; color: #1A2F27;">Can Paixano</span>
+        <div style="font-family: 'Inter'; font-size: 11px; color: #8B9D95; margin-top: 2px;">Tapas</div>
+        <div style="font-family: 'Inter'; font-size: 12px; font-weight: 700; color: #3D8B6A; margin-top: 4px;">4.7 ★★★★★</div>
+      </div>
+      <div style="min-width: 140px; padding: 12px; background: #F5F2EC; border-radius: 12px;">
+        <span style="font-family: 'Inter'; font-size: 13px; font-weight: 600; color: #1A2F27;">El Nacional</span>
+        <div style="font-family: 'Inter'; font-size: 11px; color: #8B9D95; margin-top: 2px;">Spanish</div>
+        <div style="font-family: 'Inter'; font-size: 12px; font-weight: 700; color: #3D8B6A; margin-top: 4px;">4.5 ★★★★★</div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="margin-top: 24px; height: 48px; border-radius: 24px; background: #1A2F27; display: flex; align-items: center; justify-content: center;">
+      <span style="font-family: 'Inter'; font-size: 14px; font-weight: 600; color: #FAFAF7;">Find Flights</span>
+    </div>
+
+  </div>
+</div>
+
+<div style="text-align: center; padding: 0 24px 16px;">
+  <p style="font-size: 14px; color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto; line-height: 1.6;">
+    <strong style="color: #fff;">Changes from current:</strong><br>
+    • Syne 800 uppercase reserved for city name + logo only<br>
+    • Section headings → Inter 700, title case (not Syne uppercase)<br>
+    • City name sized at 34px to fit within frame<br>
+    • Everything else stays: Inter body, Playfair italic quotes
+  </p>
+</div>
+
+</body>
+</html>

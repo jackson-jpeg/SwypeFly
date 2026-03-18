@@ -1,0 +1,647 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, ScrollView, Text, Pressable, Platform, useWindowDimensions } from 'react-native';
+import { router } from 'expo-router';
+import { SwipeCard } from './SwipeCard';
+import { SkeletonCard } from './SkeletonCard';
+import { SearchOverlay } from './SearchOverlay';
+import { WelcomeOverlay } from './WelcomeOverlay';
+import { DealAlertBanner } from './DealAlertBanner';
+import { DealsTicker } from './DealsTicker';
+import { TrendingSection } from './TrendingSection';
+import { useSwipeFeed, recordSwipe } from '../../hooks/useSwipeFeed';
+import { useSaveDestination } from '../../hooks/useSaveDestination';
+import { useFeedStore, SortPreset, REGION_OPTIONS, RegionFilter } from '../../stores/feedStore';
+import { useUIStore } from '../../stores/uiStore';
+import { mediumHaptic } from '../../utils/haptics';
+import { PRELOAD_AHEAD, PRELOAD_BEHIND } from '../../constants/layout';
+import { ErrorState } from '../common/ErrorState';
+import { colors, fonts } from '../../constants/theme';
+import { MapView } from './MapView';
+import type { VibeTag } from '../../types/destination';
+
+// ── Approximate city coords for mini-map (normalized 0-1 on a world projection) ──
+const CITY_COORDS: Record<string, [number, number]> = {
+  'Paris': [0.51, 0.28], 'London': [0.50, 0.25], 'Tokyo': [0.86, 0.33],
+  'Bangkok': [0.77, 0.45], 'Rome': [0.53, 0.31], 'Barcelona': [0.51, 0.31],
+  'Bali': [0.81, 0.55], 'Dubai': [0.63, 0.38], 'New York': [0.28, 0.30],
+  'Sydney': [0.88, 0.70], 'Istanbul': [0.58, 0.31], 'Lisbon': [0.48, 0.32],
+  'Mexico City': [0.20, 0.42], 'Buenos Aires': [0.30, 0.72], 'Cairo': [0.58, 0.37],
+  'Marrakech': [0.49, 0.35], 'Cape Town': [0.55, 0.72], 'Seoul': [0.84, 0.33],
+  'Singapore': [0.78, 0.51], 'Amsterdam': [0.52, 0.26], 'Prague': [0.54, 0.27],
+  'Cancún': [0.21, 0.41], 'Rio de Janeiro': [0.33, 0.64], 'Reykjavik': [0.46, 0.17],
+  'Athens': [0.56, 0.33], 'Havana': [0.22, 0.39], 'Lima': [0.24, 0.57],
+  'Nairobi': [0.60, 0.51], 'Mumbai': [0.70, 0.42], 'Hanoi': [0.79, 0.41],
+};
+
+const VIBE_CHIPS: { tag: VibeTag; label: string; emoji: string }[] = [
+  { tag: 'beach', label: 'Beach', emoji: '🏖️' },
+  { tag: 'city', label: 'City', emoji: '🏙️' },
+  { tag: 'adventure', label: 'Adventure', emoji: '⛰️' },
+  { tag: 'culture', label: 'Culture', emoji: '🏛️' },
+  { tag: 'romantic', label: 'Romantic', emoji: '💕' },
+  { tag: 'budget', label: 'Budget', emoji: '💰' },
+];
+
+// ── Animated counter hook ──
+function useAnimatedCounter(target: number, duration = 1200) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    let start = 0;
+    const startTime = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setVal(Math.round(eased * target));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, duration]);
+  return val;
+}
+
+function MiniMap({ cities, onClose }: { cities: string[]; onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 150,
+        backgroundColor: 'rgba(44,31,26,0.85)',
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        animation: 'sg-fade-in 0.3s ease-out',
+      }}
+    >
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '90%', maxWidth: 600, aspectRatio: '2/1', position: 'relative',
+        borderRadius: 20, overflow: 'hidden',
+        background: `linear-gradient(135deg, ${colors.deepDusk} 0%, #3D2E24 100%)`,
+        border: `1px solid rgba(168,196,184,0.2)`,
+        boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
+      }}>
+        {/* Simple world outline hint */}
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.08, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 180 }}>🌍</span>
+        </div>
+        {/* Grid lines */}
+        {[0.25, 0.5, 0.75].map(y => (
+          <div key={`h${y}`} style={{ position: 'absolute', top: `${y*100}%`, left: 0, right: 0, height: 1, backgroundColor: 'rgba(168,196,184,0.06)' }} />
+        ))}
+        {[0.25, 0.5, 0.75].map(x => (
+          <div key={`v${x}`} style={{ position: 'absolute', left: `${x*100}%`, top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(168,196,184,0.06)' }} />
+        ))}
+        {/* City dots */}
+        {cities.map(city => {
+          const coords = CITY_COORDS[city];
+          if (!coords) return null;
+          return (
+            <div key={city} style={{
+              position: 'absolute', left: `${coords[0]*100}%`, top: `${coords[1]*100}%`,
+              transform: 'translate(-50%, -50%)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+            }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: 4, backgroundColor: colors.sageDrift,
+                boxShadow: `0 0 8px rgba(168,196,184,0.6), 0 0 16px rgba(168,196,184,0.3)`,
+              }} />
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: 600, whiteSpace: 'nowrap' }}>{city}</span>
+            </div>
+          );
+        })}
+        {/* Label */}
+        <div style={{ position: 'absolute', top: 12, left: 16 }}>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' as const }}>
+            Your destinations
+          </span>
+        </div>
+        <div style={{ position: 'absolute', bottom: 12, right: 16, color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
+          {cities.length} cities · tap anywhere to close
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EndOfFeedCard({ destCount, countries, onShuffle, onSaved }: {
+  destCount: number; countries: string[]; onShuffle: () => void; onSaved: () => void;
+}) {
+  const animatedDest = useAnimatedCounter(destCount);
+  const animatedCountries = useAnimatedCounter(countries.length);
+
+  return (
+    <div className="sg-card-snap" style={{
+      height: '100vh', width: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: colors.duskSand,
+    }}>
+      <div style={{ textAlign: 'center', padding: '0 32px' }}>
+        <div style={{ fontSize: 56, marginBottom: 20, animation: 'sg-float 3s ease-in-out infinite' }}>🌍</div>
+        <p style={{
+          margin: 0, color: colors.deepDusk, fontSize: 26, fontWeight: 800,
+          letterSpacing: -0.5, marginBottom: 24,
+          fontFamily: `${fonts.display}, sans-serif`,
+        }}>
+          Journey Complete!
+        </p>
+        {/* Stats row — V4 warm palette */}
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginBottom: 32 }}>
+          <div style={{
+            background: colors.paleHorizon, border: `1px solid ${colors.warmDusk}`,
+            borderRadius: 16, padding: '20px 28px', textAlign: 'center',
+            animation: 'sg-stats-pulse 2s ease-in-out infinite',
+          }}>
+            <div style={{ color: colors.deepDusk, fontSize: 36, fontWeight: 800, fontFamily: `${fonts.display}, sans-serif` }}>{animatedDest}</div>
+            <div style={{ color: colors.text.muted, fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Destinations</div>
+          </div>
+          <div style={{
+            background: colors.seafoamMist, border: `1px solid ${colors.sageDrift}`,
+            borderRadius: 16, padding: '20px 28px', textAlign: 'center',
+            animation: 'sg-stats-pulse 2s 0.3s ease-in-out infinite',
+          }}>
+            <div style={{ color: colors.deepDusk, fontSize: 36, fontWeight: 800, fontFamily: `${fonts.display}, sans-serif` }}>{animatedCountries}</div>
+            <div style={{ color: colors.text.muted, fontSize: 12, fontWeight: 600, marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Countries</div>
+          </div>
+        </div>
+        <p style={{ margin: '0 0 20px 0', color: colors.text.muted, fontSize: 14, lineHeight: 1.5 }}>
+          Shuffle for a fresh feed, or try a different vibe.
+        </p>
+        {/* Quick filter chips */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
+          {VIBE_CHIPS.map(({ tag, label, emoji }) => (
+            <button
+              key={tag}
+              onClick={() => {
+                useFeedStore.getState().setVibeFilter(tag);
+              }}
+              style={{
+                padding: '6px 14px', borderRadius: 9999,
+                backgroundColor: colors.paleHorizon,
+                border: `1px solid ${colors.warmDusk}`,
+                color: colors.deepDusk, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s',
+                fontFamily: 'inherit',
+              }}
+            >{emoji} {label}</button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button
+            onClick={onShuffle}
+            style={{
+              background: colors.deepDusk, color: colors.paleHorizon,
+              border: 'none', borderRadius: 14,
+              padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+              fontFamily: `${fonts.body}, sans-serif`,
+            }}
+          >
+            Shuffle Feed
+          </button>
+          <button
+            onClick={onSaved}
+            style={{
+              background: 'transparent', color: colors.deepDusk,
+              border: `1.5px solid ${colors.secondaryBorder}`, borderRadius: 12,
+              padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+              fontFamily: `${fonts.body}, sans-serif`,
+            }}
+          >
+            Saved
+          </button>
+        </div>
+        <button
+          onClick={() => router.push('/quiz')}
+          style={{
+            marginTop: 16, padding: '10px 20px', borderRadius: 9999,
+            backgroundColor: 'rgba(168,196,184,0.15)', border: `1px solid ${colors.sageDrift}`,
+            color: colors.deepDusk, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Take the Travel Quiz
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function SwipeFeed() {
+  const { height: screenHeight } = useWindowDimensions();
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSwipeFeed();
+  const { toggle, isSaved } = useSaveDestination();
+  const setCurrentIndex = useFeedStore((s) => s.setCurrentIndex);
+  const markViewed = useFeedStore((s) => s.markViewed);
+  const refreshFeed = useFeedStore((s) => s.refreshFeed);
+  const sortPreset = useFeedStore((s) => s.sortPreset);
+  const setSortPreset = useFeedStore((s) => s.setSortPreset);
+  const departureCode = useUIStore((s) => s.departureCode);
+  const departureCity = useUIStore((s) => s.departureCity);
+  const regionFilter = useFeedStore((s) => s.regionFilter);
+  const setRegionFilter = useFeedStore((s) => s.setRegionFilter);
+  const maxPrice = useFeedStore((s) => s.maxPrice);
+  const setMaxPrice = useFeedStore((s) => s.setMaxPrice);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [regionOpen, setRegionOpen] = useState(false);
+  const [budgetOpen, setBudgetOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTrending, setShowTrending] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [vibeFilter, setVibeFilter] = useState<VibeTag | null>(null);
+  const [showMiniMap, setShowMiniMap] = useState(false);
+  const [showFullMap, setShowFullMap] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const webScrollRef = useRef<HTMLDivElement>(null);
+  const activeIndexRef = useRef(0);
+  const cardEnterTimeRef = useRef<number>(Date.now());
+
+  const allDestinations = useMemo(
+    () => data?.pages.flatMap((page) => page.destinations) ?? [],
+    [data],
+  );
+
+  // Apply vibe filter
+  const destinations = useMemo(() => {
+    if (!vibeFilter) return allDestinations;
+    return allDestinations.filter(d => d.vibeTags.includes(vibeFilter));
+  }, [allDestinations, vibeFilter]);
+
+  // Unique countries for end card
+  const uniqueCountries = useMemo(
+    () => [...new Set(destinations.map(d => d.country))],
+    [destinations],
+  );
+
+  // Cities for mini-map
+  const cityNames = useMemo(() => destinations.map(d => d.city), [destinations]);
+
+  const handleToggleSave = useCallback(
+    (destId: string) => {
+      const dest = destinations.find((d) => d.id === destId);
+      if (dest && !isSaved(destId)) {
+        const timeSpent = Date.now() - cardEnterTimeRef.current;
+        recordSwipe(destId, 'saved', timeSpent, dest.livePrice ?? dest.flightPrice);
+      }
+      toggle(destId);
+    },
+    [destinations, isSaved, toggle],
+  );
+
+  const [showHint, setShowHint] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    try {
+      if (!localStorage.getItem('sg-swiped')) setShowHint(true);
+    } catch {}
+  }, []);
+
+  // Scroll-snap CSS now in global.css — no runtime style injection needed
+
+  // Image preloading for web
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !destinations.length) return;
+    for (let i = activeIndex + 1; i <= activeIndex + 3 && i < destinations.length; i++) {
+      const img = new window.Image();
+      img.src = destinations[i].imageUrl;
+    }
+  }, [activeIndex, destinations]);
+
+  // Keyboard nav
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const container = webScrollRef.current;
+      if (!container) return;
+      const h = window.innerHeight;
+      const total = destinations.length + (hasNextPage ? 0 : 1);
+      if (e.key === 'ArrowDown' || e.key === ' ') {
+        e.preventDefault();
+        container.scrollTo({ top: Math.min(activeIndexRef.current + 1, total - 1) * h, behavior: 'smooth' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        container.scrollTo({ top: Math.max(activeIndexRef.current - 1, 0) * h, behavior: 'smooth' });
+      } else if (e.key === 's' || e.key === 'S') {
+        const current = destinations[activeIndexRef.current];
+        if (current) handleToggleSave(current.id);
+      } else if (e.key === 'Enter') {
+        const current = destinations[activeIndexRef.current];
+        if (current) router.push(`/destination/${current.id}`);
+      } else if (e.key === '/' || e.key === 'f') {
+        e.preventDefault();
+        setSearchOpen(true);
+      } else if (e.key === '?') {
+        setShowShortcuts(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [destinations, hasNextPage, handleToggleSave]);
+
+  const handleWebScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLDivElement;
+      const index = Math.round(target.scrollTop / window.innerHeight);
+      if (index !== activeIndexRef.current && index >= 0) {
+        const prevIndex = activeIndexRef.current;
+        if (prevIndex < destinations.length) {
+          const timeSpent = Date.now() - cardEnterTimeRef.current;
+          const prevDest = destinations[prevIndex];
+          recordSwipe(prevDest.id, timeSpent < 1500 ? 'skipped' : 'viewed', timeSpent, prevDest.livePrice ?? prevDest.flightPrice);
+        }
+        cardEnterTimeRef.current = Date.now();
+        activeIndexRef.current = index;
+        setActiveIndex(index);
+        setCurrentIndex(index);
+        if (index < destinations.length) markViewed(destinations[index].id);
+        mediumHaptic();
+        if (showHint && index > 0) {
+          setShowHint(false);
+          try { localStorage.setItem('sg-swiped', '1'); } catch {}
+        }
+        if (index >= destinations.length - 5 && hasNextPage && !isFetchingNextPage) fetchNextPage();
+      }
+    },
+    [destinations, setCurrentIndex, markViewed, hasNextPage, isFetchingNextPage, fetchNextPage, showHint],
+  );
+
+  const handleNativeScroll = useCallback(
+    (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+      const index = Math.round(event.nativeEvent.contentOffset.y / screenHeight);
+      if (index !== activeIndexRef.current && index >= 0 && index < destinations.length) {
+        const prevIndex = activeIndexRef.current;
+        if (prevIndex < destinations.length) {
+          const timeSpent = Date.now() - cardEnterTimeRef.current;
+          const prevDest = destinations[prevIndex];
+          recordSwipe(prevDest.id, timeSpent < 1500 ? 'skipped' : 'viewed', timeSpent, prevDest.livePrice ?? prevDest.flightPrice);
+        }
+        cardEnterTimeRef.current = Date.now();
+        activeIndexRef.current = index;
+        setActiveIndex(index);
+        setCurrentIndex(index);
+        markViewed(destinations[index].id);
+        mediumHaptic();
+        if (index >= destinations.length - 5 && hasNextPage && !isFetchingNextPage) fetchNextPage();
+      }
+    },
+    [destinations, screenHeight, setCurrentIndex, markViewed, hasNextPage, isFetchingNextPage, fetchNextPage],
+  );
+
+  const resetToTop = useCallback(() => {
+    webScrollRef.current?.scrollTo({ top: 0 });
+    setActiveIndex(0);
+    activeIndexRef.current = 0;
+  }, []);
+
+  if (isLoading) return <SkeletonCard />;
+
+  if (isError) {
+    if (Platform.OS === 'web') {
+      return (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: '100vh', backgroundColor: colors.duskSand, flexDirection: 'column', gap: 16,
+        }}>
+          <span style={{ fontSize: 48 }}>😵</span>
+          <span style={{ color: colors.deepDusk, fontSize: 18, fontWeight: '600', fontFamily: `${fonts.display}, sans-serif` }}>
+            Something unexpected happened
+          </span>
+          <button onClick={() => refetch()} style={{
+            background: colors.deepDusk, color: '#fff', border: 'none', borderRadius: 12,
+            padding: '12px 32px', fontSize: 16, fontWeight: '700', cursor: 'pointer',
+            fontFamily: `${fonts.display}, sans-serif`,
+          }}>Try Again</button>
+        </div>
+      );
+    }
+    return <ErrorState message="Failed to load destinations" onRetry={() => refetch()} />;
+  }
+
+  // ── Empty state when filters yield no results ──
+  if (destinations.length === 0 && !isLoading && Platform.OS === 'web') {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        height: '100vh', backgroundColor: colors.duskSand, padding: 32, textAlign: 'center',
+      }}>
+        <span style={{ fontSize: 56, marginBottom: 16 }}>🔍</span>
+        <span style={{ color: colors.deepDusk, fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: `${fonts.display}, sans-serif` }}>
+          No destinations found
+        </span>
+        <span style={{ color: colors.text.muted, fontSize: 14, lineHeight: 1.6, maxWidth: 320, marginBottom: 24, fontFamily: `${fonts.body}, sans-serif` }}>
+          Try adjusting your filters to see more results.
+        </span>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => {
+              useFeedStore.getState().setVibeFilter(null);
+              useFeedStore.getState().setMaxPrice(null);
+              useFeedStore.getState().setRegionFilter('all');
+            }}
+            style={{
+              padding: '12px 28px', borderRadius: 9999, border: 'none',
+              background: colors.deepDusk, color: '#fff', fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', fontFamily: `${fonts.display}, sans-serif`,
+            }}
+          >Clear All Filters</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Web ──
+  if (Platform.OS === 'web') {
+    return (
+      <>
+      <WelcomeOverlay />
+      {showFullMap && <MapView destinations={destinations} onClose={() => setShowFullMap(false)} />}
+      {showMiniMap && <MiniMap cities={cityNames} onClose={() => setShowMiniMap(false)} />}
+      <div
+        ref={webScrollRef}
+        className="sg-feed"
+        style={{ height: '100vh', width: '100%', overflowY: 'scroll', scrollbarWidth: 'none', position: 'relative' }}
+        onScroll={handleWebScroll}
+      >
+        <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
+
+        {/* Virtualized: only render cards within ±3 of active index, use spacer divs for the rest */}
+        {activeIndex > 3 && (
+          <div style={{ height: `${(activeIndex - 3) * 100}vh`, width: '100%' }} />
+        )}
+        {destinations.map((destination, index) => {
+          // Only render cards within render window
+          if (index < activeIndex - 3 || index > activeIndex + 3) return null;
+          return (
+            <div key={destination.id} className="sg-card-snap" style={{ height: '100vh', width: '100%', position: 'relative' }}>
+              <SwipeCard
+                destination={destination}
+                isActive={index === activeIndex}
+                isPreloaded={index >= activeIndex - PRELOAD_BEHIND && index <= activeIndex + PRELOAD_AHEAD}
+                isSaved={isSaved(destination.id)}
+                onToggleSave={() => handleToggleSave(destination.id)}
+                index={index}
+              />
+              {/* Swipe hint removed per V4 design — clean immersive cards */}
+            </div>
+          );
+        })}
+        {activeIndex + 3 < destinations.length - 1 && (
+          <div style={{ height: `${(destinations.length - 1 - (activeIndex + 3)) * 100}vh`, width: '100%' }} />
+        )}
+
+        {/* End-of-feed card with stats */}
+        {!hasNextPage && destinations.length > 0 && (
+          <EndOfFeedCard
+            destCount={destinations.length}
+            countries={uniqueCountries}
+            onShuffle={() => { refreshFeed(); resetToTop(); }}
+            onSaved={() => router.push('/saved')}
+          />
+        )}
+
+        {/* Keyboard shortcuts overlay */}
+        {showShortcuts && (
+          <div
+            onClick={() => setShowShortcuts(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              backgroundColor: 'rgba(0,0,0,0.75)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <div onClick={e => e.stopPropagation()} style={{
+              backgroundColor: colors.paleHorizon, borderRadius: 20,
+              border: `1px solid ${colors.warmDusk}`, padding: 28,
+              maxWidth: 360, width: '90%',
+              boxShadow: '0 16px 48px rgba(44,31,26,0.3)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <span style={{ color: colors.deepDusk, fontSize: 18, fontWeight: 800, fontFamily: `${fonts.display}, sans-serif` }}>Keyboard Shortcuts</span>
+                <button
+                  onClick={() => setShowShortcuts(false)}
+                  aria-label="Close shortcuts"
+                  style={{
+                    width: 28, height: 28, borderRadius: 14,
+                    backgroundColor: 'rgba(44,31,26,0.08)', border: 'none',
+                    color: colors.text.muted, fontSize: 14, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >✕</button>
+              </div>
+              {[
+                { keys: ['↓', 'Space'], desc: 'Next destination' },
+                { keys: ['↑'], desc: 'Previous destination' },
+                { keys: ['S'], desc: 'Save / unsave' },
+                { keys: ['Enter'], desc: 'View details' },
+                { keys: ['/', 'F'], desc: 'Open search' },
+                { keys: ['?'], desc: 'Toggle shortcuts' },
+              ].map(({ keys, desc }) => (
+                <div key={desc} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '8px 0', borderBottom: `1px solid ${colors.borderLight}`,
+                }}>
+                  <span style={{ color: colors.text.secondary, fontSize: 13 }}>{desc}</span>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {keys.map(k => (
+                      <span key={k} style={{
+                        padding: '3px 8px', borderRadius: 6,
+                        backgroundColor: 'rgba(44,31,26,0.06)',
+                        border: `1px solid ${colors.border}`,
+                        color: colors.deepDusk, fontSize: 12, fontWeight: 600,
+                        fontFamily: 'monospace',
+                      }}>{k}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div style={{ marginTop: 16, textAlign: 'center', color: colors.text.muted, fontSize: 11 }}>
+                Press <span style={{ fontFamily: 'monospace', color: colors.text.secondary }}>?</span> anywhere to toggle
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      </>
+    );
+  }
+
+  // ── Native empty state when filters yield no results ──
+  if (destinations.length === 0 && !isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.duskSand, padding: 32 }}>
+        <Text style={{ fontSize: 56, marginBottom: 16 }}>🔍</Text>
+        <Text style={{ color: colors.deepDusk, fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
+          No destinations match
+        </Text>
+        <Text style={{ color: colors.text.muted, fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24, maxWidth: 280 }}>
+          Try adjusting your filters to see more results.
+        </Text>
+        <Pressable
+          onPress={() => {
+            useFeedStore.getState().setVibeFilter(null);
+            useFeedStore.getState().setMaxPrice(null);
+            useFeedStore.getState().setRegionFilter('all');
+          }}
+          style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: 14, backgroundColor: colors.deepDusk }}
+        >
+          <Text style={{ color: colors.paleHorizon, fontSize: 15, fontWeight: '700' }}>Clear All Filters</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // ── Native ──
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        ref={scrollRef}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={screenHeight}
+        snapToAlignment="start"
+        onMomentumScrollEnd={handleNativeScroll}
+      >
+        {destinations.map((destination, index) => (
+          <View key={destination.id} style={{ height: screenHeight }}>
+            <SwipeCard
+              destination={destination}
+              isActive={index === activeIndex}
+              isPreloaded={index >= activeIndex - PRELOAD_BEHIND && index <= activeIndex + PRELOAD_AHEAD}
+              isSaved={isSaved(destination.id)}
+              onToggleSave={() => handleToggleSave(destination.id)}
+              index={index}
+            />
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* Floating header */}
+      <View style={{
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
+        paddingTop: 52, paddingHorizontal: 16, paddingBottom: 12,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', letterSpacing: -0.5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 }}>
+          SoGoJet
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Pressable onPress={() => router.push('/settings')} hitSlop={8}>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}>
+              {'\u2708\uFE0F'} {departureCode}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => setSearchOpen(true)} hitSlop={8}>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 8 }}>
+              {'\U0001F50D'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} />
+    </View>
+  );
+}

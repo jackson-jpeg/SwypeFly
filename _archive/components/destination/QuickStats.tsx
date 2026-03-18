@@ -1,0 +1,61 @@
+// ─── Quick Stats Strip ───────────────────────────────────────────────────────
+// Temp, flight time, best months — horizontal strip.
+
+import { View, Text, Platform } from 'react-native';
+import { colors, spacing, fontSize, fontWeight, radii } from '../../constants/theme';
+import type { Destination } from '../../types/destination';
+
+interface QuickStatsProps {
+  destination: Destination;
+}
+
+function StatBox({ label, value, isWeb }: { label: string; value: string; isWeb: boolean }) {
+  if (isWeb) {
+    return (
+      <div style={{
+        flex: '1 1 0', minWidth: 100,
+        backgroundColor: colors.paleHorizon, border: `1px solid ${colors.divider}`,
+        borderRadius: radii.lg, padding: `${spacing['3']}px ${spacing['4']}px`, textAlign: 'center',
+      }}>
+        <div style={{ color: colors.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium }}>{label}</div>
+        <div style={{ color: colors.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginTop: 2 }}>
+          {value}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <View style={{
+      flex: 1, backgroundColor: colors.paleHorizon, borderWidth: 1, borderColor: colors.divider,
+      borderRadius: radii.lg, padding: spacing['3'], alignItems: 'center',
+    }}>
+      <Text style={{ color: colors.text.muted, fontSize: fontSize.md, fontWeight: fontWeight.medium }}>{label}</Text>
+      <Text style={{ color: colors.text.primary, fontSize: fontSize['2xl'], fontWeight: fontWeight.bold, marginTop: 2 }}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+export function QuickStats({ destination }: QuickStatsProps) {
+  const isWeb = Platform.OS === 'web';
+
+  if (isWeb) {
+    return (
+      <div style={{ display: 'flex', gap: spacing['3'], marginTop: spacing['5'], flexWrap: 'wrap' }}>
+        <StatBox label="Avg Temp" value={`${destination.averageTemp}°C / ${Math.round(destination.averageTemp * 9/5 + 32)}°F`} isWeb />
+        <StatBox label="Flight" value={destination.flightDuration} isWeb />
+        <StatBox label="Best Months" value={destination.bestMonths?.slice(0, 3).join(', ') || '—'} isWeb />
+      </div>
+    );
+  }
+
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing['3'], marginTop: spacing['5'] }}>
+      <StatBox label="Avg Temp" value={`${destination.averageTemp}°C / ${Math.round(destination.averageTemp * 9/5 + 32)}°F`} isWeb={false} />
+      <StatBox label="Flight" value={destination.flightDuration} isWeb={false} />
+      <StatBox label="Best Months" value={destination.bestMonths?.slice(0, 3).join(', ') || '—'} isWeb={false} />
+    </View>
+  );
+}

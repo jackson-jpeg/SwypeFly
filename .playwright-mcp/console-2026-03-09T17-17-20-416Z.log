@@ -1,0 +1,18 @@
+[   12381ms] [WARNING] [Stripe.js] The following payment method types are not activated:
+
+- link
+- affirm
+- cashapp
+- crypto
+- klarna
+- amazon_pay
+
+They will be displayed in test mode, but hidden in live mode. Please activate the payment method types in your dashboard (https://dashboard.stripe.com/settings/payment_methods) and ensure your account is enabled for any preview features that you are trying to use. @ https://js.stripe.com/v3/fingerprinted/js/controller-with-preconnect-ff5f7293ca7e024043943f6a1d861056.js:0
+[   12505ms] [WARNING] [Stripe.js] You have not registered or verified the domain, so the following payment methods are not enabled in the Payment Element: 
+
+- apple_pay
+
+Please follow https://stripe.com/docs/payments/payment-methods/pmd-registration to register and verify the domain. @ https://js.stripe.com/v3/fingerprinted/js/controller-with-preconnect-ff5f7293ca7e024043943f6a1d861056.js:0
+[   52899ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://www.sogojet.com/api/booking?action=create-order:0
+[   54497ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://www.sogojet.com/api/booking?action=create-order:0
+[   57013ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://www.sogojet.com/api/booking?action=create-order:0

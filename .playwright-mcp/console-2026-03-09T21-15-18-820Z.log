@@ -1,0 +1,16 @@
+[    8512ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://www.sogojet.com/api/swipe:0
+[  121037ms] [WARNING] [Stripe.js] The following payment method types are not activated:
+
+- link
+- affirm
+- cashapp
+- crypto
+- klarna
+- amazon_pay
+
+They will be displayed in test mode, but hidden in live mode. Please activate the payment method types in your dashboard (https://dashboard.stripe.com/settings/payment_methods) and ensure your account is enabled for any preview features that you are trying to use. @ https://js.stripe.com/v3/fingerprinted/js/controller-with-preconnect-9e5c5fbb38bbc5ee2bdd771a86854820.js:0
+[  121172ms] [WARNING] [Stripe.js] You have not registered or verified the domain, so the following payment methods are not enabled in the Payment Element: 
+
+- apple_pay
+
+Please follow https://stripe.com/docs/payments/payment-methods/pmd-registration to register and verify the domain. @ https://js.stripe.com/v3/fingerprinted/js/controller-with-preconnect-9e5c5fbb38bbc5ee2bdd771a86854820.js:0

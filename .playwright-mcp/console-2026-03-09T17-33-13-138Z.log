@@ -1,0 +1,4 @@
+[    5182ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://www.sogojet.com/api/swipe:0
+[    5697ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://www.sogojet.com/api/swipe:0
+[   25043ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://www.sogojet.com/api/swipe:0
+[   87043ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://www.sogojet.com/api/booking?action=payment-intent:0
