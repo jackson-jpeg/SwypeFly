@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
 import { ID } from 'node-appwrite';
 import { searchFlights } from '../../services/duffel';
-import { fetchCheapPrices, fetchAllCheapPrices } from '../../services/travelpayouts';
 import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { cors } from '../_cors.js';
@@ -30,13 +29,12 @@ async function recordPriceSnapshot(
   }
 }
 
-// Hobby plan allows up to 60s for serverless functions
-export const maxDuration = 60;
+// Pro plan allows up to 300s for serverless functions
+export const maxDuration = 300;
 
 // With parallel searches (5 concurrent), each chunk takes ~3s.
-// 20 destinations = 4 chunks × ~3s = ~12s search + DB overhead ≈ ~30s total.
-// When upgrading to Pro with */30 cron, reduce to 8 for faster rotation.
-const BATCH_SIZE = 20;
+// 30 destinations = 6 chunks × ~3s + 5s delays = ~48s search + DB overhead.
+const BATCH_SIZE = 30;
 
 // Concurrent Duffel searches per chunk (Duffel rate limit: 60 req/min)
 const CONCURRENCY = 5;
@@ -160,17 +158,15 @@ async function refreshOneDest(
   departureDate: string,
   returnDate: string,
   currentPriceMap: Map<string, { price: number; docId: string }>,
-): Promise<{ source: 'duffel' | 'travelpayouts' | null }> {
+): Promise<{ source: 'duffel' | null }> {
   let price: number | null = null;
   let airline = '';
-  let source: 'duffel' | 'travelpayouts' = 'duffel';
   let depDate = departureDate;
   let retDate = returnDate;
   let offerJson = '';
   let offerExpiresAt = '';
-  let tpFoundAt = '';
 
-  // Primary: Duffel
+  // Duffel search
   try {
     const result = await searchFlights({
       origin,
@@ -209,28 +205,9 @@ async function refreshOneDest(
       if (offerJson.length > 10000) {
         offerJson = offerJson.slice(0, 10000);
       }
-
-      source = 'duffel';
     }
   } catch (err) {
     console.warn(`[refresh] Duffel search failed for ${origin}->${dest}:`, err);
-  }
-
-  // Fallback: Travelpayouts
-  if (price === null) {
-    try {
-      const tp = await fetchCheapPrices(origin, dest);
-      if (tp) {
-        price = tp.price;
-        airline = tp.airline;
-        depDate = tp.departureAt ? tp.departureAt.split('T')[0] : departureDate;
-        retDate = tp.returnAt ? tp.returnAt.split('T')[0] : returnDate;
-        tpFoundAt = tp.foundAt || '';
-        source = 'travelpayouts';
-      }
-    } catch (err) {
-      console.warn(`[refresh] Travelpayouts fallback failed for ${origin}->${dest}:`, err);
-    }
   }
 
   if (price === null) return { source: null };
@@ -260,7 +237,7 @@ async function refreshOneDest(
     price,
     currency: 'USD',
     airline,
-    source,
+    source: 'duffel',
     fetched_at: new Date().toISOString(),
     departure_date: depDate || '',
     return_date: retDate || '',
@@ -269,7 +246,7 @@ async function refreshOneDest(
     price_direction: priceDirection,
     offer_json: offerJson,
     offer_expires_at: offerExpiresAt,
-    tp_found_at: tpFoundAt,
+    tp_found_at: '',
   };
 
   try {
@@ -284,111 +261,21 @@ async function refreshOneDest(
   }
 
   // Record price snapshot for history tracking (non-blocking)
-  await recordPriceSnapshot(origin, dest, price, source, airline);
+  await recordPriceSnapshot(origin, dest, price, 'duffel', airline);
 
-  return { source };
-}
-
-async function bulkUpsertTPPrices(
-  origin: string,
-  allIatas: Set<string>,
-  currentPriceMap: Map<string, { price: number; docId: string }>,
-): Promise<number> {
-  const bulkPrices = await fetchAllCheapPrices(origin);
-  if (bulkPrices.size === 0) return 0;
-
-  let upserted = 0;
-  const unknownIatas: string[] = [];
-
-  for (const [iata, tp] of bulkPrices) {
-    if (!allIatas.has(iata)) {
-      unknownIatas.push(iata);
-      continue;
-    }
-
-    const depDate = tp.departureAt ? tp.departureAt.split('T')[0] : '';
-    const retDate = tp.returnAt ? tp.returnAt.split('T')[0] : '';
-    let tripDurationDays = 0;
-    if (depDate && retDate) {
-      const dep = new Date(depDate);
-      const ret = new Date(retDate);
-      if (!isNaN(dep.getTime()) && !isNaN(ret.getTime())) {
-        tripDurationDays = Math.round((ret.getTime() - dep.getTime()) / (1000 * 60 * 60 * 24));
-      }
-    }
-
-    const existing = currentPriceMap.get(iata);
-    // Don't overwrite Duffel prices with TP prices (Duffel is higher quality)
-    if (existing && currentPriceMap.get(iata)) {
-      // Only update if existing is also TP-sourced or price is significantly lower
-      // We'll skip here — Duffel targeted refresh handles high-value routes
-    }
-
-    const prevPrice = existing?.price ?? 0;
-    let priceDirection: 'up' | 'down' | 'stable' = 'stable';
-    if (prevPrice > 0) {
-      const pctChange = (tp.price - prevPrice) / prevPrice;
-      if (pctChange > PRICE_CHANGE_THRESHOLD) priceDirection = 'up';
-      else if (pctChange < -PRICE_CHANGE_THRESHOLD) priceDirection = 'down';
-    }
-
-    const data: Record<string, unknown> = {
-      origin,
-      destination_iata: iata,
-      price: tp.price,
-      currency: 'USD',
-      airline: tp.airline,
-      source: 'travelpayouts',
-      fetched_at: new Date().toISOString(),
-      departure_date: depDate,
-      return_date: retDate,
-      trip_duration_days: tripDurationDays,
-      previous_price: prevPrice,
-      price_direction: priceDirection,
-      offer_json: '',
-      offer_expires_at: '',
-      tp_found_at: tp.foundAt || '',
-    };
-
-    try {
-      if (existing) {
-        await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.cachedPrices, existing.docId, data);
-      } else {
-        await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.cachedPrices, ID.unique(), data);
-      }
-      currentPriceMap.set(iata, { price: tp.price, docId: existing?.docId || '' });
-      upserted++;
-
-      // Record price snapshot for history tracking (non-blocking)
-      await recordPriceSnapshot(origin, iata, tp.price, 'travelpayouts', tp.airline);
-    } catch (err) {
-      console.error(`[refresh] TP bulk upsert error for ${origin}->${iata}:`, err);
-    }
-  }
-
-  if (unknownIatas.length > 0) {
-    console.log(`[refresh] TP bulk discovered ${unknownIatas.length} unknown IATA codes: ${unknownIatas.slice(0, 10).join(', ')}${unknownIatas.length > 10 ? '...' : ''}`);
-  }
-
-  return upserted;
+  return { source: 'duffel' };
 }
 
 async function refreshBatch(
   origin: string,
   batch: string[],
-  allIatas: Set<string>,
   currentPriceMap: Map<string, { price: number; docId: string }>,
 ): Promise<BatchResult> {
-  const sourceCounts: Record<string, number> = { duffel: 0, travelpayouts: 0, 'tp-bulk': 0 };
+  const sourceCounts: Record<string, number> = { duffel: 0 };
   const { departureDate, returnDate } = getSearchDates();
   let fetched = 0;
 
-  // Phase 1: Bulk TP pre-seed — covers ALL routes in one API call
-  const tpBulkCount = await bulkUpsertTPPrices(origin, allIatas, currentPriceMap);
-  sourceCounts['tp-bulk'] = tpBulkCount;
-  fetched += tpBulkCount;
-
-  // Phase 2: Targeted Duffel searches for the stalest destinations
+  // Duffel searches for the stalest destinations
   for (let i = 0; i < batch.length; i += CONCURRENCY) {
     const chunk = batch.slice(i, i + CONCURRENCY);
     const results = await Promise.all(
@@ -397,14 +284,17 @@ async function refreshBatch(
     for (const r of results) {
       if (r.source) {
         sourceCounts[r.source]++;
-        if (r.source === 'duffel') fetched++;
+        fetched++;
       }
+    }
+
+    // Rate limit: 5-second delay between chunks to respect Duffel limits
+    if (i + CONCURRENCY < batch.length) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 
-  console.log(
-    `[refresh] Batch for ${origin}: ${fetched} total (TP-bulk: ${sourceCounts['tp-bulk']}, Duffel: ${sourceCounts.duffel}, TP-fallback: ${sourceCounts.travelpayouts})`,
-  );
+  console.log(`[refresh] Batch for ${origin}: ${fetched} total (Duffel: ${sourceCounts.duffel})`);
 
   return { origin, fetched, total: batch.length, sources: sourceCounts };
 }
@@ -489,7 +379,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ]);
 
     const allIatasList = destResult.documents.map((d) => d.iata_code as string);
-    const allIatas = new Set(allIatasList);
 
     // Determine which origin to refresh
     let origins: string[];
@@ -508,7 +397,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { batch, currentPriceMap } = await pickStalestDestinations(org, allIatasList, BATCH_SIZE);
       console.log(`[refresh] Duffel batch for ${org}: ${batch.join(', ')}`);
 
-      const result = await refreshBatch(org, batch, allIatas, currentPriceMap);
+      const result = await refreshBatch(org, batch, currentPriceMap);
       results.push(result);
     }
 

@@ -33,13 +33,6 @@ jest.mock('../../services/duffel', () => ({
   searchFlights: (...args: unknown[]) => mockSearchFlights(...args),
 }));
 
-const mockFetchCheapPrices = jest.fn();
-const mockFetchAllCheapPrices = jest.fn().mockResolvedValue(new Map());
-jest.mock('../../services/travelpayouts', () => ({
-  fetchCheapPrices: (...args: unknown[]) => mockFetchCheapPrices(...args),
-  fetchAllCheapPrices: (...args: unknown[]) => mockFetchAllCheapPrices(...args),
-}));
-
 jest.mock('../../utils/validation', () => ({
   pricesQuerySchema: {},
   validateRequest: jest.fn((_schema: unknown, data: unknown) => ({
@@ -147,11 +140,6 @@ describe('api/prices/refresh', () => {
   });
 
   test('succeeds with Duffel as primary source', async () => {
-    // listDocuments calls:
-    // 1. destinations (active)
-    // 2. cachedPrices (stalest destinations - currentPriceMap)
-    // 3. cachedPrices (stalest destinations - fetchedAtMap)
-    // 4. userPreferences (getActiveOrigins via pickNextOrigins - won't be called since origin is specified)
     mockDatabases.listDocuments.mockResolvedValue({
       documents: [
         { $id: 'dest-1', iata_code: 'BCN', is_active: true },
@@ -185,7 +173,7 @@ describe('api/prices/refresh', () => {
     expect(responseData.origins).toHaveLength(1);
     expect(responseData.origins[0].origin).toBe('JFK');
     expect(responseData.origins[0].sources.duffel).toBe(2);
-    expect(responseData.batchSize).toBe(20);
+    expect(responseData.batchSize).toBe(30);
 
     // Verify Duffel was called for each destination
     expect(mockSearchFlights).toHaveBeenCalledTimes(2);
@@ -202,7 +190,7 @@ describe('api/prices/refresh', () => {
     expect(createCalls[2][3].type).toBe('price_history');
   });
 
-  test('falls back to Travelpayouts when Duffel fails', async () => {
+  test('returns null source when Duffel fails', async () => {
     mockDatabases.listDocuments.mockResolvedValue({
       documents: [{ $id: 'dest-1', iata_code: 'BCN', is_active: true }],
       total: 1,
@@ -210,15 +198,6 @@ describe('api/prices/refresh', () => {
 
     // Duffel fails
     mockSearchFlights.mockRejectedValue(new Error('Duffel API error'));
-
-    // Travelpayouts succeeds
-    mockFetchCheapPrices.mockResolvedValue({
-      destination: 'BCN',
-      price: 380,
-      airline: 'IB',
-      departureAt: '2026-04-01',
-      returnAt: '2026-04-08',
-    });
 
     mockDatabases.createDocument.mockResolvedValue({ $id: 'price-1' });
 
@@ -230,19 +209,11 @@ describe('api/prices/refresh', () => {
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
     const responseData = (res.json as jest.Mock).mock.calls[0][0];
-    expect(responseData.origins[0].sources.travelpayouts).toBe(1);
     expect(responseData.origins[0].sources.duffel).toBe(0);
+    expect(responseData.origins[0].fetched).toBe(0);
 
-    // Verify fallback was called
-    expect(mockFetchCheapPrices).toHaveBeenCalledWith('JFK', 'BCN');
-
-    // Verify stored with travelpayouts source (first call is cached_prices, second is price_history)
-    const createCalls = mockDatabases.createDocument.mock.calls;
-    expect(createCalls[0][3].source).toBe('travelpayouts');
-    expect(createCalls[0][3].offer_json).toBe('');
-    // Snapshot also recorded
-    expect(createCalls[1][1]).toBe('ai_cache');
-    expect(createCalls[1][3].type).toBe('price_history');
+    // No cached_prices or snapshots should be created when Duffel fails
+    expect(mockDatabases.createDocument).not.toHaveBeenCalled();
   });
 
   test('tracks price history with direction', async () => {
