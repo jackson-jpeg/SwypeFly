@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
+
 import * as Linking from 'expo-linking';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import DepartureRow from './DepartureRow';
@@ -37,7 +37,6 @@ export default function DepartureBoard({ deals, onTapDeal, isLoading = false }: 
   const jumpToBoard = useDealStore((s) => s.jumpToBoard);
   const fetchMore = useDealStore((s) => s.fetchMore);
   const departureCode = useSettingsStore((s) => s.departureCode);
-  const router = useRouter();
 
   const [animatingRow, setAnimatingRow] = useState<number | null>(null);
   const detailOpacity = useSharedValue(1);
