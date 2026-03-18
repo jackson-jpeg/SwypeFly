@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   Dimensions,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Linking from 'expo-linking';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
@@ -88,13 +86,9 @@ export default function DestinationDetailScreen() {
   }, [deal?.iataCode, departureCode, deal?.id, API_BASE]);
 
   const handleBook = useCallback(() => {
-    if (!deal?.affiliateUrl) return;
-    if (Platform.OS === 'web') {
-      window.open(deal.affiliateUrl, '_blank', 'noopener');
-    } else {
-      Linking.openURL(deal.affiliateUrl);
-    }
-  }, [deal]);
+    if (!deal) return;
+    router.push(`/booking/${deal.id}`);
+  }, [deal, router]);
 
   if (!deal) {
     return (

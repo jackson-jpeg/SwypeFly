@@ -7,8 +7,6 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import SwipeCard from './SwipeCard';
 import type { BoardDeal } from '../../types/deal';
 import { colors } from '../../theme/tokens';
-import * as Linking from 'expo-linking';
-
 const { height: SCREEN_H } = Dimensions.get('window');
 
 export default function SwipeFeed() {
@@ -39,14 +37,8 @@ export default function SwipeFeed() {
   );
 
   const handleBook = useCallback((deal: BoardDeal) => {
-    if (deal.affiliateUrl) {
-      if (Platform.OS === 'web') {
-        window.open(deal.affiliateUrl, '_blank', 'noopener');
-      } else {
-        Linking.openURL(deal.affiliateUrl);
-      }
-    }
-  }, []);
+    router.push(`/booking/${deal.id}`);
+  }, [router]);
 
   const handleEndReached = useCallback(() => {
     fetchMore(departureCode);
