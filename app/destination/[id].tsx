@@ -268,7 +268,9 @@ export default function DestinationDetailScreen() {
               ? `Book for $${livePrice.price}`
               : priceLoading
                 ? 'Searching...'
-                : `Book for ${deal.priceFormatted}`}
+                : deal.price != null
+                  ? `Book for ${deal.priceFormatted}`
+                  : 'View Deal'}
           </Text>
           <Ionicons name="arrow-forward" size={18} color={colors.bg} />
         </Pressable>
