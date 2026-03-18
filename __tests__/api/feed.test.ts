@@ -225,7 +225,7 @@ describe('GET /api/feed', () => {
         price: 299,
         airline: 'TAP',
         duration: '7h 15m',
-        source: 'travelpayouts',
+        source: 'duffel',
         fetched_at: '2026-02-26T00:00:00Z',
         departure_date: '2026-04-01',
         return_date: '2026-04-08',
