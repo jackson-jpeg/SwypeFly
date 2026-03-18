@@ -22,7 +22,8 @@ Replace the Travelpayouts-primary pricing pipeline with Duffel-only pricing. Use
 
 - **Remove Travelpayouts bulk phase entirely.** No more `fetchAllCheapPrices()` or `fetchCheapPrices()` calls.
 - **Duffel-only searches.** Keep the existing Duffel search logic (concurrent batches, round-robin origins, compact offer JSON caching).
-- **Increase batch size.** Vercel Pro gives 300s timeout (vs 60s Hobby). Increase from 20 to 40 destinations per run. At 5 concurrent × ~3s per search = ~24s per batch of 5 → 8 batches = ~25s search time + DB overhead ≈ ~60s total. Well within 300s.
+- **Increase batch size to 30.** Vercel Pro gives 300s timeout (vs 60s Hobby). Increase from 20 to 30 destinations per run at CONCURRENCY=5. That's 6 chunks of 5 searches. To stay within Duffel's 60 req/min rate limit, add a 5-second delay between chunks: 6 chunks × ~8s (3s search + 5s delay) = ~48s + DB overhead ≈ ~70s total. Well within 300s.
+- **Update `maxDuration` export** in `api/prices/refresh.ts` from 60 to 300.
 - **Keep round-robin origin rotation.** Picks the origin with stalest prices. With 5-10 origins and 40 dests/run, full coverage in ~4-5 cron cycles (~24-30 hours).
 - **Keep price direction tracking** (up/down/stable vs previous price).
 - **Keep compact offer JSON caching** in `cached_prices.offer_json`.
@@ -50,8 +51,8 @@ Change from `0 6 * * *` (once daily) to `0 */6 * * *` (every 6 hours) in `vercel
 
 ### Behavior
 
-1. Check `cached_prices` for a Duffel result < 30 min old for this origin+destination pair.
-2. If fresh cache exists → return it immediately.
+1. Check `cached_prices` for a Duffel result where `fetched_at < 30 min ago` AND `offer_expires_at > now` for this origin+destination pair.
+2. If fresh + non-expired cache exists → return it immediately.
 3. If no cache or stale → call Duffel `searchFlights()` live.
    - Search params: origin, destination, ~2 weeks out (next Wednesday), 5-7 day trip, 1 passenger, economy.
    - Return the cheapest offer.
@@ -76,18 +77,31 @@ Change from `0 6 * * *` (once daily) to `0 */6 * * *` (every 6 hours) in `vercel
 }
 ```
 
+### Rate Limiting
+
+Per-IP rate limit: 10 searches per minute via in-memory Map with TTL (same pattern as existing `api/ai/` rate limiter). Prevents bots from exhausting Duffel's 60 req/min limit. Returns 429 with `retry-after` header when exceeded.
+
 ### Error Handling
 
 - Duffel search fails → return `{ error: "No flights found", fallback: true }`. Client shows "No flights available for these dates" instead of a price.
 - Duffel rate limited → return 429 with retry-after header.
 
+### Duration Parsing
+
+Duffel returns ISO 8601 durations (e.g., `PT7H10M`, `P1DT8H20M`). Use regex `/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/` to parse into "7h 10m" or "1d 8h 20m" format. This is a known gotcha in the codebase.
+
+### Response Extras
+
+Include `searchedAt: string` (ISO timestamp) so the client can show freshness.
+
 ### Validation
 
-Zod schema in `utils/validation.ts`:
+Zod schema in `utils/validation.ts` — reuse existing IATA pattern:
 ```typescript
+const iataCode = z.string().regex(/^[A-Z]{3}$/);
 searchQuerySchema = z.object({
-  origin: z.string().length(3),
-  destination: z.string().length(3),
+  origin: iataCode,
+  destination: iataCode,
 });
 ```
 
@@ -108,8 +122,26 @@ searchQuerySchema = z.object({
 
 ### dealStore Changes (`stores/dealStore.ts`)
 
-- `apiToBoardDeal()` transform: if `flightPrice` is null/0 and `priceSource` is not 'duffel', set `priceFormatted` to "Check" and `status` to a new display-only state.
+- `apiToBoardDeal()` transform: handle missing prices explicitly:
+  ```typescript
+  const hasPrice = d.flightPrice != null && d.flightPrice > 0 && d.priceSource === 'duffel';
+  const price = hasPrice ? Math.round(d.flightPrice) : null;
+  const priceFormatted = hasPrice ? `$${price}` : 'Check';
+  ```
+- `BoardDeal.price` type changes from `number` to `number | null` in `types/deal.ts`.
+- `BoardDeal.status` stays as `'DEAL' | 'HOT' | 'NEW'` — no type change. When `price` is null, set `status: 'NEW'` (least important visually). The "Check" text handles the UI distinction.
 - Feed API already returns `priceSource` field — use it to distinguish Duffel vs estimate.
+- Add `priceFormatted` prefix: when `hasPrice` is true, set `priceFormatted` to `From $${price}` (not just `$${price}`) to set expectations that the live search may differ slightly.
+
+### Board View — "Check" in price column
+
+In `DepartureRow.tsx`, the price column has `maxLength={5}`. "Check" is 5 chars — fits. The status column has `maxLength={4}`. When price is null, keep the normal status value (NEW/DEAL/HOT) — don't try to show "CHECK" in the status column.
+
+### SwipeCard — conditional price tag
+
+In `SwipeCard.tsx`:
+- When `deal.price != null`: render the existing price tag with "FROM" prefix and "View Deal" button.
+- When `deal.price === null`: hide the entire `priceTag` View. In the `bottomContent` area, show "Tap to check price" text in place of the price. Book button text → "View Deal".
 
 ---
 
@@ -119,11 +151,14 @@ searchQuerySchema = z.object({
 
 ### On Mount
 
-1. Show destination info (photo, vibes, description) immediately from the feed data passed via navigation params.
-2. Call `GET /api/search?origin={departureCode}&destination={iataCode}` for live Duffel price.
-3. While loading: show skeleton price card (pulsing animation).
-4. On success: show real price + "Book This Flight — $310" CTA.
-5. On failure: show "No flights available" message with a "Try different dates" note.
+1. Show destination info (photo, vibes, description) immediately from the feed data (read deal from `useDealStore` by ID).
+2. Read departure origin from `useSettingsStore((s) => s.departureCode)`.
+3. Read destination IATA from `deal.iataCode`.
+4. Call `GET /api/search?origin={departureCode}&destination={iataCode}` for live Duffel price.
+5. While loading: show skeleton price card (pulsing animation) in the price area. Rest of the page (photo, vibes, description, itinerary) is visible.
+6. On success: show real price + "Book This Flight — $310" CTA. Update the deal's price in the store so going back to the feed shows the fresh price.
+7. On failure: show "No flights available" message with a "Try different dates" note.
+8. Deep link scenario (deal not in store): fetch destination metadata from `GET /api/destination?id={id}`, then proceed with step 4.
 
 ### CTA Behavior
 
@@ -138,8 +173,8 @@ searchQuerySchema = z.object({
 ### `api/feed.ts`
 
 - `toFrontend()` still returns `flightPrice`, `priceSource`, `departureDate`, etc.
-- No code changes needed — the data in `cached_prices` will just be Duffel-only after the cron change.
-- Destinations without any cached price naturally return `flightPrice: null, priceSource: 'estimate'`.
+- Add filter: when joining `cached_prices`, only use rows where `source='duffel'`. This excludes stale Travelpayouts rows that linger in the DB.
+- Destinations without any Duffel-sourced cached price return `flightPrice: null, priceSource: 'estimate'`.
 
 ### `services/travelpayouts.ts`
 
