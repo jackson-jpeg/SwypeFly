@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Linking from 'expo-linking';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { colors, fonts, spacing } from '../../theme/tokens';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -30,6 +32,53 @@ export default function DestinationDetailScreen() {
   const savedIds = useSavedStore((s) => s.savedIds);
   const toggle = useSavedStore((s) => s.toggle);
   const isSaved = deal ? savedIds.includes(deal.id) : false;
+
+  const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
+  const [livePrice, setLivePrice] = useState<{
+    price: number;
+    airline: string;
+    flightDuration: string;
+    departureDate: string;
+    returnDate: string;
+    cached: boolean;
+    searchedAt: string;
+  } | null>(null);
+  const [priceLoading, setPriceLoading] = useState(true);
+  const [priceError, setPriceError] = useState(false);
+
+  const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
+
+  useEffect(() => {
+    if (!deal?.iataCode) return;
+
+    let cancelled = false;
+    setPriceLoading(true);
+    setPriceError(false);
+
+    fetch(`${API_BASE}/api/search?origin=${departureCode}&destination=${deal.iataCode}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setLivePrice(data);
+        // Update the deal in the store so going back shows fresh price
+        if (data.price && deal.id) {
+          useDealStore.getState().updateDealPrice(deal.id, data.price);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPriceError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setPriceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deal?.iataCode, departureCode, deal?.id, API_BASE]);
 
   const handleBook = useCallback(() => {
     if (!deal?.affiliateUrl) return;
@@ -88,15 +137,42 @@ export default function DestinationDetailScreen() {
 
         {/* Price card */}
         <View style={styles.priceCard}>
-          <View style={styles.priceLeft}>
-            <Text style={styles.priceFrom}>Round trip from</Text>
-            <Text style={styles.priceAmount}>{deal.priceFormatted}</Text>
-          </View>
-          <View style={styles.priceRight}>
-            <Text style={styles.priceDetail}>{deal.airline}</Text>
-            <Text style={styles.priceDetail}>{deal.flightDuration}</Text>
-            <Text style={styles.priceDetail}>{deal.flightCode}</Text>
-          </View>
+          {priceLoading ? (
+            <View style={styles.priceLeft}>
+              <Text style={styles.priceFrom}>Searching flights...</Text>
+              <ActivityIndicator size="small" color={colors.yellow} style={{ marginTop: 8 }} />
+            </View>
+          ) : livePrice ? (
+            <>
+              <View style={styles.priceLeft}>
+                <Text style={styles.priceFrom}>Round trip from</Text>
+                <Text style={styles.priceAmount}>${livePrice.price}</Text>
+              </View>
+              <View style={styles.priceRight}>
+                <Text style={styles.priceDetail}>{livePrice.airline}</Text>
+                <Text style={styles.priceDetail}>{livePrice.flightDuration}</Text>
+                {livePrice.cached && (
+                  <Text style={[styles.priceDetail, { color: colors.faint }]}>cached</Text>
+                )}
+              </View>
+            </>
+          ) : priceError ? (
+            <View style={styles.priceLeft}>
+              <Text style={styles.priceFrom}>No flights available</Text>
+              <Text style={[styles.priceDetail, { marginTop: 4 }]}>Try different dates</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.priceLeft}>
+                <Text style={styles.priceFrom}>Round trip from</Text>
+                <Text style={styles.priceAmount}>{deal.priceFormatted}</Text>
+              </View>
+              <View style={styles.priceRight}>
+                <Text style={styles.priceDetail}>{deal.airline}</Text>
+                <Text style={styles.priceDetail}>{deal.flightDuration}</Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Trip details */}
@@ -187,7 +263,13 @@ export default function DestinationDetailScreen() {
           />
         </Pressable>
         <Pressable style={styles.bookBtn} onPress={handleBook}>
-          <Text style={styles.bookLabel}>Book for {deal.priceFormatted}</Text>
+          <Text style={styles.bookLabel}>
+            {livePrice
+              ? `Book for $${livePrice.price}`
+              : priceLoading
+                ? 'Searching...'
+                : `Book for ${deal.priceFormatted}`}
+          </Text>
           <Ionicons name="arrow-forward" size={18} color={colors.bg} />
         </Pressable>
       </View>
