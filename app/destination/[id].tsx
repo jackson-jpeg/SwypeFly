@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Linking from 'expo-linking';
+import SplitFlapRow from '../../components/board/SplitFlapRow';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -45,8 +46,14 @@ export default function DestinationDetailScreen() {
   } | null>(null);
   const [priceLoading, setPriceLoading] = useState(true);
   const [priceError, setPriceError] = useState(false);
+  const [animate, setAnimate] = useState(false);
 
   const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!deal?.iataCode) return;
@@ -129,7 +136,18 @@ export default function DestinationDetailScreen() {
 
           {/* Hero bottom content */}
           <View style={styles.heroBottom}>
-            <Text style={styles.heroCity}>{deal.destination}</Text>
+            <View style={{ flexDirection: 'row' }}>
+              <SplitFlapRow
+                text={deal.destination}
+                maxLength={12}
+                size="lg"
+                color={colors.white}
+                align="left"
+                startDelay={0}
+                staggerMs={35}
+                animate={animate}
+              />
+            </View>
             <Text style={styles.heroCountry}>{deal.country}</Text>
             <Text style={styles.heroTagline}>{deal.tagline}</Text>
           </View>
@@ -146,7 +164,15 @@ export default function DestinationDetailScreen() {
             <>
               <View style={styles.priceLeft}>
                 <Text style={styles.priceFrom}>Round trip from</Text>
-                <Text style={styles.priceAmount}>${livePrice.price}</Text>
+                <SplitFlapRow
+                  text={`$${livePrice.price}`}
+                  maxLength={6}
+                  size="md"
+                  color={colors.yellow}
+                  align="right"
+                  startDelay={100}
+                  animate={animate}
+                />
               </View>
               <View style={styles.priceRight}>
                 <Text style={styles.priceDetail}>{livePrice.airline}</Text>
@@ -165,7 +191,15 @@ export default function DestinationDetailScreen() {
             <>
               <View style={styles.priceLeft}>
                 <Text style={styles.priceFrom}>Round trip from</Text>
-                <Text style={styles.priceAmount}>{deal.priceFormatted}</Text>
+                <SplitFlapRow
+                  text={deal.priceFormatted}
+                  maxLength={6}
+                  size="md"
+                  color={colors.yellow}
+                  align="right"
+                  startDelay={100}
+                  animate={animate}
+                />
               </View>
               <View style={styles.priceRight}>
                 <Text style={styles.priceDetail}>{deal.airline}</Text>
@@ -387,6 +421,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 12,
+    paddingBottom: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.green + '30',
   },
 
   // Detail grid
