@@ -22,11 +22,12 @@ A single character cell that cycles through random characters before settling on
 
 ```typescript
 interface SplitFlapCharProps {
-  target: string;           // Single character to settle on
+  target: string;           // Single character to settle on (empty string = indefinite cycling)
   delay: number;            // ms before cycling starts
   duration?: number;        // Cycling phase duration (default 500ms)
   size: 'sm' | 'md';       // sm=13x22, md=17x28
   color: string;            // Text color
+  animate: boolean;         // When true, triggers cycling animation
   isFirstInColumn?: boolean; // Controls haptic on settle
   onSettled?: () => void;   // Callback when animation completes
 }
@@ -37,8 +38,9 @@ interface SplitFlapCharProps {
 - **Method:** Rapid text swap via `useSharedValue` + `runOnJS`. NOT 3D rotateX transforms.
 - **Cycling:** Character changes every 50-70ms through random alphanumeric from pool `ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`
 - **Cycle count:** 6-10 random chars before landing on target
+- **Indefinite mode:** When `target` is empty string and `animate` is true, cycle indefinitely at 70ms intervals. Display last random char (never blank). When target becomes non-empty, settle on it with normal timing.
 - **Haptic:** `Haptics.impactAsync(Light)` on settle, only when `isFirstInColumn === true`
-- **Trigger:** Animation starts when `target` changes (or on mount if `animate` prop)
+- **Trigger:** Animation starts when `animate` becomes true. Re-triggers when `target` changes while `animate` is true.
 
 ### Visual
 
@@ -95,9 +97,10 @@ interface DepartureRowProps {
   isActive: boolean;
   animate: boolean;         // Trigger split-flap animation
   onAnimationComplete?: () => void;
-  onPress?: () => void;     // Tap handler
 }
 ```
+
+Note: Tap handling lives in `DepartureBoard` (parent), which wraps each row in a `Pressable` with different behavior for row 0 vs rows 1-4.
 
 ### Column Specs
 
@@ -109,7 +112,9 @@ interface DepartureRowProps {
 | Price       | 5         | md   | `#7BAF8E`   | right | 240ms      |
 | Status      | 4         | sm   | by status*  | left  | 320ms      |
 
-*Status colors: `DEAL` = `#7BAF8E`, `HOT` = `#D4734A`, `NEW` = `#F7E8A0`, `GONE` = `#C9A99A60`
+*Status colors: `DEAL` = `#7BAF8E`, `HOT` = `#D4734A`, `NEW` = `#F7E8A0`
+
+Note: The `BoardDeal` type in `types/deal.ts` has `status: 'DEAL' | 'HOT' | 'NEW'` — no `GONE` variant. If a `GONE` status is needed later (e.g., expired deals), add it to the union type at that time.
 
 ### Row Container
 
@@ -143,9 +148,9 @@ interface DepartureBoardProps {
 - 5 `DepartureRow` components stacked vertically
 - Row 0 = "active" (full opacity, left accent border)
 - Rows 1-4 at 0.45 opacity, no accent border
-- Tapping row 0 → calls `onTapDeal(deal)` (navigates to detail)
-- Tapping rows 1-4 → makes that row active (updates `boardIndex` in dealStore)
-- Swipe up gesture on board area = same as "NEXT FLIGHT"
+- Tapping row 0 → calls `onTapDeal(deal)` which navigates to existing `app/destination/[id].tsx` via `router.push(`/destination/${deal.id}`)`
+- Tapping rows 1-4 → makes that row active (updates `boardIndex` in `useDealStore`)
+- Swipe up gesture on board area = same as "NEXT FLIGHT". Use `react-native-gesture-handler` `PanGestureHandler` wrapping the board area. Trigger on vertical swipe with `translationY < -50` and `velocityY < -200`. Taps pass through to individual row `Pressable` components.
 
 #### Detail Strip
 
@@ -186,7 +191,15 @@ interface DepartureBoardProps {
 
 ### Loading State
 
-All 5 rows cycle indefinitely (no target) until data arrives. Gives the board a "warming up" feel.
+All 5 rows cycle indefinitely (empty string targets, `animate=true`) until data arrives. Each cell shows the last random character from its cycling pool — never blank. When data arrives, all rows settle with the normal staggered column timing (0 → 80 → 160 → 240 → 320ms).
+
+### Fewer Than 5 Deals
+
+If `deals.length < 5` after data loads, render actual deal rows for available deals and fill remaining slots with empty rows (all cells show `—` in `#2A2218` color, no animation, 0.25 opacity). This can happen with sparse API results or aggressive filtering in future.
+
+### Empty State (No Deals)
+
+If `deals.length === 0` after loading: show 5 empty rows (dashes) with a centered overlay message — airplane icon (48px, `#2A2218`), "No flights available" in Bebas Neue 20px `#C9A99A`, "Check back soon" in Inter 14px `#C9A99A80`.
 
 ---
 
@@ -263,7 +276,8 @@ All required packages are already installed:
 - Fonts: Bebas Neue, Inter already loaded in `app/_layout.tsx`
 - Theme tokens: all colors defined in `theme/tokens.ts`
 - Types: `BoardDeal` interface in `types/deal.ts`
-- Stores: `dealStore.boardIndex` + `advanceBoard()` and `settingsStore.preferredView` already exist
+- Stores: `useDealStore` (boardIndex + advanceBoard()) and `useSettingsStore` (preferredView) already exist
+- `react-native-gesture-handler` — for swipe-up gesture on board area
 
 ## New Files
 
