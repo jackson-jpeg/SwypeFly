@@ -71,12 +71,12 @@ function DepartureRow({ deal, isActive, animate, onAnimationComplete }: Departur
         onComplete={handleColumnComplete}
       />
 
-      {/* Price — e.g. "$387" */}
+      {/* Price — e.g. "$387" or "—" */}
       <SplitFlapRow
-        text={deal.priceFormatted}
+        text={deal.price != null ? deal.priceFormatted : '—'}
         maxLength={5}
         size="md"
-        color={colors.green}
+        color={deal.price != null ? colors.green : colors.faint}
         align="right"
         startDelay={240}
         animate={animate}

@@ -47,11 +47,19 @@ export default function SwipeCard({ deal, isSaved, isFirst, onSave, onBook, onTa
       </View>
 
       {/* Price tag — top right */}
-      <View style={styles.priceTag}>
-        <Text style={styles.priceLabel}>from</Text>
-        <Text style={styles.priceValue}>{deal.priceFormatted}</Text>
-        <Text style={styles.priceLabel}>round trip</Text>
-      </View>
+      {deal.price != null && (
+        <View style={styles.priceTag}>
+          <Text style={styles.priceLabel}>from</Text>
+          <Text style={styles.priceValue}>{deal.priceFormatted}</Text>
+          <Text style={styles.priceLabel}>round trip</Text>
+        </View>
+      )}
+      {deal.price == null && (
+        <View style={styles.priceTag}>
+          <Ionicons name="search-outline" size={18} color={colors.yellow} />
+          <Text style={[styles.priceValue, { fontSize: 16, lineHeight: 20 }]}>Tap to{'\n'}check price</Text>
+        </View>
+      )}
 
       {/* Bottom content */}
       <View style={styles.bottomContent}>
@@ -109,7 +117,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, onSave, onBook, onTa
             onPress={onBook}
             style={({ pressed }) => [styles.bookBtn, pressed && styles.bookPressed]}
           >
-            <Text style={styles.bookLabel}>Book {deal.priceFormatted}</Text>
+            <Text style={styles.bookLabel}>{deal.price != null ? `Book ${deal.priceFormatted}` : 'View Deal'}</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.bg} />
           </Pressable>
         </View>

@@ -6,7 +6,7 @@ export interface BoardDeal {
   country: string;
   iataCode: string;
   flightCode: string;
-  price: number;
+  price: number | null;
   priceFormatted: string;
   status: 'DEAL' | 'HOT' | 'NEW';
   airline: string;

@@ -50,7 +50,8 @@ function getStatus(priceDirection?: string, priceSource?: string): 'DEAL' | 'HOT
 }
 
 function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
-  const price = Math.round(d.flightPrice);
+  const hasPrice = d.flightPrice != null && d.flightPrice > 0 && d.priceSource === 'duffel';
+  const price = hasPrice ? Math.round(d.flightPrice) : null;
   const tripDays = d.tripDurationDays ?? 5;
   const depDate = d.departureDate || '';
   const retDate = d.returnDate || '';
@@ -64,8 +65,8 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     iataCode: d.iataCode,
     flightCode: randomFlightCode(d.airline),
     price,
-    priceFormatted: `$${price}`,
-    status: getStatus(d.priceDirection, d.priceSource),
+    priceFormatted: price != null ? `$${price}` : 'Check',
+    status: hasPrice ? getStatus(d.priceDirection, d.priceSource) : 'NEW',
     airline: d.airline ? getAirlineName(d.airline) : 'Multiple Airlines',
     departureDate: depDate,
     returnDate: retDate,
@@ -97,6 +98,7 @@ interface DealState {
   // Shared
   setFilters: (vibes: string[]) => void;
   clearFilters: () => void;
+  updateDealPrice: (dealId: string, price: number) => void;
   fetchDeals: (origin: string) => Promise<void>;
   fetchMore: (origin: string) => Promise<void>;
 }
@@ -120,6 +122,13 @@ export const useDealStore = create<DealState>()((set, get) => ({
 
   setFilters: (vibes) => set({ activeFilters: vibes }),
   clearFilters: () => set({ activeFilters: [] }),
+
+  updateDealPrice: (dealId, price) => {
+    const deals = get().deals.map((d) =>
+      d.id === dealId ? { ...d, price, priceFormatted: `$${price}` } : d,
+    );
+    set({ deals });
+  },
 
   fetchDeals: async (origin) => {
     set({ isLoading: true, error: null, boardIndex: 0 });
