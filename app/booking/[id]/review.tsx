@@ -233,7 +233,7 @@ export default function ReviewPaymentScreen() {
               gender: passenger?.gender || 'm',
               title: passenger?.title || 'mr',
               email: passenger?.email || '',
-              phone_number: passenger?.phoneNumber || '',
+              phone_number: (passenger?.phoneNumber || '').replace(/[\s\-()]/g, ''),
             },
           ],
           selectedServices: selectedSeats
