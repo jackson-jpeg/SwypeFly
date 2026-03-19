@@ -15,6 +15,7 @@ jest.mock('node-appwrite', () => ({
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
     orderAsc: jest.fn((field: string) => `orderAsc:${field}`),
+    greaterThanEqual: jest.fn((...args: unknown[]) => `greaterThanEqual:${args.join(',')}`),
     limit: jest.fn((n: number) => `limit:${n}`),
   },
 }));
@@ -236,6 +237,7 @@ describe('GET /api/feed', () => {
     ];
     mockListDocuments
       .mockResolvedValueOnce({ documents: dests })   // destinations
+      .mockResolvedValueOnce({ documents: [] })       // price_calendar
       .mockResolvedValueOnce({ documents: prices })   // cached prices
       .mockResolvedValue({ documents: [] });           // hotel prices + images
 

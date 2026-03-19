@@ -16,6 +16,7 @@ jest.mock('node-appwrite', () => ({
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
     orderAsc: jest.fn((field: string) => `orderAsc:${field}`),
+    greaterThanEqual: jest.fn((...args: unknown[]) => `greaterThanEqual:${args.join(',')}`),
     limit: jest.fn((n: number) => `limit:${n}`),
     search: jest.fn((field: string, value: string) => `search:${field},${value}`),
   },
@@ -100,9 +101,10 @@ describe('feed countOnly', () => {
     ];
 
     mockListDocuments.mockResolvedValueOnce({ documents: dests, total: 3 });
-    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 });
-    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 });
-    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 });
+    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // price_calendar
+    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // cached_prices
+    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // hotel_prices
+    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // images
 
     const req = makeReq({ query: { origin: 'QQQ', countOnly: 'true', maxPrice: '300' } });
     const res = makeRes();

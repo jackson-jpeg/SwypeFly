@@ -126,6 +126,8 @@ interface ScoredDest {
   offer_expires_at?: string;
   flight_number?: string;
   tp_found_at?: string;
+  cheapest_date?: string;
+  cheapest_return_date?: string;
   live_hotel_price?: number | null;
   hotel_price_source?: string;
   available_flight_days?: string[];
@@ -502,8 +504,14 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     Query.limit(500),
   ]);
 
-  // Fetch cached prices, hotel prices, and refreshed images in parallel
-  const [priceResult, hotelPriceResult, imageResult] = await Promise.all([
+  // Fetch calendar prices, cached prices, hotel prices, and refreshed images in parallel
+  const [calendarResult, priceResult, hotelPriceResult, imageResult] = await Promise.all([
+    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
+      Query.equal('origin', origin),
+      Query.greaterThanEqual('date', new Date().toISOString().split('T')[0]),
+      Query.orderAsc('price'),
+      Query.limit(500),
+    ]).catch(() => ({ documents: [] })),
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
       Query.equal('origin', origin), Query.orderAsc('price'), Query.limit(500),
     ]).catch(() => ({ documents: [] })),
@@ -514,6 +522,28 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       Query.limit(2500),
     ]).catch(() => ({ documents: [] })),
   ]);
+
+  // Build calendar price lookup (Travelpayouts daily prices — cheapest per destination)
+  const calendarPriceMap = new Map<string, {
+    price: number;
+    date: string;
+    return_date: string;
+    trip_days: number;
+    airline: string;
+    source: string;
+  }>();
+  for (const p of calendarResult.documents) {
+    const dest = p.destination_iata as string;
+    if (calendarPriceMap.has(dest)) continue; // sorted by price ASC, first = cheapest
+    calendarPriceMap.set(dest, {
+      price: p.price as number,
+      date: (p.date as string) || '',
+      return_date: (p.return_date as string) || '',
+      trip_days: (p.trip_days as number) ?? 7,
+      airline: (p.airline as string) || '',
+      source: (p.source as string) || 'travelpayouts',
+    });
+  }
 
   const prices = priceResult.documents;
 
@@ -602,6 +632,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   }
 
   const merged: ScoredDest[] = destResult.documents.map((d) => {
+    const cp = calendarPriceMap.get(d.iata_code as string);
     const lp = priceMap.get(d.iata_code as string);
 
     // Parse JSON fields stored as strings in Appwrite
@@ -650,14 +681,16 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       nature_score: (d.nature_score as number) || 0,
       food_score: (d.food_score as number) || 0,
       popularity_score: (d.popularity_score as number) || 0,
-      live_price: lp?.price ?? null,
-      live_airline: lp?.airline ?? '',
+      live_price: cp?.price ?? lp?.price ?? null,
+      live_airline: cp?.airline ?? lp?.airline ?? '',
       live_duration: lp?.duration ?? '',
-      price_source: lp?.source ?? undefined,
+      price_source: cp ? cp.source : (lp?.source ?? undefined),
       price_fetched_at: lp?.fetched_at ?? undefined,
-      departure_date: lp?.departure_date,
-      return_date: lp?.return_date,
-      trip_duration_days: lp?.trip_duration_days,
+      departure_date: cp?.date ?? lp?.departure_date,
+      return_date: cp?.return_date ?? lp?.return_date,
+      trip_duration_days: cp?.trip_days ?? lp?.trip_duration_days,
+      cheapest_date: cp?.date || undefined,
+      cheapest_return_date: cp?.return_date || undefined,
       previous_price: lp?.previous_price,
       price_direction: lp?.price_direction,
       offer_json: lp?.offer_json,
@@ -727,6 +760,8 @@ function toFrontend(d: ScoredDest, origin?: string) {
     airlineLogoUrl: d.live_airline
       ? `https://pics.avs.io/200/80/${d.live_airline}.png`
       : undefined,
+    cheapestDate: d.cheapest_date || undefined,
+    cheapestReturnDate: d.cheapest_return_date || undefined,
     affiliateUrl:
       d.price_source === 'travelpayouts' && origin
         ? generateAviasalesLink(origin, d.iata_code, d.departure_date, d.return_date)
