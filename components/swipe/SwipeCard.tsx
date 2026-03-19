@@ -44,12 +44,10 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
   return (
     <Pressable style={styles.card} onPress={onTap}>
       {/* Background image */}
-      {Platform.OS === 'web' ? (
-        <View
-          style={[
-            StyleSheet.absoluteFillObject,
-            deal.imageUrl ? { backgroundImage: `url(${deal.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } as any : undefined,
-          ]}
+      {Platform.OS === 'web' && deal.imageUrl ? (
+        <RNImage
+          source={{ uri: deal.imageUrl }}
+          style={[StyleSheet.absoluteFillObject, { resizeMode: 'cover' } as any]}
         />
       ) : (
         <Image

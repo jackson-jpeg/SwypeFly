@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, Platform, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -20,12 +20,10 @@ interface SavedCardProps {
 export default function SavedCard({ deal, index = 0, onPress, onRemove }: SavedCardProps) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      {Platform.OS === 'web' ? (
-        <View
-          style={[
-            StyleSheet.absoluteFillObject,
-            deal.imageUrl ? { backgroundImage: `url(${deal.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } as any : undefined,
-          ]}
+      {Platform.OS === 'web' && deal.imageUrl ? (
+        <RNImage
+          source={{ uri: deal.imageUrl }}
+          style={[StyleSheet.absoluteFillObject, { resizeMode: 'cover' } as any]}
         />
       ) : (
         <Image
