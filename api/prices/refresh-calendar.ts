@@ -1,0 +1,282 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import {
+  serverDatabases,
+  DATABASE_ID,
+  COLLECTIONS,
+  Query,
+} from '../../services/appwriteServer';
+import { ID } from 'node-appwrite';
+import { fetchAllCheapPrices, fetchPriceCalendar } from '../../services/travelpayouts';
+import { logApiError } from '../../utils/apiLogger';
+
+// Pro plan allows up to 300s for serverless functions
+export const maxDuration = 300;
+
+// Concurrent calendar API calls per chunk (TP rate: 60 req/min → ~10 req/sec safe)
+const CONCURRENCY = 5;
+
+// Delay between batches to respect Travelpayouts rate limits
+const DELAY_BETWEEN_BATCHES = 1200;
+
+// ─── Top-10 fallback airports ────────────────────────────────────────
+
+const DEFAULT_ORIGINS = [
+  'TPA',
+  'LAX',
+  'JFK',
+  'ORD',
+  'ATL',
+  'SFO',
+  'MIA',
+  'DFW',
+  'SEA',
+  'BOS',
+];
+
+// ─── Helpers ─────────────────────────────────────────────────────────
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+async function getActiveOrigins(): Promise<string[]> {
+  const origins = new Set(DEFAULT_ORIGINS);
+  try {
+    const result = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.userPreferences,
+      [Query.limit(500)],
+    );
+    for (const doc of result.documents) {
+      if (doc.departure_code) origins.add(doc.departure_code as string);
+    }
+  } catch {
+    // user_preferences may not have data yet
+  }
+  return Array.from(origins);
+}
+
+async function pickNextOrigins(count: number): Promise<string[]> {
+  const origins = await getActiveOrigins();
+
+  let statusDocs: Array<Record<string, unknown>> = [];
+  try {
+    const result = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.priceCalendar,
+      [Query.orderAsc('fetched_at'), Query.limit(500)],
+    );
+    statusDocs = result.documents;
+  } catch {
+    // No calendar data yet
+  }
+
+  const lastRefreshed = new Map<string, string>();
+  for (const row of statusDocs) {
+    const o = row.origin as string;
+    const ts = row.fetched_at as string;
+    if (!lastRefreshed.has(o) || ts > lastRefreshed.get(o)!) {
+      lastRefreshed.set(o, ts);
+    }
+  }
+
+  const sorted = [...origins].sort((a, b) => {
+    const tsA = lastRefreshed.get(a);
+    const tsB = lastRefreshed.get(b);
+    if (!tsA && !tsB) return 0;
+    if (!tsA) return -1;
+    if (!tsB) return 1;
+    return new Date(tsA).getTime() - new Date(tsB).getTime();
+  });
+
+  return sorted.slice(0, count);
+}
+
+// ─── Upsert a single calendar entry ─────────────────────────────────
+
+async function upsertCalendarEntry(
+  origin: string,
+  destIata: string,
+  date: string,
+  price: number,
+  airline: string,
+  source: string,
+): Promise<'created' | 'updated' | 'error'> {
+  const data = {
+    origin,
+    destination_iata: destIata,
+    date,
+    price,
+    return_date: addDays(date, 7),
+    trip_days: 7,
+    airline,
+    source,
+    fetched_at: new Date().toISOString(),
+  };
+
+  try {
+    const existing = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.priceCalendar,
+      [
+        Query.equal('origin', origin),
+        Query.equal('destination_iata', destIata),
+        Query.equal('date', date),
+        Query.limit(1),
+      ],
+    );
+
+    if (existing.documents.length > 0) {
+      await serverDatabases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.priceCalendar,
+        existing.documents[0].$id,
+        data,
+      );
+      return 'updated';
+    } else {
+      await serverDatabases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.priceCalendar,
+        ID.unique(),
+        data,
+      );
+      return 'created';
+    }
+  } catch (err) {
+    console.error(
+      `[refresh-calendar] Upsert error ${origin}->${destIata} ${date}:`,
+      err,
+    );
+    return 'error';
+  }
+}
+
+// ─── Refresh calendar for one origin ─────────────────────────────────
+
+interface OriginResult {
+  origin: string;
+  bulkDestinations: number;
+  calendarEntries: number;
+  created: number;
+  updated: number;
+  errors: number;
+}
+
+async function refreshOrigin(origin: string): Promise<OriginResult> {
+  const result: OriginResult = {
+    origin,
+    bulkDestinations: 0,
+    calendarEntries: 0,
+    created: 0,
+    updated: 0,
+    errors: 0,
+  };
+
+  // Step 1: Get bulk cheap prices for all destinations from this origin
+  const bulkPrices = await fetchAllCheapPrices(origin);
+  result.bulkDestinations = bulkPrices.size;
+  console.log(
+    `[refresh-calendar] ${origin}: ${bulkPrices.size} destinations from bulk prices`,
+  );
+
+  if (bulkPrices.size === 0) return result;
+
+  // Step 2: For each destination, fetch daily price calendar
+  const destinations = Array.from(bulkPrices.keys());
+
+  for (let i = 0; i < destinations.length; i += CONCURRENCY) {
+    const chunk = destinations.slice(i, i + CONCURRENCY);
+
+    const calendarResults = await Promise.all(
+      chunk.map(async (dest) => {
+        const entries = await fetchPriceCalendar(origin, dest);
+        return { dest, entries };
+      }),
+    );
+
+    // Step 3: Upsert each calendar entry
+    for (const { dest, entries } of calendarResults) {
+      for (const entry of entries) {
+        const status = await upsertCalendarEntry(
+          origin,
+          dest,
+          entry.date,
+          entry.price,
+          entry.airline,
+          'travelpayouts_calendar',
+        );
+        result.calendarEntries++;
+        if (status === 'created') result.created++;
+        else if (status === 'updated') result.updated++;
+        else result.errors++;
+      }
+    }
+
+    // Rate limit delay between chunks
+    if (i + CONCURRENCY < destinations.length) {
+      await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+    }
+  }
+
+  console.log(
+    `[refresh-calendar] ${origin}: ${result.calendarEntries} entries (${result.created} created, ${result.updated} updated, ${result.errors} errors)`,
+  );
+
+  return result;
+}
+
+// ─── Handler ─────────────────────────────────────────────────────────
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Verify CRON_SECRET
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return res.status(503).json({ error: 'CRON_SECRET not configured' });
+  }
+  const authHeader = req.headers.authorization;
+  const provided = authHeader?.replace('Bearer ', '') || '';
+  if (provided !== cronSecret) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const originParam =
+    typeof req.query.origin === 'string' ? req.query.origin : '';
+
+  try {
+    let origins: string[];
+    if (originParam) {
+      origins = [originParam];
+    } else {
+      origins = await pickNextOrigins(2);
+      console.log(
+        `[refresh-calendar] Round-robin selected origins: ${origins.join(', ')}`,
+      );
+    }
+
+    console.log(
+      `[refresh-calendar] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`,
+    );
+
+    const results: OriginResult[] = [];
+    for (const org of origins) {
+      const result = await refreshOrigin(org);
+      results.push(result);
+    }
+
+    return res.status(200).json({
+      origins: results,
+      totalOrigins: results.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logApiError('api/prices/refresh-calendar', err);
+    return res.status(500).json({
+      error: 'Price calendar refresh failed',
+      detail: message,
+    });
+  }
+}
