@@ -738,7 +738,19 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       ? JSON.stringify(duffelErrors)
       : err?.message || err?.statusCode || String(err);
     console.error('[booking/create-order] Error detail:', detail);
-    return res.status(500).json({ error: `Booking failed: ${detail}` });
+
+    // User-friendly error messages for known Duffel issues
+    const firstError = Array.isArray(duffelErrors) ? duffelErrors[0] : null;
+    if (firstError?.code === 'insufficient_balance') {
+      return res.status(503).json({ error: 'Booking temporarily unavailable — please try again later' });
+    }
+    if (firstError?.code === 'invalid_phone_number') {
+      return res.status(400).json({ error: 'Invalid phone number — use international format like +12125551234' });
+    }
+    if (firstError?.code === 'not_found' && firstError?.source?.field === 'selected_offers') {
+      return res.status(410).json({ error: 'This offer has expired. Please search again.' });
+    }
+    return res.status(500).json({ error: 'Booking failed — please try again' });
   }
 }
 
