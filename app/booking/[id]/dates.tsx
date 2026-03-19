@@ -17,6 +17,12 @@ export default function DatesScreen() {
   const deal = useDealStore((s) => s.deals.find((d) => d.id === id));
   const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
 
+  // Only pre-select cached dates if they're in the future
+  const today = new Date().toISOString().split('T')[0];
+  const cachedDep = deal?.departureDate && deal.departureDate >= today ? deal.departureDate : null;
+  const cachedRet = deal?.returnDate && deal.returnDate >= today ? deal.returnDate : null;
+  const hasCachedDates = cachedDep != null && cachedRet != null;
+
   const storedDep = useBookingFlowStore((s) => s.departureDate);
   const storedRet = useBookingFlowStore((s) => s.returnDate);
 
@@ -55,12 +61,15 @@ export default function DatesScreen() {
           {deal.destinationFull || deal.destination} from {departureCode}
         </Text>
       )}
+      {hasCachedDates && !storedDep && (
+        <Text style={styles.dateHint}>Dates matched to best price found</Text>
+      )}
 
       <DatePickerSheet
         origin={departureCode}
         destination={deal?.iataCode || ''}
-        initialDepartureDate={storedDep || deal?.departureDate || null}
-        initialReturnDate={storedRet || deal?.returnDate || null}
+        initialDepartureDate={storedDep || cachedDep}
+        initialReturnDate={storedRet || cachedRet}
         onConfirm={handleConfirm}
       />
     </View>
@@ -94,6 +103,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
     color: colors.muted,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+  },
+  dateHint: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.green,
     paddingHorizontal: spacing.md,
     marginTop: spacing.xs,
   },

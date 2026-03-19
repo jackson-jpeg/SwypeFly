@@ -9,6 +9,7 @@ export interface BoardDeal {
   price: number | null;
   priceFormatted: string;
   status: 'DEAL' | 'HOT' | 'NEW';
+  priceSource: string;
   airline: string;
   departureDate: string;
   returnDate: string;

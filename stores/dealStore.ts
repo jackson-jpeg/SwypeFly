@@ -43,6 +43,8 @@ function randomFlightCode(airlineCode?: string): string {
 }
 
 function getStatus(priceDirection?: string, priceSource?: string): 'DEAL' | 'HOT' | 'NEW' {
+  // Don't label estimate/amadeus prices as deals — they're unreliable
+  if (priceSource === 'estimate' || priceSource === 'amadeus') return 'NEW';
   if (priceDirection === 'down') return 'DEAL';
   if (priceSource === 'duffel') return 'HOT';
   if (priceSource === 'travelpayouts') return 'DEAL';
@@ -67,6 +69,7 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     price,
     priceFormatted: price != null ? `$${price}` : 'Check',
     status: hasPrice ? getStatus(d.priceDirection, d.priceSource) : 'NEW',
+    priceSource: d.priceSource || 'unknown',
     airline: d.airline ? getAirlineName(d.airline) : 'Multiple Airlines',
     departureDate: depDate,
     returnDate: retDate,

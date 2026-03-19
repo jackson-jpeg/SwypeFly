@@ -82,7 +82,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
       </View>
 
       {/* Price tag — top right, split-flap digits */}
-      {deal.price != null && (
+      {deal.price != null && deal.priceSource !== 'estimate' && (
         <View style={styles.priceTag}>
           <Text style={styles.priceLabel}>from</Text>
           <SplitFlapRow
@@ -97,10 +97,10 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           <Text style={styles.priceLabel}>round trip</Text>
         </View>
       )}
-      {deal.price == null && (
+      {(deal.price == null || deal.priceSource === 'estimate') && (
         <View style={styles.priceTag}>
           <Ionicons name="search-outline" size={18} color={colors.yellow} />
-          <Text style={[styles.priceLabel, { color: colors.yellow, fontSize: 12 }]}>Tap to{'\n'}check price</Text>
+          <Text style={[styles.priceLabel, { color: colors.yellow, fontSize: 12 }]}>Tap to{'\n'}check prices</Text>
         </View>
       )}
 
@@ -180,7 +180,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
             onPress={onBook}
             style={({ pressed }) => [styles.bookBtn, pressed && styles.bookPressed]}
           >
-            <Text style={styles.bookLabel}>{deal.price != null ? `Book ${deal.priceFormatted}` : 'View Deal'}</Text>
+            <Text style={styles.bookLabel}>Search Flights</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.bg} />
           </Pressable>
         </View>

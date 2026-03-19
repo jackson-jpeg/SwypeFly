@@ -48,6 +48,7 @@ export function generateStubDeals(originCode: string = 'TPA'): BoardDeal[] {
       price,
       priceFormatted: `$${price}`,
       status: STATUSES[Math.floor(Math.random() * STATUSES.length)],
+      priceSource: 'stub',
       airline: flight.airline,
       departureDate: dates.dep,
       returnDate: dates.ret,
