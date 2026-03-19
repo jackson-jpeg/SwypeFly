@@ -50,7 +50,7 @@ function getStatus(priceDirection?: string, priceSource?: string): 'DEAL' | 'HOT
 }
 
 function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
-  const hasPrice = d.flightPrice != null && d.flightPrice > 0 && d.priceSource === 'duffel';
+  const hasPrice = d.flightPrice != null && d.flightPrice > 0;
   const price = hasPrice ? Math.round(d.flightPrice) : null;
   const tripDays = d.tripDurationDays ?? 5;
   const depDate = d.departureDate || '';
