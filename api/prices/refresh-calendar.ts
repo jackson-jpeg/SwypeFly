@@ -105,7 +105,7 @@ async function upsertCalendarEntry(
   price: number,
   airline: string,
   source: string,
-): Promise<'created' | 'updated' | 'error'> {
+): Promise<string> {
   const data = {
     origin,
     destination_iata: destIata,
@@ -127,7 +127,7 @@ async function upsertCalendarEntry(
       data,
     );
     return 'created';
-  } catch {
+  } catch (createErr) {
     // If duplicate, find and update
     try {
       const existing = await serverDatabases.listDocuments(
@@ -149,13 +149,9 @@ async function upsertCalendarEntry(
         );
         return 'updated';
       }
-      return 'error';
+      return `err:create=${(createErr as Error).message?.slice(0, 80)}`;
     } catch (err) {
-      console.error(
-        `[refresh-calendar] Upsert error ${origin}->${destIata} ${date}:`,
-        err,
-      );
-      return 'error';
+      return `err:${(err as Error).message?.slice(0, 80)}|create=${(createErr as Error).message?.slice(0, 40)}`;
     }
   }
 }
@@ -169,6 +165,7 @@ interface OriginResult {
   created: number;
   updated: number;
   errors: number;
+  firstError?: string;
 }
 
 async function refreshOrigin(origin: string): Promise<OriginResult> {
@@ -216,7 +213,10 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
           'travelpayouts_calendar',
         );
         result.calendarEntries++;
-        if (status === 'created') result.created++;
+        if (typeof status === 'string' && status.startsWith('err:')) {
+          result.errors++;
+          if (!result.firstError) result.firstError = status;
+        } else if (status === 'created') result.created++;
         else if (status === 'updated') result.updated++;
         else result.errors++;
       }
