@@ -24,7 +24,7 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://images.unsplash.com https://*.unsplash.com https://images.pexels.com https://pics.avs.io data: blob:; connect-src 'self' https://nyc.cloud.appwrite.io https://*.clerk.accounts.dev https://api.clerk.dev https://sogojet.com https://*.stripe.com; frame-ancestors 'self' https://sang3r.com https://www.sang3r.com" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://images.unsplash.com https://*.unsplash.com https://images.pexels.com https://pics.avs.io https://lh3.googleusercontent.com data: blob:; connect-src 'self' https://nyc.cloud.appwrite.io https://*.clerk.accounts.dev https://api.clerk.dev https://sogojet.com https://*.stripe.com; frame-ancestors 'self' https://sang3r.com https://www.sang3r.com" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self)" }
       ]
