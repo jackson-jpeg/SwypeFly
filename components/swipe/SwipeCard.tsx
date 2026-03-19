@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated, Image as RNImage } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -44,13 +44,22 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
   return (
     <Pressable style={styles.card} onPress={onTap}>
       {/* Background image */}
-      <Image
-        source={{ uri: deal.imageUrl }}
-        style={StyleSheet.absoluteFillObject}
-        contentFit="cover"
-        placeholder={deal.blurHash ? { blurhash: deal.blurHash } : undefined}
-        transition={400}
-      />
+      {Platform.OS === 'web' ? (
+        <View
+          style={[
+            StyleSheet.absoluteFillObject,
+            deal.imageUrl ? { backgroundImage: `url(${deal.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } as any : undefined,
+          ]}
+        />
+      ) : (
+        <Image
+          source={{ uri: deal.imageUrl }}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+          placeholder={deal.blurHash ? { blurhash: deal.blurHash } : undefined}
+          transition={400}
+        />
+      )}
 
       {/* Gradient overlay */}
       <LinearGradient
