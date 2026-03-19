@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   Dimensions,
-  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,57 +33,12 @@ export default function DestinationDetailScreen() {
   const isSaved = deal ? savedIds.includes(deal.id) : false;
 
   const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
-  const [livePrice, setLivePrice] = useState<{
-    price: number;
-    airline: string;
-    flightDuration: string;
-    departureDate: string;
-    returnDate: string;
-    cached: boolean;
-    searchedAt: string;
-  } | null>(null);
-  const [priceLoading, setPriceLoading] = useState(true);
-  const [priceError, setPriceError] = useState(false);
   const [animate, setAnimate] = useState(false);
-
-  const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 200);
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (!deal?.iataCode) return;
-
-    let cancelled = false;
-    setPriceLoading(true);
-    setPriceError(false);
-
-    fetch(`${API_BASE}/api/search?origin=${departureCode}&destination=${deal.iataCode}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setLivePrice(data);
-        // Update the deal in the store so going back shows fresh price
-        if (data.price && deal.id) {
-          useDealStore.getState().updateDealPrice(deal.id, data.price);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setPriceError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setPriceLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [deal?.iataCode, departureCode, deal?.id, API_BASE]);
 
   const handleBook = useCallback(() => {
     if (!deal) return;
@@ -157,41 +111,9 @@ export default function DestinationDetailScreen() {
           </View>
         </View>
 
-        {/* Price card */}
+        {/* Price card — show the deal's price from the feed */}
         <View style={styles.priceCard}>
-          {priceLoading ? (
-            <View style={styles.priceLeft}>
-              <Text style={styles.priceFrom}>Searching flights...</Text>
-              <ActivityIndicator size="small" color={colors.yellow} style={{ marginTop: 8 }} />
-            </View>
-          ) : livePrice ? (
-            <>
-              <View style={styles.priceLeft}>
-                <Text style={styles.priceFrom}>Round trip from</Text>
-                <SplitFlapRow
-                  text={`$${livePrice.price}`}
-                  maxLength={6}
-                  size="md"
-                  color={colors.yellow}
-                  align="right"
-                  startDelay={100}
-                  animate={animate}
-                />
-              </View>
-              <View style={styles.priceRight}>
-                <Text style={styles.priceDetail}>{livePrice.airline}</Text>
-                <Text style={styles.priceDetail}>{livePrice.flightDuration}</Text>
-                {livePrice.cached && (
-                  <Text style={[styles.priceDetail, { color: colors.faint }]}>cached</Text>
-                )}
-              </View>
-            </>
-          ) : priceError ? (
-            <View style={styles.priceLeft}>
-              <Text style={styles.priceFrom}>No flights available</Text>
-              <Text style={[styles.priceDetail, { marginTop: 4 }]}>Try different dates</Text>
-            </View>
-          ) : (
+          {deal.price != null ? (
             <>
               <View style={styles.priceLeft}>
                 <Text style={styles.priceFrom}>Round trip from</Text>
@@ -210,11 +132,15 @@ export default function DestinationDetailScreen() {
                 <Text style={styles.priceDetail}>{deal.flightDuration}</Text>
               </View>
             </>
+          ) : (
+            <View style={styles.priceLeft}>
+              <Text style={styles.priceFrom}>Price varies by date</Text>
+            </View>
           )}
         </View>
 
-        {/* Price context — only when showing cached/estimated price */}
-        {!priceLoading && !priceError && deal.price != null && (
+        {/* Price context hint */}
+        {deal.price != null && (
           <Text style={styles.priceContext}>
             Prices start from {deal.priceFormatted} and may vary by date
           </Text>
@@ -307,26 +233,11 @@ export default function DestinationDetailScreen() {
             color={isSaved ? '#E85D4A' : colors.white}
           />
         </Pressable>
-        <Pressable
-          style={[styles.bookBtn, priceError && styles.bookBtnAlt]}
-          onPress={handleBook}
-        >
-          <Text style={[styles.bookLabel, priceError && styles.bookLabelAlt]}>
-            {priceError
-              ? 'Try Different Dates'
-              : livePrice
-                ? `Book for $${livePrice.price}`
-                : priceLoading
-                  ? 'Searching...'
-                  : deal.price != null
-                    ? `Book for ${deal.priceFormatted}`
-                    : 'View Deal'}
+        <Pressable style={styles.bookBtn} onPress={handleBook}>
+          <Text style={styles.bookLabel}>
+            {deal.price != null ? `Book for ${deal.priceFormatted}` : 'View Deal'}
           </Text>
-          <Ionicons
-            name={priceError ? 'calendar-outline' : 'arrow-forward'}
-            size={18}
-            color={priceError ? colors.yellow : colors.bg}
-          />
+          <Ionicons name="arrow-forward" size={18} color={colors.bg} />
         </Pressable>
       </View>
     </View>
@@ -611,13 +522,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.bg,
     letterSpacing: 0.5,
-  },
-  bookBtnAlt: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.yellow,
-  },
-  bookLabelAlt: {
-    color: colors.yellow,
   },
 });
