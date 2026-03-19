@@ -13,6 +13,8 @@ export interface BoardDeal {
   airline: string;
   departureDate: string;
   returnDate: string;
+  cheapestDate: string;
+  cheapestReturnDate: string;
   tripDays: number;
   flightDuration: string;
   vibeTags: string[];

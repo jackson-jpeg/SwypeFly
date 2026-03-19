@@ -49,6 +49,9 @@ export default function SwipeFeed() {
       deal.destinationFull || deal.destination,
       deal.price ?? null,
     );
+    if (deal.cheapestDate && deal.cheapestReturnDate) {
+      store.setDates(deal.cheapestDate, deal.cheapestReturnDate);
+    }
     router.push(`/booking/${deal.id}/dates`);
   }, [router, departureCode]);
 

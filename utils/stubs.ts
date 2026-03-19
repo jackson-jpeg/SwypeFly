@@ -52,6 +52,8 @@ export function generateStubDeals(originCode: string = 'TPA'): BoardDeal[] {
       airline: flight.airline,
       departureDate: dates.dep,
       returnDate: dates.ret,
+      cheapestDate: '',
+      cheapestReturnDate: '',
       tripDays: dates.days,
       flightDuration: dest.flightDuration || '8h 30m',
       vibeTags: dest.vibeTags || [],

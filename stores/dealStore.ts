@@ -21,6 +21,8 @@ interface ApiDestination {
   vibeTags: string[];
   departureDate?: string;
   returnDate?: string;
+  cheapestDate?: string;
+  cheapestReturnDate?: string;
   tripDurationDays?: number;
   airline?: string;
   priceSource?: string;
@@ -73,6 +75,8 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     airline: d.airline ? getAirlineName(d.airline) : 'Multiple Airlines',
     departureDate: depDate,
     returnDate: retDate,
+    cheapestDate: d.cheapestDate || d.departureDate || '',
+    cheapestReturnDate: d.cheapestReturnDate || d.returnDate || '',
     tripDays,
     flightDuration: d.flightDuration || '—',
     vibeTags: d.vibeTags || [],
