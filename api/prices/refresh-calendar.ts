@@ -9,8 +9,10 @@ import { ID } from 'node-appwrite';
 import { fetchAllCheapPrices, fetchPriceCalendar } from '../../services/travelpayouts';
 import { logApiError } from '../../utils/apiLogger';
 
-// Pro plan allows up to 300s for serverless functions
 export const maxDuration = 300;
+
+// Max destinations per run — keeps execution within timeout
+const MAX_DESTINATIONS = 15;
 
 // Concurrent calendar API calls per chunk (TP rate: 60 req/min → ~10 req/sec safe)
 const CONCURRENCY = 5;
@@ -117,40 +119,44 @@ async function upsertCalendarEntry(
   };
 
   try {
-    const existing = await serverDatabases.listDocuments(
+    // Try create first (faster path for new entries)
+    await serverDatabases.createDocument(
       DATABASE_ID,
       COLLECTIONS.priceCalendar,
-      [
-        Query.equal('origin', origin),
-        Query.equal('destination_iata', destIata),
-        Query.equal('date', date),
-        Query.limit(1),
-      ],
+      ID.unique(),
+      data,
     );
-
-    if (existing.documents.length > 0) {
-      await serverDatabases.updateDocument(
+    return 'created';
+  } catch {
+    // If duplicate, find and update
+    try {
+      const existing = await serverDatabases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.priceCalendar,
-        existing.documents[0].$id,
-        data,
+        [
+          Query.equal('origin', origin),
+          Query.equal('destination_iata', destIata),
+          Query.equal('date', date),
+          Query.limit(1),
+        ],
       );
-      return 'updated';
-    } else {
-      await serverDatabases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.priceCalendar,
-        ID.unique(),
-        data,
+      if (existing.documents.length > 0) {
+        await serverDatabases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.priceCalendar,
+          existing.documents[0].$id,
+          data,
+        );
+        return 'updated';
+      }
+      return 'error';
+    } catch (err) {
+      console.error(
+        `[refresh-calendar] Upsert error ${origin}->${destIata} ${date}:`,
+        err,
       );
-      return 'created';
+      return 'error';
     }
-  } catch (err) {
-    console.error(
-      `[refresh-calendar] Upsert error ${origin}->${destIata} ${date}:`,
-      err,
-    );
-    return 'error';
   }
 }
 
@@ -185,7 +191,8 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
   if (bulkPrices.size === 0) return result;
 
   // Step 2: For each destination, fetch daily price calendar
-  const destinations = Array.from(bulkPrices.keys());
+  // Cap to MAX_DESTINATIONS to stay within function timeout
+  const destinations = Array.from(bulkPrices.keys()).slice(0, MAX_DESTINATIONS);
 
   for (let i = 0; i < destinations.length; i += CONCURRENCY) {
     const chunk = destinations.slice(i, i + CONCURRENCY);

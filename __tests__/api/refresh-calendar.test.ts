@@ -229,6 +229,8 @@ describe('api/prices/refresh-calendar', () => {
       { date: '2026-04-01', price: 340, airline: 'IB', transferCount: 0 },
     ]);
 
+    // createDocument fails (duplicate) → triggers fallback update path
+    mockDatabases.createDocument.mockRejectedValue(new Error('Document already exists'));
     mockDatabases.updateDocument.mockResolvedValue({ $id: 'existing-cal-1' });
 
     const req = makeReq({
@@ -239,9 +241,9 @@ describe('api/prices/refresh-calendar', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    // Should update, not create
+    // Create should have been attempted then failed, triggering update
+    expect(mockDatabases.createDocument).toHaveBeenCalled();
     expect(mockDatabases.updateDocument).toHaveBeenCalledTimes(1);
-    expect(mockDatabases.createDocument).not.toHaveBeenCalled();
     expect(mockDatabases.updateDocument.mock.calls[0][2]).toBe('existing-cal-1');
   });
 
