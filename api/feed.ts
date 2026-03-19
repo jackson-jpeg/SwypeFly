@@ -921,6 +921,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       destinations = destinations.filter((d) => !excludeSet.has(d.id));
     }
 
+    // countOnly mode — return just the count for filter preview
+    if (v.data.countOnly === 'true') {
+      return res.status(200).json({ count: destinations.length });
+    }
+
     // Try to extract user ID for personalized scoring (non-blocking)
     let userPrefs: UserPrefs | null = null;
     try {

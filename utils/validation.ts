@@ -25,6 +25,7 @@ export const feedQuerySchema = z.object({
   minPrice: z.string().transform((v) => parseInt(v, 10)).pipe(z.number().int().min(1).max(10000)).optional(),
   search: z.string().max(100).optional(),
   durationFilter: z.enum(['any', 'weekend', 'week', 'extended']).optional(),
+  countOnly: z.literal('true').optional(),
   // Quiz-based personalization (optional — feed works without these)
   travelStyle: z.enum(['budget', 'comfort', 'luxury']).optional(),
   budgetLevel: z.enum(['low', 'medium', 'high']).optional(),
