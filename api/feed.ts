@@ -684,7 +684,8 @@ function toFrontend(d: ScoredDest, origin?: string) {
     country: d.country,
     tagline: d.tagline,
     description: d.description,
-    imageUrl: d.image_url,
+    // Prefer Google Places photos (city-specific) over Unsplash (often generic)
+    imageUrl: d.image_urls?.[0] || d.image_url,
     imageUrls: d.image_urls,
     flightPrice: d.live_price ?? d.flight_price,
     hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
