@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import SwipeCard from './SwipeCard';
 import type { BoardDeal } from '../../types/deal';
 import { colors, spacing } from '../../theme/tokens';
@@ -38,8 +39,16 @@ export default function SwipeFeed() {
   );
 
   const handleBook = useCallback((deal: BoardDeal) => {
-    router.push(`/booking/${deal.id}`);
-  }, [router]);
+    const store = useBookingFlowStore.getState();
+    store.reset();
+    store.setTripContext(
+      departureCode || 'TPA',
+      deal.iataCode,
+      deal.destinationFull || deal.destination,
+      deal.price ?? null,
+    );
+    router.push(`/booking/${deal.id}/dates`);
+  }, [router, departureCode]);
 
   const handleEndReached = useCallback(async () => {
     setLoadingMore(true);

@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
+import TripBanner from '../../../components/booking/TripBanner';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import { useDealStore } from '../../../stores/dealStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
@@ -62,7 +63,8 @@ function formatDateTime(iso: string): string {
 
 function formatDate(iso: string): string {
   try {
-    const d = new Date(iso);
+    // Append T00:00:00 to force local timezone interpretation for date-only strings
+    const d = new Date(iso.includes('T') ? iso : iso + 'T00:00:00');
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch {
     return iso;
@@ -337,6 +339,7 @@ export default function ReviewPaymentScreen() {
         </View>
       </View>
 
+      <TripBanner />
       <View style={styles.divider} />
 
       {loading || refreshing ? (

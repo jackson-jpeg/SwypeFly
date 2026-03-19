@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Set before import so STUB_MODE = false in tests (we mock Duffel ourselves)
+process.env.DUFFEL_API_KEY = 'test-key';
+
 const mockListDocuments = jest.fn();
 const mockCreateDocument = jest.fn();
 const mockUpdateDocument = jest.fn();

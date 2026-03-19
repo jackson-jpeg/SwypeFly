@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
+import TripBanner from '../../../components/booking/TripBanner';
 import { useDealStore } from '../../../stores/dealStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
@@ -18,7 +19,7 @@ import { colors, fonts, spacing } from '../../../theme/tokens';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
-// Default departure date: ~2 weeks out, shifted to next Wednesday
+// Fallback departure date: ~2 weeks out, shifted to next Wednesday
 function getDefaultDepartureDate(): string {
   const now = new Date();
   const twoWeeksOut = new Date(now.getTime() + 14 * 86400000);
@@ -26,6 +27,11 @@ function getDefaultDepartureDate(): string {
   const daysUntilWed = (3 - dayOfWeek + 7) % 7 || 7;
   const departure = new Date(twoWeeksOut.getTime() + daysUntilWed * 86400000);
   return departure.toISOString().split('T')[0];
+}
+
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -97,6 +103,9 @@ export default function FlightSelectionScreen() {
 
   const deal = useDealStore((s) => s.deals.find((d) => d.id === id));
   const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
+  const storeDepartureDate = useBookingFlowStore((s) => s.departureDate);
+  const storeReturnDate = useBookingFlowStore((s) => s.returnDate);
+  const feedPrice = useBookingFlowStore((s) => s.feedPrice);
 
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,8 +127,8 @@ export default function FlightSelectionScreen() {
         body: JSON.stringify({
           origin: departureCode,
           destination: deal.iataCode,
-          departureDate: deal.departureDate || getDefaultDepartureDate(),
-          returnDate: deal.returnDate || undefined,
+          departureDate: storeDepartureDate || deal.departureDate || getDefaultDepartureDate(),
+          returnDate: storeReturnDate || deal.returnDate || undefined,
           passengers: [{ type: 'adult' }],
           cabinClass: 'economy',
           priceHint: deal.price || undefined,
@@ -187,11 +196,32 @@ export default function FlightSelectionScreen() {
         </View>
       </View>
 
-      {/* Subtitle */}
-      <Text style={styles.subtitle}>
-        {deal.destinationFull || deal.destination} from {departureCode}
-      </Text>
+      {/* Trip context */}
+      <TripBanner />
+      <View style={styles.subtitleRow}>
+        <Text style={styles.subtitle}>
+          {deal.destinationFull || deal.destination} from {departureCode}
+          {storeDepartureDate ? ` · ${formatShortDate(storeDepartureDate)}` : ''}
+          {storeReturnDate ? ` – ${formatShortDate(storeReturnDate)}` : ''}
+        </Text>
+        <Pressable onPress={() => router.push(`/booking/${id}/dates`)} hitSlop={8}>
+          <Text style={styles.changeDates}>Change dates</Text>
+        </Pressable>
+      </View>
       <View style={styles.divider} />
+
+      {/* Price divergence info banner */}
+      {!loading &&
+        feedPrice != null &&
+        offers.length > 0 &&
+        Math.abs(offers[0].totalAmount - feedPrice) / feedPrice > 0.2 && (
+          <View style={styles.priceBanner}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.muted} />
+            <Text style={styles.priceBannerText}>
+              Live prices for your dates — may differ from browse estimates
+            </Text>
+          </View>
+        )}
 
       {/* Content */}
       {loading ? (
@@ -381,12 +411,41 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
   },
-  subtitle: {
-    fontFamily: fonts.body,
-    fontSize: 14,
-    color: colors.muted,
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     marginTop: spacing.xs,
+  },
+  subtitle: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.muted,
+    flex: 1,
+  },
+  changeDates: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    color: colors.yellow,
+    marginLeft: spacing.sm,
+  },
+  priceBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+  },
+  priceBannerText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
+    flex: 1,
   },
   divider: {
     borderBottomWidth: 0.5,

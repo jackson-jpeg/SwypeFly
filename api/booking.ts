@@ -511,23 +511,30 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
 async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const jwt = getJwt(req);
-  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
-
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Stripe/Duffel API keys not configured');
     return res.status(200).json(stubPaymentIntent());
   }
 
   try {
-    const user = await verifyUser(jwt);
+    const jwt = getJwt(req);
+    let userId = 'guest';
+    if (jwt) {
+      const user = await verifyUser(jwt);
+      userId = user.$id;
+    }
+
     const v = validateRequest(paymentIntentSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
+    // For guest checkout, use email from request body as receipt_email
+    const receiptEmail = (req.body as Record<string, unknown>)?.email as string | undefined;
+
     const { createPaymentIntent } = await import('../services/stripe.js');
     const result = await createPaymentIntent(v.data.amount, v.data.currency, {
-      userId: user.$id,
+      userId,
       offerId: v.data.offerId,
+      ...(receiptEmail ? { receipt_email: receiptEmail } : {}),
     });
     return res.status(200).json(result);
   } catch (err: any) {
@@ -541,16 +548,19 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
 async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const jwt = getJwt(req);
-  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
-
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Duffel API key not configured');
     return res.status(200).json(stubCreateOrder());
   }
 
   try {
-    const user = await verifyUser(jwt);
+    const jwt = getJwt(req);
+    let userId = 'guest';
+    if (jwt) {
+      const user = await verifyUser(jwt);
+      userId = user.$id;
+    }
+
     const v = validateRequest(createOrderSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
@@ -609,12 +619,18 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     const airlineName = firstSeg?.operating_carrier?.name ?? '';
     const bookingRef = duffelOrder.booking_reference ?? '';
 
+    // Permissions: auth'd users get user-scoped; guests get any-read (server manages access)
+    const permissions =
+      userId !== 'guest'
+        ? [Permission.read(Role.user(userId)), Permission.delete(Role.user(userId))]
+        : [Permission.read(Role.any())];
+
     const booking = await databases.createDocument(
       DATABASE_ID,
       'bookings',
       ID.unique(),
       {
-        user_id: user.$id,
+        user_id: userId,
         duffel_order_id: duffelOrder.id,
         status: 'confirmed',
         total_amount: parseFloat(duffelOrder.total_amount),
@@ -630,8 +646,11 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
         airline: airlineName,
         booking_reference: bookingRef,
       },
-      [Permission.read(Role.user(user.$id)), Permission.delete(Role.user(user.$id))],
+      permissions,
     );
+
+    const passengerPermissions =
+      userId !== 'guest' ? [Permission.read(Role.user(userId))] : [Permission.read(Role.any())];
 
     for (const passenger of v.data.passengers) {
       await databases.createDocument(
@@ -648,7 +667,7 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
           email: passenger.email,
           phone_number: passenger.phone_number,
         },
-        [Permission.read(Role.user(user.$id))],
+        passengerPermissions,
       );
     }
 

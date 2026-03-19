@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
+import TripBanner from '../../../components/booking/TripBanner';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../../theme/tokens';
 
@@ -184,6 +185,7 @@ export default function SeatSelectionScreen() {
         </View>
       </View>
 
+      <TripBanner />
       <View style={styles.divider} />
 
       {/* Content */}
@@ -196,17 +198,11 @@ export default function SeatSelectionScreen() {
         <View style={styles.centerContent}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.orange} />
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={handleSkip} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Skip Seat Selection</Text>
-          </Pressable>
         </View>
       ) : !seatMap ? (
         <View style={styles.centerContent}>
           <Ionicons name="grid-outline" size={48} color={colors.muted} />
           <Text style={styles.errorText}>Seat map not available for this flight</Text>
-          <Pressable onPress={handleSkip} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Continue Without Seat</Text>
-          </Pressable>
         </View>
       ) : (
         <>
@@ -292,8 +288,8 @@ export default function SeatSelectionScreen() {
         </>
       )}
 
-      {/* Bottom bar */}
-      {!loading && !error && (
+      {/* Bottom bar — always shown (except while loading) */}
+      {!loading && (
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.md }]}>
           {selectedSeat ? (
             <View style={styles.bottomInfo}>
@@ -308,12 +304,12 @@ export default function SeatSelectionScreen() {
               )}
             </View>
           ) : (
-            <Pressable onPress={handleSkip}>
-              <Text style={styles.skipText}>Skip</Text>
-            </Pressable>
+            <View style={styles.bottomInfo} />
           )}
           <Pressable onPress={handleContinue} style={styles.continueBtn}>
-            <Text style={styles.continueBtnText}>Continue</Text>
+            <Text style={styles.continueBtnText}>
+              {selectedSeat ? 'Continue' : 'Continue without seat'}
+            </Text>
             <Ionicons name="arrow-forward" size={20} color={colors.bg} />
           </Pressable>
         </View>

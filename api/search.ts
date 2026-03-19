@@ -7,6 +7,8 @@ import { searchQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors';
 
+const STUB_MODE = !process.env.DUFFEL_API_KEY;
+
 // ─── Date strategy (same as cron: ~2 weeks out, shifted to next Wednesday) ──
 
 function getSearchDates(): { departureDate: string; returnDate: string } {
@@ -15,7 +17,7 @@ function getSearchDates(): { departureDate: string; returnDate: string } {
   const dayOfWeek = twoWeeksOut.getDay();
   const daysUntilWed = (3 - dayOfWeek + 7) % 7 || 7;
   const departure = new Date(twoWeeksOut.getTime() + daysUntilWed * 86400000);
-  const returnDate = new Date(departure.getTime() + 7 * 86400000);
+  const returnDate = new Date(departure.getTime() + 5 * 86400000);
   return {
     departureDate: departure.toISOString().split('T')[0],
     returnDate: returnDate.toISOString().split('T')[0],
@@ -135,6 +137,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (cached.documents.length > 0 && isFreshCache(cached.documents[0])) {
       return res.status(200).json(buildResponse(cached.documents[0], true));
+    }
+
+    // If we have any cached data (even stale), return it when Duffel is unavailable
+    if (STUB_MODE) {
+      if (cached.documents.length > 0) {
+        return res.status(200).json(buildResponse(cached.documents[0], true));
+      }
+      return res.status(404).json({ error: 'No flights found (search unavailable)' });
     }
 
     // Cache miss — perform live Duffel search

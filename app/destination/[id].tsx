@@ -17,6 +17,7 @@ import SplitFlapRow from '../../components/board/SplitFlapRow';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../theme/tokens';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -87,8 +88,17 @@ export default function DestinationDetailScreen() {
 
   const handleBook = useCallback(() => {
     if (!deal) return;
-    router.push(`/booking/${deal.id}`);
-  }, [deal, router]);
+    // Store trip context before entering booking flow
+    const store = useBookingFlowStore.getState();
+    store.reset();
+    store.setTripContext(
+      departureCode,
+      deal.iataCode,
+      deal.destinationFull || deal.destination,
+      deal.price ?? null,
+    );
+    router.push(`/booking/${deal.id}/dates`);
+  }, [deal, router, departureCode]);
 
   if (!deal) {
     return (
@@ -203,6 +213,13 @@ export default function DestinationDetailScreen() {
           )}
         </View>
 
+        {/* Price context — only when showing cached/estimated price */}
+        {!priceLoading && !priceError && deal.price != null && (
+          <Text style={styles.priceContext}>
+            Prices start from {deal.priceFormatted} and may vary by date
+          </Text>
+        )}
+
         {/* Trip details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>TRIP DETAILS</Text>
@@ -290,17 +307,26 @@ export default function DestinationDetailScreen() {
             color={isSaved ? '#E85D4A' : colors.white}
           />
         </Pressable>
-        <Pressable style={styles.bookBtn} onPress={handleBook}>
-          <Text style={styles.bookLabel}>
-            {livePrice
-              ? `Book for $${livePrice.price}`
-              : priceLoading
-                ? 'Searching...'
-                : deal.price != null
-                  ? `Book for ${deal.priceFormatted}`
-                  : 'View Deal'}
+        <Pressable
+          style={[styles.bookBtn, priceError && styles.bookBtnAlt]}
+          onPress={handleBook}
+        >
+          <Text style={[styles.bookLabel, priceError && styles.bookLabelAlt]}>
+            {priceError
+              ? 'Try Different Dates'
+              : livePrice
+                ? `Book for $${livePrice.price}`
+                : priceLoading
+                  ? 'Searching...'
+                  : deal.price != null
+                    ? `Book for ${deal.priceFormatted}`
+                    : 'View Deal'}
           </Text>
-          <Ionicons name="arrow-forward" size={18} color={colors.bg} />
+          <Ionicons
+            name={priceError ? 'calendar-outline' : 'arrow-forward'}
+            size={18}
+            color={priceError ? colors.yellow : colors.bg}
+          />
         </Pressable>
       </View>
     </View>
@@ -318,7 +344,8 @@ function DetailItem({ icon, label, value }: { icon: string; label: string; value
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
+  // Append T00:00:00 to force local timezone interpretation (YYYY-MM-DD alone is parsed as UTC)
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
@@ -395,6 +422,15 @@ const styles = StyleSheet.create({
     fontSize: 38,
     color: colors.yellow,
     lineHeight: 42,
+  },
+  priceContext: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.faint,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    marginHorizontal: spacing.md,
+    fontStyle: 'italic',
   },
   priceRight: { alignItems: 'flex-end', gap: 2 },
   priceDetail: {
@@ -575,5 +611,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.bg,
     letterSpacing: 0.5,
+  },
+  bookBtnAlt: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.yellow,
+  },
+  bookLabelAlt: {
+    color: colors.yellow,
   },
 });

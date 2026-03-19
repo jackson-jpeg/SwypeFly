@@ -278,7 +278,7 @@ describe('POST /api/booking', () => {
   // ─── action=payment-intent (stub mode) ──────────────────────────────────
 
   describe('action=payment-intent', () => {
-    it('returns 401 without Authorization header', async () => {
+    it('allows guest checkout without Authorization header (stub mode)', async () => {
       const req = makeReq({
         method: 'POST',
         query: { action: 'payment-intent' },
@@ -286,8 +286,8 @@ describe('POST /api/booking', () => {
       });
       const res = makeRes();
       await handler(req, res);
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      // Guest checkout returns 200 in stub mode
+      expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('returns clientSecret when authenticated', async () => {
@@ -324,7 +324,7 @@ describe('POST /api/booking', () => {
   // ─── action=create-order (stub mode) ────────────────────────────────────
 
   describe('action=create-order', () => {
-    it('returns 401 without Authorization header', async () => {
+    it('allows guest checkout without Authorization header (stub mode)', async () => {
       const req = makeReq({
         method: 'POST',
         query: { action: 'create-order' },
@@ -332,8 +332,8 @@ describe('POST /api/booking', () => {
       });
       const res = makeRes();
       await handler(req, res);
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      // Guest checkout returns 200 in stub mode
+      expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('returns booking reference in stub mode', async () => {

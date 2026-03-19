@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts, spacing } from '../../../theme/tokens';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
+import TripBanner from '../../../components/booking/TripBanner';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import type { Passenger } from '../../../stores/bookingFlowStore';
 
@@ -98,6 +99,7 @@ export default function PassengersScreen() {
         </View>
         <Text style={styles.subtitle}>Traveler 1 of 1</Text>
       </View>
+      <TripBanner />
 
       <ScrollView
         style={styles.scrollView}
