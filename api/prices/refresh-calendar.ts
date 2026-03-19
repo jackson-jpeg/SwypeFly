@@ -210,7 +210,7 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
           entry.date,
           entry.price,
           entry.airline,
-          'travelpayouts_calendar',
+          'travelpayouts',
         );
         result.calendarEntries++;
         if (typeof status === 'string' && status.startsWith('err:')) {
