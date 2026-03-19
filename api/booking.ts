@@ -564,10 +564,20 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     const v = validateRequest(createOrderSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
-    const { getPaymentIntent } = await import('../services/stripe.js');
-    const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
+    const { getPaymentIntent, autoConfirmPaymentIntent } = await import('../services/stripe.js');
+    let paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
+
+    // Auto-confirm if payment hasn't been collected yet (no Stripe Elements on client)
+    if (paymentIntent.status === 'requires_payment_method' || paymentIntent.status === 'requires_confirmation') {
+      try {
+        paymentIntent = await autoConfirmPaymentIntent(v.data.paymentIntentId);
+      } catch (confirmErr: any) {
+        console.warn('[booking/create-order] Auto-confirm failed:', confirmErr.message);
+      }
+    }
+
     if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ error: 'Payment not completed' });
+      return res.status(400).json({ error: `Payment not completed (status: ${paymentIntent.status})` });
     }
 
     // Check if the offer has expired before attempting to create the order

@@ -49,6 +49,17 @@ export async function getPaymentIntent(paymentIntentId: string) {
   return stripe.paymentIntents.retrieve(paymentIntentId);
 }
 
+// ─── Auto-confirm Payment Intent (test mode) ───────────────────────────────
+// Used when client-side Stripe Elements aren't wired up yet.
+// Only works with Stripe test keys (sk_test_*).
+
+export async function autoConfirmPaymentIntent(paymentIntentId: string) {
+  const stripe = getStripe();
+  return stripe.paymentIntents.confirm(paymentIntentId, {
+    payment_method: 'pm_card_visa',
+  });
+}
+
 // ─── Verify Webhook Signature ───────────────────────────────────────────────
 
 export function constructWebhookEvent(
