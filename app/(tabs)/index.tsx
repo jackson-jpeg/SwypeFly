@@ -1,27 +1,46 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDealStore } from '../../stores/dealStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useFilterStore } from '../../stores/filterStore';
 import SwipeFeed from '../../components/swipe/SwipeFeed';
 import SkeletonCard from '../../components/swipe/SkeletonCard';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
+import FilterButton from '../../components/swipe/FilterButton';
+import FilterSheet from '../../components/swipe/FilterSheet';
 import { colors, fonts } from '../../theme/tokens';
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { deals, isLoading, error, fetchDeals } = useDealStore();
   const departureCode = useSettingsStore((s) => s.departureCode);
+  const toQueryParams = useFilterStore((s) => s.toQueryParams);
+  const clearFilters = useFilterStore((s) => s.clearAll);
+  const isSheetOpen = useFilterStore((s) => s.isOpen);
+  const prevDepartureRef = useRef(departureCode);
 
+  // Clear filters when departure city changes (fresh context)
   useEffect(() => {
-    fetchDeals(departureCode);
-  }, [departureCode, fetchDeals]);
+    if (prevDepartureRef.current !== departureCode) {
+      prevDepartureRef.current = departureCode;
+      clearFilters();
+    }
+  }, [departureCode]);
+
+  // Refetch when filters change (sheet closes) or departure changes
+  useEffect(() => {
+    if (!isSheetOpen) {
+      fetchDeals(departureCode, toQueryParams());
+    }
+  }, [departureCode, isSheetOpen]);
 
   return (
     <View style={styles.container}>
       {/* Floating header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.logo}>✈ SOGOJET</Text>
+        <FilterButton />
         <View style={styles.airportBadge}>
           <Text style={styles.airportText}>{departureCode}</Text>
         </View>
@@ -45,12 +64,15 @@ export default function FeedScreen() {
           <Text style={styles.emptySubtitle}>
             {error
               ? 'Check your connection and try again'
-              : 'Try a different departure city'}
+              : 'Try a different departure city or adjust filters'}
           </Text>
         </View>
       ) : (
         <SwipeFeed />
       )}
+
+      {/* Filter sheet overlay */}
+      <FilterSheet />
     </View>
   );
 }
