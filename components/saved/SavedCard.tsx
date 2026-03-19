@@ -21,9 +21,10 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove }: SavedC
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       {Platform.OS === 'web' && deal.imageUrl ? (
-        <RNImage
-          source={{ uri: deal.imageUrl }}
-          style={[StyleSheet.absoluteFillObject, { resizeMode: 'cover' } as any]}
+        <img
+          src={deal.imageUrl}
+          alt=""
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
         <Image

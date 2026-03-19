@@ -45,9 +45,11 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
     <Pressable style={styles.card} onPress={onTap}>
       {/* Background image */}
       {Platform.OS === 'web' && deal.imageUrl ? (
-        <RNImage
-          source={{ uri: deal.imageUrl }}
-          style={[StyleSheet.absoluteFillObject, { resizeMode: 'cover' } as any]}
+        // expo-image and RNImage both fail to render on web — use raw <img>
+        <img
+          src={deal.imageUrl}
+          alt=""
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
         <Image
