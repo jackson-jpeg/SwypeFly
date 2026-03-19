@@ -13,6 +13,52 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
   const { origin, destination, month } = v.data;
 
   try {
+    const datePrefix = month || new Date().toISOString().slice(0, 7);
+    const today = new Date().toISOString().split('T')[0];
+
+    // Try price_calendar collection first (cached by cron)
+    let calendarDocs;
+    try {
+      calendarDocs = await serverDatabases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.priceCalendar,
+        [
+          Query.equal('origin', origin),
+          Query.equal('destination_iata', destination),
+          Query.greaterThanEqual('date', today),
+          Query.orderAsc('date'),
+          Query.limit(90),
+        ],
+      );
+    } catch {
+      calendarDocs = { documents: [] };
+    }
+
+    // Filter to requested month
+    const monthDocs = calendarDocs.documents.filter(
+      (d) => (d.date as string).startsWith(datePrefix),
+    );
+
+    if (monthDocs.length > 0) {
+      const calendar = monthDocs.map((d) => ({
+        date: d.date as string,
+        price: d.price as number,
+        airline: (d.airline as string) || '',
+        transferCount: 0,
+      }));
+
+      const cheapest = calendar.reduce((min, entry) =>
+        entry.price < min.price ? entry : min, calendar[0]);
+
+      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+      return res.status(200).json({
+        calendar,
+        cheapestDate: cheapest.date,
+        cheapestPrice: cheapest.price,
+      });
+    }
+
+    // Fallback: live Travelpayouts call
     const calendar = await fetchPriceCalendar(origin, destination, 'USD', month);
     if (calendar.length === 0) {
       return res.status(200).json({ calendar: [], cheapestDate: null, cheapestPrice: null });
