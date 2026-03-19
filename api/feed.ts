@@ -626,8 +626,10 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       continent: (d.continent as string) || undefined,
       tagline: (d.tagline as string) || '',
       description: (d.description as string) || '',
-      image_url: imageMap.get(d.$id)?.url || (d.image_url as string) || '',
-      image_urls: imageMap.get(d.$id)?.urls || (d.image_urls as string[]) || [],
+      // Prefer Google Places photos on the destination doc (city-specific)
+      // over destination_images collection (generic Unsplash)
+      image_url: (d.image_url as string) || imageMap.get(d.$id)?.url || '',
+      image_urls: (d.image_urls as string[])?.length ? (d.image_urls as string[]) : imageMap.get(d.$id)?.urls || [],
       flight_price: d.flight_price as number,
       hotel_price_per_night: (d.hotel_price_per_night as number) || 0,
       currency: (d.currency as string) || 'USD',
