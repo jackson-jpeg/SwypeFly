@@ -18,6 +18,16 @@ import { colors, fonts, spacing } from '../../../theme/tokens';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
+// Default departure date: ~2 weeks out, shifted to next Wednesday
+function getDefaultDepartureDate(): string {
+  const now = new Date();
+  const twoWeeksOut = new Date(now.getTime() + 14 * 86400000);
+  const dayOfWeek = twoWeeksOut.getDay();
+  const daysUntilWed = (3 - dayOfWeek + 7) % 7 || 7;
+  const departure = new Date(twoWeeksOut.getTime() + daysUntilWed * 86400000);
+  return departure.toISOString().split('T')[0];
+}
+
 // ─── Types ────────────────────────────────────────────────────────────
 
 interface OfferSlice {
@@ -108,7 +118,7 @@ export default function FlightSelectionScreen() {
         body: JSON.stringify({
           origin: departureCode,
           destination: deal.iataCode,
-          departureDate: deal.departureDate || undefined,
+          departureDate: deal.departureDate || getDefaultDepartureDate(),
           returnDate: deal.returnDate || undefined,
           passengers: [{ type: 'adult' }],
           cabinClass: 'economy',
