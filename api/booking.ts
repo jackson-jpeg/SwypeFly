@@ -16,6 +16,7 @@ import {
 import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { COLLECTIONS } from '../services/appwriteServer';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
 
 const DATABASE_ID = 'sogojet';
@@ -1184,6 +1185,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (STUB_MODE && process.env.NODE_ENV === 'production') {
     if (action === 'payment-intent' || action === 'create-order') {
       return res.status(503).json({ error: 'Booking service not configured' });
+    }
+  }
+
+  // Rate limit expensive write actions: 5 req/min for booking ops, 15 req/min for search
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const expensiveActions = ['payment-intent', 'create-order', 'hotel-book'];
+  if (expensiveActions.includes(action)) {
+    const rl = checkRateLimit(`booking-write:${ip}`, 5, 60_000);
+    if (!rl.allowed) {
+      return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+    }
+  } else if (action === 'search' || action === 'hotel-search') {
+    const rl = checkRateLimit(`booking-search:${ip}`, 15, 60_000);
+    if (!rl.allowed) {
+      return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
     }
   }
 

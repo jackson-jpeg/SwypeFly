@@ -3,6 +3,7 @@ import { Client, Databases, Query, ID } from 'node-appwrite';
 import { swipeBodySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
 
 const DATABASE_ID = 'sogojet';
@@ -47,6 +48,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limit: 30 req/min per IP
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`swipe:${ip}`, 30, 60_000);
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
   }
 
   // Require auth

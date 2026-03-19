@@ -86,6 +86,7 @@ export default function ReviewPaymentScreen() {
 
   const [offer, setOffer] = useState<OfferData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [animate, setAnimate] = useState(false);
 
@@ -103,6 +104,13 @@ export default function ReviewPaymentScreen() {
 
   // ─── Fetch offer details ───────────────────────────────────────
 
+  const fetchOffer = useCallback(async (oid: string) => {
+    const res = await fetch(`${API_BASE}/api/booking?action=offer&offerId=${oid}`);
+    if (!res.ok) throw new Error(`Failed to load offer (${res.status})`);
+    const data = await res.json();
+    return (data.offer || data) as OfferData;
+  }, []);
+
   useEffect(() => {
     if (!offerId) {
       setError('No offer selected');
@@ -114,14 +122,36 @@ export default function ReviewPaymentScreen() {
     setLoading(true);
     setError(null);
 
-    fetch(`${API_BASE}/api/booking?action=offer&offerId=${offerId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load offer (${res.status})`);
-        return res.json();
-      })
-      .then((data) => {
+    fetchOffer(offerId)
+      .then((offerData) => {
         if (cancelled) return;
-        setOffer(data.offer || data);
+        // Check if offer has already expired
+        if (offerData.expiresAt && new Date(offerData.expiresAt) < new Date()) {
+          setRefreshing(true);
+          // Re-search for a fresh offer
+          return fetch(`${API_BASE}/api/booking?action=search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              origin: departureCode,
+              destination: deal?.iataCode || '',
+              departureDate: deal?.departureDate || '',
+            }),
+          })
+            .then((r) => r.json())
+            .then((searchData) => {
+              if (cancelled) return;
+              const newOffer = searchData.offers?.[0];
+              if (newOffer) {
+                useBookingFlowStore.getState().setOfferId(newOffer.id);
+                // Will re-trigger this effect with new offerId
+              } else {
+                setError('No flights available. Please go back and search again.');
+              }
+            })
+            .finally(() => { if (!cancelled) setRefreshing(false); });
+        }
+        setOffer(offerData);
       })
       .catch((e) => {
         if (!cancelled) setError((e as Error).message);
@@ -133,7 +163,7 @@ export default function ReviewPaymentScreen() {
     return () => {
       cancelled = true;
     };
-  }, [offerId]);
+  }, [offerId, fetchOffer, departureCode, deal]);
 
   // Trigger animation
   useEffect(() => {
@@ -309,10 +339,12 @@ export default function ReviewPaymentScreen() {
 
       <View style={styles.divider} />
 
-      {loading ? (
+      {loading || refreshing ? (
         <View style={styles.centerContent}>
           <ActivityIndicator color={colors.yellow} size="large" />
-          <Text style={styles.loadingHint}>Loading booking details...</Text>
+          <Text style={styles.loadingHint}>
+            {refreshing ? 'Price may have changed — refreshing...' : 'Loading booking details...'}
+          </Text>
         </View>
       ) : error && !offer ? (
         <View style={styles.centerContent}>

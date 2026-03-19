@@ -25,6 +25,7 @@ interface SeatInfo {
   price: number;
   currency: string;
   designator: string;
+  serviceId: string | null;
 }
 
 interface SeatRow {
@@ -118,6 +119,7 @@ export default function SeatSelectionScreen() {
           designator: selectedSeat.designator,
           price: selectedSeat.price,
           currency: selectedSeat.currency,
+          serviceId: selectedSeat.serviceId || undefined,
         },
       ]);
     } else {

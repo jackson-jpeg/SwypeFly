@@ -1,8 +1,10 @@
-import { View, Text, StyleSheet, Dimensions, Platform, Pressable } from 'react-native';
+import { useState, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts, spacing } from '../../theme/tokens';
+import { successHaptic } from '../../utils/haptics';
 import SplitFlapRow from '../board/SplitFlapRow';
 import type { BoardDeal } from '../../types/deal';
 
@@ -25,6 +27,20 @@ interface SwipeCardProps {
 }
 
 export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
+  const saveScale = useRef(new Animated.Value(1)).current;
+
+  const handleSave = useCallback(() => {
+    onSave();
+    if (!isSaved) {
+      successHaptic();
+      // Pulse animation on save
+      Animated.sequence([
+        Animated.timing(saveScale, { toValue: 1.3, duration: 120, useNativeDriver: true }),
+        Animated.timing(saveScale, { toValue: 1, duration: 120, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [onSave, isSaved, saveScale]);
+
   return (
     <Pressable style={styles.card} onPress={onTap}>
       {/* Background image */}
@@ -136,14 +152,16 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
         {/* Action buttons */}
         <View style={styles.actionRow}>
           <Pressable
-            onPress={onSave}
+            onPress={handleSave}
             style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
           >
-            <Ionicons
-              name={isSaved ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isSaved ? '#E85D4A' : colors.white}
-            />
+            <Animated.View style={{ transform: [{ scale: saveScale }] }}>
+              <Ionicons
+                name={isSaved ? 'heart' : 'heart-outline'}
+                size={22}
+                color={isSaved ? '#E85D4A' : colors.white}
+              />
+            </Animated.View>
             <Text style={[styles.actionLabel, isSaved && { color: '#E85D4A' }]}>
               {isSaved ? 'Saved' : 'Save'}
             </Text>

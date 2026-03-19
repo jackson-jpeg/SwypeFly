@@ -59,6 +59,13 @@ export function checkRateLimit(
 }
 
 /**
+ * Clear all rate limit state. Used in tests.
+ */
+export function resetRateLimits(): void {
+  store.clear();
+}
+
+/**
  * Extract client IP from Vercel request headers.
  */
 export function getClientIp(headers: Record<string, string | string[] | undefined>): string {

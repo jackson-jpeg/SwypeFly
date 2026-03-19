@@ -4,6 +4,7 @@ import { Query, ID } from 'node-appwrite';
 import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { logApiError } from '../utils/apiLogger';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
 
 async function handleList(userId: string, res: VercelResponse) {
@@ -92,6 +93,14 @@ async function handleSavePrefs(userId: string, body: Record<string, unknown>, re
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
+
+  // Rate limit: 30 req/min per IP
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`saved:${ip}`, 30, 60_000);
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+  }
+
   const authResult = await verifyClerkToken(req.headers.authorization);
   if (!authResult) return res.status(401).json({ error: 'Unauthorized' });
 

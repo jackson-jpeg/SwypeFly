@@ -1,24 +1,42 @@
-import { useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, Platform, Linking } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSavedStore } from '../../stores/savedStore';
 import SavedCard from '../../components/saved/SavedCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import type { BoardDeal } from '../../types/deal';
 
+type SortOption = 'recent' | 'price-asc' | 'price-desc';
+
+const SORT_LABELS: Record<SortOption, string> = {
+  recent: 'Recent',
+  'price-asc': 'Price ↑',
+  'price-desc': 'Price ↓',
+};
+
 export default function SavedScreen() {
   const insets = useSafeAreaInsets();
   const { savedDeals, toggle } = useSavedStore();
+  const router = useRouter();
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
+
+  const sortedDeals = useMemo(() => {
+    const deals = [...savedDeals];
+    switch (sortBy) {
+      case 'price-asc':
+        return deals.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+      case 'price-desc':
+        return deals.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+      default:
+        return deals; // Already in recently-saved order
+    }
+  }, [savedDeals, sortBy]);
 
   const handlePress = useCallback((deal: BoardDeal) => {
-    if (deal.affiliateUrl) {
-      if (Platform.OS === 'web') {
-        window.open(deal.affiliateUrl, '_blank', 'noopener');
-      } else {
-        Linking.openURL(deal.affiliateUrl);
-      }
-    }
-  }, []);
+    router.push(`/destination/${deal.id}`);
+  }, [router]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: BoardDeal; index: number }) => (
@@ -37,10 +55,29 @@ export default function SavedScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>SAVED</Text>
-        <Text style={styles.subtitle}>
-          {savedDeals.length} {savedDeals.length === 1 ? 'flight' : 'flights'}
-        </Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>SAVED</Text>
+            <Text style={styles.subtitle}>
+              {savedDeals.length} {savedDeals.length === 1 ? 'flight' : 'flights'}
+            </Text>
+          </View>
+          {savedDeals.length > 1 && (
+            <View style={styles.sortRow}>
+              {(Object.keys(SORT_LABELS) as SortOption[]).map((opt) => (
+                <Pressable
+                  key={opt}
+                  onPress={() => setSortBy(opt)}
+                  style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
+                >
+                  <Text style={[styles.sortText, sortBy === opt && styles.sortTextActive]}>
+                    {SORT_LABELS[opt]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
 
       {savedDeals.length === 0 ? (
@@ -53,7 +90,7 @@ export default function SavedScreen() {
         </View>
       ) : (
         <FlatList
-          data={savedDeals}
+          data={sortedDeals}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           numColumns={2}
@@ -72,6 +109,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     paddingBottom: 12,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  sortRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  sortChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sortChipActive: {
+    backgroundColor: colors.yellow + '20',
+    borderColor: colors.yellow + '60',
+  },
+  sortText: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.muted,
+  },
+  sortTextActive: {
+    color: colors.yellow,
   },
   title: {
     fontFamily: fonts.display,

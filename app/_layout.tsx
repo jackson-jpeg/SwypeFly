@@ -9,6 +9,7 @@ import { PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-d
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSettingsStore } from '../stores/settingsStore';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { colors } from '../theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -65,27 +66,38 @@ export default function RootLayout() {
     );
   }
 
+  // Register service worker for offline support (web only)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // SW registration failed — not critical
+      });
+    }
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <QueryClientProvider client={queryClient}>
-        <OnboardingGate>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.bg },
-              animation: 'fade',
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen
-              name="destination/[id]"
-              options={{ animation: 'slide_from_bottom', gestureEnabled: true }}
-            />
-          </Stack>
-        </OnboardingGate>
-        <StatusBar style="light" />
-      </QueryClientProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <OnboardingGate>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.bg },
+                animation: 'fade',
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="onboarding" />
+              <Stack.Screen
+                name="destination/[id]"
+                options={{ animation: 'slide_from_bottom', gestureEnabled: true }}
+              />
+            </Stack>
+          </OnboardingGate>
+          <StatusBar style="light" />
+        </QueryClientProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

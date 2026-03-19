@@ -34,6 +34,7 @@ jest.mock('../../utils/clerkAuth', () => ({
 // Must import after mocks are set up
 import handler from '../../api/booking';
 import { verifyClerkToken } from '../../utils/clerkAuth';
+import { resetRateLimits } from '../../utils/rateLimit';
 
 const mockVerifyClerkToken = verifyClerkToken as jest.MockedFunction<typeof verifyClerkToken>;
 
@@ -63,6 +64,7 @@ function makeRes() {
 describe('POST /api/booking', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetRateLimits();
     process.env.APPWRITE_ENDPOINT = 'https://test.appwrite.io/v1';
     process.env.APPWRITE_PROJECT_ID = 'test-project';
     process.env.APPWRITE_API_KEY = 'test-key';

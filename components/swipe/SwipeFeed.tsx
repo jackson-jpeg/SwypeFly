@@ -1,18 +1,19 @@
 import { useCallback, useRef, useState } from 'react';
-import { View, FlatList, Dimensions, StyleSheet, Platform, ViewToken } from 'react-native';
+import { View, FlatList, Dimensions, StyleSheet, Platform, ViewToken, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import SwipeCard from './SwipeCard';
 import type { BoardDeal } from '../../types/deal';
-import { colors } from '../../theme/tokens';
+import { colors, spacing } from '../../theme/tokens';
 const { height: SCREEN_H } = Dimensions.get('window');
 
 export default function SwipeFeed() {
   const deals = useDealStore((s) => s.deals);
   const fetchMore = useDealStore((s) => s.fetchMore);
   const departureCode = useSettingsStore((s) => s.departureCode);
+  const [loadingMore, setLoadingMore] = useState(false);
   const savedIds = useSavedStore((s) => s.savedIds);
   const toggle = useSavedStore((s) => s.toggle);
   const listRef = useRef<FlatList<BoardDeal>>(null);
@@ -40,8 +41,10 @@ export default function SwipeFeed() {
     router.push(`/booking/${deal.id}`);
   }, [router]);
 
-  const handleEndReached = useCallback(() => {
-    fetchMore(departureCode);
+  const handleEndReached = useCallback(async () => {
+    setLoadingMore(true);
+    await fetchMore(departureCode);
+    setLoadingMore(false);
   }, [fetchMore, departureCode]);
 
   const renderItem = useCallback(
@@ -90,6 +93,13 @@ export default function SwipeFeed() {
         initialNumToRender={2}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.footer}>
+              <ActivityIndicator color={colors.yellow} size="small" />
+            </View>
+          ) : null
+        }
       />
     </View>
   );
@@ -99,5 +109,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  footer: {
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
