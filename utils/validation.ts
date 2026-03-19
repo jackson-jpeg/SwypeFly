@@ -209,6 +209,8 @@ export const createOrderSchema = z.object({
     quantity: z.number().int().min(1).max(10),
   })).optional(),
   paymentIntentId: z.string().min(1).max(200),
+  amount: z.number().optional(), // total in cents for Duffel payment
+  currency: z.string().max(10).optional(),
   // Destination metadata for booking history display
   destinationCity: z.string().max(100).optional(),
   destinationIata: z.string().max(10).optional(),

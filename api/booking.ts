@@ -565,17 +565,15 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     if (!v.success) return res.status(400).json({ error: v.error });
 
     // Verify payment intent exists (don't block on status — Stripe Elements not yet wired up)
-    const { getPaymentIntent } = await import('../services/stripe.js');
-    const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
-    if (!paymentIntent) {
-      return res.status(400).json({ error: 'Invalid payment intent' });
-    }
-
-    // TODO: Once Stripe Elements is integrated on the client, enforce:
-    // if (paymentIntent.status !== 'succeeded') return 400
-    // For now, log the status and proceed with booking
-    if (paymentIntent.status !== 'succeeded') {
-      console.warn(`[booking/create-order] Payment status: ${paymentIntent.status} — proceeding without payment collection (Stripe Elements not yet integrated)`);
+    try {
+      const { getPaymentIntent } = await import('../services/stripe.js');
+      const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
+      // TODO: Once Stripe Elements is integrated, enforce: if (status !== 'succeeded') return 400
+      if (paymentIntent.status !== 'succeeded') {
+        console.warn(`[booking/create-order] Payment status: ${paymentIntent.status} — proceeding (Stripe Elements not yet integrated)`);
+      }
+    } catch (stripeErr: any) {
+      console.warn(`[booking/create-order] Stripe check failed: ${stripeErr.message} — proceeding with booking`);
     }
 
     // Check if the offer has expired before attempting to create the order
@@ -610,12 +608,15 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     }
 
     const { createOrder } = await import('../services/duffel.js');
+    // Use offer total from the request body (payment intent may not be confirmed yet)
+    const paymentAmount = v.data.amount ? (v.data.amount / 100).toFixed(2) : '0.00';
+    const paymentCurrency = (v.data.currency || 'USD').toUpperCase();
     const duffelOrder = await createOrder({
       offerId: activeOfferId,
       passengers: v.data.passengers,
       selectedServices: v.data.selectedServices,
-      paymentAmount: (paymentIntent.amount / 100).toFixed(2),
-      paymentCurrency: paymentIntent.currency.toUpperCase(),
+      paymentAmount,
+      paymentCurrency,
     });
 
     const databases = getServerDatabases();

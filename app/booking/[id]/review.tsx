@@ -240,6 +240,8 @@ export default function ReviewPaymentScreen() {
             .filter((s) => s.serviceId)
             .map((s) => ({ id: s.serviceId })),
           paymentIntentId,
+          amount: totalInCents,
+          currency: 'USD',
           destinationCity: deal?.destinationFull || '',
           originIata: departureCode,
           destinationIata: deal?.iataCode || '',
