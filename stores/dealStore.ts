@@ -88,7 +88,6 @@ interface DealState {
   deals: BoardDeal[];
   isLoading: boolean;
   error: string | null;
-  activeFilters: string[];
 
   // Board-specific
   boardIndex: number;
@@ -96,11 +95,9 @@ interface DealState {
   jumpToBoard: (index: number) => void;
 
   // Shared
-  setFilters: (vibes: string[]) => void;
-  clearFilters: () => void;
   updateDealPrice: (dealId: string, price: number) => void;
-  fetchDeals: (origin: string) => Promise<void>;
-  fetchMore: (origin: string) => Promise<void>;
+  fetchDeals: (origin: string, filters?: Record<string, string>) => Promise<void>;
+  fetchMore: (origin: string, filters?: Record<string, string>) => Promise<void>;
 }
 
 let cursor = 0;
@@ -109,7 +106,6 @@ export const useDealStore = create<DealState>()((set, get) => ({
   deals: [],
   isLoading: false,
   error: null,
-  activeFilters: [],
 
   boardIndex: 0,
   advanceBoard: () => {
@@ -120,9 +116,6 @@ export const useDealStore = create<DealState>()((set, get) => ({
   },
   jumpToBoard: (index) => set({ boardIndex: index }),
 
-  setFilters: (vibes) => set({ activeFilters: vibes }),
-  clearFilters: () => set({ activeFilters: [] }),
-
   updateDealPrice: (dealId, price) => {
     const deals = get().deals.map((d) =>
       d.id === dealId ? { ...d, price, priceFormatted: `$${price}` } : d,
@@ -130,13 +123,12 @@ export const useDealStore = create<DealState>()((set, get) => ({
     set({ deals });
   },
 
-  fetchDeals: async (origin) => {
+  fetchDeals: async (origin, filters?: Record<string, string>) => {
     set({ isLoading: true, error: null, boardIndex: 0 });
     cursor = 0;
 
     try {
-      const vibes = get().activeFilters.join(',');
-      const params = new URLSearchParams({ origin, cursor: '0', ...(vibes && { vibes }) });
+      const params = new URLSearchParams({ origin, cursor: '0', ...filters });
       const res = await fetch(`${API_BASE}/api/feed?${params}`);
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       const data = await res.json();
@@ -148,17 +140,16 @@ export const useDealStore = create<DealState>()((set, get) => ({
     }
   },
 
-  fetchMore: async (origin) => {
+  fetchMore: async (origin, filters?: Record<string, string>) => {
     if (get().isLoading) return;
     if (!API_BASE) return;
 
     cursor += PAGE_SIZE;
     try {
-      const vibes = get().activeFilters.join(',');
       const params = new URLSearchParams({
         origin,
         cursor: String(cursor),
-        ...(vibes && { vibes }),
+        ...filters,
       });
       const res = await fetch(`${API_BASE}/api/feed?${params}`);
       if (!res.ok) return;
