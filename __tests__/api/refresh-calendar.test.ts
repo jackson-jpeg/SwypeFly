@@ -135,24 +135,6 @@ describe('api/prices/refresh-calendar', () => {
       ]),
     );
 
-    // fetchPriceCalendar returns daily prices for each destination
-    mockFetchPriceCalendar.mockImplementation(
-      (_origin: string, dest: string) => {
-        if (dest === 'BCN') {
-          return Promise.resolve([
-            { date: '2026-04-01', price: 350, airline: 'IB', transferCount: 0 },
-            { date: '2026-04-02', price: 380, airline: 'IB', transferCount: 0 },
-          ]);
-        }
-        if (dest === 'CDG') {
-          return Promise.resolve([
-            { date: '2026-04-01', price: 420, airline: 'AF', transferCount: 1 },
-          ]);
-        }
-        return Promise.resolve([]);
-      },
-    );
-
     mockDatabases.createDocument.mockResolvedValue({ $id: 'cal-1' });
 
     const req = makeReq({
@@ -170,12 +152,8 @@ describe('api/prices/refresh-calendar', () => {
     // Should have called fetchAllCheapPrices once for JFK
     expect(mockFetchAllCheapPrices).toHaveBeenCalledWith('JFK');
 
-    // Should have called fetchPriceCalendar for BCN and CDG
-    expect(mockFetchPriceCalendar).toHaveBeenCalledWith('JFK', 'BCN');
-    expect(mockFetchPriceCalendar).toHaveBeenCalledWith('JFK', 'CDG');
-
-    // Should have created 3 calendar entries (2 for BCN + 1 for CDG)
-    expect(mockDatabases.createDocument).toHaveBeenCalledTimes(3);
+    // Should have created 2 calendar entries (1 per bulk destination with future dates)
+    expect(mockDatabases.createDocument).toHaveBeenCalledTimes(2);
 
     // Verify upsert data shape
     const firstCall = mockDatabases.createDocument.mock.calls[0];

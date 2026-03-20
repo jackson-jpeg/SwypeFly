@@ -187,44 +187,40 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
 
   if (bulkPrices.size === 0) return result;
 
-  // Step 2: For each destination, fetch daily price calendar
-  // Cap to MAX_DESTINATIONS to stay within function timeout
-  const destinations = Array.from(bulkPrices.keys()).slice(0, MAX_DESTINATIONS);
+  // Upsert bulk prices — one entry per destination with their cheapest price + dates
+  // These are the prices that show on feed cards
+  const today = new Date().toISOString().split('T')[0];
+  const bulkEntries = Array.from(bulkPrices.entries())
+    .filter(([, info]) => {
+      const dep = info.departureAt?.split('T')[0];
+      return dep && dep >= today;
+    })
+    .slice(0, 200); // Cap to avoid timeout — 200 upserts × ~2 Appwrite calls each ≈ 400 calls
 
-  for (let i = 0; i < destinations.length; i += CONCURRENCY) {
-    const chunk = destinations.slice(i, i + CONCURRENCY);
-
-    const calendarResults = await Promise.all(
-      chunk.map(async (dest) => {
-        const entries = await fetchPriceCalendar(origin, dest);
-        return { dest, entries };
-      }),
-    );
-
-    // Step 3: Upsert each calendar entry
-    for (const { dest, entries } of calendarResults) {
-      for (const entry of entries) {
-        const status = await upsertCalendarEntry(
+  // Process in parallel chunks of 10
+  const UPSERT_CONCURRENCY = 10;
+  for (let i = 0; i < bulkEntries.length; i += UPSERT_CONCURRENCY) {
+    const chunk = bulkEntries.slice(i, i + UPSERT_CONCURRENCY);
+    const results = await Promise.all(
+      chunk.map(([destIata, info]) =>
+        upsertCalendarEntry(
           origin,
-          dest,
-          entry.date,
-          entry.price,
-          entry.airline,
+          destIata,
+          info.departureAt.split('T')[0],
+          info.price,
+          info.airline,
           'travelpayouts',
-        );
-        result.calendarEntries++;
-        if (typeof status === 'string' && status.startsWith('err:')) {
-          result.errors++;
-          if (!result.firstError) result.firstError = status;
-        } else if (status === 'created') result.created++;
-        else if (status === 'updated') result.updated++;
-        else result.errors++;
-      }
-    }
-
-    // Rate limit delay between chunks
-    if (i + CONCURRENCY < destinations.length) {
-      await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        ),
+      ),
+    );
+    for (const status of results) {
+      result.calendarEntries++;
+      if (typeof status === 'string' && status.startsWith('err:')) {
+        result.errors++;
+        if (!result.firstError) result.firstError = status;
+      } else if (status === 'created') result.created++;
+      else if (status === 'updated') result.updated++;
+      else result.errors++;
     }
   }
 

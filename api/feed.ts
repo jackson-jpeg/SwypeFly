@@ -886,28 +886,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return handleDetectOrigin(req, res);
   }
 
-  // Temporary diagnostic — test calendar query directly
-  if (req.query.action === 'debug-calendar') {
-    const origin = (req.query.origin as string) || 'JFK';
-    try {
-      const r = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
-        Query.equal('origin', origin),
-        Query.limit(5),
-      ]);
-      return res.status(200).json({
-        collection: COLLECTIONS.priceCalendar,
-        origin,
-        total: r.total,
-        docs: r.documents.map((d) => ({ dest: d.destination_iata, date: d.date, price: d.price })),
-      });
-    } catch (err) {
-      return res.status(200).json({
-        error: (err as Error)?.message,
-        collection: COLLECTIONS.priceCalendar,
-      });
-    }
-  }
-
   try {
     const v = validateRequest(feedQuerySchema, req.query);
     if (!v.success) return res.status(400).json({ error: v.error });
