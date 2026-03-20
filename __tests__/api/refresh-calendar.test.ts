@@ -12,6 +12,7 @@ jest.mock('../../services/appwriteServer', () => ({
     cachedPrices: 'cached_prices',
     userPreferences: 'user_preferences',
     priceCalendar: 'price_calendar',
+    priceHistoryStats: 'price_history_stats',
   },
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
@@ -152,17 +153,23 @@ describe('api/prices/refresh-calendar', () => {
     // Should have called fetchAllCheapPrices once for JFK
     expect(mockFetchAllCheapPrices).toHaveBeenCalledWith('JFK');
 
-    // Should have created 2 calendar entries (1 per bulk destination with future dates)
-    expect(mockDatabases.createDocument).toHaveBeenCalledTimes(2);
+    // Filter to only price_calendar creates (route stats also create docs)
+    const calendarCreates = mockDatabases.createDocument.mock.calls.filter(
+      (call: unknown[]) => call[1] === 'price_calendar',
+    );
+    expect(calendarCreates).toHaveLength(2);
 
     // Verify upsert data shape
-    const firstCall = mockDatabases.createDocument.mock.calls[0];
+    const firstCall = calendarCreates[0];
     expect(firstCall[0]).toBe('sogojet'); // DATABASE_ID
     expect(firstCall[1]).toBe('price_calendar'); // collection
     expect(firstCall[3].origin).toBe('JFK');
     expect(firstCall[3].source).toBe('travelpayouts');
     expect(firstCall[3].trip_days).toBe(7);
     expect(firstCall[3].fetched_at).toBeDefined();
+    // Deal quality fields should be present
+    expect(firstCall[3].deal_score).toBeDefined();
+    expect(firstCall[3].deal_tier).toBeDefined();
   });
 
   test('updates existing calendar entries instead of creating new ones', async () => {

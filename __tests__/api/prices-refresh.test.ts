@@ -13,6 +13,7 @@ jest.mock('../../services/appwriteServer', () => ({
     cachedPrices: 'cached_prices',
     userPreferences: 'user_preferences',
     aiCache: 'ai_cache',
+    priceHistoryStats: 'price_history_stats',
   },
   Query: {
     equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
@@ -140,13 +141,21 @@ describe('api/prices/refresh', () => {
   });
 
   test('succeeds with Duffel as primary source', async () => {
-    mockDatabases.listDocuments.mockResolvedValue({
-      documents: [
-        { $id: 'dest-1', iata_code: 'BCN', is_active: true },
-        { $id: 'dest-2', iata_code: 'CDG', is_active: true },
-      ],
-      total: 2,
-    });
+    mockDatabases.listDocuments.mockImplementation(
+      (_db: string, collection: string) => {
+        if (collection === 'destinations') {
+          return Promise.resolve({
+            documents: [
+              { $id: 'dest-1', iata_code: 'BCN', is_active: true, country: 'Spain', popularity_score: 0.8, best_months: ['June', 'July'] },
+              { $id: 'dest-2', iata_code: 'CDG', is_active: true, country: 'France', popularity_score: 0.9, best_months: ['May', 'June'] },
+            ],
+            total: 2,
+          });
+        }
+        // cached_prices, user_preferences, price_history_stats — empty
+        return Promise.resolve({ documents: [], total: 0 });
+      },
+    );
 
     // Duffel returns offers for each destination
     mockSearchFlights.mockImplementation((params: { destination: string }) => {
@@ -178,16 +187,27 @@ describe('api/prices/refresh', () => {
     // Verify Duffel was called for each destination
     expect(mockSearchFlights).toHaveBeenCalledTimes(2);
 
-    // Verify createDocument was called: 2 for cached_prices + 2 for price_history snapshots
+    // Verify createDocument calls by collection
     const createCalls = mockDatabases.createDocument.mock.calls;
-    expect(createCalls.length).toBe(4);
-    // First two calls are for cached_prices (Duffel source)
-    expect(createCalls[0][3].source).toBe('duffel');
-    expect(createCalls[0][3].offer_json).toBeTruthy();
-    expect(createCalls[0][3].offer_expires_at).toBeTruthy();
-    // Next two calls are price_history snapshots in ai_cache
-    expect(createCalls[2][1]).toBe('ai_cache');
-    expect(createCalls[2][3].type).toBe('price_history');
+    const cachedPriceCreates = createCalls.filter((c: unknown[]) => c[1] === 'cached_prices');
+    const snapshotCreates = createCalls.filter((c: unknown[]) => c[1] === 'ai_cache');
+    const statsCreates = createCalls.filter((c: unknown[]) => c[1] === 'price_history_stats');
+
+    // 2 cached_prices creates (one per destination)
+    expect(cachedPriceCreates.length).toBe(2);
+    expect(cachedPriceCreates[0][3].source).toBe('duffel');
+    expect(cachedPriceCreates[0][3].offer_json).toBeTruthy();
+    expect(cachedPriceCreates[0][3].offer_expires_at).toBeTruthy();
+    // Deal quality fields should be present
+    expect(cachedPriceCreates[0][3].deal_score).toBeDefined();
+    expect(cachedPriceCreates[0][3].deal_tier).toBeDefined();
+
+    // 2 price_history snapshots in ai_cache
+    expect(snapshotCreates.length).toBe(2);
+    expect(snapshotCreates[0][3].type).toBe('price_history');
+
+    // 2 price_history_stats creates (new routes)
+    expect(statsCreates.length).toBe(2);
   });
 
   test('returns null source when Duffel fails', async () => {
@@ -217,28 +237,29 @@ describe('api/prices/refresh', () => {
   });
 
   test('tracks price history with direction', async () => {
-    // First call: destinations
-    // Second/third calls: cachedPrices with existing price
     mockDatabases.listDocuments.mockImplementation(
       (_db: string, collection: string, _queries: unknown[]) => {
         if (collection === 'destinations') {
           return Promise.resolve({
-            documents: [{ $id: 'dest-1', iata_code: 'BCN', is_active: true }],
+            documents: [{ $id: 'dest-1', iata_code: 'BCN', is_active: true, country: 'Spain', popularity_score: 0.8, best_months: ['June'] }],
             total: 1,
           });
         }
-        // cachedPrices queries (both for currentPriceMap and fetchedAtMap)
-        return Promise.resolve({
-          documents: [
-            {
-              $id: 'price-bcn',
-              destination_iata: 'BCN',
-              price: 400,
-              fetched_at: '2026-03-01T00:00:00Z',
-            },
-          ],
-          total: 1,
-        });
+        if (collection === 'cached_prices') {
+          return Promise.resolve({
+            documents: [
+              {
+                $id: 'price-bcn',
+                destination_iata: 'BCN',
+                price: 400,
+                fetched_at: '2026-03-01T00:00:00Z',
+              },
+            ],
+            total: 1,
+          });
+        }
+        // user_preferences, price_history_stats — empty
+        return Promise.resolve({ documents: [], total: 0 });
       },
     );
 
@@ -258,12 +279,13 @@ describe('api/prices/refresh', () => {
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
 
-    // Verify update (not create for cached_prices) with price direction
+    // Verify update for cached_prices with price direction
     const updateCalls = mockDatabases.updateDocument.mock.calls;
-    expect(updateCalls.length).toBe(1);
-    expect(updateCalls[0][3].price).toBe(350);
-    expect(updateCalls[0][3].previous_price).toBe(400);
-    expect(updateCalls[0][3].price_direction).toBe('down');
+    const priceUpdates = updateCalls.filter((c: unknown[]) => c[1] === 'cached_prices');
+    expect(priceUpdates.length).toBe(1);
+    expect(priceUpdates[0][3].price).toBe(350);
+    expect(priceUpdates[0][3].previous_price).toBe(400);
+    expect(priceUpdates[0][3].price_direction).toBe('down');
 
     // Verify price snapshot was also recorded in ai_cache
     const createCalls = mockDatabases.createDocument.mock.calls;

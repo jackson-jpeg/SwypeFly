@@ -5,6 +5,17 @@ import { searchFlights } from '../../services/duffel';
 import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { cors } from '../_cors.js';
+import {
+  evaluateDealQuality,
+  extractSegmentData,
+  US_AIRPORTS,
+} from '../../utils/dealQuality';
+import {
+  getRouteStats,
+  computePricePercentile,
+  updateRouteStats,
+  clearStatsCache,
+} from '../../utils/priceStats';
 
 // ─── Price history snapshot (stored in ai_cache with 30-day TTL) ─────
 
@@ -27,6 +38,38 @@ async function recordPriceSnapshot(
     // Non-critical — don't fail the refresh if snapshot recording fails
     console.warn(`[refresh] Price snapshot failed for ${origin}->${destinationIata}:`, err);
   }
+}
+
+// ─── Destination metadata cache (for deal quality scoring) ───────────
+
+interface DestMeta {
+  country: string;
+  popularityScore: number;
+  bestMonths: string[];
+}
+
+let destMetaCache: Map<string, DestMeta> | null = null;
+
+async function getDestMeta(): Promise<Map<string, DestMeta>> {
+  if (destMetaCache) return destMetaCache;
+  destMetaCache = new Map();
+  try {
+    const result = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.destinations,
+      [Query.equal('is_active', true), Query.limit(500)],
+    );
+    for (const doc of result.documents) {
+      destMetaCache.set(doc.iata_code as string, {
+        country: (doc.country as string) || '',
+        popularityScore: (doc.popularity_score as number) || 0,
+        bestMonths: (doc.best_months as string[]) || [],
+      });
+    }
+  } catch {
+    // Non-fatal
+  }
+  return destMetaCache;
 }
 
 // Pro plan allows up to 300s for serverless functions
@@ -231,6 +274,41 @@ async function refreshOneDest(
     }
   }
 
+  // ── Deal quality gate ──────────────────────────────────────────────
+  const meta = (await getDestMeta()).get(dest);
+  const isDomestic = US_AIRPORTS.has(origin) && US_AIRPORTS.has(dest);
+  const segData = offerJson ? extractSegmentData(offerJson) : null;
+
+  const stats = await getRouteStats(origin, dest);
+  const pricePercentile = computePricePercentile(price, stats);
+
+  const dealResult = evaluateDealQuality({
+    originIata: origin,
+    destinationIata: dest,
+    price,
+    departureDate: depDate || departureDate,
+    returnDate: retDate || returnDate,
+    isDomestic,
+    destinationCountry: meta?.country,
+    airline: segData?.airlineCode || airline,
+    totalStops: segData?.totalStops,
+    totalTravelTimeMinutes: segData?.totalTravelTimeMinutes,
+    maxLayoverMinutes: segData?.maxLayoverMinutes,
+    departureHour: segData?.departureHour,
+    pricePercentile,
+    popularityScore: meta?.popularityScore,
+    bestMonths: meta?.bestMonths,
+    foundAt: new Date().toISOString(),
+  });
+
+  if (!dealResult.pass) {
+    console.log(`[refresh] Rejected ${origin}->${dest}: ${dealResult.rejectReason}`);
+    return { source: null };
+  }
+
+  // Update route stats with this price (non-blocking)
+  updateRouteStats(origin, dest, price).catch(() => {});
+
   const data: Record<string, unknown> = {
     origin,
     destination_iata: dest,
@@ -247,6 +325,15 @@ async function refreshOneDest(
     offer_json: offerJson,
     offer_expires_at: offerExpiresAt,
     tp_found_at: '',
+    // Deal quality fields
+    deal_score: dealResult.dealScore,
+    deal_tier: dealResult.dealTier,
+    quality_score: dealResult.qualityScore,
+    price_percentile: Math.round(pricePercentile),
+    is_nonstop: segData?.isNonstop ?? false,
+    total_stops: segData?.totalStops ?? -1,
+    max_layover_minutes: segData?.maxLayoverMinutes ?? -1,
+    total_travel_minutes: segData?.totalTravelTimeMinutes ?? -1,
   };
 
   try {
@@ -372,6 +459,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const originParam = v.data.origin || '';
 
   try {
+    // Clear caches for fresh cron run
+    clearStatsCache();
+    destMetaCache = null;
+
     // Get all active destination IATA codes from Appwrite
     const destResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
       Query.equal('is_active', true),

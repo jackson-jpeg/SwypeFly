@@ -37,4 +37,5 @@ export const COLLECTIONS = {
   bookings: 'bookings',
   bookingPassengers: 'booking_passengers',
   priceCalendar: 'price_calendar',
+  priceHistoryStats: 'price_history_stats',
 } as const;

@@ -65,6 +65,17 @@ export interface Destination {
     bestFor: string[];
     costLevel: 1 | 2 | 3 | 4;
   };
+  // Deal quality fields
+  dealScore?: number;
+  dealTier?: 'amazing' | 'great' | 'good' | 'fair';
+  qualityScore?: number;
+  pricePercentile?: number;
+  isNonstop?: boolean;
+  totalStops?: number;
+  maxLayoverMinutes?: number;
+  usualPrice?: number;
+  savingsAmount?: number;
+  savingsPercent?: number;
 }
 
 export interface HotelListing {

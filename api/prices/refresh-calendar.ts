@@ -8,6 +8,13 @@ import {
 import { ID } from 'node-appwrite';
 import { fetchAllCheapPrices, fetchPriceCalendar } from '../../services/travelpayouts';
 import { logApiError } from '../../utils/apiLogger';
+import { evaluateDealQuality, US_AIRPORTS } from '../../utils/dealQuality';
+import {
+  getRouteStats,
+  computePricePercentile,
+  updateRouteStats,
+  clearStatsCache,
+} from '../../utils/priceStats';
 
 export const maxDuration = 300;
 
@@ -109,6 +116,38 @@ async function pickNextOrigins(count: number): Promise<string[]> {
   return sorted.slice(0, count);
 }
 
+// ─── Destination metadata cache (for deal quality scoring) ───────────
+
+interface DestMeta {
+  country: string;
+  popularityScore: number;
+  bestMonths: string[];
+}
+
+let destMetaCache: Map<string, DestMeta> | null = null;
+
+async function getDestMeta(): Promise<Map<string, DestMeta>> {
+  if (destMetaCache) return destMetaCache;
+  destMetaCache = new Map();
+  try {
+    const result = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.destinations,
+      [Query.equal('is_active', true), Query.limit(500)],
+    );
+    for (const doc of result.documents) {
+      destMetaCache.set(doc.iata_code as string, {
+        country: (doc.country as string) || '',
+        popularityScore: (doc.popularity_score as number) || 0,
+        bestMonths: (doc.best_months as string[]) || [],
+      });
+    }
+  } catch {
+    // Non-fatal
+  }
+  return destMetaCache;
+}
+
 // ─── Upsert a single calendar entry ─────────────────────────────────
 
 async function upsertCalendarEntry(
@@ -119,16 +158,57 @@ async function upsertCalendarEntry(
   airline: string,
   source: string,
 ): Promise<string> {
+  // ── Deal quality gate ──────────────────────────────────────────────
+  const returnDate = addDays(date, 7);
+  const meta = (await getDestMeta()).get(destIata);
+  const isDomestic = US_AIRPORTS.has(origin) && US_AIRPORTS.has(destIata);
+
+  // Get price stats for percentile calculation
+  const stats = await getRouteStats(origin, destIata);
+  const pricePercentile = computePricePercentile(price, stats);
+
+  const dealResult = evaluateDealQuality({
+    originIata: origin,
+    destinationIata: destIata,
+    price,
+    departureDate: date,
+    returnDate,
+    isDomestic,
+    destinationCountry: meta?.country,
+    airline,
+    pricePercentile,
+    popularityScore: meta?.popularityScore,
+    bestMonths: meta?.bestMonths,
+    foundAt: new Date().toISOString(),
+  });
+
+  // Hard reject — don't store this price at all
+  if (!dealResult.pass) {
+    return `rejected:${dealResult.rejectReason}`;
+  }
+
+  // Update route stats with this price observation (non-blocking)
+  updateRouteStats(origin, destIata, price).catch(() => {});
+
   const data = {
     origin,
     destination_iata: destIata,
     date,
     price,
-    return_date: addDays(date, 7),
+    return_date: returnDate,
     trip_days: 7,
     airline,
     source,
     fetched_at: new Date().toISOString(),
+    // Deal quality fields
+    deal_score: dealResult.dealScore,
+    deal_tier: dealResult.dealTier,
+    quality_score: dealResult.qualityScore,
+    price_percentile: Math.round(pricePercentile),
+    is_nonstop: false,  // Unknown for TP data
+    total_stops: -1,    // -1 = unknown
+    max_layover_minutes: -1,
+    total_travel_minutes: -1,
   };
 
   try {
@@ -178,6 +258,7 @@ interface OriginResult {
   created: number;
   updated: number;
   errors: number;
+  rejected: number;
   firstError?: string;
 }
 
@@ -189,6 +270,7 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
     created: 0,
     updated: 0,
     errors: 0,
+    rejected: 0,
   };
 
   // Step 1: Get bulk cheap prices for all destinations from this origin
@@ -255,7 +337,9 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
     );
     for (const status of results) {
       result.calendarEntries++;
-      if (typeof status === 'string' && status.startsWith('err:')) {
+      if (typeof status === 'string' && status.startsWith('rejected:')) {
+        result.rejected++;
+      } else if (typeof status === 'string' && status.startsWith('err:')) {
         result.errors++;
         if (!result.firstError) result.firstError = status;
       } else if (status === 'created') result.created++;
@@ -289,6 +373,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     typeof req.query.origin === 'string' ? req.query.origin : '';
 
   try {
+    // Clear caches for fresh cron run
+    clearStatsCache();
+    destMetaCache = null;
+
     let origins: string[];
     if (originParam) {
       origins = [originParam];

@@ -6,6 +6,8 @@ import { generateAviasalesLink } from '../utils/affiliateLinks';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
 import { cors } from './_cors.js';
+import { bulkGetRouteStats, computePricePercentile } from '../utils/priceStats';
+import type { RouteStats } from '../utils/priceStats';
 
 const PAGE_SIZE = 10;
 
@@ -136,6 +138,19 @@ interface ScoredDest {
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number }[];
   hotels_data?: any[];
+  // Deal quality fields (from cached_prices / price_calendar)
+  deal_score?: number;
+  deal_tier?: string;
+  quality_score?: number;
+  price_percentile?: number;
+  is_nonstop?: boolean;
+  total_stops?: number;
+  max_layover_minutes?: number;
+  total_travel_minutes?: number;
+  // Computed from route stats
+  usual_price?: number | null;
+  savings_amount?: number | null;
+  savings_percent?: number | null;
 }
 
 // ─── Generic scoring (for anonymous users) ──────────────────────────
@@ -511,8 +526,8 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     Query.limit(500),
   ]);
 
-  // Fetch calendar prices, cached prices, hotel prices, and refreshed images in parallel
-  const [calendarResult, priceResult, hotelPriceResult, imageResult] = await Promise.all([
+  // Fetch calendar prices, cached prices, hotel prices, images, and route stats in parallel
+  const [calendarResult, priceResult, hotelPriceResult, imageResult, routeStatsMap] = await Promise.all([
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
       Query.equal('origin', origin),
       Query.limit(2000),
@@ -529,6 +544,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
       Query.limit(2500),
     ]).catch(() => ({ documents: [] })),
+    bulkGetRouteStats(origin),
   ]);
 
   // Build calendar price lookup (Travelpayouts daily prices — cheapest per destination)
@@ -539,15 +555,28 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     trip_days: number;
     airline: string;
     source: string;
+    deal_score?: number;
+    deal_tier?: string;
+    quality_score?: number;
+    price_percentile?: number;
+    is_nonstop?: boolean;
+    total_stops?: number;
+    max_layover_minutes?: number;
+    total_travel_minutes?: number;
   }>();
   const today = new Date().toISOString().split('T')[0];
-  // Sort by price ascending, filter to future dates
+  // Sort by deal_score desc (best deals first), fallback to price asc
   const calendarDocs = calendarResult.documents
     .filter((p) => (p.date as string) >= today)
-    .sort((a, b) => (a.price as number) - (b.price as number));
+    .sort((a, b) => {
+      const scoreA = (a.deal_score as number) ?? 0;
+      const scoreB = (b.deal_score as number) ?? 0;
+      if (scoreA !== scoreB) return scoreB - scoreA; // Higher score first
+      return (a.price as number) - (b.price as number);
+    });
   for (const p of calendarDocs) {
     const dest = p.destination_iata as string;
-    if (calendarPriceMap.has(dest)) continue; // sorted by price ASC, first = cheapest
+    if (calendarPriceMap.has(dest)) continue; // first = best deal score
     calendarPriceMap.set(dest, {
       price: p.price as number,
       date: (p.date as string) || '',
@@ -555,6 +584,14 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       trip_days: (p.trip_days as number) ?? 7,
       airline: (p.airline as string) || '',
       source: (p.source as string) || 'travelpayouts',
+      deal_score: (p.deal_score as number) ?? undefined,
+      deal_tier: (p.deal_tier as string) ?? undefined,
+      quality_score: (p.quality_score as number) ?? undefined,
+      price_percentile: (p.price_percentile as number) ?? undefined,
+      is_nonstop: (p.is_nonstop as boolean) ?? undefined,
+      total_stops: (p.total_stops as number) ?? undefined,
+      max_layover_minutes: (p.max_layover_minutes as number) ?? undefined,
+      total_travel_minutes: (p.total_travel_minutes as number) ?? undefined,
     });
   }
 
@@ -577,6 +614,14 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       offer_expires_at?: string;
       flight_number?: string;
       tp_found_at?: string;
+      deal_score?: number;
+      deal_tier?: string;
+      quality_score?: number;
+      price_percentile?: number;
+      is_nonstop?: boolean;
+      total_stops?: number;
+      max_layover_minutes?: number;
+      total_travel_minutes?: number;
     }
   >();
   for (const p of prices) {
@@ -600,6 +645,14 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       offer_expires_at: (p.offer_expires_at as string) || undefined,
       flight_number: (p.flight_number as string) || undefined,
       tp_found_at: (p.tp_found_at as string) || undefined,
+      deal_score: (p.deal_score as number) ?? undefined,
+      deal_tier: (p.deal_tier as string) ?? undefined,
+      quality_score: (p.quality_score as number) ?? undefined,
+      price_percentile: (p.price_percentile as number) ?? undefined,
+      is_nonstop: (p.is_nonstop as boolean) ?? undefined,
+      total_stops: (p.total_stops as number) ?? undefined,
+      max_layover_minutes: (p.max_layover_minutes as number) ?? undefined,
+      total_travel_minutes: (p.total_travel_minutes as number) ?? undefined,
     });
   }
 
@@ -665,6 +718,32 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       restaurants = undefined;
     }
 
+    // Deal quality: prefer calendar (TP) deal data, fall back to cached_prices (Duffel)
+    const dealScore = cp?.deal_score ?? lp?.deal_score;
+    const dealTier = cp?.deal_tier ?? lp?.deal_tier;
+    const qualityScore = cp?.quality_score ?? lp?.quality_score;
+    const pricePercentile = cp?.price_percentile ?? lp?.price_percentile;
+    const isNonstop = cp?.is_nonstop ?? lp?.is_nonstop;
+    const totalStops = cp?.total_stops ?? lp?.total_stops;
+    const maxLayoverMin = cp?.max_layover_minutes ?? lp?.max_layover_minutes;
+    const totalTravelMin = cp?.total_travel_minutes ?? lp?.total_travel_minutes;
+
+    // Compute savings from route stats
+    const iata = d.iata_code as string;
+    const routeKey = `${origin}-${iata}`;
+    const routeStats = routeStatsMap.get(routeKey);
+    const effectivePrice = cp?.price ?? lp?.price ?? null;
+    let usualPrice: number | null = null;
+    let savingsAmount: number | null = null;
+    let savingsPercent: number | null = null;
+    if (routeStats && effectivePrice != null && routeStats.sampleCount >= 3) {
+      usualPrice = routeStats.medianPrice;
+      if (effectivePrice < usualPrice) {
+        savingsAmount = usualPrice - effectivePrice;
+        savingsPercent = Math.round((savingsAmount / usualPrice) * 100);
+      }
+    }
+
     return {
       id: d.$id,
       iata_code: d.iata_code as string,
@@ -718,6 +797,18 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       hotels_data: hotelPriceMap.get(d.iata_code as string)?.hotels ?? undefined,
       itinerary,
       restaurants,
+      // Deal quality fields
+      deal_score: dealScore,
+      deal_tier: dealTier,
+      quality_score: qualityScore,
+      price_percentile: pricePercentile,
+      is_nonstop: isNonstop,
+      total_stops: totalStops,
+      max_layover_minutes: maxLayoverMin,
+      total_travel_minutes: totalTravelMin,
+      usual_price: usualPrice,
+      savings_amount: savingsAmount,
+      savings_percent: savingsPercent,
     };
   });
 
@@ -782,6 +873,17 @@ function toFrontend(d: ScoredDest, origin?: string) {
       d.price_source === 'travelpayouts' && origin
         ? generateAviasalesLink(origin, d.iata_code, d.departure_date, d.return_date)
         : undefined,
+    // Deal quality fields
+    dealScore: d.deal_score ?? undefined,
+    dealTier: (d.deal_tier as 'amazing' | 'great' | 'good' | 'fair') ?? undefined,
+    qualityScore: d.quality_score ?? undefined,
+    pricePercentile: d.price_percentile ?? undefined,
+    isNonstop: d.is_nonstop ?? undefined,
+    totalStops: d.total_stops != null && d.total_stops >= 0 ? d.total_stops : undefined,
+    maxLayoverMinutes: d.max_layover_minutes != null && d.max_layover_minutes >= 0 ? d.max_layover_minutes : undefined,
+    usualPrice: d.usual_price ?? undefined,
+    savingsAmount: d.savings_amount ?? undefined,
+    savingsPercent: d.savings_percent ?? undefined,
   };
 }
 
@@ -921,6 +1023,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // a deterministic order. Cursor-based pagination then slices consistently.
     let destinations = [...allDestinations];
 
+    // Filter out low-quality deals (deal_score < 30 = rejected tier)
+    // Only apply when deal scores exist (graceful for old data without scores)
+    destinations = destinations.filter((d) => {
+      if (d.deal_score == null) return true; // No score yet — keep it
+      return d.deal_score >= 30;
+    });
+
     if (regionFilter && regionFilter !== 'all') {
       const regionSet = new Set(regionFilter.split(',').map((r) => r.trim()));
       destinations = destinations.filter((d) => regionSet.has(getRegion(d)));
@@ -998,6 +1107,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const pb = b.live_price ?? b.flight_price;
           return pa - pb;
         });
+    } else if (sortPreset === 'best-deals') {
+      // Sort by deal_score descending — surfaces the best deals first
+      scored = [...destinations].sort(
+        (a, b) => (b.deal_score ?? 0) - (a.deal_score ?? 0),
+      );
     } else if (sortPreset === 'trending') {
       scored = [...destinations].sort(
         (a, b) => (b.popularity_score ?? 0) - (a.popularity_score ?? 0),
