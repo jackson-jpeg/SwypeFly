@@ -10,6 +10,27 @@ const STATUS_COLORS: Record<BoardDeal['status'], string> = {
   NEW: colors.yellow,
 };
 
+const DEAL_TIER_COLORS: Record<string, string> = {
+  amazing: colors.dealAmazing,
+  great: colors.dealGreat,
+  good: colors.dealGood,
+  fair: colors.muted,
+};
+
+function getStatusText(deal: BoardDeal): string {
+  if (deal.savingsPercent && deal.savingsPercent > 0) {
+    return `-${deal.savingsPercent}%`;
+  }
+  return deal.status;
+}
+
+function getStatusColor(deal: BoardDeal): string {
+  if (deal.dealTier && deal.dealTier !== 'fair') {
+    return DEAL_TIER_COLORS[deal.dealTier] || colors.muted;
+  }
+  return STATUS_COLORS[deal.status];
+}
+
 interface DepartureRowProps {
   deal: BoardDeal;
   isActive: boolean;
@@ -83,12 +104,12 @@ function DepartureRow({ deal, isActive, animate, onAnimationComplete }: Departur
         onComplete={handleColumnComplete}
       />
 
-      {/* Status — e.g. "DEAL" */}
+      {/* Status — deal tier savings or legacy status */}
       <SplitFlapRow
-        text={deal.status}
-        maxLength={4}
+        text={getStatusText(deal)}
+        maxLength={5}
         size="sm"
-        color={STATUS_COLORS[deal.status]}
+        color={getStatusColor(deal)}
         align="left"
         startDelay={320}
         animate={animate}

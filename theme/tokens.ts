@@ -17,6 +17,11 @@ export const colors = {
   green: '#7BAF8E',
   orange: '#D4734A',
 
+  // Deal tier badges
+  dealAmazing: '#4ADE80',
+  dealGreat: '#FBBF24',
+  dealGood: '#60A5FA',
+
   // Sheet / overlays
   sheetBg: '#12100D',
   sheetHandle: '#2A2218',

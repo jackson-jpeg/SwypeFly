@@ -16,6 +16,24 @@ const STATUS_COLORS: Record<BoardDeal['status'], string> = {
   NEW: colors.yellow,
 };
 
+const DEAL_TIER_COLORS: Record<string, string> = {
+  amazing: colors.dealAmazing,
+  great: colors.dealGreat,
+  good: colors.dealGood,
+  fair: colors.muted,
+};
+
+function getDealBadgeText(deal: BoardDeal): string | null {
+  if (!deal.dealTier || deal.dealTier === 'fair') return null;
+  if (deal.savingsPercent && deal.savingsPercent > 0) {
+    return `${deal.savingsPercent}% BELOW AVG`;
+  }
+  if (deal.dealTier === 'amazing') return 'INCREDIBLE DEAL';
+  if (deal.dealTier === 'great') return 'GREAT DEAL';
+  if (deal.dealTier === 'good') return 'GOOD PRICE';
+  return null;
+}
+
 interface SwipeCardProps {
   deal: BoardDeal;
   isSaved: boolean;
@@ -71,20 +89,33 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Status badge — split-flap */}
-      <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[deal.status] + '20', borderColor: STATUS_COLORS[deal.status] + '60' }]}>
-        <SplitFlapRow
-          text={deal.status}
-          maxLength={4}
-          size="sm"
-          color={STATUS_COLORS[deal.status]}
-          align="left"
-          startDelay={320}
-          animate={animate}
-        />
-      </View>
+      {/* Deal tier badge or legacy status badge */}
+      {(() => {
+        const badgeText = getDealBadgeText(deal);
+        if (badgeText && deal.dealTier) {
+          const tierColor = DEAL_TIER_COLORS[deal.dealTier] || colors.muted;
+          return (
+            <View style={[styles.dealBadge, { backgroundColor: tierColor + '20', borderColor: tierColor + '60' }]}>
+              <Text style={[styles.dealBadgeText, { color: tierColor }]}>{badgeText}</Text>
+            </View>
+          );
+        }
+        return (
+          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[deal.status] + '20', borderColor: STATUS_COLORS[deal.status] + '60' }]}>
+            <SplitFlapRow
+              text={deal.status}
+              maxLength={4}
+              size="sm"
+              color={STATUS_COLORS[deal.status]}
+              align="left"
+              startDelay={320}
+              animate={animate}
+            />
+          </View>
+        );
+      })()}
 
-      {/* Price tag — top right, split-flap digits */}
+      {/* Price tag — top right, split-flap digits + savings context */}
       {deal.price != null && deal.priceSource !== 'estimate' && (
         <View style={styles.priceTag}>
           <Text style={styles.priceLabel}>from</Text>
@@ -98,6 +129,13 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
             animate={animate}
           />
           <Text style={styles.priceLabel}>round trip</Text>
+          {/* Price anchoring — usual price + savings */}
+          {deal.usualPrice != null && deal.savingsAmount != null && deal.savingsAmount > 0 && (
+            <View style={styles.savingsRow}>
+              <Text style={styles.usualPrice}>${deal.usualPrice}</Text>
+              <Text style={styles.savingsText}>Save ${deal.savingsAmount}</Text>
+            </View>
+          )}
         </View>
       )}
       {(deal.price == null || deal.priceSource === 'estimate') && (
@@ -148,6 +186,16 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
             <Ionicons name="time-outline" size={12} color={colors.yellow} />
             <Text style={styles.infoText}>{deal.flightDuration}</Text>
           </View>
+          {deal.isNonstop === true && (
+            <View style={[styles.infoChip, { backgroundColor: colors.dealAmazing + '15' }]}>
+              <Text style={[styles.infoText, { color: colors.dealAmazing }]}>Nonstop</Text>
+            </View>
+          )}
+          {deal.totalStops != null && deal.totalStops > 0 && (
+            <View style={styles.infoChip}>
+              <Text style={styles.infoText}>{deal.totalStops} stop{deal.totalStops > 1 ? 's' : ''}</Text>
+            </View>
+          )}
         </View>
 
         {/* Vibe tags */}
@@ -218,6 +266,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
+  // Deal tier badge — top left
+  dealBadge: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 70 : 60,
+    left: spacing.md,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  dealBadgeText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.8,
+  },
+
   // Price tag — top right
   priceTag: {
     position: 'absolute',
@@ -237,6 +301,22 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  savingsRow: {
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 2,
+  },
+  usualPrice: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.faint,
+    textDecorationLine: 'line-through',
+  },
+  savingsText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    color: colors.dealAmazing,
   },
 
   // Bottom content

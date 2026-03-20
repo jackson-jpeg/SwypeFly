@@ -25,4 +25,15 @@ export interface BoardDeal {
   affiliateUrl: string;
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number }[];
+  // Deal quality fields
+  dealScore?: number;
+  dealTier?: 'amazing' | 'great' | 'good' | 'fair';
+  qualityScore?: number;
+  pricePercentile?: number;
+  isNonstop?: boolean;
+  totalStops?: number;
+  maxLayoverMinutes?: number;
+  usualPrice?: number;
+  savingsAmount?: number;
+  savingsPercent?: number;
 }

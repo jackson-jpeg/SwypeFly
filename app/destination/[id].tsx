@@ -22,6 +22,13 @@ import { colors, fonts, spacing } from '../../theme/tokens';
 const { width: SCREEN_W } = Dimensions.get('window');
 const HERO_H = 360;
 
+const DEAL_TIER_COLORS: Record<string, string> = {
+  amazing: colors.dealAmazing,
+  great: colors.dealGreat,
+  good: colors.dealGood,
+  fair: colors.muted,
+};
+
 export default function DestinationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -111,6 +118,21 @@ export default function DestinationDetailScreen() {
           </View>
         </View>
 
+        {/* Deal tier badge */}
+        {deal.dealTier && deal.dealTier !== 'fair' && (
+          <View style={[styles.dealTierRow, { borderColor: (DEAL_TIER_COLORS[deal.dealTier] || colors.muted) + '40' }]}>
+            <View style={[styles.dealTierDot, { backgroundColor: DEAL_TIER_COLORS[deal.dealTier] || colors.muted }]} />
+            <Text style={[styles.dealTierLabel, { color: DEAL_TIER_COLORS[deal.dealTier] || colors.muted }]}>
+              {deal.dealTier === 'amazing' ? 'INCREDIBLE DEAL' : deal.dealTier === 'great' ? 'GREAT DEAL' : 'GOOD PRICE'}
+            </Text>
+            {deal.savingsPercent != null && deal.savingsPercent > 0 && (
+              <Text style={[styles.dealTierSavings, { color: DEAL_TIER_COLORS[deal.dealTier] || colors.muted }]}>
+                {deal.savingsPercent}% below avg
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* Price card — show the deal's price from the feed */}
         <View style={styles.priceCard}>
           {deal.price != null ? (
@@ -126,10 +148,23 @@ export default function DestinationDetailScreen() {
                   startDelay={100}
                   animate={animate}
                 />
+                {/* Usual price with strikethrough */}
+                {deal.usualPrice != null && deal.savingsAmount != null && deal.savingsAmount > 0 && (
+                  <View style={styles.priceAnchor}>
+                    <Text style={styles.usualPriceText}>Usually ${deal.usualPrice}</Text>
+                    <Text style={styles.savingsAmountText}>Save ${deal.savingsAmount}</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.priceRight}>
                 <Text style={styles.priceDetail}>{deal.airline}</Text>
                 <Text style={styles.priceDetail}>{deal.flightDuration}</Text>
+                {deal.isNonstop === true && (
+                  <Text style={[styles.priceDetail, { color: colors.dealAmazing }]}>Nonstop</Text>
+                )}
+                {deal.totalStops != null && deal.totalStops > 0 && (
+                  <Text style={styles.priceDetail}>{deal.totalStops} stop{deal.totalStops > 1 ? 's' : ''}</Text>
+                )}
               </View>
             </>
           ) : (
@@ -142,7 +177,9 @@ export default function DestinationDetailScreen() {
         {/* Price context hint */}
         {deal.price != null && (
           <Text style={styles.priceContext}>
-            Prices start from {deal.priceFormatted} and may vary by date
+            {deal.usualPrice != null && deal.savingsPercent != null && deal.savingsPercent > 0
+              ? `This price is ${deal.savingsPercent}% below the typical ${deal.priceFormatted.replace(/\$\d+/, `$${deal.usualPrice}`)} for this route`
+              : `Prices start from ${deal.priceFormatted} and may vary by date`}
           </Text>
         )}
 
@@ -308,6 +345,34 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 
+  // Deal tier badge row
+  dealTierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  dealTierDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dealTierLabel: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    letterSpacing: 0.8,
+  },
+  dealTierSavings: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    marginLeft: 'auto',
+  },
+
   // Price card
   priceCard: {
     flexDirection: 'row',
@@ -333,6 +398,23 @@ const styles = StyleSheet.create({
     fontSize: 38,
     color: colors.yellow,
     lineHeight: 42,
+  },
+  priceAnchor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  usualPriceText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.faint,
+    textDecorationLine: 'line-through',
+  },
+  savingsAmountText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    color: colors.dealAmazing,
   },
   priceContext: {
     fontFamily: fonts.body,

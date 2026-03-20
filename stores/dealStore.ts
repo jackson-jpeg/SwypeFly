@@ -30,6 +30,17 @@ interface ApiDestination {
   affiliateUrl?: string;
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number }[];
+  // Deal quality fields
+  dealScore?: number;
+  dealTier?: 'amazing' | 'great' | 'good' | 'fair';
+  qualityScore?: number;
+  pricePercentile?: number;
+  isNonstop?: boolean;
+  totalStops?: number;
+  maxLayoverMinutes?: number;
+  usualPrice?: number;
+  savingsAmount?: number;
+  savingsPercent?: number;
 }
 
 function randomTime(): string {
@@ -44,12 +55,16 @@ function randomFlightCode(airlineCode?: string): string {
   return `${code}${num}`;
 }
 
-function getStatus(priceDirection?: string, priceSource?: string): 'DEAL' | 'HOT' | 'NEW' {
-  // Don't label estimate/amadeus prices as deals — they're unreliable
-  if (priceSource === 'estimate' || priceSource === 'amadeus') return 'NEW';
-  if (priceDirection === 'down') return 'DEAL';
-  if (priceSource === 'duffel') return 'HOT';
-  if (priceSource === 'travelpayouts') return 'DEAL';
+function getStatus(d: ApiDestination): 'DEAL' | 'HOT' | 'NEW' {
+  // Use deal tier when available (from deal quality engine)
+  if (d.dealTier === 'amazing' || d.dealTier === 'great') return 'DEAL';
+  if (d.dealTier === 'good') return 'HOT';
+
+  // Fallback to legacy logic
+  if (d.priceSource === 'estimate' || d.priceSource === 'amadeus') return 'NEW';
+  if (d.priceDirection === 'down') return 'DEAL';
+  if (d.priceSource === 'duffel') return 'HOT';
+  if (d.priceSource === 'travelpayouts') return 'DEAL';
   return 'NEW';
 }
 
@@ -70,7 +85,7 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     flightCode: randomFlightCode(d.airline),
     price,
     priceFormatted: price != null ? `$${price}` : 'Check',
-    status: hasPrice ? getStatus(d.priceDirection, d.priceSource) : 'NEW',
+    status: hasPrice ? getStatus(d) : 'NEW',
     priceSource: d.priceSource || 'unknown',
     airline: d.airline ? getAirlineName(d.airline) : 'Multiple Airlines',
     departureDate: depDate,
@@ -86,6 +101,17 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     affiliateUrl: d.affiliateUrl || generateAviasalesLink(origin, d.iataCode, depDate, retDate),
     itinerary: d.itinerary,
     restaurants: d.restaurants,
+    // Deal quality fields
+    dealScore: d.dealScore,
+    dealTier: d.dealTier,
+    qualityScore: d.qualityScore,
+    pricePercentile: d.pricePercentile,
+    isNonstop: d.isNonstop,
+    totalStops: d.totalStops,
+    maxLayoverMinutes: d.maxLayoverMinutes,
+    usualPrice: d.usualPrice,
+    savingsAmount: d.savingsAmount,
+    savingsPercent: d.savingsPercent,
   };
 }
 
