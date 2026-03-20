@@ -14,6 +14,19 @@ export const maxDuration = 300;
 // Max destinations per run — keeps execution within timeout
 const MAX_DESTINATIONS = 15;
 
+// Travelpayouts returns city codes, our destinations use airport codes.
+// Map TP city codes → our airport IATA codes so prices match feed destinations.
+const CITY_TO_AIRPORT: Record<string, string> = {
+  TYO: 'NRT', LON: 'LHR', PAR: 'CDG', ROM: 'FCO', BUE: 'EZE',
+  REK: 'KEF', MOW: 'SVO', BKK: 'BKK', OSA: 'KIX', MIL: 'MXP',
+  RIO: 'GIG', SAO: 'GRU', NYC: 'JFK', WAS: 'IAD', CHI: 'ORD',
+  YTO: 'YYZ', YMQ: 'YUL', SEL: 'ICN', BER: 'TXL', STO: 'ARN',
+  SPK: 'CTS', OKA: 'OKA', IZM: 'ADB', IST: 'IST', BJS: 'PEK',
+  SHA: 'PVG', HKG: 'HKG', TPE: 'TPE', BOM: 'BOM', DEL: 'DEL',
+  DXB: 'DXB', JKT: 'CGK', KUL: 'KUL', MNL: 'MNL', MEX: 'MEX',
+  BOG: 'BOG', SCL: 'SCL', LIM: 'LIM', PTY: 'PTY',
+};
+
 // Concurrent calendar API calls per chunk (TP rate: 60 req/min → ~10 req/sec safe)
 const CONCURRENCY = 5;
 
@@ -191,6 +204,11 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
   // These are the prices that show on feed cards
   const today = new Date().toISOString().split('T')[0];
   const bulkEntries = Array.from(bulkPrices.entries())
+    .map(([code, info]) => {
+      // Map city codes to airport codes so they match our destinations collection
+      const mappedCode = CITY_TO_AIRPORT[code] || code;
+      return [mappedCode, info] as [string, typeof info];
+    })
     .filter(([, info]) => {
       const dep = info.departureAt?.split('T')[0];
       return dep && dep >= today;
