@@ -326,6 +326,20 @@ export default function TripScreen() {
           </View>
         ) : null}
 
+        {/* Tagline + vibes */}
+        {deal.tagline ? (
+          <Text style={styles.tagline}>{deal.tagline}</Text>
+        ) : null}
+        {deal.vibeTags?.length > 0 && (
+          <View style={styles.vibeRow}>
+            {deal.vibeTags.slice(0, 4).map((tag) => (
+              <View key={tag} style={styles.vibeChip}>
+                <Text style={styles.vibeText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Hero card */}
         <TripHeroCard
           price={selectedTrip.price}
@@ -421,6 +435,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.muted,
     marginTop: 2,
+  },
+
+  // Tagline + vibes
+  tagline: {
+    fontFamily: fonts.accent,
+    fontSize: 16,
+    color: colors.whiteDim,
+    lineHeight: 22,
+    marginTop: -4,
+  },
+  vibeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+    marginTop: -4,
+  },
+  vibeChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  vibeText: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Hero image
