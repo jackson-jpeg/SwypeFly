@@ -235,7 +235,7 @@ export default function DestinationDetailScreen() {
         </Pressable>
         <Pressable style={styles.bookBtn} onPress={handleBook}>
           <Text style={styles.bookLabel}>
-            {deal.price != null ? `Book for ${deal.priceFormatted}` : 'View Deal'}
+            Search Flights
           </Text>
           <Ionicons name="arrow-forward" size={18} color={colors.bg} />
         </Pressable>

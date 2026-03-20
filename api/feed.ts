@@ -572,6 +572,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   for (const p of prices) {
     // Keep the cheapest price per destination (results are ordered by price ASC)
     if (priceMap.has(p.destination_iata as string)) continue;
+    // Skip cached prices with past departure dates — they're stale and misleading
+    const depDate = p.departure_date as string;
+    if (depDate && depDate < today) continue;
     priceMap.set(p.destination_iata as string, {
       price: p.price as number,
       airline: (p.airline as string) || '',
