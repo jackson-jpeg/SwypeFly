@@ -509,7 +509,10 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
       Query.equal('origin', origin),
       Query.limit(500),
-    ]).catch(() => ({ documents: [] })),
+    ]).catch((err) => {
+      console.error('[feed] price_calendar query FAILED:', (err as Error)?.message || err);
+      return { documents: [] };
+    }),
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
       Query.equal('origin', origin), Query.orderAsc('price'), Query.limit(500),
     ]).catch(() => ({ documents: [] })),
@@ -881,6 +884,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (req.query.action === 'detect-origin') {
     return handleDetectOrigin(req, res);
+  }
+
+  // Temporary diagnostic — test calendar query directly
+  if (req.query.action === 'debug-calendar') {
+    const origin = (req.query.origin as string) || 'JFK';
+    try {
+      const r = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
+        Query.equal('origin', origin),
+        Query.limit(5),
+      ]);
+      return res.status(200).json({
+        collection: COLLECTIONS.priceCalendar,
+        origin,
+        total: r.total,
+        docs: r.documents.map((d) => ({ dest: d.destination_iata, date: d.date, price: d.price })),
+      });
+    } catch (err) {
+      return res.status(200).json({
+        error: (err as Error)?.message,
+        collection: COLLECTIONS.priceCalendar,
+      });
+    }
   }
 
   try {
