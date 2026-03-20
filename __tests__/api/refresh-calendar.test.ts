@@ -182,7 +182,7 @@ describe('api/prices/refresh-calendar', () => {
     expect(firstCall[0]).toBe('sogojet'); // DATABASE_ID
     expect(firstCall[1]).toBe('price_calendar'); // collection
     expect(firstCall[3].origin).toBe('JFK');
-    expect(firstCall[3].source).toBe('travelpayouts_calendar');
+    expect(firstCall[3].source).toBe('travelpayouts');
     expect(firstCall[3].trip_days).toBe(7);
     expect(firstCall[3].fetched_at).toBeDefined();
   });

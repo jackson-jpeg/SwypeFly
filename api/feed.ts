@@ -508,8 +508,6 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   const [calendarResult, priceResult, hotelPriceResult, imageResult] = await Promise.all([
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
       Query.equal('origin', origin),
-      Query.greaterThanEqual('date', new Date().toISOString().split('T')[0]),
-      Query.orderAsc('price'),
       Query.limit(500),
     ]).catch(() => ({ documents: [] })),
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
@@ -532,7 +530,12 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     airline: string;
     source: string;
   }>();
-  for (const p of calendarResult.documents) {
+  const today = new Date().toISOString().split('T')[0];
+  // Sort by price ascending, filter to future dates
+  const calendarDocs = calendarResult.documents
+    .filter((p) => (p.date as string) >= today)
+    .sort((a, b) => (a.price as number) - (b.price as number));
+  for (const p of calendarDocs) {
     const dest = p.destination_iata as string;
     if (calendarPriceMap.has(dest)) continue; // sorted by price ASC, first = cheapest
     calendarPriceMap.set(dest, {
