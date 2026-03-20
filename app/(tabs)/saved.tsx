@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSavedStore } from '../../stores/savedStore';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import SavedCard from '../../components/saved/SavedCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import type { BoardDeal } from '../../types/deal';
@@ -19,6 +21,7 @@ const SORT_LABELS: Record<SortOption, string> = {
 export default function SavedScreen() {
   const insets = useSafeAreaInsets();
   const { savedDeals, toggle } = useSavedStore();
+  const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
   const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('recent');
 
@@ -38,6 +41,16 @@ export default function SavedScreen() {
     router.push(`/destination/${deal.id}`);
   }, [router]);
 
+  const handleBook = useCallback((deal: BoardDeal) => {
+    const store = useBookingFlowStore.getState();
+    store.reset();
+    store.setTripContext(departureCode, deal.iataCode, deal.destinationFull || deal.destination, deal.price ?? null);
+    if (deal.cheapestDate && deal.cheapestReturnDate) {
+      store.setDates(deal.cheapestDate, deal.cheapestReturnDate);
+    }
+    router.push(`/booking/${deal.id}/trip`);
+  }, [router, departureCode]);
+
   const renderItem = useCallback(
     ({ item, index }: { item: BoardDeal; index: number }) => (
       <SavedCard
@@ -45,6 +58,7 @@ export default function SavedScreen() {
         index={index}
         onPress={() => handlePress(item)}
         onRemove={() => toggle(item)}
+        onBook={() => handleBook(item)}
       />
     ),
     [handlePress, toggle],

@@ -15,9 +15,10 @@ interface SavedCardProps {
   index?: number;
   onPress: () => void;
   onRemove: () => void;
+  onBook?: () => void;
 }
 
-export default function SavedCard({ deal, index = 0, onPress, onRemove }: SavedCardProps) {
+export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }: SavedCardProps) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       {Platform.OS === 'web' && deal.imageUrl ? (
@@ -75,6 +76,11 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove }: SavedC
           <Text style={styles.meta}>{deal.airline}</Text>
           <Text style={styles.metaDot}>·</Text>
           <Text style={styles.meta}>{deal.tripDays}d</Text>
+          {onBook && (
+            <Pressable onPress={onBook} style={styles.bookChip} hitSlop={6}>
+              <Text style={styles.bookChipText}>Book →</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Pressable>
@@ -139,5 +145,17 @@ const styles = StyleSheet.create({
   metaDot: {
     fontSize: 10,
     color: colors.faint,
+  },
+  bookChip: {
+    marginLeft: 'auto',
+    backgroundColor: colors.yellow,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  bookChipText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 10,
+    color: colors.bg,
   },
 });
