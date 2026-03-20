@@ -52,7 +52,7 @@ export default function SwipeFeed() {
     if (deal.cheapestDate && deal.cheapestReturnDate) {
       store.setDates(deal.cheapestDate, deal.cheapestReturnDate);
     }
-    router.push(`/booking/${deal.id}/dates`);
+    router.push(`/booking/${deal.id}/trip`);
   }, [router, departureCode]);
 
   const handleEndReached = useCallback(async () => {

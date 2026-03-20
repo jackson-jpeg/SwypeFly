@@ -51,7 +51,7 @@ export default function DestinationDetailScreen() {
       deal.destinationFull || deal.destination,
       deal.price ?? null,
     );
-    router.push(`/booking/${deal.id}/dates`);
+    router.push(`/booking/${deal.id}/trip`);
   }, [deal, router, departureCode]);
 
   if (!deal) {
