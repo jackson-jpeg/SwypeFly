@@ -12,7 +12,7 @@ export const destinations: Destination[] = [
     tagline: 'Island of the Gods',
     description:
       'Discover ancient temples, lush rice terraces, and world-class surfing on this magical Indonesian island.',
-    imageUrl: 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNF45gm6w-8-D1jY4FRX2_4W914SYIEMyISfQU0DEXzd1Qtvilfy5_sJKXZbqhta5z9Ytp5219lUyAy7QyFT1zW7YXZ84dmyqwAJliywHM1--nSlZAOgdOg5NqhliHlYiKFLbAxEt0_1wee6ySg=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2474689/pexels-photo-2474689.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3225528/pexels-photo-3225528.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -58,7 +58,7 @@ export const destinations: Destination[] = [
     tagline: 'Sunsets over the Aegean',
     description:
       'Iconic white-washed buildings perched on volcanic cliffs with breathtaking caldera views.',
-    imageUrl: 'https://images.pexels.com/photos/1010657/pexels-photo-1010657.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNE2jp9NvSKxb2GSCQZuOTkuwd6J-x9X0-vWzMmmYzzKakBejRhgkJbhrpj8tCzqV4zQvd7QyQy9WpfZM6trJj7LczwN9L8_cQV-2tIQuKAjTXcxPyEHR--73YJy6BTg7NF6ZN-IhqeGP5BdwUo=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/161815/santorini-oia-greece-water-161815.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -103,7 +103,7 @@ export const destinations: Destination[] = [
     tagline: 'Where tradition meets tomorrow',
     description:
       'A mesmerizing blend of ultramodern and traditional, from neon-lit Shibuya to serene Meiji Shrine.',
-    imageUrl: 'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHZsqyfU0lc6qkxDPUzvv0ZPzFICPJ8t8EyQWiYwwtSAt9qluTKpJWPMQUnBxHjnSFTy1C3RXEm3vm1iYx5-jkEcXE1ES6zcMrAZOm9VaCk_wGYIBkFj9w_zCxdgPaqgdl5d614V6cqE3D4Iag=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2614818/pexels-photo-2614818.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2187605/pexels-photo-2187605.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -150,7 +150,7 @@ export const destinations: Destination[] = [
     tagline: 'Lost city in the clouds',
     description:
       'Trek to the ancient Incan citadel perched high in the Andes for a once-in-a-lifetime experience.',
-    imageUrl: 'https://images.pexels.com/photos/2929906/pexels-photo-2929906.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGEL6hpbzWs5nOhBIggX5ClellpqFmUPFBoxtSwSv84RxQiaGdadF7mW0wNsLYeMbeNZXy_7ejYi3t7pbUje0IbrDZ6LlYIFoIv9qxvCTYZ09G32zR2AuHpUB0v5pNH3ARZjEVIyu98BHtdnA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2356045/pexels-photo-2356045.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/90597/pexels-photo-90597.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -194,7 +194,7 @@ export const destinations: Destination[] = [
     tagline: 'Gateway to the Sahara',
     description:
       'Lose yourself in vibrant souks, stunning palaces, and the intoxicating scents of spice markets.',
-    imageUrl: 'https://images.pexels.com/photos/3889843/pexels-photo-3889843.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNEUz01DkNd9Y7a4EhToiiwEOCL3FVZpI-l_qAnhR3ixYuAPq3fwdgKfk-o5fKdehcMNogpC_li6W8YCpcS-gFeyLhwPdvpnidqqlmbuMJS3mi5ZoQraNurP6i4O5WGerMQ_CB7KtE0xSYGhBQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/3581916/pexels-photo-3581916.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/4502967/pexels-photo-4502967.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -240,7 +240,7 @@ export const destinations: Destination[] = [
     tagline: 'Land of fire and ice',
     description:
       'Chase northern lights, soak in geothermal springs, and explore otherworldly volcanic landscapes.',
-    imageUrl: 'https://images.pexels.com/photos/2113566/pexels-photo-2113566.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNEeOqurcfxW5c5UIyknsnqxnYPXyZCRGeEoJv8SGvshYRBRdhDP5i1Gb7aVaQtX0Zt_hsyFuUWcLjLyYenltpUhj1l_MAQeEg4WJ1EBG-tjNNlr87BGH8NIYz60Ep4B2paOydwUz9Guk7gzKA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1009136/pexels-photo-1009136.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3617500/pexels-photo-3617500.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -283,7 +283,7 @@ export const destinations: Destination[] = [
     tagline: 'Mediterranean perfection',
     description:
       'Dramatic cliffside villages, azure waters, and the best limoncello you\'ll ever taste.',
-    imageUrl: 'https://images.pexels.com/photos/2440024/pexels-photo-2440024.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHUPX2Z37K-co3J6wKRw9JAaXirULGiKqWkqXY9-oW4crsBs8rpzHFJwPChRgc4BZy3Rr3keDphi67E-bpIpjN3_YosNgkCpPyDAUKEumc0sEyNl4T19xaI6yVO0mxJqpyleOR9ThwnLCELQQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2901209/pexels-photo-2901209.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2614085/pexels-photo-2614085.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -328,7 +328,7 @@ export const destinations: Destination[] = [
     tagline: 'Where mountains meet the sea',
     description:
       'Table Mountain, pristine beaches, world-class wine regions, and incredible wildlife all in one city.',
-    imageUrl: 'https://images.pexels.com/photos/259447/pexels-photo-259447.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGLJkIJMmwL4kZi1aiXFqEIAFj5p4zLa3K2Gcm7ycMbfP76qX834nw8rJEDzgdNj2C_-sRRjYu-UmmLzKY6Zm0vMNCpVV9mmokd5UJQzPP2G2pl4FeEvcnSJFEO90PylVoFYV0tOgWySpYLPh8=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1434580/pexels-photo-1434580.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/963455/pexels-photo-963455.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -372,7 +372,7 @@ export const destinations: Destination[] = [
     tagline: 'Eternal city of temples',
     description:
       'Thousands of classical Buddhist temples, zen gardens, imperial palaces, and traditional geisha districts.',
-    imageUrl: 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGmy67o3J6ZghtKApdnkYnwdwW_N55OMbLLEgtb4VjR1j744Tl2uKwIC5MszJ_tP8yW1bfGT0GfDIm4JQts582b84aqeceoMPRVMx2E9ats6417CEfwDc-fMnLRy4aKXCWVeCDem4qh6Bksdr0=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/402028/pexels-photo-402028.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1673978/pexels-photo-1673978.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -417,7 +417,7 @@ export const destinations: Destination[] = [
     tagline: 'Pearl of the Adriatic',
     description:
       'Walk the ancient city walls, explore limestone streets, and swim in crystal-clear waters.',
-    imageUrl: 'https://images.pexels.com/photos/2044434/pexels-photo-2044434.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHc_FqTBdrkan13voumhe7CwjYRRNOzkd88KOwL451wejaj9m9lwfLjR1sEP6qZaX2VCZyj1QV95WkXn9zdPpD5tVAX2L3rEeJ48Olt9UG492pZFvHAm_GBsy3rWpXE2BQSxATRyp1cDE8HbZs=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2888492/pexels-photo-2888492.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3566108/pexels-photo-3566108.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -460,7 +460,7 @@ export const destinations: Destination[] = [
     tagline: 'Paradise on Earth',
     description:
       'Overwater villas, turquoise lagoons, and some of the most spectacular diving in the world.',
-    imageUrl: 'https://images.pexels.com/photos/1287460/pexels-photo-1287460.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNEkvW3oKmFQVS1Pril-gyxB-AY4vWFVj_WOpjrRPz1aOplfi9xfT4eecYLp19kToMN1EVbmepyiVPTB35YrLWiIhJM4SCf5rt0ndk90lttEPS22V9LCnk83re1eNyZfk2vxfsXtSCNAYZ-bGQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/3601425/pexels-photo-3601425.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1483053/pexels-photo-1483053.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -505,7 +505,7 @@ export const destinations: Destination[] = [
     tagline: 'Art, architecture & tapas',
     description:
       'Gaudi\'s masterpieces, vibrant nightlife, Mediterranean beaches, and world-famous cuisine.',
-    imageUrl: 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFN3m9HZZWM6ts8a96ecDa04S_DlGKiV1LxUyS-lax3mi6y5yjolybrfZABbACAj1teC12T9ZrqdqwYQPF-gwWzwjcZOcXkXeFrdUO6EFmL9HCOXRWVRQFqgoOOMfz39gY8PQNBcLAlqSD80w=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1386444/pexels-photo-1386444.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/819764/pexels-photo-819764.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -552,7 +552,7 @@ export const destinations: Destination[] = [
     tagline: 'Rocky Mountain majesty',
     description:
       'Turquoise glacial lakes, towering peaks, and wildlife encounters in the Canadian Rockies.',
-    imageUrl: 'https://images.pexels.com/photos/2662116/pexels-photo-2662116.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFkT7mMqnSaWzpqFdBdZzOutEXHfXyHKqGWA9Ae5MWYvJLkxygz-6z_rUlaNCzwd774YZnvFY5mUnugNAbFtw12T07Rv4yYGw1KmriVe_KfN77Tox3BE8XA_MHZ1wn3iSqlYmwNeepGDlR74dU=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2662116/pexels-photo-2662116.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2661180/pexels-photo-2661180.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -597,7 +597,7 @@ export const destinations: Destination[] = [
     tagline: 'City of seven hills',
     description:
       'Cobblestone streets, pastel buildings, iconic trams, and the best pastéis de nata in the world.',
-    imageUrl: 'https://images.pexels.com/photos/1534560/pexels-photo-1534560.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFQcVt2FhRAeZG_Hv3PHwt-J1byr3TWCQ8j6TXRbJQ4IdXG8F4sdo6swxeysbHe_bCG5HsYA_a-sQjJpmb3dLrb_Pkvzj-wAmK-YtYZHO8WJtvOTXSJNIe21jOcCe5PxwvpsdiJ309cAhnB3V0=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2404947/pexels-photo-2404947.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1574843/pexels-photo-1574843.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -642,7 +642,7 @@ export const destinations: Destination[] = [
     tagline: 'Adventure capital of the world',
     description:
       'Bungee jumping, skydiving, jet boating, and stunning alpine scenery in Middle-earth.',
-    imageUrl: 'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHM7tpT3F9SUbB8XhLeWG9Y4OGx8QjzpGKkWNoAQJ5u8dsYWdys3Abg9FBMq0j5qa9NsW1-l4v_hB4Fn7S961u9UldDyfsMzBdzXrc2EinXlayNGHEdcegZtbCDnTz7zkXf4T8jGVXnBJEOWQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2876511/pexels-photo-2876511.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -686,7 +686,7 @@ export const destinations: Destination[] = [
     tagline: 'City of superlatives',
     description:
       'The world\'s tallest building, artificial islands, luxury shopping, and desert adventures.',
-    imageUrl: 'https://images.pexels.com/photos/3787839/pexels-photo-3787839.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHISezzqWNseLtk0XoxEpsGhsdhygh8YN13XTglR3_Hw14JUGEtRkKBGtWiVnRVJ5dp6UKNkTni7gwLQTZVeEYgQPX_i5sGhdweR-DaHYkGKuHULyduxlhVGo7sbKf3sGUgT-YZMOzABUyz=s4800-w960',
     imageUrls: [
       'https://images.pexels.com/photos/3787839/pexels-photo-3787839.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2115367/pexels-photo-2115367.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -732,7 +732,7 @@ export const destinations: Destination[] = [
     tagline: 'End of the world beauty',
     description:
       'Massive glaciers, jagged peaks, and pristine wilderness at the southern tip of South America.',
-    imageUrl: 'https://images.pexels.com/photos/2335126/pexels-photo-2335126.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNG8EKNu3WjAyPqh3kqLScSbZ4QaZsC6ARcxvBKmiwSJE77cdMPqa7iesMfnmSDRzjgW_w2A8Qe2yahdsZB5YEUZLCpTRQdpb2rq6a0VRic_KtIGwC198ueH5Ag7NVsI9IyuS3sLJZg2igY_Hg=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2340832/pexels-photo-2340832.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2519212/pexels-photo-2519212.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -776,7 +776,7 @@ export const destinations: Destination[] = [
     tagline: 'Rose of the North',
     description:
       'Ancient temples, night bazaars, cooking classes, and elephant sanctuaries in northern Thailand.',
-    imageUrl: 'https://images.pexels.com/photos/1660995/pexels-photo-1660995.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGOpWj7ug6rN2ttatiOy4erga-c2xmtOFbXRoOgqevlmn8rNjjWWv1X35w0dHQMl1jJPzKWH-0xIh_Q_-5LVHGtoNUaWjbC23m6cS_rvG1emycr0YkUaNKQW_ptgpedFMLRqi_v27BfZJqqbEk=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2070485/pexels-photo-2070485.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3538287/pexels-photo-3538287.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -821,7 +821,7 @@ export const destinations: Destination[] = [
     tagline: 'Peak perfection',
     description:
       'Iconic mountain villages, world-class skiing, scenic train rides, and chocolate at every turn.',
-    imageUrl: 'https://images.pexels.com/photos/691668/pexels-photo-691668.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHOShJyLOSTOBLP3Pm1sd1GEkWe1-GLZ2yrQkcZ0PbljVNd9jG6Vh4_pY-q2eeZ4Zv5iCb8ZOI6ocZsGvt8DT_E8jlmjQBBKsOOyuvFwIiS9afhXYoyMExvJn4dS_Ivg1hQFdF7Y2ccNCSTZIZ4t7AxKQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1054218/pexels-photo-1054218.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2832039/pexels-photo-2832039.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -866,7 +866,7 @@ export const destinations: Destination[] = [
     tagline: 'Frozen in time',
     description:
       'Classic cars, colorful colonial architecture, salsa music, and rum-soaked nights in old Havana.',
-    imageUrl: 'https://images.pexels.com/photos/3566187/pexels-photo-3566187.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFzvA-5oOd09YPLhTfNUe6K1DkCJcGnfK3vJgli3UZ5FJv7Hz5LDKyXUobF7GGL4ERgMC1cfhHtmCymN4mZUW5rcYcy8oqU7m8x37NsO5VD9GsP7tJIo7JEHW0BuAvjRMngRJBHOFDalKgk2w=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/3264723/pexels-photo-3264723.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3299386/pexels-photo-3299386.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -910,7 +910,7 @@ export const destinations: Destination[] = [
     tagline: 'Where jungle meets the sea',
     description:
       'Beach paradise with ancient Mayan ruins, cenotes, and turquoise Caribbean waters.',
-    imageUrl: 'https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFwnMj-evTlZg1AFZb_vyuc6VdhUWlW-oWo9dUuWju_Tw0OpjFiz8K2fAS5UlbaGgaDPck22OpOYHWgCdahlDEEllkVeFjJMafJucAdAvgYHEgl88wMdiHPjuWJk4OOM55Z6pCTcuKXlrR4xg=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1630344/pexels-photo-1630344.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2373201/pexels-photo-2373201.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -955,7 +955,7 @@ export const destinations: Destination[] = [
     tagline: 'Endless white sand',
     description:
       'Palm-lined beaches, all-inclusive resorts, and vibrant merengue culture.',
-    imageUrl: 'https://images.pexels.com/photos/1450353/pexels-photo-1450353.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNG0h0xYMzQHIe_ty-ZsmXRF21chKpW68mHTIE0LFaR3yQrGXyt5BcpaEZJASx0q0P94XQwBBrHhrIfwgOsKx0RMBUwz1UumvbxjZWYCdAvDcFfMtrLgaGki0uxs2guLCRHkWKpF2TJoTXVWeA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1078983/pexels-photo-1078983.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2468773/pexels-photo-2468773.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -998,7 +998,7 @@ export const destinations: Destination[] = [
     tagline: 'Feel the island rhythm',
     description:
       'Reggae vibes, jerk chicken, crystal-clear waters, and laid-back Jamaican hospitality.',
-    imageUrl: 'https://images.pexels.com/photos/1320686/pexels-photo-1320686.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHP3fx-nT2SYvURkDlQNbUcBCKgYdYp3mnB1BAKgVuYbBrF2v6EDdTW7yJCTST9w5zpgetDlkgNs3ks97VaGdSSeOsr2LLUENboM5Hpd4m3oh7EFRvK6iLnIfgKMyrlH1satlbCdDq5go9koQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1450340/pexels-photo-1450340.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2310641/pexels-photo-2310641.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1042,7 +1042,7 @@ export const destinations: Destination[] = [
     tagline: 'Island of enchantment',
     description:
       'Colorful colonial streets, bioluminescent bays, and no passport needed.',
-    imageUrl: 'https://images.pexels.com/photos/2901212/pexels-photo-2901212.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFh7Lx4Pl9Bjf_hiW5_NXwHNPF-3J6Qd01ReqSsrSSC_RVUsFJlpFPJst_slhplP1RF2gOpe7rD3ieXK9cWkAFFhGKbMp7wFNGYbbJ7fd-OYmOeGi67sJFRsoEEheDVQpYEqknDkoJyC26xV2Q=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2132008/pexels-photo-2132008.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2614403/pexels-photo-2614403.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1086,7 +1086,7 @@ export const destinations: Destination[] = [
     tagline: 'One happy island',
     description:
       'Constant trade winds, pristine beaches, and dramatic desert landscape.',
-    imageUrl: 'https://images.pexels.com/photos/1710795/pexels-photo-1710795.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGW_XH4WM_JCH6QQQU5bYleAJmLLvuAreiunL1yWihMRX1EXAJlugilZTy_YyonA_xf38zE9nANrab7yBM5XpS98XUX8ks0caunYa08VNicyLqrAa_LxXvua2lSq5sQrT3I1OElvESc6_v0YTY=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1450372/pexels-photo-1450372.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1710795/pexels-photo-1710795.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1129,7 +1129,7 @@ export const destinations: Destination[] = [
     tagline: 'Paradise found',
     description:
       'Swimming pigs, underwater caves, and stunning Bahamian blue waters.',
-    imageUrl: 'https://images.pexels.com/photos/1450354/pexels-photo-1450354.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHYLLUbPfDzrHMP2q0uSKZlBDwafoLMqgR_jPjT10EqmyZ3fEYv_ULRQM-zO8kG8p7-sNIkzHldRyEhSs_prxTZkephn8YoarkvtN8kYKJXJDONwROVv4bi6xGDsu6ESUw_eDinmIHud1UgmRM=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1450355/pexels-photo-1450355.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/994628/pexels-photo-994628.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1173,7 +1173,7 @@ export const destinations: Destination[] = [
     tagline: 'Diver\'s paradise',
     description:
       'World-class coral reefs, Mayan ruins, and colorful downtown plazas.',
-    imageUrl: 'https://images.pexels.com/photos/932638/pexels-photo-932638.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNE5Yq95W1F5-pv7PWTl4M_88uqVRWGtWg9DS7ATXo40TgM-wX8Wsmdn0aC-MKfWek9dZJGSA8HH2znriN9LpXeOWg3Gg5U-Pswg4qNHkW9oewWHvouucy05uAJ1SigOV54Zw13smdYD4qWG2A=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/3369569/pexels-photo-3369569.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3538290/pexels-photo-3538290.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1216,7 +1216,7 @@ export const destinations: Destination[] = [
     tagline: 'Jewel of the Caribbean',
     description:
       'Iconic Piton mountains, volcanic beaches, and lush rainforest adventures.',
-    imageUrl: 'https://images.pexels.com/photos/2132126/pexels-photo-2132126.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHpf6g7AaprTcjZijayGQJvof30t1ciKGG-34UtWww8PZJQk3danrvwp8i5Ogw1pGK-6fojndTdK55Kh9K2w2eiWI2OLM4Orc2KM3vaAFREs7CFxypdIfoN8RfAQLdvCaOAb8HdyZkscVear6M=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2549018/pexels-photo-2549018.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2780309/pexels-photo-2780309.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1261,7 +1261,7 @@ export const destinations: Destination[] = [
     tagline: 'Pure life awaits',
     description:
       'Zip-lining through cloud forests, volcanic hot springs, and incredible biodiversity.',
-    imageUrl: 'https://images.pexels.com/photos/2901215/pexels-photo-2901215.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGSmgRVof5bO6VAgM2go8eFv6btGJ4t5EMF0VOI1thBxh8E4IDJF3VMs5Rv2J2Yd9eNlVjhz2-akZCMf10OoYlDHQuLZwpEuoU_k6uzp_wbV8_jqx1FPTuo2sPuoyKAjFR_NLKH0ctv_ynJ3Q=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2739664/pexels-photo-2739664.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/572780/pexels-photo-572780.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1306,7 +1306,7 @@ export const destinations: Destination[] = [
     tagline: 'South America\'s hidden gem',
     description:
       'Vibrant street art, world-class coffee, and Andean mountain culture.',
-    imageUrl: 'https://images.pexels.com/photos/2901209/pexels-photo-2901209.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNF_qWl1aCZmdTtt3ZocQVYvNsRbBtjuLO9TWxCnoQIVyCjztCTZQyN3fZvjAxIfmLAEvIm2Kw72f-fnAXw3VYt2ZhToLBann70kMI9yM1EQMFjENdG6pSYn8zFM2Fqy8lfT3eAfHLcEePHr=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/3889891/pexels-photo-3889891.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2474690/pexels-photo-2474690.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1349,7 +1349,7 @@ export const destinations: Destination[] = [
     tagline: 'City of eternal spring',
     description:
       'Perfect weather year-round, innovative urban culture, and stunning valley views.',
-    imageUrl: 'https://images.pexels.com/photos/2901210/pexels-photo-2901210.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHUuGuxsJLlYuidnedoy7uK3EarM_sh4SYQpiCD5IthJgenpwyjv6BNTA2bcdjRGbGvxmPMkTT557QrgGkUVM_CimPBk5dC2O85FIOwO1-cRzi67RVT7Jqq-tV2UgnlqwdQKK9W3Jb__AfW9ok=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2187605/pexels-photo-2187605.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2901208/pexels-photo-2901208.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1393,7 +1393,7 @@ export const destinations: Destination[] = [
     tagline: 'Culinary capital of South America',
     description:
       'World-renowned ceviche, pre-Columbian ruins, and Pacific coast sunsets.',
-    imageUrl: 'https://images.pexels.com/photos/2929907/pexels-photo-2929907.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNE9O-Yh8Gc2t27qfpTCQ-qMVbF3o5fWncZTfIM0mZHCp_VTRT6UPLicY0Brc2ugcXrVuAs5DYyCqevawHqht-SCLR1syyeG7gC1KG2xKcUQ0YoxwzG1_RRThYveNtfaB4afbyiv44o9jnhchWI=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2356045/pexels-photo-2356045.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2613438/pexels-photo-2613438.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1437,7 +1437,7 @@ export const destinations: Destination[] = [
     tagline: 'Walled city of dreams',
     description:
       'Colorful colonial architecture, Caribbean beaches, and vibrant nightlife.',
-    imageUrl: 'https://images.pexels.com/photos/3264723/pexels-photo-3264723.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHKLfhouwwDQKk-IPKqW54T-9h4DxxVb8mRJTQquAX-OyG56r0JQkkSFhhnYM8OQkvhOrpZ1D29ZQ1dXfweKU_eJKg-pmf2MYrA0AQdxSuER85Zj7A1DUoWw-1Zs6c8oafxnykLfX14tSFHWw=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2901213/pexels-photo-2901213.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2474689/pexels-photo-2474689.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1481,7 +1481,7 @@ export const destinations: Destination[] = [
     tagline: 'Where two oceans meet',
     description:
       'Engineering marvel of the Canal, modern skyline, and tropical rainforest.',
-    imageUrl: 'https://images.pexels.com/photos/3225517/pexels-photo-3225517.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNEj2o6SMjVIbeg0gfO6Be_wyeSLsLO3WeSblx16OgSm9zAOfQoOW3sfAyG1AtOMbmH7iql00KWUCpqBgNgaGFdKCqBt7lusF5sSta1VGVlKkKy9s6YgVmKdfKke3EU5V98Kc3_oqtJyVl5vUg=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2412603/pexels-photo-2412603.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3214944/pexels-photo-3214944.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1525,7 +1525,7 @@ export const destinations: Destination[] = [
     tagline: 'History meets the cutting edge',
     description:
       'Iconic landmarks, world-class museums, and unmatched theatre and pub culture.',
-    imageUrl: 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGhkXNkaUqc2iWyAjjqg0ZG9IEfyuP1HP1oPOtjHcNhoA7lhZ5zG7QHcE0KRvA9QAxh7oWt7v4XgeT_fFuIsJ6IqxgB-0y9OmBjOotvi6PlyDQG_xcRTWQkDfnnpKXRt0xSy6C2m-Ru2Ewmng=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/77171/pexels-photo-77171.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/672532/pexels-photo-672532.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1572,7 +1572,7 @@ export const destinations: Destination[] = [
     tagline: 'Always a good idea',
     description:
       'The Eiffel Tower, Louvre masterpieces, and patisseries on every corner.',
-    imageUrl: 'https://images.pexels.com/photos/699466/pexels-photo-699466.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNH9JpTCZJE91iwDPRXrgX4lRx97l8oC8QwFjlkj5nk3sK6CeEm9UJHnl4LQ3_Z1NevmXZF1qht6TFOwI09Eb3CHcsRKDlv44hdRR2WgEFPT4rE-tJkpGHnZdDNC-ldnqBT_GNOO8TOj8wUc1lA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/532826/pexels-photo-532826.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1618,7 +1618,7 @@ export const destinations: Destination[] = [
     tagline: 'Freedom on two wheels',
     description:
       'Canal-lined streets, world-class art, and legendary tulip fields.',
-    imageUrl: 'https://images.pexels.com/photos/2031706/pexels-photo-2031706.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFYe93mQysLE7-AklVIFrfDuFWugrHJSugQvlkyhgyiaO-FtIwLL4qnQrV1YY81z_wMFx_ir_trH-NvI-3rgRCvYEdRYO3lt4-CE4muMWJ0Nk9kSa3LvO7B4A9tbllwFCPVZERV--0g9YxRjA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1414467/pexels-photo-1414467.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2909077/pexels-photo-2909077.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1663,7 +1663,7 @@ export const destinations: Destination[] = [
     tagline: 'Eternal city of wonders',
     description:
       'Colosseum, Vatican treasures, and the best pasta you\'ll ever eat.',
-    imageUrl: 'https://images.pexels.com/photos/2064827/pexels-photo-2064827.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHLGZaOd_tL-9DS9sd7JXXiJQX2FDAQkkpnHIAjFAZuKA7fy45eEzj5p0jrRwAFrL7NdctzOhJVN8IU6W7PW2njRRMHxoGObYLCogfy26WQaKuDosifVXtqrpj7HFoEeyjeBf4XeerHIs1ZO4M=s4800-w1080',
     imageUrls: [
       'https://images.pexels.com/photos/2225442/pexels-photo-2225442.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1710,7 +1710,7 @@ export const destinations: Destination[] = [
     tagline: 'A hundred thousand welcomes',
     description:
       'Cozy pubs, literary history, and dramatic coastal cliffs.',
-    imageUrl: 'https://images.pexels.com/photos/2416653/pexels-photo-2416653.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHSAsASMIKpRtMML_anbo_Y1Y_l1zsW_U2pPtx3ogJYbvwzFGbTYw1ro5xqPmqOj7ZAjt2vhQ9TrNMjuUTrBjM460t2Dpfa-1fNowf34B7e4d-U-V__UqzmsiGsdDBpGFvSVSAGfV4kZXcV2RE=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2382681/pexels-photo-2382681.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2084166/pexels-photo-2084166.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1753,7 +1753,7 @@ export const destinations: Destination[] = [
     tagline: 'City of a hundred spires',
     description:
       'Fairy-tale architecture, affordable beer, and a Gothic old town.',
-    imageUrl: 'https://images.pexels.com/photos/2346216/pexels-photo-2346216.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHjsq-2LRyljB7lG2b_K8Msm6spTusEu3hob5piC5lbD_crIffcgcEPkIkl-SW6Uo8wvD1Yqp2dEmQTNGp-KXdh5jMEYS2NoV_nX9CIBFvHl0s4QqJoykEQpIj9UBG7ewfSJCnl-5Hq3cY_=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2514920/pexels-photo-2514920.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3566191/pexels-photo-3566191.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1797,7 +1797,7 @@ export const destinations: Destination[] = [
     tagline: 'Happiest city on Earth',
     description:
       'Scandi design, Tivoli Gardens, and New Nordic cuisine revolution.',
-    imageUrl: 'https://images.pexels.com/photos/2563681/pexels-photo-2563681.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFwq4e1L2TjveCL84-ZYA1319RxALCi6vQ0Y4pQ-NFV_HaSSqdAG8dqdPMPPCeNf-CX4ID4Wkp1yxgxf0w8eB4wwPdMMA3rhJDMul9H8h3j-_EQCNZQG-V-V7VZB4TQHRCtcvHKZN0ukXNNRA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/416024/pexels-photo-416024.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2538695/pexels-photo-2538695.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1840,7 +1840,7 @@ export const destinations: Destination[] = [
     tagline: 'Creative capital of Europe',
     description:
       'History-soaked streets, legendary nightlife, and thriving art scene.',
-    imageUrl: 'https://images.pexels.com/photos/109630/pexels-photo-109630.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGd1tu9q3JIA-BQooH7lfCoSKBJ_hHUGhxHurDsiSAjo4HObylQKlv3xyHz0X3xq3WJ0mBMrGD_W6IlNmxSoQ9k5ZYdGrU2r0ULSzWhc-ynshWWrQyi-d9of7aXq1H4JUk_95iiUXaaKoXUxA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1128408/pexels-photo-1128408.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1119972/pexels-photo-1119972.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1885,7 +1885,7 @@ export const destinations: Destination[] = [
     tagline: 'City that never sleeps',
     description:
       'Ornate temples, floating markets, legendary street food, and electric nightlife.',
-    imageUrl: 'https://images.pexels.com/photos/1682748/pexels-photo-1682748.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGexvhLHl5lK11Y8jB_f3WQgY69qt2WAC3fmAlLi825Lr4FAEVL6JBxwXu0paW8IGRktyHCGrdgkVewQ_YZfvl6ocbymm-51mZTm0IaCUhN7Uga2Vf2Hup7sXWBFzWHuR0KNNxPK3tfdIy1XQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3538287/pexels-photo-3538287.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1932,7 +1932,7 @@ export const destinations: Destination[] = [
     tagline: 'Garden city of the future',
     description:
       'Futuristic gardens, hawker food paradise, and a seamless blend of cultures.',
-    imageUrl: 'https://images.pexels.com/photos/777059/pexels-photo-777059.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFVFy5i4VsE1WEQBkaRDc1w70Oy-N5kGX8ISng5C6BDM6HDn2tl0Hpa7iE0nmQbiEVfY-uN1J1bXqjguNiq9-4eaOaI3YTwfQhYxY-DhsneX2fj6KY1y2K6QG5zjxIuUzo5SC5UdwsJep_IDHs=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1842332/pexels-photo-1842332.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3152126/pexels-photo-3152126.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -1978,7 +1978,7 @@ export const destinations: Destination[] = [
     tagline: 'Where K-culture comes alive',
     description:
       'K-pop energy, ancient palaces, street food alleys, and cutting-edge tech.',
-    imageUrl: 'https://images.pexels.com/photos/2373457/pexels-photo-2373457.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHv6eQtKjmrVeEV4QXPuN6HW0d8_GwQpdnRzf332ziqhx5OCkvPkHF1T4UMjQ2ts6o_x4xs_LB5bVIDSvOWJytgb-P3z6k3QClxIV7N4k2O8qUciuRNWpzUTnPyuoq0A_714qTo9h_scQgRPQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2187605/pexels-photo-2187605.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -2024,7 +2024,7 @@ export const destinations: Destination[] = [
     tagline: 'Thousand years of history',
     description:
       'Old Quarter charm, pho on every corner, and stunning Ha Long Bay nearby.',
-    imageUrl: 'https://images.pexels.com/photos/2070485/pexels-photo-2070485.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNFX26ad9--QOiPNSnxXHKi-lk4BvhLs4Z2qv9jjEsdq6LAD9Tm5IDt0awb1NXewdkqchJveJ6mYERpsZoAo0uD0PsnHuxkJKg0ty0ZSyy2Zv72K5kcXqeLQ-xKRcpv2_smgHqmjkQ=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/2363073/pexels-photo-2363073.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/3854025/pexels-photo-3854025.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -2072,7 +2072,7 @@ export const destinations: Destination[] = [
     tagline: 'Aloha spirit',
     description:
       'Volcanic peaks, world-famous surf, and tropical island vibes without a passport.',
-    imageUrl: 'https://images.pexels.com/photos/3601425/pexels-photo-3601425.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGP1bo-gv98A36RMvIB6J0F-KdYeou03ThXDdipMpYSiapGDPbtiUdzcmwXQAr2eHADLJH4PXik5jotshJ7xjduXXenZ01IQKe89abk3n6SB36X6_uuX-f9PSyIWTComw9qEYo2NAmad-Wgsg=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1450353/pexels-photo-1450353.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/1320686/pexels-photo-1320686.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -2117,7 +2117,7 @@ export const destinations: Destination[] = [
     tagline: 'The Big Easy',
     description:
       'Jazz on every corner, Creole cuisine, and Mardi Gras magic year-round.',
-    imageUrl: 'https://images.pexels.com/photos/1382149/pexels-photo-1382149.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNHyKp9O_tXPumYsdF0XpHRcrmvmAYu_xoXFfCQ24_VPTalyeC8eNhQf2NtX6Hy_Obt9IRfTn7eWWSZ4CXWJjIxw_tu9LTKySG83LBrsQWc8FrWiS9ZYfYYcrqd-Nabpme-5HBt0DgOOlHQOIg=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/3566187/pexels-photo-3566187.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2901212/pexels-photo-2901212.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -2161,7 +2161,7 @@ export const destinations: Destination[] = [
     tagline: 'Music City',
     description:
       'Live honky-tonks, hot chicken, and the heartbeat of country music.',
-    imageUrl: 'https://images.pexels.com/photos/2675266/pexels-photo-2675266.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNGf4fe44TYM0JJEU5QGOmStOnef8d4wQMEVO_7-OPmk341TRpBCSarq_W9Wb2mT3y6oJDz0PJdLFbJJpUHbg203xgpaJaBSAjKMZGobi_ynhgnSCMcLaWvcaIIAozheiWRfNh0PBmjftYA9Zg=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/1128408/pexels-photo-1128408.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/2570063/pexels-photo-2570063.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
@@ -2204,7 +2204,7 @@ export const destinations: Destination[] = [
     tagline: 'City that never sleeps',
     description:
       'Broadway, Central Park, iconic skyline, and the world\'s most diverse food scene.',
-    imageUrl: 'https://images.pexels.com/photos/802024/pexels-photo-802024.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    imageUrl: 'https://lh3.googleusercontent.com/place-photos/AL8-SNG0YKZTF-HegMSVwAMZP5iCSiK-VWTZb7dtJ17iGMlhVCt1OlK2i8yGeYGE2bHLBSScx8muNa_wMGeoHZfwM9yy1IDQVvbJ5pi6xyYNYqKBe3qZnq39Vw9mBty6oMecbEMQr-Uoo66LGQvNUA=s4800-w1200',
     imageUrls: [
       'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
       'https://images.pexels.com/photos/290386/pexels-photo-290386.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
