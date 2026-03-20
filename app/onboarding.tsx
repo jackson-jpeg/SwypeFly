@@ -47,11 +47,29 @@ export default function OnboardingScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top + 80 }]}
+      style={[styles.container, { paddingTop: insets.top + 40 }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Text style={styles.emoji}>✈️</Text>
-      <Text style={styles.heading}>Where are you{'\n'}flying from?</Text>
+      <Text style={styles.brand}>SOGOJET</Text>
+      <Text style={styles.tagline}>Swipe through the cheapest flights{'\n'}and book in seconds</Text>
+
+      <View style={styles.valuePropRow}>
+        <View style={styles.valueProp}>
+          <Text style={styles.valuePropIcon}>💰</Text>
+          <Text style={styles.valuePropText}>Real prices</Text>
+        </View>
+        <View style={styles.valueProp}>
+          <Text style={styles.valuePropIcon}>📅</Text>
+          <Text style={styles.valuePropText}>Best dates picked</Text>
+        </View>
+        <View style={styles.valueProp}>
+          <Text style={styles.valuePropIcon}>⚡</Text>
+          <Text style={styles.valuePropText}>Book in 2 taps</Text>
+        </View>
+      </View>
+
+      <Text style={styles.heading}>Where are you flying from?</Text>
 
       <View style={styles.inputWrapper}>
         <TextInput
@@ -104,14 +122,48 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     paddingHorizontal: spacing.lg,
   },
-  emoji: { fontSize: 48, textAlign: 'center', marginBottom: spacing.lg },
+  emoji: { fontSize: 40, textAlign: 'center', marginBottom: spacing.sm },
+  brand: {
+    fontFamily: fonts.display,
+    fontSize: 32,
+    color: colors.yellow,
+    textAlign: 'center',
+    letterSpacing: 4,
+    marginBottom: spacing.sm,
+  },
+  tagline: {
+    fontFamily: fonts.accent,
+    fontSize: 16,
+    color: colors.whiteDim,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.lg,
+  },
+  valuePropRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.xl,
+  },
+  valueProp: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  valuePropIcon: {
+    fontSize: 20,
+  },
+  valuePropText: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.muted,
+    textAlign: 'center',
+  },
   heading: {
     fontFamily: fonts.display,
-    fontSize: 28,
+    fontSize: 22,
     color: colors.white,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 36,
+    marginBottom: spacing.md,
+    lineHeight: 28,
   },
   inputWrapper: {
     backgroundColor: colors.surface,
