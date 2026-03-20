@@ -666,10 +666,10 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       continent: (d.continent as string) || undefined,
       tagline: (d.tagline as string) || '',
       description: (d.description as string) || '',
-      // Prefer Google Places photos on the destination doc (city-specific)
-      // over destination_images collection (generic Unsplash)
-      image_url: (d.image_url as string) || imageMap.get(d.$id)?.url || '',
-      image_urls: (d.image_urls as string[])?.length ? (d.image_urls as string[]) : imageMap.get(d.$id)?.urls || [],
+      // Prefer Unsplash images (destination_images collection) — they load reliably in browsers.
+      // Google Places photo URLs (d.image_url) expire and return HTML instead of images.
+      image_url: imageMap.get(d.$id)?.url || (d.image_url as string) || '',
+      image_urls: imageMap.get(d.$id)?.urls?.length ? imageMap.get(d.$id)!.urls : (d.image_urls as string[]) || [],
       flight_price: d.flight_price as number,
       hotel_price_per_night: (d.hotel_price_per_night as number) || 0,
       currency: (d.currency as string) || 'USD',
@@ -728,8 +728,8 @@ function toFrontend(d: ScoredDest, origin?: string) {
     country: d.country,
     tagline: d.tagline,
     description: d.description,
-    // Prefer Google Places photos (city-specific) over Unsplash (often generic)
-    imageUrl: d.image_urls?.[0] || d.image_url,
+    // image_url already prioritizes Unsplash over Google Places (set in merge above)
+    imageUrl: d.image_url || d.image_urls?.[0],
     imageUrls: d.image_urls,
     flightPrice: d.live_price ?? d.flight_price,
     hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
