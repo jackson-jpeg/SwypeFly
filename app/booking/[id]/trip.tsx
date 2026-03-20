@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Image } from 'expo-image';
 import { useDealStore } from '../../../stores/dealStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
@@ -306,6 +307,25 @@ export default function TripScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Destination photo */}
+        {deal.imageUrl ? (
+          <View style={styles.heroImage}>
+            {Platform.OS === 'web' ? (
+              <img
+                src={deal.imageUrl}
+                alt={deal.destinationFull || deal.destination}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
+              />
+            ) : (
+              <Image
+                source={{ uri: deal.imageUrl }}
+                style={{ width: '100%', height: '100%', borderRadius: 12 }}
+                contentFit="cover"
+              />
+            )}
+          </View>
+        ) : null}
+
         {/* Hero card */}
         <TripHeroCard
           price={selectedTrip.price}
@@ -401,6 +421,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.muted,
     marginTop: 2,
+  },
+
+  // Hero image
+  heroImage: {
+    height: 180,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
 
   // Scroll
