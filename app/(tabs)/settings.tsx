@@ -194,7 +194,7 @@ export default function SettingsScreen() {
         style={styles.row}
         onPress={() => {
           const url = 'https://sogojet.com/privacy';
-          Platform.OS === 'web' ? window.open(url, '_blank') : Linking.openURL(url);
+          if (Platform.OS === 'web') { window.open(url, '_blank'); } else { Linking.openURL(url); }
         }}
       >
         <Text style={styles.rowLabel}>Privacy Policy</Text>
@@ -204,7 +204,7 @@ export default function SettingsScreen() {
         style={styles.row}
         onPress={() => {
           const url = 'https://sogojet.com/terms';
-          Platform.OS === 'web' ? window.open(url, '_blank') : Linking.openURL(url);
+          if (Platform.OS === 'web') { window.open(url, '_blank'); } else { Linking.openURL(url); }
         }}
       >
         <Text style={styles.rowLabel}>Terms of Service</Text>
@@ -214,7 +214,7 @@ export default function SettingsScreen() {
         style={styles.row}
         onPress={() => {
           const url = 'mailto:hello@sogojet.com';
-          Platform.OS === 'web' ? window.open(url) : Linking.openURL(url);
+          if (Platform.OS === 'web') { window.open(url); } else { Linking.openURL(url); }
         }}
       >
         <Text style={styles.rowLabel}>Contact</Text>
