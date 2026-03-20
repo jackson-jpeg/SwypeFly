@@ -508,7 +508,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   const [calendarResult, priceResult, hotelPriceResult, imageResult] = await Promise.all([
     serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
       Query.equal('origin', origin),
-      Query.limit(500),
+      Query.limit(2000),
     ]).catch((err) => {
       console.error('[feed] price_calendar query FAILED:', (err as Error)?.message || err);
       return { documents: [] };
