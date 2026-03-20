@@ -249,10 +249,14 @@ function scoreFeedGeneric(
   const recentVibes: string[] = [];
   const WINDOW = 4;
 
+  // Seed with an affordable, interesting destination (not the most expensive)
   remaining.sort((a, b) => {
     const pa = a.live_price ?? a.flight_price;
     const pb = b.live_price ?? b.flight_price;
-    return (pb / 1000) - (pa / 1000);
+    // Affordable + popular = best seed
+    const scoreA = (pa > 0 ? 1 - pa / (maxPrice || 1) : 0) + (a.popularity_score ?? 0) * 0.3;
+    const scoreB = (pb > 0 ? 1 - pb / (maxPrice || 1) : 0) + (b.popularity_score ?? 0) * 0.3;
+    return scoreB - scoreA;
   });
 
   const seed = remaining.shift()!;
@@ -279,13 +283,16 @@ function scoreFeedGeneric(
       for (let j = 0; j < recentVibes.length; j++) {
         if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
-      const jitter = rand() * 0.35;
+      const jitter = rand() * 0.20;
+
+      // Penalty for very expensive flights (>$800) — these aren't "wow" discoveries
+      const expensivePenalty = effectivePrice > 800 ? (effectivePrice - 800) / 2000 : 0;
 
       // Quiz personalization bonus (additive, optional)
       const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
 
       const score =
-        priceScore * 0.30 - regionPenalty * 0.30 - vibePenalty * 0.15 + jitter + quizBonus;
+        priceScore * 0.40 - regionPenalty * 0.25 - vibePenalty * 0.10 - expensivePenalty + jitter + quizBonus;
 
       if (score > bestScore) {
         bestScore = score;
