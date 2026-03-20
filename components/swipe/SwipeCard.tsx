@@ -26,7 +26,10 @@ interface SwipeCardProps {
   onTap?: () => void;
 }
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80';
+
 export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
+  const imageUri = deal.imageUrl || FALLBACK_IMAGE;
   const saveScale = useRef(new Animated.Value(1)).current;
 
   const handleSave = useCallback(() => {
@@ -44,16 +47,16 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
   return (
     <Pressable style={styles.card} onPress={onTap}>
       {/* Background image */}
-      {Platform.OS === 'web' && deal.imageUrl ? (
+      {Platform.OS === 'web' ? (
         // expo-image and RNImage both fail to render on web — use raw <img>
         <img
-          src={deal.imageUrl}
+          src={imageUri}
           alt=""
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
         <Image
-          source={{ uri: deal.imageUrl }}
+          source={{ uri: imageUri }}
           style={StyleSheet.absoluteFillObject}
           contentFit="cover"
           placeholder={deal.blurHash ? { blurhash: deal.blurHash } : undefined}

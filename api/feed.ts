@@ -690,7 +690,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       nature_score: (d.nature_score as number) || 0,
       food_score: (d.food_score as number) || 0,
       popularity_score: (d.popularity_score as number) || 0,
-      live_price: cp?.price ?? lp?.price ?? null,
+      live_price: (cp?.price || lp?.price) || null,
       live_airline: cp?.airline ?? lp?.airline ?? '',
       live_duration: lp?.duration ?? '',
       price_source: cp ? cp.source : (lp?.source ?? undefined),
@@ -984,11 +984,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let scored: ScoredDest[];
 
     if (sortPreset === 'cheapest') {
-      scored = [...destinations].sort((a, b) => {
-        const pa = a.live_price ?? a.flight_price;
-        const pb = b.live_price ?? b.flight_price;
-        return pa - pb;
-      });
+      scored = [...destinations]
+        .filter((d) => (d.live_price ?? d.flight_price) > 0)
+        .sort((a, b) => {
+          const pa = a.live_price ?? a.flight_price;
+          const pb = b.live_price ?? b.flight_price;
+          return pa - pb;
+        });
     } else if (sortPreset === 'trending') {
       scored = [...destinations].sort(
         (a, b) => (b.popularity_score ?? 0) - (a.popularity_score ?? 0),

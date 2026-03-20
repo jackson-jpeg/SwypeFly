@@ -34,7 +34,7 @@ const GENDERS: { value: Passenger['gender']; label: string }[] = [
 
 const DOB_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+?[\d\s\-()]{7,}$/;
+const PHONE_REGEX = /^\+\d[\d\s\-()]{7,}$/;
 
 // ─── Screen ──────────────────────────────────────────────────────────
 
@@ -210,7 +210,7 @@ export default function PassengersScreen() {
             style={styles.input}
             value={phoneNumber}
             onChangeText={setPhoneNumber}
-            placeholder="+1 555 123 4567"
+            placeholder="+1 555 123 4567 (country code required)"
             placeholderTextColor={colors.faint}
             keyboardType="phone-pad"
             autoCorrect={false}

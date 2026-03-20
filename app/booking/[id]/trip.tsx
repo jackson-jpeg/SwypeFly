@@ -61,7 +61,12 @@ export default function TripScreen() {
   // ─── Redirect if no cheapestDate ────────────────────────────────
 
   useEffect(() => {
-    if (deal && !deal.cheapestDate) {
+    if (!deal) return;
+    if (!deal.iataCode) {
+      router.replace(`/booking/${id}/dates` as never);
+      return;
+    }
+    if (!deal.cheapestDate) {
       router.replace(`/booking/${id}/dates` as never);
     }
   }, [deal, id, router]);
@@ -170,9 +175,13 @@ export default function TripScreen() {
     setBookError(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const res = await fetch(`${API_BASE}/api/booking?action=search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           origin: departureCode,
           destination: deal.iataCode,
@@ -183,6 +192,8 @@ export default function TripScreen() {
           priceHint: selectedTrip.price,
         }),
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -223,7 +234,11 @@ export default function TripScreen() {
       store.setOfferId(bestOffer.id);
       router.push(`/booking/${id}/passengers?offerId=${bestOffer.id}` as never);
     } catch (e) {
-      setBookError((e as Error).message);
+      if ((e as Error).name === 'AbortError') {
+        setBookError('Search timed out — please try again or try different dates');
+      } else {
+        setBookError((e as Error).message);
+      }
     } finally {
       setBooking(false);
     }
