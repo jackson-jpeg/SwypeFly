@@ -203,17 +203,39 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
   // Upsert bulk prices — one entry per destination with their cheapest price + dates
   // These are the prices that show on feed cards
   const today = new Date().toISOString().split('T')[0];
-  const bulkEntries = Array.from(bulkPrices.entries())
+
+  // Get our destination IATA codes so we can prioritize matching routes
+  let ourDestCodes = new Set<string>();
+  try {
+    const destResult = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.destinations,
+      [Query.equal('is_active', true), Query.limit(500)],
+    );
+    ourDestCodes = new Set(destResult.documents.map((d) => d.iata_code as string));
+  } catch {
+    // Non-fatal — just won't prioritize
+  }
+
+  const allBulkEntries = Array.from(bulkPrices.entries())
     .map(([code, info]) => {
-      // Map city codes to airport codes so they match our destinations collection
       const mappedCode = CITY_TO_AIRPORT[code] || code;
       return [mappedCode, info] as [string, typeof info];
     })
     .filter(([, info]) => {
       const dep = info.departureAt?.split('T')[0];
       return dep && dep >= today;
-    })
-    .slice(0, 200); // Cap to avoid timeout — 200 upserts × ~2 Appwrite calls each ≈ 400 calls
+    });
+
+  // Sort: our destinations first, then by price ascending
+  allBulkEntries.sort((a, b) => {
+    const aInOurs = ourDestCodes.has(a[0]) ? 0 : 1;
+    const bInOurs = ourDestCodes.has(b[0]) ? 0 : 1;
+    if (aInOurs !== bInOurs) return aInOurs - bInOurs;
+    return a[1].price - b[1].price;
+  });
+
+  const bulkEntries = allBulkEntries.slice(0, 200);
 
   // Process in parallel chunks of 10
   const UPSERT_CONCURRENCY = 10;
