@@ -11,7 +11,11 @@ import type { BoardDeal } from '../../types/deal';
 import { colors, spacing } from '../../theme/tokens';
 const { height: SCREEN_H } = Dimensions.get('window');
 
-export default function SwipeFeed() {
+interface SwipeFeedProps {
+  onVisibleIndexChange?: (index: number) => void;
+}
+
+export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
   const deals = useDealStore((s) => s.deals);
   const fetchMore = useDealStore((s) => s.fetchMore);
   const departureCode = useSettingsStore((s) => s.departureCode);
@@ -27,7 +31,9 @@ export default function SwipeFeed() {
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
-      setVisibleIndex(viewableItems[0].index);
+      const idx = viewableItems[0].index;
+      setVisibleIndex(idx);
+      onVisibleIndexChange?.(idx);
     }
   }).current;
 

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDealStore } from '../../stores/dealStore';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -11,6 +11,9 @@ import FilterButton from '../../components/swipe/FilterButton';
 import FilterSheet from '../../components/swipe/FilterSheet';
 import { colors, fonts } from '../../theme/tokens';
 
+// Immersion mode: header fades after 2+ swipes, returns on tap
+const IMMERSE_AFTER_SWIPES = 2;
+
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { deals, isLoading, error, fetchDeals } = useDealStore();
@@ -19,6 +22,31 @@ export default function FeedScreen() {
   const clearFilters = useFilterStore((s) => s.clearAll);
   const isSheetOpen = useFilterStore((s) => s.isOpen);
   const prevDepartureRef = useRef(departureCode);
+
+  // Immersion mode state
+  const headerOpacity = useRef(new Animated.Value(1)).current;
+  const [immersed, setImmersed] = useState(false);
+
+  const fadeHeader = useCallback((show: boolean) => {
+    Animated.timing(headerOpacity, {
+      toValue: show ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    setImmersed(!show);
+  }, [headerOpacity]);
+
+  const handleVisibleIndexChange = useCallback((index: number) => {
+    if (index >= IMMERSE_AFTER_SWIPES && !immersed) {
+      fadeHeader(false);
+    } else if (index === 0 && immersed) {
+      fadeHeader(true);
+    }
+  }, [immersed, fadeHeader]);
+
+  const handleHeaderTap = useCallback(() => {
+    if (immersed) fadeHeader(true);
+  }, [immersed, fadeHeader]);
 
   // Clear filters when departure city changes (fresh context)
   useEffect(() => {
@@ -37,14 +65,16 @@ export default function FeedScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Floating header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.logo}>✈ SOGOJET</Text>
-        <FilterButton />
-        <View style={styles.airportBadge}>
-          <Text style={styles.airportText}>{departureCode}</Text>
-        </View>
-      </View>
+      {/* Floating header — fades during immersion */}
+      <Pressable onPress={handleHeaderTap} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+        <Animated.View style={[styles.header, { paddingTop: insets.top + 8, opacity: headerOpacity }]}>
+          <Text style={styles.logo}>✈ SOGOJET</Text>
+          <FilterButton />
+          <View style={styles.airportBadge}>
+            <Text style={styles.airportText}>{departureCode}</Text>
+          </View>
+        </Animated.View>
+      </Pressable>
 
       {/* Content */}
       {isLoading ? (
@@ -68,7 +98,7 @@ export default function FeedScreen() {
           </Text>
         </View>
       ) : (
-        <SwipeFeed />
+        <SwipeFeed onVisibleIndexChange={handleVisibleIndexChange} />
       )}
 
       {/* Filter sheet overlay */}
@@ -83,11 +113,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
