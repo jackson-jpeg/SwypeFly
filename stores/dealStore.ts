@@ -41,6 +41,8 @@ interface ApiDestination {
   usualPrice?: number;
   savingsAmount?: number;
   savingsPercent?: number;
+  nearbyOrigin?: string;
+  nearbyOriginLabel?: string;
 }
 
 function randomTime(): string {
@@ -112,6 +114,8 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     usualPrice: d.usualPrice,
     savingsAmount: d.savingsAmount,
     savingsPercent: d.savingsPercent,
+    nearbyOrigin: d.nearbyOrigin,
+    nearbyOriginLabel: d.nearbyOriginLabel,
   };
 }
 

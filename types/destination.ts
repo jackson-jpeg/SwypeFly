@@ -76,6 +76,9 @@ export interface Destination {
   usualPrice?: number;
   savingsAmount?: number;
   savingsPercent?: number;
+  // Nearby airport fallback
+  nearbyOrigin?: string;
+  nearbyOriginLabel?: string;
 }
 
 export interface HotelListing {

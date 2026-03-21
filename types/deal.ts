@@ -36,4 +36,7 @@ export interface BoardDeal {
   usualPrice?: number;
   savingsAmount?: number;
   savingsPercent?: number;
+  // Nearby airport fallback
+  nearbyOrigin?: string;
+  nearbyOriginLabel?: string;
 }

@@ -8,6 +8,7 @@ import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayout
 import { cors } from './_cors.js';
 import { bulkGetRouteStats, computePricePercentile } from '../utils/priceStats';
 import type { RouteStats } from '../utils/priceStats';
+import { nearbyAirports } from '../data/airports';
 
 const PAGE_SIZE = 10;
 
@@ -151,6 +152,9 @@ interface ScoredDest {
   usual_price?: number | null;
   savings_amount?: number | null;
   savings_percent?: number | null;
+  // Nearby airport fallback
+  nearby_origin?: string;        // e.g. "MCO" — set when deal is from a nearby airport
+  nearby_origin_label?: string;  // e.g. "Orlando (1h drive)"
 }
 
 // ─── Generic scoring (for anonymous users) ──────────────────────────
@@ -323,6 +327,91 @@ function scoreFeedGeneric(
     recentVibes.unshift(getVibeBucket(pick.vibe_tags));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
+  }
+
+  return result;
+}
+
+// ─── Variable reward pacing ─────────────────────────────────────────
+// Re-interleave scored results so the feed feels engaging:
+// - A "jackpot" (highest deal_score available) appears every 3rd-5th card
+// - Between jackpots, show good-but-not-amazing destinations
+// - Never 3+ amazing deals in a row (diminishes wow factor)
+// - Never 3+ mediocre deals in a row (causes app exit)
+
+function paceRewards(items: ScoredDest[], rand: () => number): ScoredDest[] {
+  if (items.length <= 5) return items; // Too few to pace
+
+  // Split into tiers
+  const amazing: ScoredDest[] = [];
+  const good: ScoredDest[] = [];
+  const rest: ScoredDest[] = [];
+
+  for (const item of items) {
+    const score = item.deal_score ?? 0;
+    if (score >= 70) amazing.push(item);
+    else if (score >= 40) good.push(item);
+    else rest.push(item);
+  }
+
+  // If we don't have enough tier variety, skip pacing
+  if (amazing.length < 2 || good.length < 2) return items;
+
+  const result: ScoredDest[] = [];
+  let sinceLastJackpot = 0;
+  const nextJackpotGap = () => 3 + Math.floor(rand() * 3); // 3-5 cards between jackpots
+  let gap = nextJackpotGap();
+
+  // Track consecutive tier runs
+  let consecutiveAmazing = 0;
+  let consecutiveFair = 0;
+
+  const pickFrom = (pool: ScoredDest[]): ScoredDest | null => {
+    if (pool.length === 0) return null;
+    return pool.shift()!;
+  };
+
+  const totalItems = items.length;
+  while (result.length < totalItems) {
+    let pick: ScoredDest | null = null;
+
+    if (sinceLastJackpot >= gap && amazing.length > 0) {
+      // Time for a jackpot
+      pick = pickFrom(amazing);
+      sinceLastJackpot = 0;
+      gap = nextJackpotGap();
+    } else if (consecutiveAmazing >= 2 && good.length > 0) {
+      // Break up amazing streaks
+      pick = pickFrom(good);
+    } else if (consecutiveFair >= 2 && (amazing.length > 0 || good.length > 0)) {
+      // Break up mediocre streaks
+      pick = pickFrom(amazing.length > 0 ? amazing : good);
+    } else if (good.length > 0) {
+      // Default: pull from good tier
+      pick = pickFrom(good);
+    } else if (rest.length > 0) {
+      pick = pickFrom(rest);
+    } else if (amazing.length > 0) {
+      pick = pickFrom(amazing);
+    }
+
+    if (!pick) break;
+
+    // Track consecutive runs
+    const pickScore = pick.deal_score ?? 0;
+    if (pickScore >= 70) {
+      consecutiveAmazing++;
+      consecutiveFair = 0;
+    } else if (pickScore < 40) {
+      consecutiveFair++;
+      consecutiveAmazing = 0;
+    } else {
+      consecutiveAmazing = 0;
+      consecutiveFair = 0;
+    }
+
+    result.push(pick);
+    sinceLastJackpot++;
   }
 
   return result;
@@ -884,6 +973,8 @@ function toFrontend(d: ScoredDest, origin?: string) {
     usualPrice: d.usual_price ?? undefined,
     savingsAmount: d.savings_amount ?? undefined,
     savingsPercent: d.savings_percent ?? undefined,
+    nearbyOrigin: d.nearby_origin ?? undefined,
+    nearbyOriginLabel: d.nearby_origin_label ?? undefined,
   };
 }
 
@@ -1086,6 +1177,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ count: destinations.length });
     }
 
+    // Nearby airport fallback — when origin has < 5 quality deals, supplement
+    const MIN_DEALS_THRESHOLD = 5;
+    const dealsWithPrice = destinations.filter((d) => (d.live_price ?? d.flight_price) > 0);
+    if (dealsWithPrice.length < MIN_DEALS_THRESHOLD && !search) {
+      const nearby = nearbyAirports[origin];
+      if (nearby && nearby.length > 0) {
+        const existingIatas = new Set(destinations.map((d) => d.iata_code));
+        for (const alt of nearby.slice(0, 2)) { // Check up to 2 nearby airports
+          try {
+            const altDests = await getDestinationsWithPrices(alt.code);
+            const altDeals = altDests
+              .filter((d) => {
+                if (existingIatas.has(d.iata_code)) return false; // Skip duplicates
+                if ((d.live_price ?? d.flight_price) <= 0) return false;
+                if (d.deal_score != null && d.deal_score < 30) return false;
+                return true;
+              })
+              .slice(0, 5) // At most 5 from each nearby airport
+              .map((d) => ({
+                ...d,
+                nearby_origin: alt.code,
+                nearby_origin_label: `Also from ${alt.label}`,
+              }));
+            destinations.push(...altDeals);
+          } catch {
+            // Non-fatal — skip this nearby airport
+          }
+        }
+      }
+    }
+
     // Try to extract user ID for personalized scoring (non-blocking)
     let userPrefs: UserPrefs | null = null;
     try {
@@ -1118,9 +1240,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     } else if (userPrefs) {
       scored = scorePersonalized(destinations, userPrefs, rand, quizPrefs);
+      scored = paceRewards(scored, rand);
       scored = softShuffle(scored, rand, 5);
     } else {
       scored = scoreFeedGeneric(destinations, rand, quizPrefs);
+      scored = paceRewards(scored, rand);
       scored = softShuffle(scored, rand, 5);
     }
 

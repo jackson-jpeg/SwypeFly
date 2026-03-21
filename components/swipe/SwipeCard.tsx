@@ -160,7 +160,10 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
             animate={animate}
           />
         </View>
-        <Text style={styles.country}>{deal.country}</Text>
+        <Text style={styles.country}>
+          {deal.country}
+          {deal.nearbyOriginLabel ? `  ·  ${deal.nearbyOriginLabel}` : ''}
+        </Text>
 
         {/* Tagline */}
         <Text style={styles.tagline} numberOfLines={2}>{deal.tagline}</Text>

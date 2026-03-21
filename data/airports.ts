@@ -9,6 +9,96 @@ export interface Airport {
   lng: number;
 }
 
+/**
+ * Nearby airports — used for fallback when user's home airport has sparse deals.
+ * Maps airport code → nearby alternatives with approximate drive times.
+ */
+export const nearbyAirports: Record<string, { code: string; label: string }[]> = {
+  TPA: [
+    { code: 'MCO', label: 'Orlando (1h drive)' },
+    { code: 'PIE', label: 'St. Pete (20 min)' },
+    { code: 'SRQ', label: 'Sarasota (1h drive)' },
+    { code: 'FLL', label: 'Fort Lauderdale (4h drive)' },
+  ],
+  MCO: [
+    { code: 'TPA', label: 'Tampa (1h drive)' },
+    { code: 'FLL', label: 'Fort Lauderdale (3h drive)' },
+    { code: 'JAX', label: 'Jacksonville (2h drive)' },
+  ],
+  MIA: [
+    { code: 'FLL', label: 'Fort Lauderdale (30 min)' },
+    { code: 'PBI', label: 'West Palm Beach (1.5h drive)' },
+  ],
+  FLL: [
+    { code: 'MIA', label: 'Miami (30 min)' },
+    { code: 'PBI', label: 'West Palm Beach (1h drive)' },
+  ],
+  JFK: [
+    { code: 'EWR', label: 'Newark (45 min)' },
+    { code: 'LGA', label: 'LaGuardia (30 min)' },
+  ],
+  EWR: [
+    { code: 'JFK', label: 'JFK (45 min)' },
+    { code: 'LGA', label: 'LaGuardia (30 min)' },
+    { code: 'PHL', label: 'Philadelphia (1.5h drive)' },
+  ],
+  LGA: [
+    { code: 'JFK', label: 'JFK (30 min)' },
+    { code: 'EWR', label: 'Newark (30 min)' },
+  ],
+  ORD: [
+    { code: 'MDW', label: 'Midway (30 min)' },
+    { code: 'MKE', label: 'Milwaukee (1.5h drive)' },
+  ],
+  MDW: [
+    { code: 'ORD', label: "O'Hare (30 min)" },
+  ],
+  LAX: [
+    { code: 'SNA', label: 'Santa Ana (45 min)' },
+    { code: 'BUR', label: 'Burbank (30 min)' },
+    { code: 'ONT', label: 'Ontario (1h drive)' },
+    { code: 'LGB', label: 'Long Beach (30 min)' },
+  ],
+  SFO: [
+    { code: 'OAK', label: 'Oakland (30 min)' },
+    { code: 'SJC', label: 'San Jose (45 min)' },
+  ],
+  OAK: [
+    { code: 'SFO', label: 'SFO (30 min)' },
+    { code: 'SJC', label: 'San Jose (30 min)' },
+  ],
+  DFW: [
+    { code: 'DAL', label: 'Love Field (20 min)' },
+  ],
+  IAH: [
+    { code: 'HOU', label: 'Hobby (45 min)' },
+  ],
+  DCA: [
+    { code: 'IAD', label: 'Dulles (45 min)' },
+    { code: 'BWI', label: 'Baltimore (1h drive)' },
+  ],
+  IAD: [
+    { code: 'DCA', label: 'Reagan (45 min)' },
+    { code: 'BWI', label: 'Baltimore (1h drive)' },
+  ],
+  BWI: [
+    { code: 'DCA', label: 'Reagan (1h drive)' },
+    { code: 'IAD', label: 'Dulles (1h drive)' },
+    { code: 'PHL', label: 'Philadelphia (1.5h drive)' },
+  ],
+  BOS: [
+    { code: 'PVD', label: 'Providence (1h drive)' },
+    { code: 'MHT', label: 'Manchester (1h drive)' },
+  ],
+  SEA: [
+    { code: 'PDX', label: 'Portland (3h drive)' },
+  ],
+  ATL: [
+    { code: 'BNA', label: 'Nashville (4h drive)' },
+    { code: 'CLT', label: 'Charlotte (4h drive)' },
+  ],
+};
+
 export const airports: Airport[] = [
   // ─── Major US Airports ─────────────────────────────────────
   { code: 'ATL', city: 'Atlanta', lat: 33.6407, lng: -84.4277 },
