@@ -21,6 +21,7 @@ import { cors } from './_cors.js';
 
 const DATABASE_ID = 'sogojet';
 const STUB_MODE = !process.env.DUFFEL_API_KEY;
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
 
 // ─── Auth helper ─────────────────────────────────────────────────────────────
 
@@ -88,17 +89,25 @@ function transformOffer(raw: any, cabinClass = 'economy') {
     currency: svc.total_currency || 'USD',
     metadata: svc.metadata,
   }));
+  // Apply booking markup
+  const markupAmount = Math.round(total * (BOOKING_MARKUP_PERCENT / 100));
+  const markedUpTotal = total + markupAmount;
+
   return {
     id: raw.id,
-    totalAmount: total,
+    totalAmount: markedUpTotal,
     totalCurrency: raw.total_currency || 'USD',
-    baseAmount: total - tax,
+    baseAmount: markedUpTotal - tax,
     taxAmount: tax,
     slices,
     cabinClass: raw.slices?.[0]?.segments?.[0]?.cabin_class ?? cabinClass,
     passengers: raw.passengers || [],
     expiresAt: raw.expires_at ?? new Date(Date.now() + 7 * 86400000).toISOString(),
     availableServices: services,
+    // Accounting fields (not shown to user)
+    _duffelBasePrice: total,
+    _markupAmount: markupAmount,
+    _markupPercent: BOOKING_MARKUP_PERCENT,
   };
 }
 
@@ -415,8 +424,8 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Duffel API key not configured');
-    const data = stubSearch(v.data.origin, v.data.destination, v.data.cabinClass || 'economy', v.data.departureDate, v.data.priceHint);
-    return res.status(200).json(data);
+    const offers = stubSearch(v.data.origin, v.data.destination, v.data.cabinClass || 'economy', v.data.departureDate, v.data.priceHint);
+    return res.status(200).json({ offers });
   }
 
   try {
@@ -437,7 +446,49 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
       .slice(0, 20)
       .map((o: Record<string, unknown>) => transformOffer(o, v.data.cabinClass || 'economy'));
 
-    return res.status(200).json(offers);
+    // Price discrepancy context: compare cheapest offer to the priceHint from feed
+    let priceDiscrepancy: {
+      tier: 'cheaper' | 'similar' | 'moderate_increase' | 'significant_increase' | 'deal_expired';
+      message: string;
+      feedPrice: number;
+      bookingPrice: number;
+      percentDiff: number;
+    } | undefined;
+
+    if (v.data.priceHint && offers.length > 0) {
+      const cheapest = offers[0].totalAmount;
+      const feedPrice = v.data.priceHint;
+      const diff = cheapest - feedPrice;
+      const percentDiff = Math.round((diff / feedPrice) * 100);
+
+      if (diff <= 0) {
+        priceDiscrepancy = {
+          tier: 'cheaper',
+          message: 'This deal is still available!',
+          feedPrice, bookingPrice: cheapest, percentDiff,
+        };
+      } else if (percentDiff <= 15) {
+        priceDiscrepancy = {
+          tier: 'similar',
+          message: `Price updated to $${cheapest}`,
+          feedPrice, bookingPrice: cheapest, percentDiff,
+        };
+      } else if (percentDiff <= 50) {
+        priceDiscrepancy = {
+          tier: 'moderate_increase',
+          message: `Price has increased ${percentDiff}%. Still want to proceed?`,
+          feedPrice, bookingPrice: cheapest, percentDiff,
+        };
+      } else {
+        priceDiscrepancy = {
+          tier: 'deal_expired',
+          message: 'This deal has expired. Set an alert to catch the next one.',
+          feedPrice, bookingPrice: cheapest, percentDiff,
+        };
+      }
+    }
+
+    return res.status(200).json({ offers, priceDiscrepancy });
   } catch (err: any) {
     logApiError('api/booking/search', err);
     const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);

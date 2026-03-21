@@ -201,7 +201,11 @@ export default function TripScreen() {
         throw new Error(errData.error || `Search failed (${res.status})`);
       }
 
-      const offers = await res.json();
+      const data = await res.json();
+      // Handle both { offers, priceDiscrepancy } and legacy flat array
+      const offers = Array.isArray(data) ? data : (data.offers || []);
+      const priceDiscrepancy = Array.isArray(data) ? undefined : data.priceDiscrepancy;
+
       if (!offers || offers.length === 0) {
         throw new Error('No flights available for these dates');
       }
@@ -209,8 +213,35 @@ export default function TripScreen() {
       const bestOffer = offers[0];
       const duffelPrice = parseFloat(bestOffer.totalAmount || bestOffer.price || '0');
 
-      // Price divergence check: >50% higher than calendar price
-      if (duffelPrice > selectedTrip.price * 1.5) {
+      // Price discrepancy handling with tiered messaging
+      if (priceDiscrepancy) {
+        if (priceDiscrepancy.tier === 'deal_expired') {
+          // Deal is gone — don't proceed
+          setBookError(priceDiscrepancy.message);
+          setBooking(false);
+          return;
+        }
+
+        if (priceDiscrepancy.tier === 'moderate_increase' || priceDiscrepancy.tier === 'significant_increase') {
+          const proceed = await new Promise<boolean>((resolve) => {
+            const msg = priceDiscrepancy.message;
+            if (Platform.OS === 'web') {
+              resolve(window.confirm(msg));
+            } else {
+              Alert.alert('Price changed', msg, [
+                { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                { text: 'Continue', onPress: () => resolve(true) },
+              ]);
+            }
+          });
+          if (!proceed) {
+            setBooking(false);
+            return;
+          }
+        }
+        // 'cheaper' and 'similar' tiers proceed without interruption
+      } else if (duffelPrice > selectedTrip.price * 1.5) {
+        // Fallback for API without priceDiscrepancy (backwards compat)
         const proceed = await new Promise<boolean>((resolve) => {
           const msg = `Live price is $${Math.round(duffelPrice)} (calendar showed $${selectedTrip.price}). Continue?`;
           if (Platform.OS === 'web') {
@@ -222,7 +253,6 @@ export default function TripScreen() {
             ]);
           }
         });
-
         if (!proceed) {
           setBooking(false);
           return;

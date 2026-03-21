@@ -110,13 +110,15 @@ describe('POST /api/booking', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       const body = res.json.mock.calls[0][0];
-      expect(Array.isArray(body)).toBe(true);
-      expect(body.length).toBeGreaterThan(0);
+      // Response is { offers: [...] } (not a flat array)
+      expect(body).toHaveProperty('offers');
+      expect(Array.isArray(body.offers)).toBe(true);
+      expect(body.offers.length).toBeGreaterThan(0);
       // Each offer should have expected shape
-      expect(body[0]).toHaveProperty('id');
-      expect(body[0]).toHaveProperty('totalAmount');
-      expect(body[0]).toHaveProperty('slices');
-      expect(body[0]).toHaveProperty('cabinClass', 'economy');
+      expect(body.offers[0]).toHaveProperty('id');
+      expect(body.offers[0]).toHaveProperty('totalAmount');
+      expect(body.offers[0]).toHaveProperty('slices');
+      expect(body.offers[0]).toHaveProperty('cabinClass', 'economy');
     });
 
     it('rejects GET method', async () => {
@@ -206,9 +208,9 @@ describe('POST /api/booking', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       const body = res.json.mock.calls[0][0];
-      expect(body[0]).toHaveProperty('cabinClass', 'business');
+      expect(body.offers[0]).toHaveProperty('cabinClass', 'business');
       // Business class should be more expensive than economy
-      expect(body[0].totalAmount).toBeGreaterThan(1000);
+      expect(body.offers[0].totalAmount).toBeGreaterThan(1000);
     });
   });
 

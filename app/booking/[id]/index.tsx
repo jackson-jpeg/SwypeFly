@@ -140,7 +140,9 @@ export default function FlightSelectionScreen() {
         throw new Error(errData.error || `Search failed (${res.status})`);
       }
 
-      const data: Offer[] = await res.json();
+      const raw = await res.json();
+      // Handle both { offers } and legacy flat array
+      const data: Offer[] = Array.isArray(raw) ? raw : (raw.offers || []);
       setOffers(data.slice(0, 3));
       if (data.length > 0) {
         setSelectedId(data[0].id);
