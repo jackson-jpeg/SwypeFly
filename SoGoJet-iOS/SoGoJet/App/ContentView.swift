@@ -25,13 +25,11 @@ struct ContentView: View {
     }
 
     private var feedTab: some View {
-        NavigationStack {
-            FeedPlaceholderView()
-        }
-        .tabItem {
-            Label(Router.Tab.feed.title, systemImage: Router.Tab.feed.iconName)
-        }
-        .tag(Router.Tab.feed)
+        FeedView()
+            .tabItem {
+                Label(Router.Tab.feed.title, systemImage: Router.Tab.feed.iconName)
+            }
+            .tag(Router.Tab.feed)
     }
 
     private var savedTab: some View {
