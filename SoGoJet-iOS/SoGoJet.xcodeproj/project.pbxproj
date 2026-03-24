@@ -1,0 +1,638 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05F7DF22220DB265402C6C0F /* DepartureRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E252AF3479003C4AEEB610 /* DepartureRow.swift */; };
+		0DEE3F28B43A25859CA87BAA /* BookingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */; };
+		0FF6FAFB4044541CB3E0527D /* Fonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A79039C721A4E068A129336 /* Fonts.swift */; };
+		147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A389ABB1A418871FD1196D90 /* SettingsStore.swift */; };
+		186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */; };
+		325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 105C4B165D8E99F29DACC00B /* Assets.xcassets */; };
+		3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */; };
+		38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D680A370273663B3CD6E753 /* SeatMapView.swift */; };
+		3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CC0F70008C6C01B861DABF /* DealCard.swift */; };
+		44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */; };
+		4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */; };
+		5002C9215848904D881FE29E /* BookingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C46CA93B008D3D761A2E79 /* BookingStore.swift */; };
+		53483EF17FE30C880A54DB70 /* PriceAlertCTA.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */; };
+		58545B18C3DCFD18455AE850 /* SavedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3D90ABB9744258D6621AC9 /* SavedView.swift */; };
+		59E824E8F3A6549F845C7F33 /* AirportPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16BFE848CB96BAF94AC32178 /* AirportPicker.swift */; };
+		5C6FC44134FD1C403B62A28E /* FeedResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = B02709ED51DC035183510FF0 /* FeedResponse.swift */; };
+		5FEDAFDF99473573571B1194 /* FilterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9445CC8160636D040B7643A6 /* FilterSheet.swift */; };
+		6632AF3D1025A09BA8270703 /* DealExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE14299AB5353027DFB0660B /* DealExpiredView.swift */; };
+		67DCDEC854E4520A41258D4B /* DealBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E16299CD23179DBDA9EB1BE /* DealBadge.swift */; };
+		6E9CD4BFDE6347AAD7563372 /* QuickFactsStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90A39A2075B733A547647A7 /* QuickFactsStrip.swift */; };
+		7C25A63FB40E066F28957B06 /* Date+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15845A1828ED10D7538A074A /* Date+Formatting.swift */; };
+		7C6DDB40DD657B3C82381D4D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */; };
+		8D529374476E8130BF35AFF5 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B5B2939A8FD86EA37A140D /* Router.swift */; };
+		8EFFDD228E5BB7CD0338E0CE /* SoGoJetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */; };
+		90AEFDFE22FA857641A033E9 /* PriceSparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */; };
+		993EFA650A4598CAFF429893 /* Deal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEF50684FC3E48F9C3A1F6C /* Deal.swift */; };
+		9B90FD58377C44FB5A40B515 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5452CDA36D6D93F24AAFB2 /* SettingsView.swift */; };
+		A18BBEE887522B62B698C5D3 /* DealTier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */; };
+		A50C5B5AFC67E28B71499678 /* SplitFlapChar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */; };
+		A8CA094A592BA377A3EAE40B /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74190F28733D8C3D21B157F7 /* FeedView.swift */; };
+		A9121D696E506F66D466885F /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BB98540188B677B6BA65C8 /* APIClient.swift */; };
+		AE61DBEB8BEF551B185DAFD0 /* DestinationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */; };
+		B5B1CA9671DA7794DC4C2996 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26A3648EF4C6E3292D0A4A8 /* Spacing.swift */; };
+		BE9C26BEFBBBE0EAD4742821 /* SimilarDeals.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93C7B0D9A46A030A6A7A4B2 /* SimilarDeals.swift */; };
+		C0554430BCEE61A587A3B01E /* FeedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */; };
+		C7EF657FE86372D58E0D469A /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852DCAC63412CB4B4FB1291C /* ToastView.swift */; };
+		C997FC98E346CCB10C0DFCD4 /* PassengerForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1547ACCFAAACEFCCA028901 /* PassengerForm.swift */; };
+		CFDCAE512ADD3A26FFFE6FAA /* TripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C1F35A4778E539A8BFE69F /* TripView.swift */; };
+		DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B905E64CC3B094A6DD5EC65C /* SavedCard.swift */; };
+		DEC62E0D0B58D36DBD56A1B1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E239452DD558CBC5AAC6EB99 /* ContentView.swift */; };
+		E850016A707ECF37DCBB2E5B /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B618C73022C992B057112952 /* ImageCache.swift */; };
+		E8BE30C939BF890644F26213 /* DepartureBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */; };
+		EB682CF09A002D1E66EE834E /* BoardingPassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9260F42534404374D49FA21 /* BoardingPassView.swift */; };
+		F3D138CE2009D3A9E09200BA /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98C552C4DAAA2703852D6E9 /* Colors.swift */; };
+		F4892DAAA2C0C21D26E5ABB5 /* SplitFlapRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED8FD386433B5D295222C68 /* SplitFlapRow.swift */; };
+		FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB866D9B233B25ABE980F3 /* HapticEngine.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedStore.swift; sourceTree = "<group>"; };
+		08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		0EEF50684FC3E48F9C3A1F6C /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
+		105C4B165D8E99F29DACC00B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedStore.swift; sourceTree = "<group>"; };
+		15845A1828ED10D7538A074A /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
+		15EB866D9B233B25ABE980F3 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
+		16BFE848CB96BAF94AC32178 /* AirportPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirportPicker.swift; sourceTree = "<group>"; };
+		3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAlertCTA.swift; sourceTree = "<group>"; };
+		3E16299CD23179DBDA9EB1BE /* DealBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealBadge.swift; sourceTree = "<group>"; };
+		42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceSparkline.swift; sourceTree = "<group>"; };
+		49888397D14E02F727A4C21F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4C5452CDA36D6D93F24AAFB2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoGoJetApp.swift; sourceTree = "<group>"; };
+		5A79039C721A4E068A129336 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
+		5B3D90ABB9744258D6621AC9 /* SavedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedView.swift; sourceTree = "<group>"; };
+		61C46CA93B008D3D761A2E79 /* BookingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingStore.swift; sourceTree = "<group>"; };
+		73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationDetailView.swift; sourceTree = "<group>"; };
+		74190F28733D8C3D21B157F7 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
+		852DCAC63412CB4B4FB1291C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		92B5B2939A8FD86EA37A140D /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
+		9445CC8160636D040B7643A6 /* FilterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterSheet.swift; sourceTree = "<group>"; };
+		9D680A370273663B3CD6E753 /* SeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeatMapView.swift; sourceTree = "<group>"; };
+		A389ABB1A418871FD1196D90 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		A5C1F35A4778E539A8BFE69F /* TripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripView.swift; sourceTree = "<group>"; };
+		A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Accessibility.swift"; sourceTree = "<group>"; };
+		A7CC0F70008C6C01B861DABF /* DealCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealCard.swift; sourceTree = "<group>"; };
+		A93C7B0D9A46A030A6A7A4B2 /* SimilarDeals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimilarDeals.swift; sourceTree = "<group>"; };
+		B02709ED51DC035183510FF0 /* FeedResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedResponse.swift; sourceTree = "<group>"; };
+		B2E252AF3479003C4AEEB610 /* DepartureRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureRow.swift; sourceTree = "<group>"; };
+		B618C73022C992B057112952 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
+		B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureBoardView.swift; sourceTree = "<group>"; };
+		B905E64CC3B094A6DD5EC65C /* SavedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedCard.swift; sourceTree = "<group>"; };
+		B90A39A2075B733A547647A7 /* QuickFactsStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickFactsStrip.swift; sourceTree = "<group>"; };
+		C1BB98540188B677B6BA65C8 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		C26A3648EF4C6E3292D0A4A8 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		C98C552C4DAAA2703852D6E9 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
+		CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingModels.swift; sourceTree = "<group>"; };
+		D1547ACCFAAACEFCCA028901 /* PassengerForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassengerForm.swift; sourceTree = "<group>"; };
+		E239452DD558CBC5AAC6EB99 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E9260F42534404374D49FA21 /* BoardingPassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardingPassView.swift; sourceTree = "<group>"; };
+		E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsBanner.swift; sourceTree = "<group>"; };
+		EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapChar.swift; sourceTree = "<group>"; };
+		EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealTier.swift; sourceTree = "<group>"; };
+		EE14299AB5353027DFB0660B /* DealExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealExpiredView.swift; sourceTree = "<group>"; };
+		FED8FD386433B5D295222C68 /* SplitFlapRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapRow.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		09104DA889212709A4E3AA49 /* Feed */ = {
+			isa = PBXGroup;
+			children = (
+				3E16299CD23179DBDA9EB1BE /* DealBadge.swift */,
+				A7CC0F70008C6C01B861DABF /* DealCard.swift */,
+				74190F28733D8C3D21B157F7 /* FeedView.swift */,
+				42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */,
+			);
+			path = Feed;
+			sourceTree = "<group>";
+		};
+		093015956D9A72C190A1B267 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				105C4B165D8E99F29DACC00B /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		192442935BA838FE7E4D8D04 /* Board */ = {
+			isa = PBXGroup;
+			children = (
+				B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */,
+				B2E252AF3479003C4AEEB610 /* DepartureRow.swift */,
+			);
+			path = Board;
+			sourceTree = "<group>";
+		};
+		24E208B388CB636E09537410 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		3C09E88CDD41C5E3707BC72B /* Booking */ = {
+			isa = PBXGroup;
+			children = (
+				E9260F42534404374D49FA21 /* BoardingPassView.swift */,
+				EE14299AB5353027DFB0660B /* DealExpiredView.swift */,
+				D1547ACCFAAACEFCCA028901 /* PassengerForm.swift */,
+				8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */,
+				9D680A370273663B3CD6E753 /* SeatMapView.swift */,
+				A5C1F35A4778E539A8BFE69F /* TripView.swift */,
+			);
+			path = Booking;
+			sourceTree = "<group>";
+		};
+		3F3F33BC5F3DBF44AB9A4F9F /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C1BB98540188B677B6BA65C8 /* APIClient.swift */,
+				15EB866D9B233B25ABE980F3 /* HapticEngine.swift */,
+				B618C73022C992B057112952 /* ImageCache.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		44C08090F86FB874BC27E67A /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				C98C552C4DAAA2703852D6E9 /* Colors.swift */,
+				5A79039C721A4E068A129336 /* Fonts.swift */,
+				C26A3648EF4C6E3292D0A4A8 /* Spacing.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		47B8F05BDE0E351FD367E65F /* Saved */ = {
+			isa = PBXGroup;
+			children = (
+				B905E64CC3B094A6DD5EC65C /* SavedCard.swift */,
+				5B3D90ABB9744258D6621AC9 /* SavedView.swift */,
+				E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */,
+			);
+			path = Saved;
+			sourceTree = "<group>";
+		};
+		4C56F46E7A2A03DF9A57F394 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				61C46CA93B008D3D761A2E79 /* BookingStore.swift */,
+				07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */,
+				92B5B2939A8FD86EA37A140D /* Router.swift */,
+				12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */,
+				A389ABB1A418871FD1196D90 /* SettingsStore.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		56279B0D35E00298D4ED2CA4 /* Detail */ = {
+			isa = PBXGroup;
+			children = (
+				73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */,
+				3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */,
+				B90A39A2075B733A547647A7 /* QuickFactsStrip.swift */,
+				A93C7B0D9A46A030A6A7A4B2 /* SimilarDeals.swift */,
+			);
+			path = Detail;
+			sourceTree = "<group>";
+		};
+		657E088A9422CD7095E45407 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */,
+				0EEF50684FC3E48F9C3A1F6C /* Deal.swift */,
+				EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */,
+				B02709ED51DC035183510FF0 /* FeedResponse.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		77352D51EB04DD9AE57DAFE2 = {
+			isa = PBXGroup;
+			children = (
+				B0588F7DD75723DA78CAA9DE /* SoGoJet */,
+				D20AAC9A14677F25F1AC6985 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		977EF61A98B427AE8F83FDD1 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				15845A1828ED10D7538A074A /* Date+Formatting.swift */,
+				A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		9D8638042B456937E2EE1AAE /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				192442935BA838FE7E4D8D04 /* Board */,
+				3C09E88CDD41C5E3707BC72B /* Booking */,
+				DE11E20F3FB96C37228DDD3D /* Components */,
+				56279B0D35E00298D4ED2CA4 /* Detail */,
+				09104DA889212709A4E3AA49 /* Feed */,
+				24E208B388CB636E09537410 /* Onboarding */,
+				47B8F05BDE0E351FD367E65F /* Saved */,
+				FE57EA2FBFD1B2EDE66D18DD /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A4BE3BF8D3125D1948CF9DCB /* App */ = {
+			isa = PBXGroup;
+			children = (
+				E239452DD558CBC5AAC6EB99 /* ContentView.swift */,
+				4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B0588F7DD75723DA78CAA9DE /* SoGoJet */ = {
+			isa = PBXGroup;
+			children = (
+				A4BE3BF8D3125D1948CF9DCB /* App */,
+				977EF61A98B427AE8F83FDD1 /* Extensions */,
+				657E088A9422CD7095E45407 /* Models */,
+				093015956D9A72C190A1B267 /* Resources */,
+				3F3F33BC5F3DBF44AB9A4F9F /* Services */,
+				4C56F46E7A2A03DF9A57F394 /* Stores */,
+				44C08090F86FB874BC27E67A /* Theme */,
+				9D8638042B456937E2EE1AAE /* Views */,
+				49888397D14E02F727A4C21F /* Info.plist */,
+			);
+			path = SoGoJet;
+			sourceTree = "<group>";
+		};
+		D20AAC9A14677F25F1AC6985 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0072285B0E6EC21F1FA4410E /* SoGoJet.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DE11E20F3FB96C37228DDD3D /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				9445CC8160636D040B7643A6 /* FilterSheet.swift */,
+				EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */,
+				FED8FD386433B5D295222C68 /* SplitFlapRow.swift */,
+				852DCAC63412CB4B4FB1291C /* ToastView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		FE57EA2FBFD1B2EDE66D18DD /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				16BFE848CB96BAF94AC32178 /* AirportPicker.swift */,
+				4C5452CDA36D6D93F24AAFB2 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CDA186B03F0A61442A47D80C /* SoGoJet */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2EE78636BAFDA6C5CEFBF292 /* Build configuration list for PBXNativeTarget "SoGoJet" */;
+			buildPhases = (
+				3E452D97E5F3A71F04CF6ABA /* Sources */,
+				B275C3D2FE848D8516140C56 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SoGoJet;
+			packageProductDependencies = (
+			);
+			productName = SoGoJet;
+			productReference = 0072285B0E6EC21F1FA4410E /* SoGoJet.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		06EAFFCD7049ECE2F9F4C1E2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					CDA186B03F0A61442A47D80C = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 22AE9B3C6CB05DF0C225CD64 /* Build configuration list for PBXProject "SoGoJet" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 77352D51EB04DD9AE57DAFE2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D20AAC9A14677F25F1AC6985 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CDA186B03F0A61442A47D80C /* SoGoJet */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B275C3D2FE848D8516140C56 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3E452D97E5F3A71F04CF6ABA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A9121D696E506F66D466885F /* APIClient.swift in Sources */,
+				59E824E8F3A6549F845C7F33 /* AirportPicker.swift in Sources */,
+				EB682CF09A002D1E66EE834E /* BoardingPassView.swift in Sources */,
+				0DEE3F28B43A25859CA87BAA /* BookingModels.swift in Sources */,
+				5002C9215848904D881FE29E /* BookingStore.swift in Sources */,
+				F3D138CE2009D3A9E09200BA /* Colors.swift in Sources */,
+				DEC62E0D0B58D36DBD56A1B1 /* ContentView.swift in Sources */,
+				7C25A63FB40E066F28957B06 /* Date+Formatting.swift in Sources */,
+				993EFA650A4598CAFF429893 /* Deal.swift in Sources */,
+				67DCDEC854E4520A41258D4B /* DealBadge.swift in Sources */,
+				3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */,
+				6632AF3D1025A09BA8270703 /* DealExpiredView.swift in Sources */,
+				A18BBEE887522B62B698C5D3 /* DealTier.swift in Sources */,
+				E8BE30C939BF890644F26213 /* DepartureBoardView.swift in Sources */,
+				05F7DF22220DB265402C6C0F /* DepartureRow.swift in Sources */,
+				AE61DBEB8BEF551B185DAFD0 /* DestinationDetailView.swift in Sources */,
+				5C6FC44134FD1C403B62A28E /* FeedResponse.swift in Sources */,
+				C0554430BCEE61A587A3B01E /* FeedStore.swift in Sources */,
+				A8CA094A592BA377A3EAE40B /* FeedView.swift in Sources */,
+				5FEDAFDF99473573571B1194 /* FilterSheet.swift in Sources */,
+				0FF6FAFB4044541CB3E0527D /* Fonts.swift in Sources */,
+				FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */,
+				E850016A707ECF37DCBB2E5B /* ImageCache.swift in Sources */,
+				7C6DDB40DD657B3C82381D4D /* OnboardingView.swift in Sources */,
+				C997FC98E346CCB10C0DFCD4 /* PassengerForm.swift in Sources */,
+				53483EF17FE30C880A54DB70 /* PriceAlertCTA.swift in Sources */,
+				90AEFDFE22FA857641A033E9 /* PriceSparkline.swift in Sources */,
+				6E9CD4BFDE6347AAD7563372 /* QuickFactsStrip.swift in Sources */,
+				186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */,
+				8D529374476E8130BF35AFF5 /* Router.swift in Sources */,
+				DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */,
+				3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */,
+				58545B18C3DCFD18455AE850 /* SavedView.swift in Sources */,
+				44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */,
+				38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */,
+				147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */,
+				9B90FD58377C44FB5A40B515 /* SettingsView.swift in Sources */,
+				BE9C26BEFBBBE0EAD4742821 /* SimilarDeals.swift in Sources */,
+				8EFFDD228E5BB7CD0338E0CE /* SoGoJetApp.swift in Sources */,
+				B5B1CA9671DA7794DC4C2996 /* Spacing.swift in Sources */,
+				A50C5B5AFC67E28B71499678 /* SplitFlapChar.swift in Sources */,
+				F4892DAAA2C0C21D26E5ABB5 /* SplitFlapRow.swift in Sources */,
+				C7EF657FE86372D58E0D469A /* ToastView.swift in Sources */,
+				CFDCAE512ADD3A26FFFE6FAA /* TripView.swift in Sources */,
+				4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2D1C6030EF809074958EBA81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		351470A8C1DDC955011AC990 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A95A2935020D862063BE4330 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2MU4PC84GZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SoGoJet/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sogojet.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E26D555D3FAE7E87644DBE34 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2MU4PC84GZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SoGoJet/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sogojet.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		22AE9B3C6CB05DF0C225CD64 /* Build configuration list for PBXProject "SoGoJet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D1C6030EF809074958EBA81 /* Debug */,
+				351470A8C1DDC955011AC990 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2EE78636BAFDA6C5CEFBF292 /* Build configuration list for PBXNativeTarget "SoGoJet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A95A2935020D862063BE4330 /* Debug */,
+				E26D555D3FAE7E87644DBE34 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 06EAFFCD7049ECE2F9F4C1E2 /* Project object */;
+}
