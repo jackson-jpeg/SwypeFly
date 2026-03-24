@@ -19,6 +19,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { shareDestination } from '../../utils/share';
+import { showToast } from '../../stores/toastStore';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const HERO_H = 360;
@@ -67,9 +68,10 @@ export default function DestinationDetailScreen() {
       .slice(0, 4);
   }, [deal, allDeals]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (!deal) return;
-    shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
+    const shared = await shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
+    if (shared) showToast('Link copied!');
   }, [deal]);
 
   const handleBook = useCallback(() => {
@@ -371,7 +373,7 @@ export default function DestinationDetailScreen() {
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
         <Pressable
           style={styles.saveBtn}
-          onPress={() => toggle(deal)}
+          onPress={() => { toggle(deal); if (!isSaved) showToast(`${deal.destination} saved`); }}
         >
           <Ionicons
             name={isSaved ? 'heart' : 'heart-outline'}

@@ -18,6 +18,7 @@ import { useSavedStore } from '../../stores/savedStore';
 import { airports, type Airport } from '../../data/airports';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { successHaptic } from '../../utils/haptics';
+import { showToast } from '../../stores/toastStore';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
 
 export default function SettingsScreen() {
@@ -182,6 +183,7 @@ export default function SettingsScreen() {
         onPress={() => {
           clearSaved();
           successHaptic();
+          showToast('Saved flights cleared');
         }}
       >
         <Text style={styles.rowLabel}>Clear Saved Flights</Text>
