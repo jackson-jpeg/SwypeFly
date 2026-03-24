@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSettingsStore } from '../stores/settingsStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { colors } from '../theme/tokens';
+import ToastContainer from '../components/common/ToastContainer';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -96,6 +97,7 @@ export default function RootLayout() {
             </Stack>
           </OnboardingGate>
           <StatusBar style="light" />
+          <ToastContainer />
         </QueryClientProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>

@@ -7,6 +7,7 @@ import { colors, fonts, spacing } from '../../theme/tokens';
 import { successHaptic } from '../../utils/haptics';
 import SplitFlapRow from '../board/SplitFlapRow';
 import { shareDestination } from '../../utils/share';
+import { showToast } from '../../stores/toastStore';
 import PriceSparkline from './PriceSparkline';
 import type { BoardDeal } from '../../types/deal';
 
@@ -64,14 +65,16 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
     successHaptic();
   }, []);
 
-  const handleShare = useCallback(() => {
-    shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
+  const handleShare = useCallback(async () => {
+    const shared = await shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
+    if (shared) showToast('Link copied!');
   }, [deal]);
 
   const handleSave = useCallback(() => {
     onSave();
     if (!isSaved) {
       successHaptic();
+      showToast(`${deal.destination} saved`);
       // Pulse animation on save
       Animated.sequence([
         Animated.timing(saveScale, { toValue: 1.3, duration: 120, useNativeDriver: true }),
