@@ -12,6 +12,7 @@
 		0FF6FAFB4044541CB3E0527D /* Fonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A79039C721A4E068A129336 /* Fonts.swift */; };
 		147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A389ABB1A418871FD1196D90 /* SettingsStore.swift */; };
 		186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */; };
+		238AFE49E080789B4A349D58 /* PlayfairDisplay-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */; };
 		325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 105C4B165D8E99F29DACC00B /* Assets.xcassets */; };
 		3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */; };
 		38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D680A370273663B3CD6E753 /* SeatMapView.swift */; };
@@ -21,12 +22,15 @@
 		5002C9215848904D881FE29E /* BookingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C46CA93B008D3D761A2E79 /* BookingStore.swift */; };
 		53483EF17FE30C880A54DB70 /* PriceAlertCTA.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */; };
 		58545B18C3DCFD18455AE850 /* SavedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3D90ABB9744258D6621AC9 /* SavedView.swift */; };
+		59920DA969477A56DECEE233 /* BebasNeue-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CF053BF9554FA03D569D4310 /* BebasNeue-Regular.ttf */; };
 		59E824E8F3A6549F845C7F33 /* AirportPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16BFE848CB96BAF94AC32178 /* AirportPicker.swift */; };
 		5C6FC44134FD1C403B62A28E /* FeedResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = B02709ED51DC035183510FF0 /* FeedResponse.swift */; };
+		5F92F77382FDE7D64262B58B /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DC8B9447F998A5DDECD34B35 /* Inter-SemiBold.ttf */; };
 		5FEDAFDF99473573571B1194 /* FilterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9445CC8160636D040B7643A6 /* FilterSheet.swift */; };
 		6632AF3D1025A09BA8270703 /* DealExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE14299AB5353027DFB0660B /* DealExpiredView.swift */; };
 		67DCDEC854E4520A41258D4B /* DealBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E16299CD23179DBDA9EB1BE /* DealBadge.swift */; };
 		6E9CD4BFDE6347AAD7563372 /* QuickFactsStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90A39A2075B733A547647A7 /* QuickFactsStrip.swift */; };
+		78A0FF068D0BA718BBEA06D3 /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0462DA9750B48F6D57FEE257 /* Inter-Regular.ttf */; };
 		7C25A63FB40E066F28957B06 /* Date+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15845A1828ED10D7538A074A /* Date+Formatting.swift */; };
 		7C6DDB40DD657B3C82381D4D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */; };
 		8D529374476E8130BF35AFF5 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B5B2939A8FD86EA37A140D /* Router.swift */; };
@@ -56,7 +60,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0462DA9750B48F6D57FEE257 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Regular.ttf"; sourceTree = "<group>"; };
 		07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedStore.swift; sourceTree = "<group>"; };
 		08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		0EEF50684FC3E48F9C3A1F6C /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
@@ -74,6 +79,7 @@
 		5A79039C721A4E068A129336 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
 		5B3D90ABB9744258D6621AC9 /* SavedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedView.swift; sourceTree = "<group>"; };
 		61C46CA93B008D3D761A2E79 /* BookingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingStore.swift; sourceTree = "<group>"; };
+		6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic.ttf"; sourceTree = "<group>"; };
 		73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationDetailView.swift; sourceTree = "<group>"; };
 		74190F28733D8C3D21B157F7 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		852DCAC63412CB4B4FB1291C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
@@ -96,7 +102,9 @@
 		C26A3648EF4C6E3292D0A4A8 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
 		C98C552C4DAAA2703852D6E9 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingModels.swift; sourceTree = "<group>"; };
+		CF053BF9554FA03D569D4310 /* BebasNeue-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BebasNeue-Regular.ttf"; sourceTree = "<group>"; };
 		D1547ACCFAAACEFCCA028901 /* PassengerForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassengerForm.swift; sourceTree = "<group>"; };
+		DC8B9447F998A5DDECD34B35 /* Inter-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-SemiBold.ttf"; sourceTree = "<group>"; };
 		E239452DD558CBC5AAC6EB99 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E9260F42534404374D49FA21 /* BoardingPassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardingPassView.swift; sourceTree = "<group>"; };
 		E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsBanner.swift; sourceTree = "<group>"; };
@@ -121,6 +129,7 @@
 		093015956D9A72C190A1B267 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				FCB8C29FE59D7FDC8EE31FC1 /* Fonts */,
 				105C4B165D8E99F29DACC00B /* Assets.xcassets */,
 			);
 			path = Resources;
@@ -296,6 +305,17 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		FCB8C29FE59D7FDC8EE31FC1 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				CF053BF9554FA03D569D4310 /* BebasNeue-Regular.ttf */,
+				0462DA9750B48F6D57FEE257 /* Inter-Regular.ttf */,
+				DC8B9447F998A5DDECD34B35 /* Inter-SemiBold.ttf */,
+				6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		FE57EA2FBFD1B2EDE66D18DD /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -336,6 +356,7 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					CDA186B03F0A61442A47D80C = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -365,6 +386,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */,
+				59920DA969477A56DECEE233 /* BebasNeue-Regular.ttf in Resources */,
+				78A0FF068D0BA718BBEA06D3 /* Inter-Regular.ttf in Resources */,
+				5F92F77382FDE7D64262B58B /* Inter-SemiBold.ttf in Resources */,
+				238AFE49E080789B4A349D58 /* PlayfairDisplay-Italic.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -569,7 +594,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2MU4PC84GZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SoGoJet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
@@ -593,7 +617,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2MU4PC84GZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SoGoJet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;

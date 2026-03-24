@@ -128,10 +128,10 @@ struct SplitFlapChar: View {
             .clipped()
             .background(Color.sgCell)
             .rotation3DEffect(
-                .degrees(angle),
+                .degrees(min(max(angle, -89.5), 89.5)),
                 axis: (x: 1, y: 0, z: 0),
                 anchor: isTop ? .bottom : .top,
-                perspective: 0.4
+                perspective: 0.3
             )
     }
 
