@@ -89,7 +89,10 @@ struct AirportPicker: View {
             Rectangle()
                 .fill(Color.sgBorder)
                 .frame(height: 0.5)
+                .accessibilityHidden(true)
         }
+        .accessibilityLabel("\(airport.code), \(airport.city), \(airport.name)")
+        .accessibilityAddTraits(airport.code == selectedCode ? .isSelected : [])
     }
 
     // MARK: - Data

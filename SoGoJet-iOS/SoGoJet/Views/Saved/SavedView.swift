@@ -79,6 +79,8 @@ struct SavedView: View {
                             )
                             .clipShape(Capsule())
                     }
+                    .accessibilityLabel("Sort by \(mode.rawValue)")
+                    .accessibilityAddTraits(sortMode == mode ? .isSelected : [])
                 }
             }
         }
@@ -122,6 +124,7 @@ struct SavedView: View {
             Image(systemName: "heart")
                 .font(.system(size: 56))
                 .foregroundStyle(Color.sgMuted)
+                .accessibilityHidden(true)
 
             Text("No saved flights yet")
                 .font(SGFont.sectionHead)

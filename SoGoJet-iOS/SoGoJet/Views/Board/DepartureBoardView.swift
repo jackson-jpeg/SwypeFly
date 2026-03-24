@@ -71,6 +71,9 @@ struct DepartureBoardView: View {
                 .onTapGesture {
                     handleRowTap(index: index, deal: deal)
                 }
+                .accessibilityLabel("\(deal.destination), \(deal.priceFormatted), \(deal.airline)")
+                .accessibilityHint(index == 0 ? "Tap to view deal details" : "Tap to make this the active deal")
+                .accessibilityAddTraits(.isButton)
             }
 
             // Pad remaining slots with placeholder rows if fewer than 5
@@ -83,6 +86,7 @@ struct DepartureBoardView: View {
         .padding(.horizontal, Spacing.sm)
         .offset(y: dragOffset)
         .gesture(swipeGesture)
+        .accessibilityHint("Swipe up to advance to the next flight")
         .onAppear {
             triggerAnimation()
         }
@@ -142,6 +146,8 @@ struct DepartureBoardView: View {
             }
             .disabled(!canAdvance)
             .opacity(canAdvance ? 1.0 : 0.4)
+            .accessibilityLabel("Next flight")
+            .accessibilityHint("Advance to the next deal on the board")
 
             // BOOK IT — green fill button
             Button {
@@ -161,6 +167,8 @@ struct DepartureBoardView: View {
                 .background(Color.sgGreen, in: RoundedRectangle(cornerRadius: Radius.md))
             }
             .disabled(activeDeal == nil)
+            .accessibilityLabel("Book this flight")
+            .accessibilityHint(activeDeal.map { "Book a flight to \($0.destination)" } ?? "No deal selected")
         }
         .padding(.horizontal, Spacing.md)
         .padding(.bottom, Spacing.lg)

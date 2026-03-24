@@ -32,12 +32,16 @@ struct BoardingPassView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(Color.sgGreen)
+                .accessibilityHidden(true)
 
             Text("Booking Confirmed!")
                 .font(SGFont.cardTitle)
                 .foregroundStyle(Color.sgWhite)
+                .accessibilityAddTraits(.isHeader)
         }
         .padding(.top, Spacing.md)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Booking confirmed")
     }
 
     // MARK: - Boarding Pass Card
@@ -117,6 +121,7 @@ struct BoardingPassView: View {
                     .fill(Color.sgBorder)
                     .frame(width: 60, height: 1)
             }
+            .accessibilityHidden(true)
 
             // Destination
             VStack(spacing: Spacing.xs) {
@@ -134,6 +139,8 @@ struct BoardingPassView: View {
     }
 
     // MARK: - Perforated Divider
+
+    // MARK: - Perforated Divider (decorative)
 
     private var perforatedDivider: some View {
         HStack(spacing: 0) {
@@ -166,6 +173,7 @@ struct BoardingPassView: View {
                 .offset(x: 10)
         }
         .clipped()
+        .accessibilityHidden(true)
     }
 
     // MARK: - Details Grid
@@ -236,6 +244,7 @@ struct BoardingPassView: View {
         .padding(.horizontal, Spacing.md)
         .padding(.bottom, Spacing.md)
         .frame(maxWidth: .infinity)
+        .accessibilityHidden(true)
     }
 
     // MARK: - Action Buttons
@@ -244,6 +253,7 @@ struct BoardingPassView: View {
         VStack(spacing: Spacing.md) {
             // Share Trip
             Button {
+                HapticEngine.light()
                 onShare()
             } label: {
                 HStack(spacing: Spacing.sm) {
@@ -262,6 +272,7 @@ struct BoardingPassView: View {
                         .strokeBorder(Color.sgGreen, lineWidth: 1.5)
                 )
             }
+            .accessibilityLabel("Share trip details")
 
             // Back to Deals
             Button {
@@ -276,6 +287,7 @@ struct BoardingPassView: View {
                     .background(Color.sgYellow)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.md))
             }
+            .accessibilityLabel("Back to deals")
         }
     }
 

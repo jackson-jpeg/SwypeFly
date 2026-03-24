@@ -7,6 +7,7 @@ struct SoGoJetApp: App {
     @State private var settingsStore = SettingsStore()
     @State private var bookingStore = BookingStore()
     @State private var router = Router()
+    @State private var toastManager = ToastManager()
 
     var body: some Scene {
         WindowGroup {
@@ -16,6 +17,7 @@ struct SoGoJetApp: App {
                 .environment(settingsStore)
                 .environment(bookingStore)
                 .environment(router)
+                .environment(toastManager)
                 .preferredColorScheme(.dark)
         }
     }

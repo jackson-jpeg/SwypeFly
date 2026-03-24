@@ -79,6 +79,8 @@ struct SettingsView: View {
                         .foregroundStyle(Color.sgFaint)
                 }
             }
+            .accessibilityLabel("Departure airport: \(settings.departureCode)")
+            .accessibilityHint("Tap to change departure airport")
             .listRowBackground(Color.sgCell)
         } header: {
             Text("DEPARTURE")
@@ -170,6 +172,8 @@ struct SettingsView: View {
                 }
             }
             .disabled(savedStore.count == 0)
+            .accessibilityLabel("Clear saved flights, \(savedStore.count) saved")
+            .accessibilityHint("Double tap to confirm clearing all saved flights")
             .listRowBackground(Color.sgCell)
         } header: {
             Text("DATA")

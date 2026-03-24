@@ -30,6 +30,7 @@ struct DealCard: View {
                     startPoint: .init(x: 0.5, y: 0.3),
                     endPoint: .bottom
                 )
+                .accessibilityHidden(true)
 
                 // MARK: Top Overlay (badges + price)
                 VStack {
@@ -53,6 +54,7 @@ struct DealCard: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { onTap() }
+        .accessibilityHint("Tap to restore header. Long press for more options.")
         .contextMenu {
             Button { onShare() } label: {
                 Label("Share", systemImage: "square.and.arrow.up")
@@ -77,6 +79,7 @@ struct DealCard: View {
         }
         .frame(width: size.width, height: size.height)
         .clipped()
+        .accessibilityLabel("\(deal.destination) destination photo")
     }
 
     // MARK: - Top Overlay
@@ -130,6 +133,7 @@ struct DealCard: View {
                     )
                 )
         )
+        .accessibilityLabel("Deal of the day")
     }
 
     // MARK: - Price Tag

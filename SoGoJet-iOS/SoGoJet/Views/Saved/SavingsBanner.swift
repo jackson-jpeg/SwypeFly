@@ -44,6 +44,8 @@ struct SavingsBanner: View {
         .padding(.vertical, Spacing.md)
         .background(Color.sgCell)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Savings summary: $\(Int(totalSavings)) saved across \(tripCount) trips worth $\(Int(totalValue))")
     }
 
     // MARK: - Subviews

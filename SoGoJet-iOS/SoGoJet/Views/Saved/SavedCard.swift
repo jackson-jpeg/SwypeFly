@@ -25,7 +25,9 @@ struct SavedCard: View {
                         endPoint: .bottom
                     )
                     .frame(height: 40)
+                    .accessibilityHidden(true)
                 }
+                .accessibilityLabel("\(deal.destination) photo")
 
                 // Heart remove button
                 Button {
@@ -40,6 +42,8 @@ struct SavedCard: View {
                         .clipShape(Circle())
                 }
                 .padding(Spacing.xs)
+                .accessibilityLabel("Remove \(deal.destination) from saved")
+                .accessibilityHint("Unsaves this flight deal")
             }
 
             // MARK: Info Area
@@ -88,6 +92,7 @@ struct SavedCard: View {
                     .background(Color.sgYellow)
                     .clipShape(Capsule())
                 }
+                .accessibilityLabel("Book flight to \(deal.destination)")
             }
             .padding(.horizontal, Spacing.sm)
             .padding(.vertical, Spacing.sm)

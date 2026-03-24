@@ -30,6 +30,7 @@ struct DealBadge: View {
                             .strokeBorder(dealTier.color.opacity(0.6), lineWidth: 1)
                     )
             )
+            .accessibilityLabel(badgeText)
         }
     }
 

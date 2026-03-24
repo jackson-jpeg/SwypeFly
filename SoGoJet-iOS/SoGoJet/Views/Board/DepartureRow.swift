@@ -128,6 +128,9 @@ struct DepartureRow: View {
         }
         .opacity(isActive ? 1.0 : 0.45)
         .animation(.easeInOut(duration: 0.25), value: isActive)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(deal.departureTime), \(deal.destination), flight \(deal.flightCode), \(priceText)")
+        .accessibilityAddTraits(isActive ? [.isSelected, .isButton] : .isButton)
     }
 }
 

@@ -29,6 +29,7 @@ struct FeedView: View {
             if headerVisible {
                 headerOverlay
                     .transition(.opacity)
+                    .accessibilityHidden(false)
             }
         }
         .background(Color.sgBg)
@@ -95,6 +96,7 @@ struct FeedView: View {
         }
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $currentIndex)
+        .accessibilityHint("Swipe up or down to browse flight deals")
     }
 
     // MARK: - Header Overlay
@@ -144,6 +146,7 @@ struct FeedView: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
+            .accessibilityHidden(true)
         )
     }
 
@@ -214,6 +217,7 @@ struct FeedView: View {
                                         .strokeBorder(Color.sgYellow.opacity(0.4), lineWidth: 1)
                                 )
                         }
+                        .accessibilityLabel("Try \(code) airport")
                     }
                 }
             }
@@ -232,6 +236,7 @@ struct FeedView: View {
                 .background(Color.sgYellow)
                 .clipShape(Capsule())
             }
+            .accessibilityLabel("Retry loading deals")
 
             Spacer()
         }
