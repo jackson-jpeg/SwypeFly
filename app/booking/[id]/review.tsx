@@ -281,6 +281,13 @@ export default function ReviewPaymentScreen() {
     router.replace('/(tabs)');
   }
 
+  function formatBpDate(dateStr: string): string {
+    if (!dateStr) return 'TBD';
+    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  }
+
   function handlePriceChangeAccept() {
     useBookingFlowStore.getState().setOfferId(priceChangeModal.newOfferId);
     setPriceChangeModal({ visible: false, newPrice: 0, newOfferId: '' });
@@ -289,33 +296,120 @@ export default function ReviewPaymentScreen() {
   // ─── Confirmed view ───────────────────────────────────────────
 
   if (confirmed) {
+    const passengerName = passengers[0]
+      ? `${passengers[0].givenName} ${passengers[0].familyName}`.toUpperCase()
+      : 'TRAVELER';
+    const destCity = deal?.destinationFull || deal?.destination || '';
+    const depDate = deal?.departureDate || '';
+    const retDate = deal?.returnDate || '';
+
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.confirmedContainer}>
-          <Ionicons name="checkmark-circle" size={72} color={colors.green} />
-          <View style={{ marginTop: spacing.lg }}>
-            <SplitFlapRow
-              text="CONFIRMED"
-              maxLength={12}
-              size="lg"
-              color={colors.green}
-              align="left"
-              animate={true}
-            />
-          </View>
-          {bookingRef && (
-            <View style={styles.refCard}>
-              <Text style={styles.refLabel}>BOOKING REFERENCE</Text>
-              <Text style={styles.refValue}>{bookingRef}</Text>
+        <ScrollView contentContainerStyle={styles.confirmedScroll} showsVerticalScrollIndicator={false}>
+          {/* Success header */}
+          <View style={{ alignItems: 'center', marginBottom: spacing.lg }}>
+            <Ionicons name="checkmark-circle" size={56} color={colors.green} />
+            <View style={{ marginTop: spacing.sm }}>
+              <SplitFlapRow
+                text="CONFIRMED"
+                maxLength={12}
+                size="lg"
+                color={colors.green}
+                align="left"
+                animate={true}
+              />
             </View>
-          )}
+          </View>
+
+          {/* Boarding pass card */}
+          <View style={styles.boardingPass}>
+            {/* Header strip */}
+            <View style={styles.bpHeader}>
+              <Text style={styles.bpBrand}>SOGOJET</Text>
+              <Text style={styles.bpBoardingPass}>BOARDING PASS</Text>
+            </View>
+
+            {/* Route section */}
+            <View style={styles.bpRoute}>
+              <View style={styles.bpRouteEnd}>
+                <Text style={styles.bpIata}>{departureCode}</Text>
+                <Text style={styles.bpCityLabel}>From</Text>
+              </View>
+              <View style={styles.bpRouteLine}>
+                <View style={styles.bpDot} />
+                <View style={styles.bpDash} />
+                <Ionicons name="airplane" size={18} color={colors.yellow} />
+                <View style={styles.bpDash} />
+                <View style={styles.bpDot} />
+              </View>
+              <View style={[styles.bpRouteEnd, { alignItems: 'flex-end' }]}>
+                <Text style={styles.bpIata}>{deal?.iataCode || '???'}</Text>
+                <Text style={styles.bpCityLabel}>{destCity}</Text>
+              </View>
+            </View>
+
+            {/* Perforated divider */}
+            <View style={styles.bpPerforation}>
+              <View style={styles.bpNotchLeft} />
+              <View style={styles.bpDottedLine} />
+              <View style={styles.bpNotchRight} />
+            </View>
+
+            {/* Details grid */}
+            <View style={styles.bpDetails}>
+              <View style={styles.bpDetailRow}>
+                <View style={styles.bpDetailItem}>
+                  <Text style={styles.bpDetailLabel}>PASSENGER</Text>
+                  <Text style={styles.bpDetailValue}>{passengerName}</Text>
+                </View>
+                <View style={styles.bpDetailItem}>
+                  <Text style={styles.bpDetailLabel}>AIRLINE</Text>
+                  <Text style={styles.bpDetailValue}>{deal?.airline || 'N/A'}</Text>
+                </View>
+              </View>
+              <View style={styles.bpDetailRow}>
+                <View style={styles.bpDetailItem}>
+                  <Text style={styles.bpDetailLabel}>DEPART</Text>
+                  <Text style={styles.bpDetailValue}>{formatBpDate(depDate)}</Text>
+                </View>
+                <View style={styles.bpDetailItem}>
+                  <Text style={styles.bpDetailLabel}>RETURN</Text>
+                  <Text style={styles.bpDetailValue}>{formatBpDate(retDate)}</Text>
+                </View>
+              </View>
+              {bookingRef && (
+                <View style={styles.bpRefRow}>
+                  <Text style={styles.bpDetailLabel}>CONFIRMATION</Text>
+                  <Text style={styles.bpRefCode}>{bookingRef}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Barcode placeholder */}
+            <View style={styles.bpBarcode}>
+              <View style={styles.bpBarcodeLines}>
+                {Array.from({ length: 32 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.bpBarcodeLine,
+                      { width: i % 3 === 0 ? 3 : i % 2 === 0 ? 2 : 1, opacity: 0.4 + Math.random() * 0.4 },
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+
           <Text style={styles.confirmedHint}>
             You&apos;ll receive a confirmation email shortly.
           </Text>
+
+          {/* Share + Done buttons */}
           <Pressable onPress={handleDone} style={styles.doneBtn}>
             <Text style={styles.doneBtnText}>Done</Text>
           </Pressable>
-        </View>
+        </ScrollView>
       </View>
     );
   }
@@ -776,33 +870,163 @@ const styles = StyleSheet.create({
     color: colors.bg,
   },
 
-  // Confirmed
-  confirmedContainer: {
-    flex: 1,
+  // Confirmed — boarding pass
+  confirmedScroll: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
   },
-  refCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginTop: spacing.lg,
-    alignItems: 'center',
+  boardingPass: {
     width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.yellow + '30',
+    overflow: 'hidden',
   },
-  refLabel: {
+  bpHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: colors.yellow + '10',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.yellow + '20',
+  },
+  bpBrand: {
+    fontFamily: fonts.display,
+    fontSize: 18,
+    color: colors.yellow,
+    letterSpacing: 2,
+  },
+  bpBoardingPass: {
     fontFamily: fonts.bodyBold,
     fontSize: 10,
-    color: colors.green,
-    letterSpacing: 1.2,
-    marginBottom: spacing.xs,
+    color: colors.muted,
+    letterSpacing: 1.5,
   },
-  refValue: {
+  bpRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  bpRouteEnd: {},
+  bpIata: {
     fontFamily: fonts.display,
-    fontSize: 32,
+    fontSize: 36,
+    color: colors.white,
+    letterSpacing: 2,
+  },
+  bpCityLabel: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  bpRouteLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  bpDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.muted,
+  },
+  bpDash: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  bpPerforation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 0,
+  },
+  bpNotchLeft: {
+    width: 16,
+    height: 32,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    backgroundColor: colors.bg,
+    marginLeft: -1,
+  },
+  bpDottedLine: {
+    flex: 1,
+    height: 1,
+    borderWidth: 0,
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+  },
+  bpNotchRight: {
+    width: 16,
+    height: 32,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    backgroundColor: colors.bg,
+    marginRight: -1,
+  },
+  bpDetails: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 16,
+  },
+  bpDetailRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  bpDetailItem: {
+    flex: 1,
+  },
+  bpDetailLabel: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 9,
+    color: colors.muted,
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  bpDetailValue: {
+    fontFamily: fonts.display,
+    fontSize: 15,
+    color: colors.white,
+    letterSpacing: 0.5,
+  },
+  bpRefRow: {
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  bpRefCode: {
+    fontFamily: fonts.display,
+    fontSize: 28,
     color: colors.yellow,
-    letterSpacing: 3,
+    letterSpacing: 4,
+  },
+  bpBarcode: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 8,
+  },
+  bpBarcodeLines: {
+    flexDirection: 'row',
+    height: 40,
+    gap: 2,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+  },
+  bpBarcodeLine: {
+    backgroundColor: colors.muted,
+    borderRadius: 1,
   },
   confirmedHint: {
     fontFamily: fonts.body,
