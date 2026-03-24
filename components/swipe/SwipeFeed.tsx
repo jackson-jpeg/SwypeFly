@@ -8,7 +8,7 @@ import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import { useFilterStore } from '../../stores/filterStore';
 import SwipeCard from './SwipeCard';
 import type { BoardDeal } from '../../types/deal';
-import { colors, spacing } from '../../theme/tokens';
+import { colors } from '../../theme/tokens';
 const { height: SCREEN_H } = Dimensions.get('window');
 
 interface SwipeFeedProps {

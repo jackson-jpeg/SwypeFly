@@ -41,6 +41,7 @@ interface ApiDestination {
   usualPrice?: number;
   savingsAmount?: number;
   savingsPercent?: number;
+  priceHistory?: number[];
   nearbyOrigin?: string;
   nearbyOriginLabel?: string;
 }
@@ -114,6 +115,7 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     usualPrice: d.usualPrice,
     savingsAmount: d.savingsAmount,
     savingsPercent: d.savingsPercent,
+    priceHistory: d.priceHistory,
     nearbyOrigin: d.nearbyOrigin,
     nearbyOriginLabel: d.nearbyOriginLabel,
   };

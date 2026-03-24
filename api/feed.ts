@@ -6,8 +6,7 @@ import { generateAviasalesLink } from '../utils/affiliateLinks';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
 import { cors } from './_cors.js';
-import { bulkGetRouteStats, computePricePercentile } from '../utils/priceStats';
-import type { RouteStats } from '../utils/priceStats';
+import { bulkGetRouteStats } from '../utils/priceStats';
 import { nearbyAirports } from '../data/airports';
 
 const PAGE_SIZE = 10;
@@ -152,6 +151,8 @@ interface ScoredDest {
   usual_price?: number | null;
   savings_amount?: number | null;
   savings_percent?: number | null;
+  // Price trend for sparkline
+  price_history?: number[];
   // Nearby airport fallback
   nearby_origin?: string;        // e.g. "MCO" — set when deal is from a nearby airport
   nearby_origin_label?: string;  // e.g. "Orlando (1h drive)"
@@ -684,6 +685,22 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     });
   }
 
+  // Build price history per destination (sorted by date — for sparkline trends)
+  const priceHistoryMap = new Map<string, number[]>();
+  const calendarByDest = new Map<string, Array<{ date: string; price: number }>>();
+  for (const p of calendarDocs) {
+    const dest = p.destination_iata as string;
+    if (!calendarByDest.has(dest)) calendarByDest.set(dest, []);
+    calendarByDest.get(dest)!.push({ date: p.date as string, price: p.price as number });
+  }
+  for (const [dest, entries] of calendarByDest) {
+    // Sort by date ascending, take up to 14 price points
+    const sorted = entries.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 14);
+    if (sorted.length >= 3) {
+      priceHistoryMap.set(dest, sorted.map((e) => e.price));
+    }
+  }
+
   const prices = priceResult.documents;
 
   const priceMap = new Map<
@@ -898,6 +915,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       usual_price: usualPrice,
       savings_amount: savingsAmount,
       savings_percent: savingsPercent,
+      price_history: priceHistoryMap.get(d.iata_code as string),
     };
   });
 
@@ -973,6 +991,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
     usualPrice: d.usual_price ?? undefined,
     savingsAmount: d.savings_amount ?? undefined,
     savingsPercent: d.savings_percent ?? undefined,
+    priceHistory: d.price_history ?? undefined,
     nearbyOrigin: d.nearby_origin ?? undefined,
     nearbyOriginLabel: d.nearby_origin_label ?? undefined,
   };

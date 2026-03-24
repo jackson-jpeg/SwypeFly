@@ -1,4 +1,4 @@
-import { Pressable, View, Text, StyleSheet, Animated } from 'react-native';
+import { Pressable, Text, StyleSheet, Animated } from 'react-native';
 import { useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useFilterStore } from '../../stores/filterStore';

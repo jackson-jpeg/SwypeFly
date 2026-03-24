@@ -36,6 +36,8 @@ export interface BoardDeal {
   usualPrice?: number;
   savingsAmount?: number;
   savingsPercent?: number;
+  // Price trend (recent daily prices for sparkline)
+  priceHistory?: number[];
   // Nearby airport fallback
   nearbyOrigin?: string;
   nearbyOriginLabel?: string;

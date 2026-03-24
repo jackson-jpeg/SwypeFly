@@ -1,0 +1,71 @@
+// Public API — returns top deals across all airports.
+// No auth required. Powers landing page hero, social content, and widget embeds.
+// GET /api/top-deals?limit=10&origin=JFK
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
+import { cors } from './_cors.js';
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (cors(req, res)) return;
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+  const limit = Math.min(parseInt(String(req.query.limit || '10'), 10) || 10, 25);
+  const origin = req.query.origin ? String(req.query.origin).toUpperCase() : undefined;
+
+  try {
+    const queries = [
+      Query.greaterThan('deal_score', 50),
+      Query.orderDesc('deal_score'),
+      Query.limit(limit * 3), // over-fetch to deduplicate
+    ];
+    if (origin) {
+      queries.unshift(Query.equal('origin', origin));
+    }
+
+    const entries = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.priceCalendar,
+      queries,
+    );
+
+    // Deduplicate by destination
+    const seen = new Set<string>();
+    const deals: Array<Record<string, unknown>> = [];
+
+    for (const doc of entries.documents) {
+      const destKey = (doc.destination_iata as string) || (doc.city as string);
+      if (seen.has(destKey)) continue;
+      seen.add(destKey);
+
+      deals.push({
+        id: doc.destination_id || doc.$id,
+        city: doc.city || 'Unknown',
+        country: doc.country || '',
+        iata: doc.destination_iata || '',
+        origin: doc.origin || '',
+        price: doc.price || 0,
+        dealScore: doc.deal_score || 0,
+        dealTier: doc.deal_tier || 'fair',
+        savingsPercent: doc.savings_percent || null,
+        usualPrice: doc.usual_price || null,
+        isNonstop: doc.is_nonstop || false,
+        airline: doc.airline || '',
+        departureDate: doc.departure_date || doc.date || '',
+        returnDate: doc.return_date || '',
+        tripDays: doc.trip_days || 0,
+      });
+
+      if (deals.length >= limit) break;
+    }
+
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
+    return res.status(200).json({
+      deals,
+      total: deals.length,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[top-deals] Error:', err);
+    return res.status(500).json({ error: 'Internal error' });
+  }
+}

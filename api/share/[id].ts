@@ -25,7 +25,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const city = escapeHtml(dest.city || 'Amazing Destination');
     const country = escapeHtml(dest.country || '');
     const tagline = escapeHtml(dest.tagline || 'Discover cheap flights');
-    const imageUrl = encodeURI(dest.image_url || 'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630');
     const price = dest.flight_price || '';
     const priceText = price ? ` from $${price}` : '';
 

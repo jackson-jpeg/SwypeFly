@@ -129,11 +129,6 @@ export default function SeatSelectionScreen() {
     router.push(`/booking/${id}/review` as never);
   }
 
-  function handleSkip() {
-    setSeats([]);
-    router.push(`/booking/${id}/review` as never);
-  }
-
   // ─── Seat button ──────────────────────────────────────────────
 
   function renderSeat(seat: SeatInfo) {
@@ -268,7 +263,7 @@ export default function SeatSelectionScreen() {
                     <View style={styles.rowNumberCol}>
                       <Text style={styles.rowNumber}>{row.rowNumber}</Text>
                     </View>
-                    {row.seats.map((seat, seatIdx) => {
+                    {row.seats.map((seat) => {
                       // Check if we need an aisle gap after this seat
                       const needsAisle = seatMap.aisleAfterColumns.includes(seat.column);
                       return (

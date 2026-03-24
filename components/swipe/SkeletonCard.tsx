@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import SplitFlapRow from '../board/SplitFlapRow';
 import { colors, fonts } from '../../theme/tokens';
 

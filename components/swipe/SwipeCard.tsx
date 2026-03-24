@@ -1,14 +1,22 @@
-import { useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated, Image as RNImage } from 'react-native';
+import { useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { successHaptic } from '../../utils/haptics';
 import SplitFlapRow from '../board/SplitFlapRow';
+import { shareDestination } from '../../utils/share';
+import PriceSparkline from './PriceSparkline';
 import type { BoardDeal } from '../../types/deal';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 const STATUS_COLORS: Record<BoardDeal['status'], string> = {
   DEAL: colors.green,
@@ -49,6 +57,10 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e2
 export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
   const imageUri = deal.imageUrl || FALLBACK_IMAGE;
   const saveScale = useRef(new Animated.Value(1)).current;
+
+  const handleShare = useCallback(() => {
+    shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
+  }, [deal]);
 
   const handleSave = useCallback(() => {
     onSave();
@@ -136,6 +148,12 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
               <Text style={styles.savingsText}>Save ${deal.savingsAmount}</Text>
             </View>
           )}
+          {/* Price trend sparkline */}
+          {deal.priceHistory && deal.priceHistory.length >= 3 && deal.price != null && (
+            <View style={styles.sparklineRow}>
+              <PriceSparkline prices={deal.priceHistory} currentPrice={deal.price} />
+            </View>
+          )}
         </View>
       )}
       {(deal.price == null || deal.priceSource === 'estimate') && (
@@ -164,6 +182,16 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           {deal.country}
           {deal.nearbyOriginLabel ? `  ·  ${deal.nearbyOriginLabel}` : ''}
         </Text>
+
+        {/* Trip window badge */}
+        {deal.departureDate && deal.tripDays > 0 && (
+          <View style={styles.tripWindowRow}>
+            <Ionicons name="calendar-outline" size={11} color={colors.green} />
+            <Text style={styles.tripWindowText}>
+              {formatShortDate(deal.departureDate)} · {deal.tripDays} days
+            </Text>
+          </View>
+        )}
 
         {/* Tagline */}
         <Text style={styles.tagline} numberOfLines={2}>{deal.tagline}</Text>
@@ -228,6 +256,14 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
             <Text style={[styles.actionLabel, isSaved && { color: '#E85D4A' }]}>
               {isSaved ? 'Saved' : 'Save'}
             </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleShare}
+            style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
+          >
+            <Ionicons name="share-outline" size={20} color={colors.white} />
+            <Text style={styles.actionLabel}>Share</Text>
           </Pressable>
 
           <Pressable
@@ -320,6 +356,22 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 11,
     color: colors.dealAmazing,
+  },
+  sparklineRow: {
+    marginTop: 6,
+    alignItems: 'center',
+  },
+  tripWindowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 6,
+  },
+  tripWindowText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.green,
+    letterSpacing: 0.3,
   },
 
   // Bottom content

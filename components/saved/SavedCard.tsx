@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, Dimensions, Platform, Image as RNImage } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';

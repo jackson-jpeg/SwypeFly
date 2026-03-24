@@ -6,7 +6,7 @@ import {
   Query,
 } from '../../services/appwriteServer';
 import { ID } from 'node-appwrite';
-import { fetchAllCheapPrices, fetchPriceCalendar } from '../../services/travelpayouts';
+import { fetchAllCheapPrices } from '../../services/travelpayouts';
 import { logApiError } from '../../utils/apiLogger';
 import { evaluateDealQuality, US_AIRPORTS } from '../../utils/dealQuality';
 import {
@@ -17,9 +17,6 @@ import {
 } from '../../utils/priceStats';
 
 export const maxDuration = 300;
-
-// Max destinations per run — keeps execution within timeout
-const MAX_DESTINATIONS = 15;
 
 // Travelpayouts returns city codes, our destinations use airport codes.
 // Map TP city codes → our airport IATA codes so prices match feed destinations.
@@ -33,12 +30,6 @@ const CITY_TO_AIRPORT: Record<string, string> = {
   DXB: 'DXB', JKT: 'CGK', KUL: 'KUL', MNL: 'MNL', MEX: 'MEX',
   BOG: 'BOG', SCL: 'SCL', LIM: 'LIM', PTY: 'PTY',
 };
-
-// Concurrent calendar API calls per chunk (TP rate: 60 req/min → ~10 req/sec safe)
-const CONCURRENCY = 5;
-
-// Delay between batches to respect Travelpayouts rate limits
-const DELAY_BETWEEN_BATCHES = 1200;
 
 // ─── Top-10 fallback airports ────────────────────────────────────────
 

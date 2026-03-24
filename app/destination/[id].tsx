@@ -18,6 +18,7 @@ import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../theme/tokens';
+import { shareDestination } from '../../utils/share';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const HERO_H = 360;
@@ -46,6 +47,11 @@ export default function DestinationDetailScreen() {
     const timer = setTimeout(() => setAnimate(true), 200);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleShare = useCallback(() => {
+    if (!deal) return;
+    shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
+  }, [deal]);
 
   const handleBook = useCallback(() => {
     if (!deal) return;
@@ -269,6 +275,9 @@ export default function DestinationDetailScreen() {
             size={24}
             color={isSaved ? '#E85D4A' : colors.white}
           />
+        </Pressable>
+        <Pressable style={styles.saveBtn} onPress={handleShare}>
+          <Ionicons name="share-outline" size={22} color={colors.white} />
         </Pressable>
         <Pressable style={styles.bookBtn} onPress={handleBook}>
           <Text style={styles.bookLabel}>
