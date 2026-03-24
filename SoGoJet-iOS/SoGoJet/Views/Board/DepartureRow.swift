@@ -12,40 +12,38 @@ struct DepartureRow: View {
 
     // MARK: Computed
 
-    /// Departure time truncated to 5 chars (e.g. "14:30").
+    /// Departure time (derived from departureDate or airline code).
     private var timeText: String {
-        String(deal.departureTime.prefix(5))
+        // Use IATA code as compact identifier
+        deal.iataCode
     }
 
-    /// Destination name uppercased, truncated to 12 chars.
+    /// Destination name uppercased.
     private var destinationText: String {
-        deal.destination.uppercased()
+        deal.city.uppercased()
     }
 
-    /// Flight code truncated to 6 chars (e.g. "AA 123").
+    /// Flight code from airline code.
     private var flightCodeText: String {
-        String(deal.flightCode.prefix(6))
+        deal.airlineName
     }
 
-    /// Price as a short string (e.g. "$249"), or "—" if nil.
+    /// Price as a short string.
     private var priceText: String {
-        if let price = deal.price {
-            return "$\(Int(price))"
-        }
-        return "---"
+        deal.priceFormatted
     }
 
-    /// Price column color: green if price exists, faint if nil.
+    /// Price column color.
     private var priceColor: Color {
-        deal.price != nil ? Color.sgGreen : Color.sgFaint
+        deal.displayPrice != nil ? Color.sgGreen : Color.sgFaint
     }
 
-    /// Status text showing savings percent or deal status.
+    /// Status text showing savings percent or tier.
     private var statusText: String {
         if let pct = deal.savingsPercent, pct > 0 {
             return "-\(Int(pct))%"
         }
-        return deal.status.rawValue
+        return deal.dealTier?.label.prefix(5).uppercased().trimmingCharacters(in: .whitespaces) ?? "DEAL"
     }
 
     /// Status color derived from deal tier.
@@ -129,7 +127,7 @@ struct DepartureRow: View {
         .opacity(isActive ? 1.0 : 0.45)
         .animation(.easeInOut(duration: 0.25), value: isActive)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(deal.departureTime), \(deal.destination), flight \(deal.flightCode), \(priceText)")
+        .accessibilityLabel("\(deal.city), \(deal.airlineName), \(priceText)")
         .accessibilityAddTraits(isActive ? [.isSelected, .isButton] : .isButton)
     }
 }
@@ -137,56 +135,14 @@ struct DepartureRow: View {
 // MARK: - Preview
 
 #Preview("Departure Row") {
-    let sampleDeal = Deal(
-        id: "1",
-        departureTime: "14:30",
-        destination: "Bali",
-        destinationFull: "Bali, Indonesia",
-        country: "Indonesia",
-        iataCode: "DPS",
-        flightCode: "AA 123",
-        price: 249,
-        priceFormatted: "$249",
-        status: .deal,
-        priceSource: "travelpayouts",
-        airline: "American Airlines",
-        departureDate: "2026-04-15",
-        returnDate: "2026-04-22",
-        cheapestDate: "2026-04-15",
-        cheapestReturnDate: "2026-04-22",
-        tripDays: 7,
-        flightDuration: "18h 30m",
-        vibeTags: ["Beach", "Culture"],
-        imageUrl: "",
-        blurHash: nil,
-        tagline: "Tropical paradise awaits",
-        description: "Discover Bali",
-        affiliateUrl: "",
-        itinerary: nil,
-        restaurants: nil,
-        dealScore: 0.85,
-        dealTier: .great,
-        qualityScore: 0.9,
-        pricePercentile: 0.15,
-        isNonstop: false,
-        totalStops: 1,
-        maxLayoverMinutes: 120,
-        usualPrice: 450,
-        savingsAmount: 201,
-        savingsPercent: 45,
-        priceHistory: nil,
-        nearbyOrigin: nil,
-        nearbyOriginLabel: nil
-    )
-
-    return VStack(spacing: 2) {
+    VStack(spacing: 2) {
         DepartureRow(
-            deal: sampleDeal,
+            deal: Deal.preview,
             isActive: true,
             animate: true
         )
         DepartureRow(
-            deal: sampleDeal,
+            deal: Deal.preview,
             isActive: false,
             animate: true
         )

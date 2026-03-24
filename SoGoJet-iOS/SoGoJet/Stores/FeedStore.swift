@@ -34,8 +34,8 @@ final class FeedStore {
                 .feed(origin: self.origin, page: 1, vibes: selectedVibes)
             )
             deals = response.destinations
-            hasMore = response.hasMore
-            page = response.page
+            hasMore = response.nextCursor != nil
+            page += 1
         } catch {
             self.error = error.localizedDescription
         }
@@ -56,8 +56,8 @@ final class FeedStore {
                 .feed(origin: origin, page: nextPage, vibes: selectedVibes)
             )
             deals.append(contentsOf: response.destinations)
-            hasMore = response.hasMore
-            page = response.page
+            hasMore = response.nextCursor != nil
+            page = nextPage
         } catch {
             self.error = error.localizedDescription
         }

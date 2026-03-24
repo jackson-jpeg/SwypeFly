@@ -225,7 +225,7 @@ struct DestinationDetailView: View {
             ("airplane.departure", "Depart", deal.departureDate),
             ("airplane.arrival", "Return", deal.returnDate),
             ("clock.fill", "Duration", deal.flightDuration),
-            ("ticket.fill", "Flight", deal.flightCode),
+            ("ticket.fill", "Flight", deal.airlineName),
         ]
 
         return LazyVGrid(

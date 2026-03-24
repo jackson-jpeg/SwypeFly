@@ -75,13 +75,13 @@ actor ImageCache {
 
 /// A SwiftUI view that loads and caches images from a URL string.
 struct CachedAsyncImage<Placeholder: View>: View {
-    let urlString: String
+    let urlString: String?
     let placeholder: () -> Placeholder
 
     @State private var uiImage: UIImage?
     @State private var isLoading = true
 
-    init(url urlString: String, @ViewBuilder placeholder: @escaping () -> Placeholder) {
+    init(url urlString: String?, @ViewBuilder placeholder: @escaping () -> Placeholder) {
         self.urlString = urlString
         self.placeholder = placeholder
     }
@@ -99,6 +99,10 @@ struct CachedAsyncImage<Placeholder: View>: View {
             }
         }
         .task(id: urlString) {
+            guard let urlString else {
+                isLoading = false
+                return
+            }
             isLoading = true
             uiImage = await ImageCache.shared.image(for: urlString)
             isLoading = false
@@ -108,7 +112,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
 
 // Convenience initialiser with default shimmer placeholder.
 extension CachedAsyncImage where Placeholder == Color {
-    init(url urlString: String) {
+    init(url urlString: String?) {
         self.init(url: urlString) {
             Color.sgSurface
         }

@@ -279,7 +279,7 @@ struct DealCard: View {
 
     private var flightCodeChip: some View {
         SplitFlapRow(
-            text: deal.flightCode,
+            text: deal.airlineName,
             maxLength: 7,
             size: .sm,
             color: Color.sgMuted,
@@ -391,90 +391,4 @@ struct DealCard: View {
     .ignoresSafeArea()
 }
 
-// MARK: - Preview Data
-
-extension Deal {
-    static let preview = Deal(
-        id: "1",
-        departureTime: "06:30",
-        destination: "Bali",
-        destinationFull: "Bali, Indonesia",
-        country: "Indonesia",
-        iataCode: "DPS",
-        flightCode: "GA 875",
-        price: 487,
-        priceFormatted: "$487",
-        status: .deal,
-        priceSource: "travelpayouts",
-        airline: "Garuda Indonesia",
-        departureDate: "2026-04-15",
-        returnDate: "2026-04-22",
-        cheapestDate: "2026-04-15",
-        cheapestReturnDate: "2026-04-22",
-        tripDays: 7,
-        flightDuration: "18h 30m",
-        vibeTags: ["Beach", "Culture", "Nightlife"],
-        imageUrl: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800",
-        blurHash: nil,
-        tagline: "Temple sunsets and rice terrace mornings",
-        description: "Discover the magic of Bali",
-        affiliateUrl: "https://aviasales.com",
-        itinerary: nil,
-        restaurants: nil,
-        dealScore: 0.92,
-        dealTier: .amazing,
-        qualityScore: 0.88,
-        pricePercentile: 0.12,
-        isNonstop: false,
-        totalStops: 1,
-        maxLayoverMinutes: 120,
-        usualPrice: 850,
-        savingsAmount: 363,
-        savingsPercent: 42,
-        priceHistory: [720, 680, 750, 620, 580, 540, 487],
-        nearbyOrigin: nil,
-        nearbyOriginLabel: nil
-    )
-
-    static let previewNonstop = Deal(
-        id: "2",
-        departureTime: "08:00",
-        destination: "London",
-        destinationFull: "London, United Kingdom",
-        country: "United Kingdom",
-        iataCode: "LHR",
-        flightCode: "BA 178",
-        price: 389,
-        priceFormatted: "$389",
-        status: .hot,
-        priceSource: "travelpayouts",
-        airline: "British Airways",
-        departureDate: "2026-05-01",
-        returnDate: "2026-05-08",
-        cheapestDate: "2026-05-01",
-        cheapestReturnDate: "2026-05-08",
-        tripDays: 7,
-        flightDuration: "7h 10m",
-        vibeTags: ["Culture", "Food", "History"],
-        imageUrl: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800",
-        blurHash: nil,
-        tagline: "Where history meets the future",
-        description: "Explore London's timeless charm",
-        affiliateUrl: "https://aviasales.com",
-        itinerary: nil,
-        restaurants: nil,
-        dealScore: 0.85,
-        dealTier: .great,
-        qualityScore: 0.9,
-        pricePercentile: 0.2,
-        isNonstop: true,
-        totalStops: 0,
-        maxLayoverMinutes: nil,
-        usualPrice: 550,
-        savingsAmount: 161,
-        savingsPercent: 29,
-        priceHistory: [520, 490, 510, 470, 430, 400, 389],
-        nearbyOrigin: nil,
-        nearbyOriginLabel: nil
-    )
-}
+// Preview data is in Models/Deal.swift as Deal.preview

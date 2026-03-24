@@ -117,22 +117,23 @@ struct SplitFlapChar: View {
     /// Renders the top or bottom half of the character cell, clipped to its half.
     @ViewBuilder
     private func halfCell(char: Character, isTop: Bool, angle: Double) -> some View {
-        let halfHeight = (size.cellHeight - 1) / 2 // account for 1pt gap
+        let halfHeight = (size.cellHeight - 1) / 2
 
-        Text(String(char))
-            .font(charFont)
-            .foregroundStyle(color)
-            .frame(width: size.cellWidth, height: size.cellHeight)
-            .offset(y: isTop ? halfHeight / 2 : -halfHeight / 2)
-            .frame(width: size.cellWidth, height: halfHeight)
-            .clipped()
-            .background(Color.sgCell)
-            .rotation3DEffect(
-                .degrees(min(max(angle, -89.5), 89.5)),
-                axis: (x: 1, y: 0, z: 0),
-                anchor: isTop ? .bottom : .top,
-                perspective: 0.3
-            )
+        ZStack {
+            Color.sgCell
+            Text(String(char))
+                .font(charFont)
+                .foregroundStyle(color)
+                .offset(y: isTop ? halfHeight / 4 : -halfHeight / 4)
+        }
+        .frame(width: size.cellWidth, height: halfHeight)
+        .clipShape(Rectangle())
+        .rotation3DEffect(
+            .degrees(min(max(angle, -89.5), 89.5)),
+            axis: (x: 1, y: 0, z: 0),
+            anchor: isTop ? .bottom : .top,
+            perspective: 0.3
+        )
     }
 
     // MARK: Displayed Characters Per Phase

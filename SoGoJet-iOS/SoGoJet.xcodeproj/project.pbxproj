@@ -60,7 +60,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0462DA9750B48F6D57FEE257 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Regular.ttf"; sourceTree = "<group>"; };
 		07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedStore.swift; sourceTree = "<group>"; };
 		08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -356,7 +356,6 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					CDA186B03F0A61442A47D80C = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -594,6 +593,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2MU4PC84GZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SoGoJet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
@@ -617,6 +617,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2MU4PC84GZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SoGoJet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
