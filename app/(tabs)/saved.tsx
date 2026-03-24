@@ -24,6 +24,14 @@ export default function SavedScreen() {
   const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('recent');
 
+  // Compute savings stats
+  const savingsStats = useMemo(() => {
+    const withSavings = savedDeals.filter((d) => d.savingsAmount && d.savingsAmount > 0);
+    const totalSavings = withSavings.reduce((sum, d) => sum + (d.savingsAmount || 0), 0);
+    const totalValue = savedDeals.reduce((sum, d) => sum + (d.price || 0), 0);
+    return { totalSavings, totalValue, count: savedDeals.length };
+  }, [savedDeals]);
+
   const sortedDeals = useMemo(() => {
     const deals = [...savedDeals];
     switch (sortBy) {
@@ -92,6 +100,26 @@ export default function SavedScreen() {
           )}
         </View>
       </View>
+
+      {/* Savings summary */}
+      {savingsStats.count > 0 && savingsStats.totalSavings > 0 && (
+        <View style={styles.savingsBanner}>
+          <View style={styles.savingsStat}>
+            <Text style={styles.savingsValue}>${savingsStats.totalSavings.toLocaleString()}</Text>
+            <Text style={styles.savingsLabel}>total savings</Text>
+          </View>
+          <View style={styles.savingsDivider} />
+          <View style={styles.savingsStat}>
+            <Text style={styles.savingsValue}>${savingsStats.totalValue.toLocaleString()}</Text>
+            <Text style={styles.savingsLabel}>trip value</Text>
+          </View>
+          <View style={styles.savingsDivider} />
+          <View style={styles.savingsStat}>
+            <Text style={styles.savingsValue}>{savingsStats.count}</Text>
+            <Text style={styles.savingsLabel}>{savingsStats.count === 1 ? 'trip' : 'trips'}</Text>
+          </View>
+        </View>
+      )}
 
       {savedDeals.length === 0 ? (
         <View style={styles.empty}>
@@ -164,6 +192,43 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 4,
   },
+  // Savings banner
+  savingsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginHorizontal: spacing.md,
+    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.dealAmazing + '20',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  savingsStat: {
+    alignItems: 'center',
+  },
+  savingsValue: {
+    fontFamily: fonts.display,
+    fontSize: 18,
+    color: colors.dealAmazing,
+    letterSpacing: 0.5,
+  },
+  savingsLabel: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    color: colors.muted,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  savingsDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: colors.border,
+  },
+
   grid: {
     paddingHorizontal: spacing.md,
     paddingBottom: 100,
