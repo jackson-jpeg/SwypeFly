@@ -18,7 +18,9 @@ actor APIClient {
         self.session = URLSession(configuration: config)
 
         let dec = JSONDecoder()
-        dec.keyDecodingStrategy = .convertFromSnakeCase
+        // Do NOT use .convertFromSnakeCase — the API returns camelCase keys
+        // (iataCode, vibeTags, flightPrice, etc). Only available_flight_days
+        // is snake_case, handled by CodingKeys in Deal.swift.
         self.decoder = dec
     }
 
@@ -149,6 +151,12 @@ actor APIClient {
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
+            #if DEBUG
+            print("⚠️ [APIClient] Decoding \(T.self) failed: \(error)")
+            if let json = String(data: data.prefix(500), encoding: .utf8) {
+                print("⚠️ [APIClient] Response preview: \(json)")
+            }
+            #endif
             throw APIError.decodingFailed(error)
         }
     }

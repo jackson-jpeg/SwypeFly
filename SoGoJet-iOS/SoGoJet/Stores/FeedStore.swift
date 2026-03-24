@@ -37,7 +37,10 @@ final class FeedStore {
             hasMore = response.nextCursor != nil
             page += 1
         } catch {
-            self.error = error.localizedDescription
+            #if DEBUG
+            print("❌ [FeedStore] fetchDeals failed: \(error)")
+            #endif
+            self.error = "Decoding failed: \(error.localizedDescription)"
         }
 
         isLoading = false
