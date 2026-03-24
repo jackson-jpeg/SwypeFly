@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDealStore } from '../../stores/dealStore';
@@ -48,6 +48,17 @@ export default function FeedScreen() {
     if (immersed) fadeHeader(true);
   }, [immersed, fadeHeader]);
 
+  // Deal stats for header subtitle
+  const dealStats = useMemo(() => {
+    if (deals.length === 0) return null;
+    const withSavings = deals.filter((d) => d.savingsPercent && d.savingsPercent > 0);
+    const avgSavings = withSavings.length > 0
+      ? Math.round(withSavings.reduce((sum, d) => sum + (d.savingsPercent || 0), 0) / withSavings.length)
+      : 0;
+    const amazingCount = deals.filter((d) => d.dealTier === 'amazing' || d.dealTier === 'great').length;
+    return { total: deals.length, avgSavings, amazingCount };
+  }, [deals]);
+
   // Clear filters when departure city changes (fresh context)
   useEffect(() => {
     if (prevDepartureRef.current !== departureCode) {
@@ -68,7 +79,14 @@ export default function FeedScreen() {
       {/* Floating header — fades during immersion */}
       <Pressable onPress={handleHeaderTap} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
         <Animated.View style={[styles.header, { paddingTop: insets.top + 8, opacity: headerOpacity }]}>
-          <Text style={styles.logo}>✈ SOGOJET</Text>
+          <View>
+            <Text style={styles.logo}>✈ SOGOJET</Text>
+            {dealStats && dealStats.avgSavings > 0 && (
+              <Text style={styles.dealCounter}>
+                {dealStats.total} deals · avg {dealStats.avgSavings}% off
+              </Text>
+            )}
+          </View>
           <FilterButton />
           <View style={styles.airportBadge}>
             <Text style={styles.airportText}>{departureCode}</Text>
@@ -128,6 +146,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: colors.white,
     letterSpacing: 2,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  dealCounter: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    color: colors.green,
+    letterSpacing: 0.5,
+    marginTop: 2,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,

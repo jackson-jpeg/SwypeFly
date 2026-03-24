@@ -107,6 +107,14 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
         style={StyleSheet.absoluteFillObject}
       />
 
+      {/* Deal of the Day — first card with amazing tier */}
+      {isFirst && deal.dealTier === 'amazing' && (
+        <View style={styles.dotdBadge}>
+          <Text style={styles.dotdIcon}>★</Text>
+          <Text style={styles.dotdText}>DEAL OF THE DAY</Text>
+        </View>
+      )}
+
       {/* Deal tier badge or legacy status badge */}
       {(() => {
         const badgeText = getDealBadgeText(deal);
@@ -341,6 +349,33 @@ const styles = StyleSheet.create({
     width: SCREEN_W,
     height: SCREEN_H,
     backgroundColor: colors.surface,
+  },
+
+  // Deal of the Day badge — top center
+  dotdBadge: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 70 : 60,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(251,191,36,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.5)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 5,
+  },
+  dotdIcon: {
+    fontSize: 14,
+    color: colors.dealGreat,
+  },
+  dotdText: {
+    fontFamily: fonts.display,
+    fontSize: 11,
+    color: colors.dealGreat,
+    letterSpacing: 1.5,
   },
 
   // Status badge — top left, split-flap
