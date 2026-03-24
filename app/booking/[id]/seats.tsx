@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -106,6 +106,32 @@ export default function SeatSelectionScreen() {
     return () => clearTimeout(t);
   }, []);
 
+  // ─── Recommended seat (best value: aisle, near front, reasonable price) ──
+
+  const recommendedSeat = useMemo(() => {
+    if (!seatMap) return null;
+    const aisleColumns = seatMap.aisleAfterColumns;
+    // Collect all aisle seats that are available
+    const candidates: (SeatInfo & { rowNum: number })[] = [];
+    for (const row of seatMap.rows) {
+      for (const seat of row.seats) {
+        if (!seat.available) continue;
+        const isAisle = aisleColumns.includes(seat.column) ||
+          (seatMap.columns.indexOf(seat.column) > 0 && aisleColumns.includes(seatMap.columns[seatMap.columns.indexOf(seat.column) - 1]));
+        if (isAisle || seat.extraLegroom) {
+          candidates.push({ ...seat, rowNum: row.rowNumber });
+        }
+      }
+    }
+    if (candidates.length === 0) return null;
+    // Sort by: front rows first, then cheapest
+    candidates.sort((a, b) => {
+      if (a.rowNum !== b.rowNum) return a.rowNum - b.rowNum;
+      return a.price - b.price;
+    });
+    return candidates[0];
+  }, [seatMap]);
+
   // ─── Handlers ─────────────────────────────────────────────────
 
   function handleSeatPress(seat: SeatInfo) {
@@ -133,6 +159,7 @@ export default function SeatSelectionScreen() {
 
   function renderSeat(seat: SeatInfo) {
     const isSelected = selectedSeat?.designator === seat.designator;
+    const isRecommended = recommendedSeat?.designator === seat.designator;
 
     return (
       <Pressable
@@ -143,6 +170,7 @@ export default function SeatSelectionScreen() {
           styles.seat,
           !seat.available && styles.seatOccupied,
           isSelected && styles.seatSelected,
+          isRecommended && !isSelected && styles.seatRecommended,
           seat.extraLegroom && seat.available && styles.seatLegroom,
         ]}
       >
@@ -155,6 +183,9 @@ export default function SeatSelectionScreen() {
         >
           {seat.available ? seat.column : '\u2715'}
         </Text>
+        {isRecommended && !isSelected && (
+          <View style={styles.recommendedDot} />
+        )}
       </Pressable>
     );
   }
@@ -224,6 +255,12 @@ export default function SeatSelectionScreen() {
               <View style={[styles.legendDot, { backgroundColor: colors.cell, opacity: 0.5 }]} />
               <Text style={styles.legendLabel}>Occupied</Text>
             </View>
+            {recommendedSeat && (
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: colors.dealGreat }]} />
+                <Text style={styles.legendLabel}>Best value</Text>
+              </View>
+            )}
           </View>
 
           {/* Column headers */}
@@ -461,6 +498,19 @@ const styles = StyleSheet.create({
   seatLegroom: {
     borderColor: colors.green + '30',
     borderWidth: 1.5,
+  },
+  seatRecommended: {
+    borderColor: colors.dealGreat,
+    borderWidth: 1.5,
+  },
+  recommendedDot: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.dealGreat,
   },
   seatText: {
     fontFamily: fonts.bodyBold,

@@ -2,12 +2,24 @@
 // Usage: /api/og?id=<destination_id> (fetches from Appwrite)
 //    or: /api/og?city=Paris&country=France&price=64&image=https://...
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
+import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
 import { cors } from './_cors.js';
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
+
+const TIER_COLORS: Record<string, string> = {
+  amazing: '#4ADE80',
+  great: '#FBBF24',
+  good: '#60A5FA',
+};
+
+const TIER_LABELS: Record<string, string> = {
+  amazing: 'INCREDIBLE DEAL',
+  great: 'GREAT DEAL',
+  good: 'GOOD PRICE',
+};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
@@ -18,6 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let tagline = '';
   let flightDuration = '';
   let costLevel = '';
+  let dealTier = '';
+  let savingsPercent = 0;
 
   const { id, city, country, price, image } = req.query;
 
@@ -33,6 +47,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       flightDuration = dest.flight_duration || '';
       const hotelPrice = dest.hotel_price_per_night || 0;
       costLevel = hotelPrice <= 60 ? '$' : hotelPrice <= 120 ? '$$' : hotelPrice <= 200 ? '$$$' : '$$$$';
+
+      // Fetch deal quality from price_calendar
+      try {
+        const calendarData = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
+          Query.equal('destination_id', String(id)),
+          Query.orderDesc('deal_score'),
+          Query.limit(1),
+        ]);
+        if (calendarData.documents.length > 0) {
+          const pd = calendarData.documents[0];
+          dealTier = (pd.deal_tier as string) || '';
+          savingsPercent = (pd.savings_percent as number) || 0;
+        }
+      } catch {
+        // OK — proceed without deal data
+      }
     } catch {
       // Fall through to query params
     }
@@ -43,6 +73,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (country) countryStr = escapeHtml(String(country));
   if (price) priceStr = `$${escapeHtml(String(price))}`;
   if (image) imageUrl = encodeURI(String(image));
+  if (req.query.dealTier) dealTier = String(req.query.dealTier);
+  if (req.query.savingsPercent) savingsPercent = parseInt(String(req.query.savingsPercent), 10) || 0;
 
   const metaRow = [countryStr, flightDuration, costLevel].filter(Boolean).join('  ·  ');
 
@@ -62,6 +94,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       <div style="width:1px;height:20px;background:rgba(255,255,255,0.2)"></div>
       <div style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase">Discover Your Next Trip</div>
     </div>
+    <!-- Deal tier badge (top-right) -->
+    ${dealTier && TIER_COLORS[dealTier] ? `
+    <div style="position:absolute;top:28px;right:40px;display:inline-flex;align-items:center;gap:8px;background:${TIER_COLORS[dealTier]}20;border:1px solid ${TIER_COLORS[dealTier]}60;padding:8px 18px;border-radius:8px">
+      <div style="width:10px;height:10px;border-radius:5px;background:${TIER_COLORS[dealTier]}"></div>
+      <span style="font-size:16px;font-weight:700;color:${TIER_COLORS[dealTier]};letter-spacing:1px">${TIER_LABELS[dealTier] || ''}</span>
+      ${savingsPercent > 0 ? `<span style="font-size:16px;font-weight:600;color:${TIER_COLORS[dealTier]};margin-left:6px">${savingsPercent}% OFF</span>` : ''}
+    </div>` : ''}
     <!-- Content -->
     <div style="position:absolute;bottom:40px;left:40px;right:40px;color:#fff">
       <div style="font-size:72px;font-weight:800;line-height:1;letter-spacing:-2px;text-shadow:0 2px 20px rgba(0,0,0,0.5)">${cityStr}</div>

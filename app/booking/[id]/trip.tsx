@@ -58,6 +58,7 @@ export default function TripScreen() {
   const [alternatives, setAlternatives] = useState<TripOption[]>([]);
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
+  const [dealExpired, setDealExpired] = useState(false);
 
   // ─── Redirect if no cheapestDate ────────────────────────────────
 
@@ -216,8 +217,8 @@ export default function TripScreen() {
       // Price discrepancy handling with tiered messaging
       if (priceDiscrepancy) {
         if (priceDiscrepancy.tier === 'deal_expired') {
-          // Deal is gone — don't proceed
-          setBookError(priceDiscrepancy.message);
+          // Deal is gone — show dedicated expired screen
+          setDealExpired(true);
           setBooking(false);
           return;
         }
@@ -285,6 +286,35 @@ export default function TripScreen() {
           <Text style={styles.emptyText}>Destination not found</Text>
           <Pressable onPress={() => router.back()} style={styles.backBtnInline}>
             <Text style={styles.backBtnInlineText}>Go back</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // ─── Deal expired screen ─────────────────────────────────────
+  if (dealExpired) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.centered}>
+          <Ionicons name="timer-outline" size={64} color="#E85D4A" />
+          <Text style={styles.expiredTitle}>Deal Expired</Text>
+          <Text style={styles.expiredDesc}>
+            The price for {deal.destination} has increased significantly since we found this deal.
+            Flight prices change constantly — set an alert to catch the next drop.
+          </Text>
+          <Pressable
+            style={styles.expiredAlertBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="notifications-outline" size={18} color={colors.bg} />
+            <Text style={styles.expiredAlertText}>Set Price Alert</Text>
+          </Pressable>
+          <Pressable
+            style={styles.expiredBackBtn}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.expiredBackText}>Back to deals</Text>
           </Pressable>
         </View>
       </View>
@@ -597,5 +627,48 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 14,
     color: colors.yellow,
+  },
+
+  // Deal expired screen
+  expiredTitle: {
+    fontFamily: fonts.display,
+    fontSize: 28,
+    color: colors.white,
+    marginTop: spacing.lg,
+    letterSpacing: 1,
+  },
+  expiredDesc: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.muted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    lineHeight: 22,
+    paddingHorizontal: spacing.md,
+  },
+  expiredAlertBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.green,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginTop: spacing.xl,
+  },
+  expiredAlertText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 16,
+    color: colors.bg,
+  },
+  expiredBackBtn: {
+    marginTop: spacing.md,
+    paddingVertical: 10,
+  },
+  expiredBackText: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.muted,
+    textDecorationLine: 'underline',
   },
 });
