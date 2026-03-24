@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,15 @@ import { airports, type Airport } from '../data/airports';
 import { useSettingsStore } from '../stores/settingsStore';
 import { colors, fonts, spacing } from '../theme/tokens';
 import { successHaptic } from '../utils/haptics';
+import SplitFlapRow from '../components/board/SplitFlapRow';
+
+const SAMPLE_DESTINATIONS = [
+  { city: 'BARCELONA', price: '$287' },
+  { city: 'TOKYO', price: '$412' },
+  { city: 'BALI', price: '$389' },
+  { city: 'PARIS', price: '$310' },
+  { city: 'SANTORINI', price: '$345' },
+];
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -23,6 +32,16 @@ export default function OnboardingScreen() {
 
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Airport | null>(null);
+
+  // Cycling destination teaser
+  const [destIdx, setDestIdx] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setDestIdx((i) => (i + 1) % SAMPLE_DESTINATIONS.length);
+    }, 2500);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
@@ -53,6 +72,33 @@ export default function OnboardingScreen() {
       <Text style={styles.emoji}>✈️</Text>
       <Text style={styles.brand}>SOGOJET</Text>
       <Text style={styles.tagline}>Swipe through the cheapest flights{'\n'}and book in seconds</Text>
+
+      {/* Cycling destination teaser */}
+      <View style={styles.teaserRow}>
+        <View style={styles.teaserCell}>
+          <SplitFlapRow
+            text={SAMPLE_DESTINATIONS[destIdx].city}
+            maxLength={12}
+            size="md"
+            color={colors.yellow}
+            align="left"
+            startDelay={0}
+            staggerMs={30}
+            animate={true}
+          />
+        </View>
+        <View style={styles.teaserCell}>
+          <SplitFlapRow
+            text={SAMPLE_DESTINATIONS[destIdx].price}
+            maxLength={5}
+            size="md"
+            color={colors.green}
+            align="right"
+            startDelay={100}
+            animate={true}
+          />
+        </View>
+      </View>
 
       <View style={styles.valuePropRow}>
         <View style={styles.valueProp}>
@@ -138,6 +184,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: spacing.lg,
+  },
+  teaserRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  teaserCell: {
+    flexDirection: 'row',
   },
   valuePropRow: {
     flexDirection: 'row',

@@ -25,6 +25,22 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { mediumHaptic, lightHaptic } from '../../utils/haptics';
 import type { BoardDeal } from '../../types/deal';
 
+const DEAL_TIER_BG: Record<string, string> = {
+  amazing: colors.dealAmazing + '15',
+  great: colors.dealGreat + '15',
+  good: colors.dealGood + '15',
+};
+const DEAL_TIER_BORDER: Record<string, string> = {
+  amazing: colors.dealAmazing + '30',
+  great: colors.dealGreat + '30',
+  good: colors.dealGood + '30',
+};
+const DEAL_TIER_TEXT: Record<string, string> = {
+  amazing: colors.dealAmazing,
+  great: colors.dealGreat,
+  good: colors.dealGood,
+};
+
 interface DepartureBoardProps {
   deals: BoardDeal[];
   onTapDeal: (deal: BoardDeal) => void;
@@ -195,6 +211,16 @@ export default function DepartureBoard({ deals, onTapDeal, isLoading = false }: 
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.detailContent}
           >
+            {/* Deal quality pill */}
+            {activeDeal.dealTier && activeDeal.dealTier !== 'fair' && (
+              <View style={[styles.detailPill, { backgroundColor: (DEAL_TIER_BG[activeDeal.dealTier] || colors.surface), borderColor: (DEAL_TIER_BORDER[activeDeal.dealTier] || colors.border) }]}>
+                <Text style={[styles.detailPillText, { color: DEAL_TIER_TEXT[activeDeal.dealTier] || colors.muted }]}>
+                  {activeDeal.savingsPercent && activeDeal.savingsPercent > 0
+                    ? `${activeDeal.savingsPercent}% off`
+                    : activeDeal.dealTier === 'amazing' ? 'Incredible' : activeDeal.dealTier === 'great' ? 'Great deal' : 'Good price'}
+                </Text>
+              </View>
+            )}
             <View style={styles.detailPill}>
               <Text style={styles.detailPillText}>
                 {activeDeal.departureDate} — {activeDeal.returnDate}
@@ -205,7 +231,12 @@ export default function DepartureBoard({ deals, onTapDeal, isLoading = false }: 
                 {activeDeal.flightDuration}
               </Text>
             </View>
-            {activeDeal.vibeTags.slice(0, 3).map((tag) => (
+            {activeDeal.isNonstop === true && (
+              <View style={[styles.detailPill, { backgroundColor: colors.dealAmazing + '15', borderColor: colors.dealAmazing + '30' }]}>
+                <Text style={[styles.detailPillText, { color: colors.dealAmazing }]}>Nonstop</Text>
+              </View>
+            )}
+            {activeDeal.vibeTags.slice(0, 2).map((tag) => (
               <View key={tag} style={styles.detailPill}>
                 <Text style={styles.detailPillText}>{tag}</Text>
               </View>
