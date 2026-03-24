@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
@@ -78,6 +79,19 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Head>
+        <title>SoGoJet — Discover Cheap Flights</title>
+        <meta name="description" content="Swipe through stunning destinations and find the cheapest flights from your city. Book in seconds." />
+        <meta property="og:title" content="SoGoJet — Discover Cheap Flights" />
+        <meta property="og:description" content="TikTok-style flight deal discovery. Swipe, save, and book the cheapest flights." />
+        <meta property="og:image" content="https://sogojet.com/api/og" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="SoGoJet" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="SoGoJet — Discover Cheap Flights" />
+        <meta name="twitter:image" content="https://sogojet.com/api/og" />
+        <meta name="theme-color" content="#0A0806" />
+      </Head>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <OnboardingGate>

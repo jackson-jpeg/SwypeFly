@@ -3,6 +3,7 @@ import { useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useFilterStore } from '../../stores/filterStore';
 import { colors, fonts } from '../../theme/tokens';
+import { lightHaptic } from '../../utils/haptics';
 
 export default function FilterButton() {
   const activeCount = useFilterStore((s) => s.activeCount);
@@ -22,7 +23,7 @@ export default function FilterButton() {
 
   return (
     <Pressable
-      onPress={open}
+      onPress={() => { lightHaptic(); open(); }}
       style={styles.button}
       accessibilityRole="button"
       accessibilityLabel="Open filters"

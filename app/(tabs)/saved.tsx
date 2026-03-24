@@ -7,6 +7,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import SavedCard from '../../components/saved/SavedCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
+import { lightHaptic } from '../../utils/haptics';
 import type { BoardDeal } from '../../types/deal';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc';
@@ -88,7 +89,7 @@ export default function SavedScreen() {
               {(Object.keys(SORT_LABELS) as SortOption[]).map((opt) => (
                 <Pressable
                   key={opt}
-                  onPress={() => setSortBy(opt)}
+                  onPress={() => { lightHaptic(); setSortBy(opt); }}
                   style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
                 >
                   <Text style={[styles.sortText, sortBy === opt && styles.sortTextActive]}>
