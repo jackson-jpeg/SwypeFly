@@ -208,6 +208,42 @@ export default function DestinationDetailScreen() {
           </Text>
         )}
 
+        {/* Quick facts strip */}
+        <View style={styles.quickFacts}>
+          {deal.isNonstop === true && (
+            <View style={[styles.quickFact, { backgroundColor: colors.dealAmazing + '15' }]}>
+              <Ionicons name="flash" size={14} color={colors.dealAmazing} />
+              <Text style={[styles.quickFactText, { color: colors.dealAmazing }]}>Nonstop</Text>
+            </View>
+          )}
+          {deal.tripDays > 0 && (
+            <View style={styles.quickFact}>
+              <Ionicons name="moon-outline" size={14} color={colors.whiteDim} />
+              <Text style={styles.quickFactText}>{deal.tripDays} nights</Text>
+            </View>
+          )}
+          {deal.flightDuration && (
+            <View style={styles.quickFact}>
+              <Ionicons name="time-outline" size={14} color={colors.whiteDim} />
+              <Text style={styles.quickFactText}>{deal.flightDuration}</Text>
+            </View>
+          )}
+          {deal.totalStops != null && deal.totalStops > 0 && (
+            <View style={styles.quickFact}>
+              <Ionicons name="git-commit-outline" size={14} color={colors.whiteDim} />
+              <Text style={styles.quickFactText}>{deal.totalStops} stop{deal.totalStops > 1 ? 's' : ''}</Text>
+            </View>
+          )}
+          {deal.dealTier && deal.dealTier !== 'fair' && (
+            <View style={[styles.quickFact, { backgroundColor: (DEAL_TIER_COLORS[deal.dealTier] || colors.muted) + '15' }]}>
+              <Ionicons name="trending-down" size={14} color={DEAL_TIER_COLORS[deal.dealTier] || colors.muted} />
+              <Text style={[styles.quickFactText, { color: DEAL_TIER_COLORS[deal.dealTier] || colors.muted }]}>
+                {deal.dealTier === 'amazing' ? 'Best price' : deal.dealTier === 'great' ? 'Great price' : 'Good price'}
+              </Text>
+            </View>
+          )}
+        </View>
+
         {/* Trip details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>TRIP DETAILS</Text>
@@ -276,6 +312,20 @@ export default function DestinationDetailScreen() {
                 </View>
               </View>
             ))}
+          </View>
+        )}
+
+        {/* Price alert CTA */}
+        {deal.price != null && (
+          <View style={styles.alertCta}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alertCtaTitle}>Track this price</Text>
+              <Text style={styles.alertCtaDesc}>Get notified when {deal.destination} drops below ${deal.price}</Text>
+            </View>
+            <Pressable style={styles.alertCtaBtn}>
+              <Ionicons name="notifications-outline" size={18} color={colors.bg} />
+              <Text style={styles.alertCtaBtnText}>Alert</Text>
+            </Pressable>
           </View>
         )}
 
@@ -621,6 +671,68 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 12,
     color: colors.yellow,
+  },
+
+  // Price alert CTA
+  alertCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.green + '30',
+  },
+  alertCtaTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.white,
+  },
+  alertCtaDesc: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  alertCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.green,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  alertCtaBtnText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+    color: colors.bg,
+  },
+
+  // Quick facts strip
+  quickFacts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+  },
+  quickFact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  quickFactText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.whiteDim,
   },
 
   // Similar destinations
