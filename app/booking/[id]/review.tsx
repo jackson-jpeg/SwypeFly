@@ -406,9 +406,25 @@ export default function ReviewPaymentScreen() {
           </Text>
 
           {/* Share + Done buttons */}
-          <Pressable onPress={handleDone} style={styles.doneBtn}>
-            <Text style={styles.doneBtnText}>Done</Text>
-          </Pressable>
+          <View style={styles.confirmedActions}>
+            <Pressable
+              onPress={() => {
+                const text = `Just booked ${destCity}! ✈️${bookingRef ? ` Ref: ${bookingRef}` : ''}`;
+                if (typeof navigator !== 'undefined' && navigator.share) {
+                  navigator.share({ title: 'My SoGoJet Trip', text }).catch(() => {});
+                } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  navigator.clipboard.writeText(text);
+                }
+              }}
+              style={styles.shareConfirmBtn}
+            >
+              <Ionicons name="share-outline" size={18} color={colors.green} />
+              <Text style={styles.shareConfirmText}>Share Trip</Text>
+            </Pressable>
+            <Pressable onPress={handleDone} style={styles.doneBtn}>
+              <Text style={styles.doneBtnText}>Back to Deals</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </View>
     );
@@ -1034,6 +1050,29 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textAlign: 'center',
     marginTop: spacing.md,
+  },
+  confirmedActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: spacing.lg,
+    width: '100%',
+  },
+  shareConfirmBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.green + '60',
+    backgroundColor: colors.green + '10',
+  },
+  shareConfirmText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 15,
+    color: colors.green,
   },
   doneBtn: {
     backgroundColor: colors.yellow,
