@@ -7,207 +7,166 @@ enum SplitFlapSize {
 
     var fontSize: CGFloat {
         switch self {
-        case .sm: return 14
-        case .md: return 20
-        case .lg: return 28
+        case .sm: 14
+        case .md: 20
+        case .lg: 28
         }
     }
 
     var cellWidth: CGFloat {
         switch self {
-        case .sm: return 22
-        case .md: return 28
-        case .lg: return 36
+        case .sm: 20
+        case .md: 26
+        case .lg: 32
         }
     }
 
     var cellHeight: CGFloat {
         switch self {
-        case .sm: return 28
-        case .md: return 36
-        case .lg: return 46
+        case .sm: 26
+        case .md: 34
+        case .lg: 42
         }
     }
 
-    var cornerRadius: CGFloat {
-        switch self {
-        case .sm: return 2
-        case .md: return 3
-        case .lg: return 4
-        }
-    }
+    var cornerRadius: CGFloat { 4 }
 }
 
-// MARK: - SplitFlapChar
+// MARK: - Split Flap Character
+// True split-flap: top half flips down to reveal new char, bottom half snaps in place.
 
-/// A single-character split-flap cell with a 3D flip animation,
-/// replicating the mechanical departure-board aesthetic.
 struct SplitFlapChar: View {
     let character: Character
     let size: SplitFlapSize
-    var color: Color = Color.sgYellow
-    /// External delay before this cell begins flipping.
+    let color: Color
     var delay: Double = 0
 
-    @State private var displayedChar: Character = " "
+    @State private var currentChar: Character = " "
     @State private var nextChar: Character = " "
-    @State private var topAngle: Double = 0      // top flap rotation (0 → -90)
-    @State private var bottomAngle: Double = 90   // bottom flap rotation (90 → 0)
-    @State private var phase: FlipPhase = .idle
-
+    @State private var topAngle: Double = 0    // 0 = flat, -90 = flipped down
+    @State private var bottomAngle: Double = 90 // 90 = hidden, 0 = visible
+    @State private var isAnimating = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private let flipDuration: Double = 0.15
-
-    private enum FlipPhase {
-        case idle
-        case topDown   // top half peeling away
-        case bottomDown // bottom half falling into place
-    }
-
-    // MARK: Font
 
     private var charFont: Font {
         .system(size: size.fontSize, weight: .bold, design: .monospaced)
     }
 
-    // MARK: Body
+    private let gap: CGFloat = 1
+    private var halfH: CGFloat { (size.cellHeight - gap) / 2 }
 
     var body: some View {
         ZStack {
-            // Background cell
-            RoundedRectangle(cornerRadius: size.cornerRadius)
-                .fill(Color.sgCell)
-                .overlay(
-                    RoundedRectangle(cornerRadius: size.cornerRadius)
-                        .strokeBorder(Color.sgBorder, lineWidth: 0.5)
-                )
+            // Static bottom half — shows CURRENT char (visible behind flipping top)
+            flapHalf(char: currentChar, isTop: false, angle: 0)
+                .offset(y: halfH / 2 + gap / 2)
 
-            if reduceMotion {
-                // Accessibility: simple crossfade
-                Text(String(displayedChar))
-                    .font(charFont)
-                    .foregroundStyle(color)
-                    .animation(.easeInOut(duration: 0.2), value: displayedChar)
-            } else {
-                // Split-flap halves
-                VStack(spacing: 1) {
-                    halfCell(char: displayedTopChar, isTop: true, angle: topAngle)
-                    halfCell(char: displayedBottomChar, isTop: false, angle: bottomAngle)
-                }
-            }
+            // Static top half — shows NEXT char (revealed when top flips away)
+            flapHalf(char: nextChar, isTop: true, angle: 0)
+                .offset(y: -(halfH / 2 + gap / 2))
+
+            // Animated top flap — shows CURRENT char, flips down
+            flapHalf(char: currentChar, isTop: true, angle: topAngle)
+                .offset(y: -(halfH / 2 + gap / 2))
+
+            // Animated bottom flap — shows NEXT char, flips up into place
+            flapHalf(char: nextChar, isTop: false, angle: bottomAngle)
+                .offset(y: halfH / 2 + gap / 2)
         }
         .frame(width: size.cellWidth, height: size.cellHeight)
         .onAppear {
-            displayedChar = character
+            currentChar = character
             nextChar = character
         }
         .onChange(of: character) { _, newValue in
-            guard newValue != displayedChar else { return }
+            guard newValue != currentChar, !isAnimating else { return }
+
             if reduceMotion {
-                displayedChar = newValue
-            } else {
-                triggerFlip(to: newValue)
+                currentChar = newValue
+                nextChar = newValue
+                return
+            }
+
+            nextChar = newValue
+            isAnimating = true
+
+            let flipDuration = 0.15
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                // Phase 1: Top flap peels down (0 → -89)
+                withAnimation(.easeIn(duration: flipDuration)) {
+                    topAngle = -89
+                }
+
+                // Phase 2: Bottom flap falls into place (89 → 0)
+                DispatchQueue.main.asyncAfter(deadline: .now() + flipDuration) {
+                    // Reset top, update current
+                    topAngle = 0
+                    currentChar = newValue
+
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+                        bottomAngle = 0
+                    }
+
+                    // Reset for next animation
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        bottomAngle = 89
+                        isAnimating = false
+                    }
+                }
             }
         }
+        .accessibilityHidden(true)
     }
 
-    // MARK: Half-Cell
+    // MARK: - Flap Half
 
-    /// Renders the top or bottom half of the character cell, clipped to its half.
     @ViewBuilder
-    private func halfCell(char: Character, isTop: Bool, angle: Double) -> some View {
-        let halfHeight = (size.cellHeight - 1) / 2
+    private func flapHalf(char: Character, isTop: Bool, angle: Double) -> some View {
+        let clampedAngle = min(max(angle, -89), 89)
 
-        ZStack {
-            Color.sgCell
-            Text(String(char))
-                .font(charFont)
-                .foregroundStyle(color)
-                .offset(y: isTop ? halfHeight / 4 : -halfHeight / 4)
-        }
-        .frame(width: size.cellWidth, height: halfHeight)
-        .clipShape(Rectangle())
-        .rotation3DEffect(
-            .degrees(min(max(angle, -89.5), 89.5)),
-            axis: (x: 1, y: 0, z: 0),
-            anchor: isTop ? .bottom : .top,
-            perspective: 0.3
-        )
-    }
-
-    // MARK: Displayed Characters Per Phase
-
-    /// During the top-down phase the top half still shows the OLD char
-    /// while the bottom already shows the NEW char underneath.
-    private var displayedTopChar: Character {
-        phase == .idle ? displayedChar : (phase == .topDown ? displayedChar : nextChar)
-    }
-
-    private var displayedBottomChar: Character {
-        phase == .idle ? displayedChar : nextChar
-    }
-
-    // MARK: Flip Logic
-
-    private func triggerFlip(to newChar: Character) {
-        nextChar = newChar
-
-        // Reset angles
-        topAngle = 0
-        bottomAngle = 90
-        phase = .topDown
-
-        let totalDelay = delay
-
-        // Phase 1: top half peels down (0 → -90)
-        withAnimation(.easeIn(duration: flipDuration).delay(totalDelay)) {
-            topAngle = -90
-        }
-
-        // Phase 2: after top finishes, bottom half falls into place (90 → 0)
-        DispatchQueue.main.asyncAfter(deadline: .now() + totalDelay + flipDuration) {
-            phase = .bottomDown
-            withAnimation(.easeOut(duration: flipDuration)) {
-                bottomAngle = 0
-            }
-        }
-
-        // Cleanup: commit final state
-        DispatchQueue.main.asyncAfter(deadline: .now() + totalDelay + flipDuration * 2) {
-            displayedChar = newChar
-            phase = .idle
-            topAngle = 0
-            bottomAngle = 90 // reset for next flip
-        }
+        Text(String(char))
+            .font(charFont)
+            .foregroundStyle(color)
+            .frame(width: size.cellWidth, height: size.cellHeight)
+            // Clip to show only top or bottom half
+            .clipShape(
+                Rectangle()
+                    .offset(y: isTop ? 0 : -halfH - gap)
+                    .size(width: size.cellWidth, height: halfH)
+            )
+            .frame(width: size.cellWidth, height: halfH)
+            .background(
+                RoundedRectangle(cornerRadius: size.cornerRadius / 2)
+                    .fill(Color.sgCell)
+            )
+            .rotation3DEffect(
+                .degrees(clampedAngle),
+                axis: (x: 1, y: 0, z: 0),
+                anchor: isTop ? .bottom : .top,
+                perspective: 0.5
+            )
     }
 }
 
 // MARK: - Preview
 
 #Preview("Split Flap Char") {
-    struct Demo: View {
-        @State private var char: Character = "A"
-        private let alphabet: [Character] = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+    VStack(spacing: Spacing.md) {
+        HStack(spacing: 2) {
+            SplitFlapChar(character: "S", size: .lg, color: Color.sgYellow)
+            SplitFlapChar(character: "O", size: .lg, color: Color.sgYellow)
+            SplitFlapChar(character: "G", size: .lg, color: Color.sgYellow)
+            SplitFlapChar(character: "O", size: .lg, color: Color.sgYellow)
+        }
 
-        var body: some View {
-            VStack(spacing: Spacing.lg) {
-                Text("Tap to flip")
-                    .font(.caption)
-                    .foregroundStyle(Color.sgMuted)
-
-                HStack(spacing: Spacing.md) {
-                    SplitFlapChar(character: char, size: .sm)
-                    SplitFlapChar(character: char, size: .md)
-                    SplitFlapChar(character: char, size: .lg)
-                }
-            }
-            .padding()
-            .background(Color.sgBg)
-            .onTapGesture {
-                char = alphabet.randomElement() ?? "X"
-            }
+        HStack(spacing: 2) {
+            SplitFlapChar(character: "$", size: .md, color: Color.sgGreen)
+            SplitFlapChar(character: "2", size: .md, color: Color.sgGreen)
+            SplitFlapChar(character: "8", size: .md, color: Color.sgGreen)
+            SplitFlapChar(character: "7", size: .md, color: Color.sgGreen)
         }
     }
-    return Demo()
+    .padding()
+    .background(Color.sgBg)
 }

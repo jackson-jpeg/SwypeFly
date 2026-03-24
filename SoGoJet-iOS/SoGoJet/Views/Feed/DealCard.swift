@@ -146,8 +146,8 @@ struct DealCard: View {
 
             SplitFlapRow(
                 text: deal.priceFormatted,
-                maxLength: 7,
-                size: .md,
+                maxLength: 5,
+                size: .sm,
                 color: Color.sgYellow,
                 alignment: .trailing,
                 animate: animate,
@@ -185,8 +185,8 @@ struct DealCard: View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             SplitFlapRow(
                 text: deal.destination.uppercased(),
-                maxLength: 14,
-                size: .lg,
+                maxLength: 10,
+                size: .md,
                 color: Color.sgWhite,
                 animate: animate,
                 staggerMs: 35
@@ -278,15 +278,13 @@ struct DealCard: View {
     }
 
     private var flightCodeChip: some View {
-        SplitFlapRow(
-            text: deal.airlineName,
-            maxLength: 7,
-            size: .sm,
-            color: Color.sgMuted,
-            animate: animate,
-            startDelay: 0.4,
-            staggerMs: 40
-        )
+        Text(deal.airlineName)
+            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+            .foregroundStyle(Color.sgWhiteDim)
+            .padding(.horizontal, Spacing.sm)
+            .padding(.vertical, Spacing.xs)
+            .background(Color.sgSurface.opacity(0.7))
+            .clipShape(Capsule())
     }
 
     private var nonstopBadge: some View {
