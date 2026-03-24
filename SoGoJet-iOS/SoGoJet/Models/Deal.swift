@@ -115,6 +115,24 @@ extension Deal {
     /// Destination name (alias for city)
     var destination: String { city }
 
+    /// Safe vibe tags (never nil)
+    var safeVibeTags: [String] { vibeTags ?? [] }
+
+    /// Safe flight duration
+    var safeFlightDuration: String { flightDuration ?? "—" }
+
+    /// Safe departure date
+    var safeDepartureDate: String { departureDate ?? "—" }
+
+    /// Safe return date
+    var safeReturnDate: String { returnDate ?? "—" }
+
+    /// Best available departure date for booking
+    var bestDepartureDate: String? { cheapestDate ?? departureDate }
+
+    /// Best available return date for booking
+    var bestReturnDate: String? { cheapestReturnDate ?? returnDate }
+
     /// Trip duration in days
     var tripDays: Int {
         tripDurationDays ?? 0
@@ -167,6 +185,27 @@ extension Deal {
         dealScore: 88, dealTier: .amazing, qualityScore: 90, pricePercentile: 15,
         isNonstop: true, totalStops: 0, maxLayoverMinutes: 0,
         usualPrice: 450, savingsAmount: 163, savingsPercent: 36,
+        nearbyOrigin: nil, nearbyOriginLabel: nil
+    )
+    static let previewNonstop = Deal(
+        id: "2", iataCode: "LHR", city: "London", country: "United Kingdom",
+        tagline: "Where history meets the future",
+        description: "Explore London's timeless charm.",
+        imageUrl: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800",
+        imageUrls: nil, flightPrice: 550, hotelPricePerNight: 180, currency: "USD",
+        vibeTags: ["culture", "foodie", "historic"], bestMonths: ["May", "Jun", "Sep"],
+        averageTemp: 15, flightDuration: "7h 10m", livePrice: 389,
+        priceSource: "travelpayouts", priceFetchedAt: nil, liveHotelPrice: nil,
+        hotelPriceSource: nil, availableFlightDays: nil, latitude: 51.5074, longitude: -0.1278,
+        itinerary: nil, restaurants: nil,
+        departureDate: "2026-05-01", returnDate: "2026-05-08", tripDurationDays: 7,
+        airline: "BA", priceDirection: "down", previousPrice: 550, priceDropPercent: 29,
+        offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
+        cheapestDate: "2026-05-01", cheapestReturnDate: "2026-05-08",
+        affiliateUrl: "https://aviasales.com", priceHistory: [520, 490, 510, 470, 430, 400, 389],
+        dealScore: 75, dealTier: .great, qualityScore: 95, pricePercentile: 20,
+        isNonstop: true, totalStops: 0, maxLayoverMinutes: 0,
+        usualPrice: 550, savingsAmount: 161, savingsPercent: 29,
         nearbyOrigin: nil, nearbyOriginLabel: nil
     )
 }

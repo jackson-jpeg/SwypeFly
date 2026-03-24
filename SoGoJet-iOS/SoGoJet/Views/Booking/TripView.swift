@@ -40,7 +40,7 @@ struct TripView: View {
                 store.reset()
             }
         } message: {
-            if let option = priceAlertOption, let feedPrice = deal.price {
+            if let option = priceAlertOption, let feedPrice = deal.displayPrice {
                 Text("The live price is $\(Int(option.price)), up from $\(Int(feedPrice)). Prices change frequently — this is the current best rate.")
             }
         }
@@ -93,7 +93,7 @@ struct TripView: View {
 
                 if let best = options.first {
                     // Check price discrepancy
-                    if let feedPrice = deal.price, best.price > feedPrice * 1.5 {
+                    if let feedPrice = deal.displayPrice, best.price > feedPrice * 1.5 {
                         DealExpiredView(feedPrice: feedPrice, livePrice: best.price) {
                             store.reset()
                         }
@@ -135,11 +135,15 @@ struct TripView: View {
 
             Button {
                 Task {
+                    guard let departureDate = deal.bestDepartureDate,
+                          let returnDate = deal.bestReturnDate else {
+                        return
+                    }
                     await store.searchFlights(
                         origin: "JFK",
                         destination: deal.iataCode,
-                        departureDate: deal.cheapestDate,
-                        returnDate: deal.cheapestReturnDate
+                        departureDate: departureDate,
+                        returnDate: returnDate
                     )
                 }
             } label: {
@@ -212,9 +216,9 @@ struct TripView: View {
                 }
 
                 HStack(spacing: Spacing.md) {
-                    infoChip(icon: "calendar", text: deal.departureDate)
-                    infoChip(icon: "airplane", text: deal.airline)
-                    infoChip(icon: "clock", text: deal.flightDuration)
+                    infoChip(icon: "calendar", text: deal.safeDepartureDate)
+                    infoChip(icon: "airplane", text: deal.airlineName)
+                    infoChip(icon: "clock", text: deal.safeFlightDuration)
                 }
             }
             .padding(Spacing.md)
@@ -240,11 +244,15 @@ struct TripView: View {
     private var searchButton: some View {
         Button {
             Task {
+                guard let departureDate = deal.bestDepartureDate,
+                      let returnDate = deal.bestReturnDate else {
+                    return
+                }
                 await store.searchFlights(
                     origin: "JFK",
                     destination: deal.iataCode,
-                    departureDate: deal.cheapestDate,
-                    returnDate: deal.cheapestReturnDate
+                    departureDate: departureDate,
+                    returnDate: returnDate
                 )
             }
         } label: {
@@ -393,7 +401,7 @@ struct TripView: View {
     // MARK: - Price Discrepancy Handling
 
     private func handleOfferSelection(_ offer: TripOption) {
-        guard let feedPrice = deal.price else {
+        guard let feedPrice = deal.displayPrice else {
             store.selectOffer(offer)
             return
         }

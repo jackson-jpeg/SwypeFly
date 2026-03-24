@@ -46,7 +46,7 @@ struct DestinationDetailView: View {
                     }
 
                     // MARK: Vibe Tags
-                    if !deal.vibeTags.isEmpty {
+                    if !deal.safeVibeTags.isEmpty {
                         vibeTagsRow
                             .padding(.horizontal, Spacing.md)
                     }
@@ -64,7 +64,7 @@ struct DestinationDetailView: View {
                     }
 
                     // MARK: Price Alert CTA
-                    PriceAlertCTA(destinationName: deal.destination, price: deal.price)
+                    PriceAlertCTA(destinationName: deal.destination, price: deal.displayPrice)
                         .padding(.horizontal, Spacing.md)
 
                     // MARK: Similar Deals
@@ -222,9 +222,9 @@ struct DestinationDetailView: View {
 
     private var tripDetailsGrid: some View {
         let items: [(icon: String, label: String, value: String)] = [
-            ("airplane.departure", "Depart", deal.departureDate),
-            ("airplane.arrival", "Return", deal.returnDate),
-            ("clock.fill", "Duration", deal.flightDuration),
+            ("airplane.departure", "Depart", deal.safeDepartureDate),
+            ("airplane.arrival", "Return", deal.safeReturnDate),
+            ("clock.fill", "Duration", deal.safeFlightDuration),
             ("ticket.fill", "Flight", deal.airlineName),
         ]
 
@@ -275,7 +275,7 @@ struct DestinationDetailView: View {
     private var vibeTagsRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
-                ForEach(deal.vibeTags, id: \.self) { tag in
+                ForEach(deal.safeVibeTags, id: \.self) { tag in
                     Text(tag)
                         .font(SGFont.bodyBold(size: 12))
                         .foregroundStyle(Color.sgOrange)
@@ -376,13 +376,23 @@ struct DestinationDetailView: View {
             }
 
             // Share button
-            ShareLink(item: deal.affiliateUrl) {
+            if let link = deal.affiliateUrl {
+                ShareLink(item: link) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(width: 44, height: 44)
+                        .background(Color.sgSurface)
+                        .clipShape(Circle())
+                }
+            } else {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.sgWhite)
+                    .foregroundStyle(Color.sgFaint)
                     .frame(width: 44, height: 44)
                     .background(Color.sgSurface)
                     .clipShape(Circle())
+                    .accessibilityHidden(true)
             }
 
             Spacer()

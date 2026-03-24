@@ -71,7 +71,7 @@ struct DepartureBoardView: View {
                 .onTapGesture {
                     handleRowTap(index: index, deal: deal)
                 }
-                .accessibilityLabel("\(deal.destination), \(deal.priceFormatted), \(deal.airline)")
+                .accessibilityLabel("\(deal.destination), \(deal.priceFormatted), \(deal.airlineName)")
                 .accessibilityHint(index == 0 ? "Tap to view deal details" : "Tap to make this the active deal")
                 .accessibilityAddTraits(.isButton)
             }
@@ -98,10 +98,10 @@ struct DepartureBoardView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
                 // Dates pill
-                pill(text: deal.departureDate, icon: "calendar")
+                pill(text: deal.safeDepartureDate, icon: "calendar")
 
                 // Duration pill
-                pill(text: "\(deal.tripDays)d", icon: "clock")
+                pill(text: deal.tripDays == 0 ? "—d" : "\(deal.tripDays)d", icon: "clock")
 
                 // Nonstop badge
                 if deal.isNonstop == true {
@@ -114,7 +114,7 @@ struct DepartureBoardView: View {
                 }
 
                 // Vibe tags (limit 2)
-                ForEach(deal.vibeTags.prefix(2), id: \.self) { tag in
+                ForEach(deal.safeVibeTags.prefix(2), id: \.self) { tag in
                     pill(text: tag, icon: nil)
                 }
             }

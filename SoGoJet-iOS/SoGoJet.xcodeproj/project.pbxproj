@@ -24,7 +24,6 @@
 		58545B18C3DCFD18455AE850 /* SavedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3D90ABB9744258D6621AC9 /* SavedView.swift */; };
 		59920DA969477A56DECEE233 /* BebasNeue-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CF053BF9554FA03D569D4310 /* BebasNeue-Regular.ttf */; };
 		59E824E8F3A6549F845C7F33 /* AirportPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16BFE848CB96BAF94AC32178 /* AirportPicker.swift */; };
-		5C6FC44134FD1C403B62A28E /* FeedResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = B02709ED51DC035183510FF0 /* FeedResponse.swift */; };
 		5F92F77382FDE7D64262B58B /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DC8B9447F998A5DDECD34B35 /* Inter-SemiBold.ttf */; };
 		5FEDAFDF99473573571B1194 /* FilterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9445CC8160636D040B7643A6 /* FilterSheet.swift */; };
 		6632AF3D1025A09BA8270703 /* DealExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE14299AB5353027DFB0660B /* DealExpiredView.swift */; };
@@ -60,7 +59,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0462DA9750B48F6D57FEE257 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Regular.ttf"; sourceTree = "<group>"; };
 		07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedStore.swift; sourceTree = "<group>"; };
 		08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -92,7 +91,6 @@
 		A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Accessibility.swift"; sourceTree = "<group>"; };
 		A7CC0F70008C6C01B861DABF /* DealCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealCard.swift; sourceTree = "<group>"; };
 		A93C7B0D9A46A030A6A7A4B2 /* SimilarDeals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimilarDeals.swift; sourceTree = "<group>"; };
-		B02709ED51DC035183510FF0 /* FeedResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedResponse.swift; sourceTree = "<group>"; };
 		B2E252AF3479003C4AEEB610 /* DepartureRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureRow.swift; sourceTree = "<group>"; };
 		B618C73022C992B057112952 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureBoardView.swift; sourceTree = "<group>"; };
@@ -224,7 +222,6 @@
 				CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */,
 				0EEF50684FC3E48F9C3A1F6C /* Deal.swift */,
 				EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */,
-				B02709ED51DC035183510FF0 /* FeedResponse.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -356,6 +353,7 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					CDA186B03F0A61442A47D80C = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -415,7 +413,6 @@
 				E8BE30C939BF890644F26213 /* DepartureBoardView.swift in Sources */,
 				05F7DF22220DB265402C6C0F /* DepartureRow.swift in Sources */,
 				AE61DBEB8BEF551B185DAFD0 /* DestinationDetailView.swift in Sources */,
-				5C6FC44134FD1C403B62A28E /* FeedResponse.swift in Sources */,
 				C0554430BCEE61A587A3B01E /* FeedStore.swift in Sources */,
 				A8CA094A592BA377A3EAE40B /* FeedView.swift in Sources */,
 				5FEDAFDF99473573571B1194 /* FilterSheet.swift in Sources */,
@@ -593,7 +590,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2MU4PC84GZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SoGoJet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;
@@ -617,7 +613,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2MU4PC84GZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SoGoJet/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SoGoJet;

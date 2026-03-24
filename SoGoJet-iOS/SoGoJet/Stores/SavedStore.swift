@@ -24,7 +24,7 @@ final class SavedStore {
 
     /// Total value (sum of prices) of all saved deals.
     var totalValue: Double {
-        savedDeals.compactMap(\.price).reduce(0, +)
+        savedDeals.compactMap { $0.displayPrice }.reduce(0, +)
     }
 
     var count: Int { savedDeals.count }

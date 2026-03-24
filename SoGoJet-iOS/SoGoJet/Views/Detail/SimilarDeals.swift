@@ -18,9 +18,9 @@ struct SimilarDeals: View {
         guard let current = deals.first(where: { $0.id == currentDealId }) else {
             return []
         }
-        let currentVibes = Set(current.vibeTags)
+        let currentVibes = Set(current.safeVibeTags)
         return deals
-            .filter { $0.id != currentDealId && !Set($0.vibeTags).isDisjoint(with: currentVibes) }
+            .filter { $0.id != currentDealId && !Set($0.safeVibeTags).isDisjoint(with: currentVibes) }
             .prefix(4)
             .map { $0 }
     }
@@ -71,7 +71,7 @@ struct SimilarDeals: View {
                     .font(SGFont.caption)
                     .foregroundStyle(Color.sgMuted)
                     .lineLimit(1)
-                if let price = deal.price {
+                if let price = deal.displayPrice {
                     Text("$\(Int(price))")
                         .font(SGFont.bodyBold(size: 14))
                         .foregroundStyle(Color.sgYellow)

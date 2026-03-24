@@ -147,9 +147,9 @@ struct SavedView: View {
         case .recent:
             return savedStore.savedDeals
         case .priceUp:
-            return savedStore.savedDeals.sorted { ($0.price ?? .infinity) < ($1.price ?? .infinity) }
+            return savedStore.savedDeals.sorted { ($0.displayPrice ?? .infinity) < ($1.displayPrice ?? .infinity) }
         case .priceDown:
-            return savedStore.savedDeals.sorted { ($0.price ?? 0) > ($1.price ?? 0) }
+            return savedStore.savedDeals.sorted { ($0.displayPrice ?? 0) > ($1.displayPrice ?? 0) }
         }
     }
 

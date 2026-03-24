@@ -173,7 +173,7 @@ struct DealCard: View {
             }
 
             // Sparkline
-            if let history = deal.priceHistory, let price = deal.price {
+            if let history = deal.priceHistory, let price = deal.displayPrice {
                 PriceSparkline(prices: history, currentPrice: price)
             }
         }
@@ -216,14 +216,14 @@ struct DealCard: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Color.sgMuted)
 
-            Text(deal.departureDate)
+            Text(deal.safeDepartureDate)
                 .font(SGFont.body(size: 13))
                 .foregroundStyle(Color.sgWhiteDim)
 
             Text("·")
                 .foregroundStyle(Color.sgFaint)
 
-            Text("\(deal.tripDays) days")
+            Text(deal.tripDays == 0 ? "— days" : "\(deal.tripDays) days")
                 .font(SGFont.body(size: 13))
                 .foregroundStyle(Color.sgMuted)
         }
@@ -245,13 +245,13 @@ struct DealCard: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
                 // Airline
-                flightChip(text: deal.airline, icon: "airplane")
+                flightChip(text: deal.airlineName, icon: "airplane")
 
                 // Flight code (split flap)
                 flightCodeChip
 
                 // Duration
-                flightChip(text: deal.flightDuration, icon: "clock")
+                flightChip(text: deal.safeFlightDuration, icon: "clock")
 
                 // Nonstop / stops
                 if deal.isNonstop == true {
@@ -307,7 +307,7 @@ struct DealCard: View {
 
     private var vibeTagPills: some View {
         HStack(spacing: Spacing.sm) {
-            ForEach(Array(deal.vibeTags.prefix(3)), id: \.self) { vibe in
+            ForEach(Array(deal.safeVibeTags.prefix(3)), id: \.self) { vibe in
                 Text(vibe)
                     .font(SGFont.bodyBold(size: 11))
                     .foregroundStyle(Color.sgYellow)

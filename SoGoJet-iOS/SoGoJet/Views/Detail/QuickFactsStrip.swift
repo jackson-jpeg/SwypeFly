@@ -28,10 +28,10 @@ struct QuickFactsStrip: View {
                 }
 
                 // Flight duration
-                if !deal.flightDuration.isEmpty {
+                if !deal.safeFlightDuration.isEmpty {
                     factPill(
                         icon: "clock.fill",
-                        text: deal.flightDuration
+                        text: deal.safeFlightDuration
                     )
                 }
 
