@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -35,7 +35,8 @@ export default function DestinationDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const deal = useDealStore((s) => s.deals.find((d) => d.id === id));
+  const allDeals = useDealStore((s) => s.deals);
+  const deal = allDeals.find((d) => d.id === id);
   const savedIds = useSavedStore((s) => s.savedIds);
   const toggle = useSavedStore((s) => s.toggle);
   const isSaved = deal ? savedIds.includes(deal.id) : false;
@@ -47,6 +48,24 @@ export default function DestinationDetailScreen() {
     const timer = setTimeout(() => setAnimate(true), 200);
     return () => clearTimeout(timer);
   }, []);
+
+  // Find similar destinations — same vibes, similar price, different city
+  const similarDeals = useMemo(() => {
+    if (!deal) return [];
+    const vibes = new Set(deal.vibeTags);
+    return allDeals
+      .filter((d) => d.id !== deal.id && d.vibeTags.some((v) => vibes.has(v)))
+      .sort((a, b) => {
+        // Score by vibe overlap + price proximity
+        const aVibes = a.vibeTags.filter((v) => vibes.has(v)).length;
+        const bVibes = b.vibeTags.filter((v) => vibes.has(v)).length;
+        if (aVibes !== bVibes) return bVibes - aVibes;
+        const aDiff = Math.abs((a.price ?? 9999) - (deal.price ?? 0));
+        const bDiff = Math.abs((b.price ?? 9999) - (deal.price ?? 0));
+        return aDiff - bDiff;
+      })
+      .slice(0, 4);
+  }, [deal, allDeals]);
 
   const handleShare = useCallback(() => {
     if (!deal) return;
@@ -257,6 +276,40 @@ export default function DestinationDetailScreen() {
                 </View>
               </View>
             ))}
+          </View>
+        )}
+
+        {/* Similar destinations */}
+        {similarDeals.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SIMILAR DESTINATIONS</Text>
+            <View style={styles.similarRow}>
+              {similarDeals.map((sd) => (
+                <Pressable
+                  key={sd.id}
+                  style={styles.similarCard}
+                  onPress={() => router.push(`/destination/${sd.id}`)}
+                >
+                  {sd.imageUrl ? (
+                    <Image
+                      source={{ uri: sd.imageUrl }}
+                      style={styles.similarImage}
+                      contentFit="cover"
+                      transition={300}
+                    />
+                  ) : (
+                    <View style={[styles.similarImage, { backgroundColor: colors.surface }]} />
+                  )}
+                  <View style={styles.similarInfo}>
+                    <Text style={styles.similarCity} numberOfLines={1}>{sd.destination}</Text>
+                    <Text style={styles.similarCountry} numberOfLines={1}>{sd.country}</Text>
+                    {sd.price != null && (
+                      <Text style={styles.similarPrice}>{sd.priceFormatted}</Text>
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </View>
           </View>
         )}
 
@@ -568,6 +621,43 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 12,
     color: colors.yellow,
+  },
+
+  // Similar destinations
+  similarRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  similarCard: {
+    width: (SCREEN_W - spacing.md * 2 - 8) / 2,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
+  similarImage: {
+    width: '100%',
+    height: 80,
+  },
+  similarInfo: {
+    padding: 8,
+  },
+  similarCity: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+    color: colors.white,
+  },
+  similarCountry: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 1,
+  },
+  similarPrice: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.yellow,
+    marginTop: 4,
   },
 
   // Not found

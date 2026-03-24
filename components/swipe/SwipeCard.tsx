@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -57,6 +57,12 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e2
 export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
   const imageUri = deal.imageUrl || FALLBACK_IMAGE;
   const saveScale = useRef(new Animated.Value(1)).current;
+  const [showActions, setShowActions] = useState(false);
+
+  const handleLongPress = useCallback(() => {
+    setShowActions(true);
+    successHaptic();
+  }, []);
 
   const handleShare = useCallback(() => {
     shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
@@ -75,7 +81,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
   }, [onSave, isSaved, saveScale]);
 
   return (
-    <Pressable style={styles.card} onPress={onTap}>
+    <Pressable style={styles.card} onPress={showActions ? () => setShowActions(false) : onTap} onLongPress={handleLongPress} delayLongPress={400}>
       {/* Background image */}
       {Platform.OS === 'web' ? (
         // expo-image and RNImage both fail to render on web — use raw <img>
@@ -275,6 +281,49 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           </Pressable>
         </View>
       </View>
+
+      {/* Quick actions overlay (long-press) */}
+      {showActions && (
+        <Pressable style={styles.actionsOverlay} onPress={() => setShowActions(false)}>
+          <View style={styles.actionsMenu}>
+            <Pressable
+              style={styles.actionsItem}
+              onPress={() => { handleShare(); setShowActions(false); }}
+            >
+              <Ionicons name="share-outline" size={18} color={colors.white} />
+              <Text style={styles.actionsItemText}>Share this deal</Text>
+            </Pressable>
+            <Pressable
+              style={styles.actionsItem}
+              onPress={() => { handleSave(); setShowActions(false); }}
+            >
+              <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={18} color={isSaved ? '#E85D4A' : colors.white} />
+              <Text style={styles.actionsItemText}>{isSaved ? 'Unsave' : 'Save for later'}</Text>
+            </Pressable>
+            <Pressable
+              style={styles.actionsItem}
+              onPress={() => { onBook(); setShowActions(false); }}
+            >
+              <Ionicons name="airplane-outline" size={18} color={colors.yellow} />
+              <Text style={[styles.actionsItemText, { color: colors.yellow }]}>Search flights</Text>
+            </Pressable>
+            {deal.affiliateUrl ? (
+              <Pressable
+                style={[styles.actionsItem, { borderBottomWidth: 0 }]}
+                onPress={() => setShowActions(false)}
+              >
+                <Ionicons name="open-outline" size={18} color={colors.green} />
+                <Text style={[styles.actionsItemText, { color: colors.green }]}>View on Aviasales</Text>
+              </Pressable>
+            ) : (
+              <View style={[styles.actionsItem, { borderBottomWidth: 0, opacity: 0.4 }]}>
+                <Ionicons name="notifications-outline" size={18} color={colors.muted} />
+                <Text style={styles.actionsItemText}>Set price alert</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+      )}
 
       {/* Scroll hint on first card */}
       {isFirst && (
@@ -491,6 +540,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.bg,
     letterSpacing: 0.5,
+  },
+
+  // Quick actions overlay
+  actionsOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10,8,6,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  actionsMenu: {
+    width: 260,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  actionsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  actionsItemText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.white,
   },
 
   // Scroll hint
