@@ -68,7 +68,6 @@ export default function PriceSparkline({
     return (
       <View style={{ width, height }}>
         <div
-          // eslint-disable-next-line react-native/no-inline-styles
           style={{ width, height }}
           dangerouslySetInnerHTML={{ __html: svgStr }}
         />

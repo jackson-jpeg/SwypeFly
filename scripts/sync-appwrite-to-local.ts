@@ -78,7 +78,7 @@ async function sync() {
 
       if (imageUrls.length > 0) {
         // Replace imageUrls: [...]
-        const newImageUrlsStr = `imageUrls: [\n      ${imageUrls.map(url => `'${url}'`).join(',\n      ')}\n    ]`;
+        const newImageUrlsStr = `imageUrls: [\n      ${imageUrls.map((url: string) => `'${url}'`).join(',\n      ')}\n    ]`;
         block = block.replace(/imageUrls:\s*\[[\s\S]*?\]/, newImageUrlsStr);
       }
 
