@@ -125,27 +125,24 @@ struct SplitFlapChar: View {
     private func flapHalf(char: Character, isTop: Bool, angle: Double) -> some View {
         let clampedAngle = min(max(angle, -89), 89)
 
-        Text(String(char))
-            .font(charFont)
-            .foregroundStyle(color)
-            .frame(width: size.cellWidth, height: size.cellHeight)
-            // Clip to show only top or bottom half
-            .clipShape(
-                Rectangle()
-                    .offset(y: isTop ? 0 : -halfH - gap)
-                    .size(width: size.cellWidth, height: halfH)
-            )
-            .frame(width: size.cellWidth, height: halfH)
-            .background(
-                RoundedRectangle(cornerRadius: size.cornerRadius / 2)
-                    .fill(Color.sgCell)
-            )
-            .rotation3DEffect(
-                .degrees(clampedAngle),
-                axis: (x: 1, y: 0, z: 0),
-                anchor: isTop ? .bottom : .top,
-                perspective: 0.5
-            )
+        ZStack {
+            RoundedRectangle(cornerRadius: size.cornerRadius / 2)
+                .fill(Color.sgCell)
+
+            Text(String(char))
+                .font(charFont)
+                .foregroundStyle(color)
+                // Offset the text so the correct half is centered in the frame
+                .offset(y: isTop ? halfH / 2 : -halfH / 2)
+        }
+        .frame(width: size.cellWidth, height: halfH)
+        .clipped()
+        .rotation3DEffect(
+            .degrees(clampedAngle),
+            axis: (x: 1, y: 0, z: 0),
+            anchor: isTop ? .bottom : .top,
+            perspective: 0.5
+        )
     }
 }
 
