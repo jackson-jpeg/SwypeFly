@@ -21,7 +21,7 @@ struct ContentView: View {
             savedTab
             settingsTab
         }
-        .tint(.sgYellow)
+        .tint(Color.sgYellow)
     }
 
     private var feedTab: some View {
@@ -67,25 +67,25 @@ private struct OnboardingPlaceholderView: View {
             VStack(spacing: Spacing.lg) {
                 Image(systemName: "airplane.departure")
                     .font(.system(size: 64))
-                    .foregroundStyle(.sgYellow)
+                    .foregroundStyle(Color.sgYellow)
 
                 Text("SoGoJet")
                     .font(SGFont.heroTitle)
-                    .foregroundStyle(.sgWhite)
+                    .foregroundStyle(Color.sgWhite)
 
                 Text("Swipe. Save. Fly.")
                     .font(SGFont.tagline)
-                    .foregroundStyle(.sgWhiteDim)
+                    .foregroundStyle(Color.sgWhiteDim)
 
                 Button {
                     settings.hasOnboarded = true
                 } label: {
                     Text("Get Started")
                         .font(SGFont.bodyBold(size: 17))
-                        .foregroundStyle(.sgBg)
+                        .foregroundStyle(Color.sgBg)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Spacing.md)
-                        .background(.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
+                        .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .padding(.horizontal, Spacing.xl)
             }
@@ -102,15 +102,15 @@ private struct FeedPlaceholderView: View {
             Color.sgBg.ignoresSafeArea()
             if feed.isLoading {
                 ProgressView()
-                    .tint(.sgYellow)
+                    .tint(Color.sgYellow)
             } else if feed.deals.isEmpty {
                 VStack(spacing: Spacing.md) {
                     Image(systemName: "airplane")
                         .font(.system(size: 48))
-                        .foregroundStyle(.sgMuted)
+                        .foregroundStyle(Color.sgMuted)
                     Text("Finding deals...")
                         .font(SGFont.sectionHead)
-                        .foregroundStyle(.sgWhiteDim)
+                        .foregroundStyle(Color.sgWhiteDim)
                 }
             } else {
                 ScrollView {
@@ -143,17 +143,17 @@ private struct FeedPlaceholderView: View {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text(deal.destination)
                         .font(SGFont.cardTitle)
-                        .foregroundStyle(.sgWhite)
+                        .foregroundStyle(Color.sgWhite)
                     Text(deal.priceFormatted)
                         .font(SGFont.price)
-                        .foregroundStyle(.sgYellow)
+                        .foregroundStyle(Color.sgYellow)
                 }
                 .padding(Spacing.md)
             }
 
             Text(deal.tagline)
                 .font(SGFont.tagline)
-                .foregroundStyle(.sgWhiteDim)
+                .foregroundStyle(Color.sgWhiteDim)
                 .lineLimit(2)
         }
         .background(Color.sgCell)
@@ -175,13 +175,13 @@ private struct SavedPlaceholderView: View {
                 VStack(spacing: Spacing.md) {
                     Image(systemName: "heart")
                         .font(.system(size: 48))
-                        .foregroundStyle(.sgMuted)
+                        .foregroundStyle(Color.sgMuted)
                     Text("No saved deals yet")
                         .font(SGFont.sectionHead)
-                        .foregroundStyle(.sgWhiteDim)
+                        .foregroundStyle(Color.sgWhiteDim)
                     Text("Swipe right on deals you love")
                         .font(SGFont.bodyDefault)
-                        .foregroundStyle(.sgMuted)
+                        .foregroundStyle(Color.sgMuted)
                 }
             } else {
                 ScrollView {
@@ -197,13 +197,13 @@ private struct SavedPlaceholderView: View {
                                 VStack(alignment: .leading, spacing: Spacing.xs) {
                                     Text(deal.destination)
                                         .font(SGFont.bodyBold(size: 16))
-                                        .foregroundStyle(.sgWhite)
+                                        .foregroundStyle(Color.sgWhite)
                                     Text(deal.country)
                                         .font(SGFont.bodySmall)
-                                        .foregroundStyle(.sgMuted)
+                                        .foregroundStyle(Color.sgMuted)
                                     Text(deal.priceFormatted)
                                         .font(SGFont.bodyBold(size: 15))
-                                        .foregroundStyle(.sgYellow)
+                                        .foregroundStyle(Color.sgYellow)
                                 }
 
                                 Spacer()
@@ -232,10 +232,10 @@ private struct SettingsPlaceholderView: View {
                 Section("Departure") {
                     HStack {
                         Text("Airport")
-                            .foregroundStyle(.sgWhite)
+                            .foregroundStyle(Color.sgWhite)
                         Spacer()
                         Text(settings.departureLabel)
-                            .foregroundStyle(.sgMuted)
+                            .foregroundStyle(Color.sgMuted)
                     }
                     .listRowBackground(Color.sgCell)
                 }
@@ -245,24 +245,24 @@ private struct SettingsPlaceholderView: View {
                         get: { settings.notificationsEnabled },
                         set: { settings.notificationsEnabled = $0 }
                     ))
-                    .tint(.sgGreen)
+                    .tint(Color.sgGreen)
                     .listRowBackground(Color.sgCell)
 
                     Toggle("Price Alerts", isOn: Binding(
                         get: { settings.priceAlertsEnabled },
                         set: { settings.priceAlertsEnabled = $0 }
                     ))
-                    .tint(.sgGreen)
+                    .tint(Color.sgGreen)
                     .listRowBackground(Color.sgCell)
                 }
 
                 Section("About") {
                     HStack {
                         Text("Version")
-                            .foregroundStyle(.sgWhite)
+                            .foregroundStyle(Color.sgWhite)
                         Spacer()
                         Text("1.0.0")
-                            .foregroundStyle(.sgMuted)
+                            .foregroundStyle(Color.sgMuted)
                     }
                     .listRowBackground(Color.sgCell)
                 }
