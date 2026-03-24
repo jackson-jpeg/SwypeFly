@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(SettingsStore.self) private var settings
+    @Environment(SavedStore.self) private var savedStore
     @Environment(Router.self) private var router
 
     var body: some View {
@@ -34,22 +35,27 @@ struct ContentView: View {
 
     private var savedTab: some View {
         NavigationStack {
-            SavedPlaceholderView()
+            SavedView()
         }
         .tabItem {
             Label(Router.Tab.saved.title, systemImage: Router.Tab.saved.iconName)
         }
         .tag(Router.Tab.saved)
+        .badge(savedBadgeCount)
     }
 
     private var settingsTab: some View {
         NavigationStack {
-            SettingsPlaceholderView()
+            SettingsView()
         }
         .tabItem {
             Label(Router.Tab.settings.title, systemImage: Router.Tab.settings.iconName)
         }
         .tag(Router.Tab.settings)
+    }
+
+    private var savedBadgeCount: Int {
+        savedStore.count
     }
 }
 
@@ -163,111 +169,4 @@ private struct FeedPlaceholderView: View {
     }
 }
 
-private struct SavedPlaceholderView: View {
-    @Environment(SavedStore.self) private var saved
-
-    var body: some View {
-        ZStack {
-            Color.sgBg.ignoresSafeArea()
-            if saved.savedDeals.isEmpty {
-                VStack(spacing: Spacing.md) {
-                    Image(systemName: "heart")
-                        .font(.system(size: 48))
-                        .foregroundStyle(Color.sgMuted)
-                    Text("No saved deals yet")
-                        .font(SGFont.sectionHead)
-                        .foregroundStyle(Color.sgWhiteDim)
-                    Text("Swipe right on deals you love")
-                        .font(SGFont.bodyDefault)
-                        .foregroundStyle(Color.sgMuted)
-                }
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: Spacing.md) {
-                        ForEach(saved.savedDeals) { deal in
-                            HStack(spacing: Spacing.md) {
-                                CachedAsyncImage(url: deal.imageUrl) {
-                                    Color.sgSurface
-                                }
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
-
-                                VStack(alignment: .leading, spacing: Spacing.xs) {
-                                    Text(deal.destination)
-                                        .font(SGFont.bodyBold(size: 16))
-                                        .foregroundStyle(Color.sgWhite)
-                                    Text(deal.country)
-                                        .font(SGFont.bodySmall)
-                                        .foregroundStyle(Color.sgMuted)
-                                    Text(deal.priceFormatted)
-                                        .font(SGFont.bodyBold(size: 15))
-                                        .foregroundStyle(Color.sgYellow)
-                                }
-
-                                Spacer()
-                            }
-                            .padding(Spacing.sm)
-                            .background(Color.sgCell)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                        }
-                    }
-                    .padding(Spacing.md)
-                }
-            }
-        }
-        .navigationTitle("Saved")
-        .toolbarColorScheme(.dark, for: .navigationBar)
-    }
-}
-
-private struct SettingsPlaceholderView: View {
-    @Environment(SettingsStore.self) private var settings
-
-    var body: some View {
-        ZStack {
-            Color.sgBg.ignoresSafeArea()
-            List {
-                Section("Departure") {
-                    HStack {
-                        Text("Airport")
-                            .foregroundStyle(Color.sgWhite)
-                        Spacer()
-                        Text(settings.departureLabel)
-                            .foregroundStyle(Color.sgMuted)
-                    }
-                    .listRowBackground(Color.sgCell)
-                }
-
-                Section("Preferences") {
-                    Toggle("Push Notifications", isOn: Binding(
-                        get: { settings.notificationsEnabled },
-                        set: { settings.notificationsEnabled = $0 }
-                    ))
-                    .tint(Color.sgGreen)
-                    .listRowBackground(Color.sgCell)
-
-                    Toggle("Price Alerts", isOn: Binding(
-                        get: { settings.priceAlertsEnabled },
-                        set: { settings.priceAlertsEnabled = $0 }
-                    ))
-                    .tint(Color.sgGreen)
-                    .listRowBackground(Color.sgCell)
-                }
-
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                            .foregroundStyle(Color.sgWhite)
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundStyle(Color.sgMuted)
-                    }
-                    .listRowBackground(Color.sgCell)
-                }
-            }
-            .scrollContentBackground(.hidden)
-        }
-        .navigationTitle("Settings")
-        .toolbarColorScheme(.dark, for: .navigationBar)
-    }
-}
+// SavedPlaceholderView and SettingsPlaceholderView removed — replaced by SavedView and SettingsView.
