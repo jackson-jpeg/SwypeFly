@@ -9,6 +9,7 @@ struct DealCard: View {
     let isSaved: Bool
     let isFirst: Bool
     var animate: Bool = true
+    var animationTrigger: Int = 0 // Changes when this card becomes current, replays flip
     var onSave: () -> Void = {}
     var onShare: () -> Void = {}
     var onBook: () -> Void = {}
@@ -87,7 +88,8 @@ struct DealCard: View {
                             alignment: .leading,
                             animate: animate,
                             startDelay: 0.1,
-                            staggerMs: 50
+                            staggerMs: 50,
+                            animationID: animationTrigger
                         )
 
                         // Tappable vibe tags
@@ -248,7 +250,8 @@ struct DealCard: View {
                     alignment: .trailing,
                     animate: animate,
                     startDelay: 0.3,
-                    staggerMs: 60
+                    staggerMs: 60,
+                    animationID: animationTrigger
                 )
             }
             .padding(.horizontal, 10)

@@ -280,6 +280,7 @@ struct FeedView: View {
                         isSaved: savedStore.isSaved(id: deal.id),
                         isFirst: index == 0,
                         animate: abs((currentIndex ?? 0) - index) <= 1,
+                        animationTrigger: currentIndex ?? 0,
                         onSave: { saveDeal(deal) },
                         onShare: { shareDeal(deal) },
                         onBook: { bookDeal(deal) },

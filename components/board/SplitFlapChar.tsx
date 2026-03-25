@@ -11,7 +11,7 @@ interface SplitFlapCharProps {
   target: string;
   delay: number;
   duration?: number;
-  size: 'sm' | 'md' | 'lg';
+  size: 'sm' | 'md' | 'lg' | 'xl';
   color: string;
   animate: boolean;
   isFirstInColumn?: boolean;
@@ -22,6 +22,7 @@ const SIZES = {
   sm: { width: 13, height: 22, fontSize: 16 },
   md: { width: 17, height: 28, fontSize: 22 },
   lg: { width: 28, height: 44, fontSize: 36 },
+  xl: { width: 136, height: 196, fontSize: 144 },
 } as const;
 
 function SplitFlapChar({
@@ -77,23 +78,42 @@ function SplitFlapChar({
   }, [target, animate, delay, duration, isFirstInColumn, onSettled, isSpace]);
 
   const dims = SIZES[size];
+  const borderRadius = Math.max(2, dims.width * 0.08);
+  const borderWidth = Math.max(0.5, dims.width * 0.012);
+  const splitLineHeight = Math.max(0.5, dims.height * 0.012);
 
   if (isSpace) {
     return (
       <View
         style={[
           styles.cell,
-          { width: dims.width, height: dims.height, backgroundColor: 'transparent', borderWidth: 0 },
+          {
+            width: dims.width,
+            height: dims.height,
+            backgroundColor: 'transparent',
+            borderWidth: 0,
+            borderRadius: 0,
+          },
         ]}
       />
     );
   }
 
   return (
-    <View style={[styles.cell, { width: dims.width, height: dims.height }]}>
+    <View
+      style={[
+        styles.cell,
+        {
+          width: dims.width,
+          height: dims.height,
+          borderRadius,
+          borderWidth,
+        },
+      ]}
+    >
       <Text style={[styles.text, { fontSize: dims.fontSize, color }]}>{displayChar}</Text>
       {/* Flap split line */}
-      <View style={styles.splitLine} />
+      <View style={[styles.splitLine, { height: splitLineHeight }]} />
     </View>
   );
 }
@@ -103,9 +123,7 @@ export default memo(SplitFlapChar);
 const styles = StyleSheet.create({
   cell: {
     backgroundColor: colors.cell,
-    borderWidth: 0.5,
     borderColor: colors.border,
-    borderRadius: 2,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',

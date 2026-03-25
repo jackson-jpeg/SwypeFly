@@ -13,6 +13,7 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { colors } from '../theme/tokens';
 import ToastContainer from '../components/common/ToastContainer';
+import LaunchMark from '../components/common/LaunchMark';
 import useAnimatedFavicon from '../hooks/useAnimatedFavicon';
 
 SplashScreen.preventAutoHideAsync();
@@ -54,6 +55,7 @@ export default function RootLayout() {
     Inter_600SemiBold,
     PlayfairDisplay_400Regular_Italic,
   });
+  const [showLaunchMark, setShowLaunchMark] = useState(true);
 
   useAnimatedFavicon();
 
@@ -139,6 +141,7 @@ export default function RootLayout() {
           <ToastContainer />
         </QueryClientProvider>
       </ErrorBoundary>
+      <LaunchMark visible={showLaunchMark} onFinish={() => setShowLaunchMark(false)} />
     </GestureHandlerRootView>
   );
 }

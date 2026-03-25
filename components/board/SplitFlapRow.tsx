@@ -5,11 +5,12 @@ import SplitFlapChar from './SplitFlapChar';
 interface SplitFlapRowProps {
   text: string;
   maxLength: number;
-  size: 'sm' | 'md' | 'lg';
+  size: 'sm' | 'md' | 'lg' | 'xl';
   color: string;
   align: 'left' | 'right';
   staggerMs?: number;
   startDelay?: number;
+  duration?: number;
   animate: boolean;
   onComplete?: () => void;
 }
@@ -22,6 +23,7 @@ function SplitFlapRow({
   align,
   staggerMs = 25,
   startDelay = 0,
+  duration,
   animate,
   onComplete,
 }: SplitFlapRowProps) {
@@ -31,9 +33,7 @@ function SplitFlapRow({
   // Pad text to maxLength
   const truncated = text.slice(0, maxLength).toUpperCase();
   const padded =
-    align === 'right'
-      ? truncated.padStart(maxLength, ' ')
-      : truncated.padEnd(maxLength, ' ');
+    align === 'right' ? truncated.padStart(maxLength, ' ') : truncated.padEnd(maxLength, ' ');
 
   const chars = padded.split('');
 
@@ -52,12 +52,13 @@ function SplitFlapRow({
   const firstNonSpaceIdx = chars.findIndex((c) => c !== ' ');
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, size === 'xl' && styles.rowXl]}>
       {chars.map((char, i) => (
         <SplitFlapChar
           key={`${i}-${char}`}
           target={char}
           delay={startDelay + i * staggerMs}
+          duration={duration}
           size={size}
           color={color}
           animate={animate}
@@ -75,5 +76,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 1.5,
+  },
+  rowXl: {
+    gap: 10,
   },
 });
