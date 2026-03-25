@@ -156,9 +156,17 @@ extension Deal {
         return stops == 1 ? "1 stop" : "\(stops) stops"
     }
 
-    /// Airline display name (IATA code or "—")
+    /// Airline display name — resolved from IATA code, falls back to raw code, then "—"
     var airlineName: String {
-        airline ?? "—"
+        if let code = airline {
+            return Airlines.name(for: code) ?? code
+        }
+        return "—"
+    }
+
+    /// Canonical SoGoJet share URL for this destination.
+    var shareURL: URL? {
+        URL(string: "https://sogojet.com/destination/\(id)")
     }
 }
 
