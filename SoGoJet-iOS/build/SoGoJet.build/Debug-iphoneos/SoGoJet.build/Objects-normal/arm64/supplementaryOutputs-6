@@ -1,0 +1,23 @@
+{
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Booking/SeatMapView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SeatMapView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SeatMapView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SeatMapView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SeatMapView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SeatMapView.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Saved/SavingsBanner.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavingsBanner.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavingsBanner.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavingsBanner.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavingsBanner.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavingsBanner.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Search/SearchView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SearchView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SearchView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SearchView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SearchView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SearchView.swiftdeps"
+  }
+}

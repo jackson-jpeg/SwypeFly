@@ -1,0 +1,23 @@
+{
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Booking/ReviewView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/ReviewView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/ReviewView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/ReviewView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/ReviewView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/ReviewView.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Saved/SavedCard.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedCard.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedCard.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedCard.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedCard.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedCard.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Saved/SavedView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/SavedView.swiftdeps"
+  }
+}

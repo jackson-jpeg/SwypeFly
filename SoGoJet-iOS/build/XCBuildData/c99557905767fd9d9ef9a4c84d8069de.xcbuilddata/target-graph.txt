@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'SoGoJet' in project 'SoGoJet'
+➜ Explicit dependency on target 'SoGoJetWidgetExtension' in project 'SoGoJet'
+Target 'SoGoJetWidgetExtension' in project 'SoGoJet' (no dependencies)

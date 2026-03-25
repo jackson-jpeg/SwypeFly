@@ -1,0 +1,30 @@
+{
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Booking/BoardingPassView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BoardingPassView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BoardingPassView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BoardingPassView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BoardingPassView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BoardingPassView.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Booking/BookingFlowView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BookingFlowView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BookingFlowView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BookingFlowView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BookingFlowView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/BookingFlowView.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Feed/DealBadge.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/DealBadge.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/DealBadge.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/DealBadge.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/DealBadge.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/DealBadge.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Settings/AirportPicker.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/AirportPicker.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/AirportPicker.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/AirportPicker.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/AirportPicker.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/AirportPicker.swiftdeps"
+  }
+}

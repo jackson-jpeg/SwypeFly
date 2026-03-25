@@ -1,0 +1,23 @@
+{
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Components/FilterSheet.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FilterSheet.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FilterSheet.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FilterSheet.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FilterSheet.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FilterSheet.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Feed/FeedView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FeedView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FeedView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FeedView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FeedView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/FeedView.swiftdeps"
+  },
+  "/Users/jackson/SwypeFly/SoGoJet-iOS/SoGoJet/Views/Onboarding/OnboardingView.swift" : {
+    "const-values" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/OnboardingView.swiftconstvalues",
+    "dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/OnboardingView.d",
+    "diagnostics" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/OnboardingView.dia",
+    "object" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/OnboardingView.o",
+    "swift-dependencies" : "/Users/jackson/SwypeFly/SoGoJet-iOS/build/SoGoJet.build/Debug-iphoneos/SoGoJet.build/Objects-normal/arm64/OnboardingView.swiftdeps"
+  }
+}
