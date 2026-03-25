@@ -218,6 +218,21 @@ extension Deal {
         }
     }
 
+    /// Whether the current month is one of the destination's best months to visit.
+    var isGoodTimeToVisit: Bool {
+        guard let months = bestMonths, !months.isEmpty else { return false }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        let currentMonth = formatter.string(from: Date()) // e.g. "Mar"
+        let fullFormatter = DateFormatter()
+        fullFormatter.dateFormat = "MMMM"
+        let currentMonthFull = fullFormatter.string(from: Date()) // e.g. "March"
+        return months.contains { m in
+            m.localizedCaseInsensitiveContains(currentMonth) ||
+            m.localizedCaseInsensitiveContains(currentMonthFull)
+        }
+    }
+
     /// Human-readable stops label
     var stopsLabel: String {
         if isNonstop == true { return "Nonstop" }

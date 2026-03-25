@@ -44,14 +44,32 @@ struct DealCard: View {
                     HStack {
                         saveButton
                         Spacer()
-                        if !deal.country.isEmpty {
-                            Text(deal.country.uppercased())
-                                .font(SGFont.bodySmall)
-                                .foregroundStyle(Color.sgWhite.opacity(0.9))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(Color.black.opacity(0.45))
+
+                        VStack(alignment: .trailing, spacing: 4) {
+                            if !deal.country.isEmpty {
+                                Text(deal.country.uppercased())
+                                    .font(SGFont.bodySmall)
+                                    .foregroundStyle(Color.sgWhite.opacity(0.9))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.black.opacity(0.45))
+                                    .clipShape(Capsule())
+                            }
+
+                            // "Best time" badge when current month is ideal
+                            if deal.isGoodTimeToVisit {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "sun.max.fill")
+                                        .font(.system(size: 9))
+                                    Text("Best time to visit")
+                                        .font(.system(size: 10, weight: .semibold))
+                                }
+                                .foregroundStyle(Color.sgBg)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.sgDealAmazing)
                                 .clipShape(Capsule())
+                            }
                         }
                     }
                     .padding(.top, geo.safeAreaInsets.top + 56)

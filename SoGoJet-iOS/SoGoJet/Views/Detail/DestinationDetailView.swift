@@ -23,6 +23,7 @@ struct DestinationDetailView: View {
                     flightInfoSection
                     vibeTagsSection
                     travelGuideSection
+                    weatherSection
                     itinerarySection
                     restaurantsSection
                     similarDealsSection
@@ -229,6 +230,125 @@ struct DestinationDetailView: View {
             }
             .padding(.top, 4)
         }
+    }
+
+    // MARK: - Weather & Best Time
+
+    @ViewBuilder
+    private var weatherSection: some View {
+        let hasWeather = deal.averageTemp != nil || (deal.bestMonths != nil && !deal.bestMonths!.isEmpty)
+        if hasWeather {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("WEATHER & BEST TIME")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
+
+                HStack(spacing: 16) {
+                    // Temperature card
+                    if let temp = deal.averageTemp {
+                        VStack(spacing: 6) {
+                            Image(systemName: tempIcon(temp))
+                                .font(.system(size: 28))
+                                .foregroundStyle(tempColor(temp))
+
+                            Text("\(Int(temp))°")
+                                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color.sgWhite)
+
+                            Text("avg temp")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.sgMuted)
+                        }
+                        .frame(width: 90, height: 110)
+                        .background(Color.sgBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(Color.sgBorder, lineWidth: 1)
+                        )
+                    }
+
+                    // Best months list
+                    if let months = deal.bestMonths, !months.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.sgYellow)
+                                Text("Best months")
+                                    .font(SGFont.bodyBold(size: 12))
+                                    .foregroundStyle(Color.sgWhiteDim)
+                            }
+
+                            // Month chips
+                            let columns = [GridItem(.adaptive(minimum: 50, maximum: 80), spacing: 4)]
+                            LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+                                ForEach(months, id: \.self) { month in
+                                    let isCurrent = isCurrentMonth(month)
+                                    Text(month)
+                                        .font(.system(size: 11, weight: isCurrent ? .bold : .medium))
+                                        .foregroundStyle(isCurrent ? Color.sgBg : Color.sgWhiteDim)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(isCurrent ? Color.sgDealAmazing : Color.sgBg)
+                                        .clipShape(Capsule())
+                                        .overlay(
+                                            Capsule().strokeBorder(
+                                                isCurrent ? Color.sgDealAmazing : Color.sgBorder,
+                                                lineWidth: 1
+                                            )
+                                        )
+                                }
+                            }
+
+                            if deal.isGoodTimeToVisit {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 11))
+                                    Text("Great time to go!")
+                                        .font(.system(size: 11, weight: .semibold))
+                                }
+                                .foregroundStyle(Color.sgDealAmazing)
+                                .padding(.top, 2)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+        }
+    }
+
+    private func tempIcon(_ temp: Double) -> String {
+        if temp >= 30 { return "sun.max.fill" }
+        if temp >= 20 { return "sun.min.fill" }
+        if temp >= 10 { return "cloud.sun.fill" }
+        return "snowflake"
+    }
+
+    private func tempColor(_ temp: Double) -> Color {
+        if temp >= 30 { return Color.sgOrange }
+        if temp >= 20 { return Color.sgYellow }
+        if temp >= 10 { return Color.sgGreen }
+        return Color.sgDealGood
+    }
+
+    private func isCurrentMonth(_ month: String) -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        let current = formatter.string(from: Date())
+        let fullFormatter = DateFormatter()
+        fullFormatter.dateFormat = "MMMM"
+        let currentFull = fullFormatter.string(from: Date())
+        return month.localizedCaseInsensitiveContains(current) ||
+               month.localizedCaseInsensitiveContains(currentFull)
     }
 
     // MARK: - Itinerary

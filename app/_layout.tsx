@@ -13,6 +13,7 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { colors } from '../theme/tokens';
 import ToastContainer from '../components/common/ToastContainer';
+import useAnimatedFavicon from '../hooks/useAnimatedFavicon';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -54,6 +55,8 @@ export default function RootLayout() {
     PlayfairDisplay_400Regular_Italic,
   });
 
+  useAnimatedFavicon();
+
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
@@ -91,6 +94,19 @@ export default function RootLayout() {
         <meta name="twitter:title" content="SoGoJet — Discover Cheap Flights" />
         <meta name="twitter:image" content="https://sogojet.com/api/og" />
         <meta name="theme-color" content="#0A0806" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/assets/icon-180.png" sizes="180x180" />
+        <link
+          rel="icon"
+          href="/assets/favicon-frame-0.png"
+          sizes="64x64"
+          data-sogojet-favicon="true"
+        />
+        <link
+          rel="shortcut icon"
+          href="/assets/favicon-frame-0.png"
+          data-sogojet-favicon="true"
+        />
       </Head>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
