@@ -14,7 +14,7 @@ struct FeedView: View {
     @State private var currentIndex: Int? = 0
     @State private var swipeCount: Int = 0
     @State private var headerVisible: Bool = true
-    @State private var shareItem: SharedLinkItem?
+    @State private var shareItem: SharedDealItem?
     @State private var headerHideTask: Task<Void, Never>?
 
     private var currentDeal: Deal? {
@@ -99,7 +99,7 @@ struct FeedView: View {
             }
         }
         .sheet(item: $shareItem) { item in
-            ShareSheet(activityItems: [item.url])
+            ShareSheet(activityItems: item.activityItems)
         }
         .onDisappear {
             headerHideTask?.cancel()
@@ -350,9 +350,7 @@ struct FeedView: View {
 
     private func shareDeal(_ deal: Deal) {
         HapticEngine.light()
-        if let url = deal.shareURL ?? deal.affiliateUrl.flatMap(URL.init(string:)) {
-            shareItem = SharedLinkItem(url: url)
-        }
+        shareItem = SharedDealItem(deal: deal)
     }
 
     private func openDeal(_ deal: Deal) {
@@ -449,9 +447,17 @@ private struct NearbyAirportButton: View {
     }
 }
 
-private struct SharedLinkItem: Identifiable {
+private struct SharedDealItem: Identifiable {
     let id = UUID()
-    let url: URL
+    let deal: Deal
+
+    var activityItems: [Any] {
+        var items: [Any] = [deal.shareText]
+        if let url = deal.shareURL {
+            items.append(url)
+        }
+        return items
+    }
 }
 
 // MARK: - Share Sheet (UIKit bridge)

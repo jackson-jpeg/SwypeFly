@@ -27,6 +27,13 @@ struct SoGoJetApp: App {
                         await feedStore.fetchDeals(origin: settingsStore.departureCode)
                     }
                 }
+                .onOpenURL { url in
+                    router.handleDeepLink(url, feedStore: feedStore)
+                }
+                .onChange(of: feedStore.allDeals.count) { _, _ in
+                    // Resolve any pending deep link once the feed has loaded
+                    router.resolvePendingDeepLink(feedStore: feedStore)
+                }
                 .onChange(of: scenePhase) { oldPhase, newPhase in
                     if oldPhase != .active && newPhase == .active {
                         Task {

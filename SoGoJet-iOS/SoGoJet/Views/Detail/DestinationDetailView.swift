@@ -9,7 +9,7 @@ struct DestinationDetailView: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
 
-    @State private var shareItem: DetailShareItem?
+    @State private var shareItem: DetailShareDealItem?
 
     private var isSaved: Bool {
         savedStore.isSaved(id: deal.id)
@@ -31,7 +31,7 @@ struct DestinationDetailView: View {
             stickyBottomBar
         }
         .sheet(item: $shareItem) { item in
-            DetailShareSheet(activityItems: [item.url])
+            DetailShareSheet(activityItems: item.activityItems)
         }
     }
 
@@ -248,9 +248,7 @@ struct DestinationDetailView: View {
 
             Button {
                 HapticEngine.light()
-                if let url = deal.shareURL {
-                    shareItem = DetailShareItem(url: url)
-                }
+                shareItem = DetailShareDealItem(deal: deal)
             } label: {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 18))
@@ -291,9 +289,17 @@ struct DestinationDetailView: View {
 
 // MARK: - Share Helpers
 
-private struct DetailShareItem: Identifiable {
+private struct DetailShareDealItem: Identifiable {
     let id = UUID()
-    let url: URL
+    let deal: Deal
+
+    var activityItems: [Any] {
+        var items: [Any] = [deal.shareText]
+        if let url = deal.shareURL {
+            items.append(url)
+        }
+        return items
+    }
 }
 
 private struct DetailShareSheet: UIViewControllerRepresentable {

@@ -199,6 +199,49 @@ final class Router {
         }
     }
 
+    // MARK: Deep Links
+
+    /// Handle an incoming deep link URL.
+    /// Supports: https://sogojet.com/destination/{id}
+    /// Returns the destination ID if parsed successfully, or nil.
+    @MainActor @discardableResult
+    func handleDeepLink(_ url: URL, feedStore: FeedStore) -> String? {
+        // Accept both sogojet.com and www.sogojet.com
+        guard let host = url.host(), host.hasSuffix("sogojet.com") else { return nil }
+
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        // /destination/{id}
+        guard pathComponents.count >= 2,
+              pathComponents[0] == "destination" else { return nil }
+
+        let destinationId = pathComponents[1]
+
+        // Switch to feed tab and look up the deal
+        activeTab = .feed
+
+        if let deal = feedStore.allDeals.first(where: { $0.id == destinationId }) {
+            showDeal(deal)
+        } else {
+            // Store the pending deep link ID so the app can resolve it after feed loads
+            pendingDeepLinkId = destinationId
+        }
+
+        return destinationId
+    }
+
+    /// A destination ID from a deep link that hasn't been resolved yet
+    /// (feed wasn't loaded when the link arrived).
+    var pendingDeepLinkId: String?
+
+    /// Try to resolve a pending deep link against the current feed.
+    @MainActor func resolvePendingDeepLink(feedStore: FeedStore) {
+        guard let id = pendingDeepLinkId else { return }
+        if let deal = feedStore.allDeals.first(where: { $0.id == id }) {
+            pendingDeepLinkId = nil
+            showDeal(deal)
+        }
+    }
+
     private func presentFullScreen(_ destination: FullScreenDestination) {
         queuedPresentationTask?.cancel()
         if fullScreenDestination?.id == destination.id || queuedFullScreenDestination?.id == destination.id {

@@ -177,6 +177,16 @@ extension Deal {
     var shareURL: URL? {
         URL(string: "https://sogojet.com/destination/\(id)")
     }
+
+    /// Rich share text including destination, price, and URL.
+    var shareText: String {
+        let price = priceFormatted
+        let url = shareURL?.absoluteString ?? "https://sogojet.com"
+        if price != "—" {
+            return "Check out flights to \(city) from \(price) on SoGoJet! ✈️\n\(url)"
+        }
+        return "Check out \(city) on SoGoJet! ✈️\n\(url)"
+    }
 }
 
 // MARK: - Preview Mock
