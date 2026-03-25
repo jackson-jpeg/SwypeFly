@@ -61,14 +61,15 @@ struct SearchView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: Spacing.lg) {
-                        header
-                        searchTelemetryDeck
-                        resultsDeck
+                        searchField
+                        statusBar
+                        resultsList
                     }
                     .padding(.horizontal, Spacing.md)
                     .padding(.vertical, Spacing.md)
                 }
             }
+            .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear {
@@ -103,289 +104,232 @@ struct SearchView: View {
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            VintageTerminalTopBar(
-                eyebrow: "Search Desk",
-                title: "Route Search",
-                subtitle: "Scan the saved archive and the live feed from \(settingsStore.departureCode) without losing the terminal mood.",
-                stamp: settingsStore.departureCode,
-                tone: .amber,
-                leadingIcon: nil,
-                leadingAction: nil,
-                trailingIcon: nil,
-                trailingAction: nil
-            )
+    // MARK: - Search Field
 
-            VintageTravelTicket(tone: .amber) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: Spacing.xs) {
-                        VintageTerminalSectionLabel(text: "Search", tone: .amber)
-                        SplitFlapRow(
-                            text: trimmedQuery.isEmpty ? "POPULAR" : trimmedQuery.uppercased(),
-                            maxLength: 8,
-                            size: .md,
-                            color: Color.sgYellow,
-                            alignment: .leading,
-                            animate: true,
-                            staggerMs: 24
-                        )
-                    }
+    private var searchField: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(Color.sgMuted)
+                .font(.system(size: 16))
 
-                    Spacer(minLength: 0)
+            TextField("Where to?", text: $query)
+                .font(SGFont.body(size: 16))
+                .foregroundStyle(Color.sgWhite)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
 
-                    VintageTerminalPassportStamp(
-                        title: "Mode",
-                        subtitle: trimmedQuery.isEmpty ? "Browse" : "Live + archive",
-                        tone: .ivory
-                    )
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.sgMuted)
+                        .font(.system(size: 16))
                 }
-            } content: {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    VintageTerminalSearchField(
-                        prompt: "Where to?",
-                        text: $query,
-                        tone: .amber
-                    )
+            }
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, 14)
+        .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.lg)
+                .strokeBorder(Color.sgBorder, lineWidth: 1)
+        )
+    }
 
-                    HStack(spacing: Spacing.sm) {
-                        summaryChip(title: "Archive", value: "\(archiveMatches.count)", tone: .ivory)
-                        summaryChip(title: "Live", value: "\(liveMatches.count)", tone: .moss)
-                        summaryChip(title: "Popular", value: "\(popularDeals.count)", tone: .amber)
-                    }
-                }
-            } footer: {
-                VintageTerminalRouteDisplay(
-                    originCode: settingsStore.departureCode,
-                    originLabel: settingsStore.departureCity,
-                    destinationCode: trimmedQuery.isEmpty ? "ANY" : String(trimmedQuery.prefix(3)).uppercased().padding(toLength: 3, withPad: " ", startingAt: 0),
-                    destinationLabel: trimmedQuery.isEmpty ? "Any route" : trimmedQuery,
-                    detail: trimmedQuery.isEmpty
-                        ? "Popular departures ranked by the current board score."
-                        : "Search checks both loaded cards and the live feed before opening detail.",
-                    tone: .amber
+    // MARK: - Status Bar
+
+    @ViewBuilder
+    private var statusBar: some View {
+        HStack(spacing: Spacing.sm) {
+            if trimmedQuery.isEmpty {
+                statusChip(
+                    label: "From \(settingsStore.departureCode)",
+                    icon: "airplane.departure"
                 )
+                Spacer()
+                if isLoadingPopular {
+                    ProgressView()
+                        .tint(Color.sgYellow)
+                        .scaleEffect(0.8)
+                }
+            } else {
+                statusChip(
+                    label: "\(combinedResults.count) result\(combinedResults.count == 1 ? "" : "s")",
+                    icon: "line.3.horizontal.decrease"
+                )
+                Spacer()
+                if isSearching {
+                    ProgressView()
+                        .tint(Color.sgYellow)
+                        .scaleEffect(0.8)
+                }
             }
         }
     }
+
+    private func statusChip(label: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+            Text(label)
+                .font(SGFont.bodyBold(size: 13))
+        }
+        .foregroundStyle(Color.sgWhiteDim)
+    }
+
+    // MARK: - Results
 
     @ViewBuilder
-    private var searchTelemetryDeck: some View {
+    private var resultsList: some View {
         if trimmedQuery.isEmpty {
-            VintageTerminalPanel(
-                title: "Popular Scan",
-                subtitle: "The top board-worthy routes from the currently selected departure market.",
-                stamp: isLoadingPopular ? "Loading" : "Ready",
-                tone: .ivory
-            ) {
-                if isLoadingPopular && popularDeals.isEmpty {
-                    loadingRow(text: "Loading popular departures from \(settingsStore.departureCode)...")
-                } else if let popularError, popularDeals.isEmpty {
-                    errorRow(
-                        title: "Popular routes are still loading.",
-                        detail: popularError
-                    )
-                } else {
-                    VintageTerminalMetricDeck(metrics: [
-                        .init(title: "Top route", value: popularDeals.first?.destination ?? "Waiting", footnote: popularDeals.first?.priceFormatted, tone: .amber),
-                        .init(title: "Loaded", value: "\(popularDeals.count)", footnote: "Popular cards ready", tone: .moss),
-                        .init(title: "Origin", value: settingsStore.departureCode, footnote: settingsStore.departureCity, tone: .ivory),
-                        .init(title: "Mode", value: "Browse", footnote: "Type to switch into live search", tone: .ember),
-                    ])
-                }
-            }
-        } else {
-            VintageTerminalPanel(
-                title: "Search Results",
-                subtitle: "",
-                stamp: isSearching ? "Searching" : "Synced",
-                tone: .moss
-            ) {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    if isSearching && combinedResults.isEmpty {
-                        loadingRow(text: "Searching all departures from \(settingsStore.departureCode)...")
+            // Popular section
+            if isLoadingPopular && popularDeals.isEmpty {
+                loadingRow(text: "Loading popular destinations...")
+            } else if let popularError, popularDeals.isEmpty {
+                errorRow(title: "Couldn't load popular destinations", detail: popularError)
+            } else if !popularDeals.isEmpty {
+                sectionHeader("Popular", subtitle: "Top destinations from \(settingsStore.departureCode)")
+
+                LazyVStack(spacing: Spacing.md) {
+                    ForEach(popularDeals) { deal in
+                        resultCard(for: deal)
                     }
-
-                    if let searchError, combinedResults.isEmpty {
-                        errorRow(
-                            title: "Search unavailable right now.",
-                            detail: searchError
-                        )
-                    }
-
-                    VintageTerminalMetricDeck(metrics: [
-                        .init(title: "Archive", value: "\(archiveMatches.count)", footnote: archiveMatches.isEmpty ? "No loaded card matches yet" : "Loaded matches", tone: .ivory),
-                        .init(title: "Live feed", value: "\(liveMatches.count)", footnote: liveMatches.isEmpty ? "No additional live routes" : "New routes from backend", tone: .moss),
-                        .init(title: "Combined", value: "\(combinedResults.count)", footnote: "Deduped visible routes", tone: .amber),
-                        .init(title: "Query", value: trimmedQuery.uppercased(), footnote: "City, country, IATA, and vibe tags", tone: .ember),
-                    ])
                 }
             }
-        }
-    }
-
-    @ViewBuilder
-    private var resultsDeck: some View {
-        if trimmedQuery.isEmpty {
-            resultsSection(
-                title: "Popular Departures",
-                subtitle: "The board routes most worth opening from \(settingsStore.departureCode) right now.",
-                deals: popularDeals,
-                tone: .amber,
-                sourceLabel: "Popular board rank"
-            )
-        } else if combinedResults.isEmpty {
-            VintageTerminalPanel(
-                title: "No Routes Found",
-                subtitle: "The board and the live feed both came back empty for this search.",
-                stamp: "Empty",
-                tone: .ember
-            ) {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    VintageTerminalChecklistItem(
-                        title: "Try a city, country, airport code, or vibe",
-                        detail: "Search checks all four, so broader words usually open up more routes.",
-                        tone: .amber
-                    )
-                    VintageTerminalChecklistItem(
-                        title: "Popular mode is still available",
-                        detail: "Clear the query to fall back to the current best departures from \(settingsStore.departureCode).",
-                        tone: .ivory
-                    )
-                }
-            }
-        } else {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                if !archiveMatches.isEmpty {
-                    resultsSection(
-                        title: "Archive Matches",
-                        subtitle: "Routes already loaded into the app that match your search instantly.",
-                        deals: archiveMatches,
-                        tone: .ivory,
-                        sourceLabel: "Loaded archive match"
-                    )
-                }
-
-                if !liveMatches.isEmpty {
-                    resultsSection(
-                        title: "Live Feed Matches",
-                        subtitle: "Additional routes surfaced by the backend feed search.",
-                        deals: liveMatches,
-                        tone: .moss,
-                        sourceLabel: "Live feed result"
-                    )
-                }
-            }
-        }
-    }
-
-    private func resultsSection(
-        title: String,
-        subtitle: String,
-        deals: [Deal],
-        tone: VintageTerminalTone,
-        sourceLabel: String
-    ) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            VintageTerminalCollectionHeader(
-                title: title,
-                subtitle: subtitle,
-                tone: tone
-            )
-
+        } else if combinedResults.isEmpty && !isSearching {
+            // Empty state
             VStack(spacing: Spacing.md) {
-                ForEach(deals) { deal in
-                    resultCard(for: deal, tone: tone, sourceLabel: sourceLabel)
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 36))
+                    .foregroundStyle(Color.sgMuted)
+                Text("No results for \"\(trimmedQuery)\"")
+                    .font(SGFont.bodyBold(size: 16))
+                    .foregroundStyle(Color.sgWhite)
+                Text("Try a city, country, airport code, or vibe tag.")
+                    .font(SGFont.body(size: 14))
+                    .foregroundStyle(Color.sgMuted)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, Spacing.xl)
+        } else if !combinedResults.isEmpty {
+            if !archiveMatches.isEmpty {
+                sectionHeader("Loaded", subtitle: "\(archiveMatches.count) already in app")
+
+                LazyVStack(spacing: Spacing.md) {
+                    ForEach(archiveMatches) { deal in
+                        resultCard(for: deal)
+                    }
+                }
+            }
+
+            if !liveMatches.isEmpty {
+                sectionHeader("More results", subtitle: "\(liveMatches.count) from search")
+
+                LazyVStack(spacing: Spacing.md) {
+                    ForEach(liveMatches) { deal in
+                        resultCard(for: deal)
+                    }
                 }
             }
         }
+
+        if let searchError, combinedResults.isEmpty, !trimmedQuery.isEmpty {
+            errorRow(title: "Search unavailable", detail: searchError)
+        }
     }
 
-    private func resultCard(for deal: Deal, tone: VintageTerminalTone, sourceLabel: String) -> some View {
+    // MARK: - Section Header
+
+    private func sectionHeader(_ title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(SGFont.bodyBold(size: 16))
+                .foregroundStyle(Color.sgWhite)
+            Text(subtitle)
+                .font(SGFont.body(size: 13))
+                .foregroundStyle(Color.sgMuted)
+        }
+        .padding(.top, Spacing.sm)
+    }
+
+    // MARK: - Result Card
+
+    private func resultCard(for deal: Deal) -> some View {
         Button {
             HapticEngine.medium()
             router.showDeal(deal)
         } label: {
-            VintageTravelTicket(tone: tone) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: Spacing.xs) {
-                        VintageTerminalSectionLabel(text: deal.country, tone: tone)
-                        Text(deal.destination)
-                            .font(SGFont.display(size: 30))
-                            .foregroundStyle(Color.sgWhite)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    VStack(alignment: .trailing, spacing: Spacing.xs) {
-                        Text(deal.priceFormatted)
-                            .font(SGFont.display(size: 30))
-                            .foregroundStyle(Color.sgYellow)
-                        if let tier = deal.dealTier {
-                            VintageTerminalPassportStamp(title: "Tier", subtitle: tier.label, tone: tone)
-                        }
-                    }
+            HStack(spacing: Spacing.md) {
+                CachedAsyncImage(url: deal.imageUrl) {
+                    Color.sgSurface
                 }
-            } content: {
-                HStack(alignment: .top, spacing: Spacing.md) {
-                    CachedAsyncImage(url: deal.imageUrl) {
-                        Color.sgSurface
-                    }
-                    .frame(width: 112, height: 124)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Radius.md)
-                            .strokeBorder(Color.sgBorder, lineWidth: 1)
-                    )
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.md))
 
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text(deal.tagline.isEmpty ? "Live route ready to inspect." : deal.tagline)
-                            .font(SGFont.body(size: 13))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(deal.destination)
+                        .font(SGFont.bodyBold(size: 17))
+                        .foregroundStyle(Color.sgWhite)
+                        .lineLimit(1)
+
+                    Text(deal.country)
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+
+                    if !deal.tagline.isEmpty {
+                        Text(deal.tagline)
+                            .font(SGFont.body(size: 12))
                             .foregroundStyle(Color.sgWhiteDim)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(2)
+                    }
 
-                        HStack(spacing: Spacing.xs) {
-                            if !deal.safeVibeTags.isEmpty {
-                                VintageTerminalTagCloud(tags: Array(deal.safeVibeTags.prefix(3)), tone: tone)
+                    if !deal.safeVibeTags.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(deal.safeVibeTags.prefix(3), id: \.self) { tag in
+                                Text(tag)
+                                    .font(SGFont.body(size: 11))
+                                    .foregroundStyle(Color.sgYellow)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Color.sgYellow.opacity(0.12), in: Capsule())
                             }
                         }
                     }
                 }
-            } footer: {
-                HStack(alignment: .top) {
-                    VintageTerminalCaptionBlock(title: "IATA", value: deal.iataCode, tone: tone)
-                    Spacer()
-                    VintageTerminalCaptionBlock(title: "Duration", value: deal.safeFlightDuration, tone: .ivory, alignment: .trailing)
-                    Spacer()
-                    VintageTerminalCaptionBlock(title: "Source", value: sourceLabel, tone: .moss, alignment: .trailing)
+
+                Spacer(minLength: 0)
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(deal.priceFormatted)
+                        .font(SGFont.display(size: 22))
+                        .foregroundStyle(Color.sgYellow)
+
+                    if let tier = deal.dealTier {
+                        Text(tier.label)
+                            .font(SGFont.bodyBold(size: 11))
+                            .foregroundStyle(Color.sgGreen)
+                    }
+
+                    Text(deal.iataCode)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.sgMuted)
                 }
             }
+            .padding(Spacing.md)
+            .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.lg)
+                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")
         .accessibilityHint("Open deal details")
     }
 
-    private func summaryChip(title: String, value: String, tone: VintageTerminalTone) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title.uppercased())
-                .font(SGFont.bodyBold(size: 9))
-                .foregroundStyle(Color.sgMuted)
-                .tracking(1.2)
-            Text(value)
-                .font(SGFont.bodyBold(size: 13))
-                .foregroundStyle(tone.text)
-        }
-        .padding(.horizontal, Spacing.sm + Spacing.xs)
-        .padding(.vertical, Spacing.sm)
-        .background(tone.softFill, in: RoundedRectangle(cornerRadius: Radius.md))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md)
-                .strokeBorder(tone.border, lineWidth: 1)
-        )
-    }
+    // MARK: - Helpers
 
     private func loadingRow(text: String) -> some View {
         HStack(spacing: Spacing.sm) {
@@ -395,6 +339,7 @@ struct SearchView: View {
                 .font(SGFont.bodyDefault)
                 .foregroundStyle(Color.sgMuted)
         }
+        .padding(.top, Spacing.lg)
     }
 
     private func errorRow(title: String, detail: String) -> some View {
@@ -407,7 +352,10 @@ struct SearchView: View {
                 .foregroundStyle(Color.sgMuted)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.top, Spacing.md)
     }
+
+    // MARK: - Search Logic
 
     private func scheduleSearch(for rawQuery: String) {
         searchTask?.cancel()
