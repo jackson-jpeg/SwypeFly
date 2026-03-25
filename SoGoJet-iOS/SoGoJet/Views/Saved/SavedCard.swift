@@ -45,6 +45,21 @@ struct SavedCard: View {
                             .font(SGFont.bodySmall)
                             .foregroundStyle(Color.sgWhite.opacity(0.8))
                             .lineLimit(1)
+
+                        // Trip countdown badge
+                        if let countdown = deal.countdownLabel {
+                            HStack(spacing: 3) {
+                                Image(systemName: "clock.fill")
+                                    .font(.system(size: 8))
+                                Text(countdown)
+                                    .font(.system(size: 9, weight: .semibold))
+                            }
+                            .foregroundStyle(deal.daysUntilDeparture ?? 99 <= 3 ? Color.sgRed : Color.sgYellow)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background((deal.daysUntilDeparture ?? 99 <= 3 ? Color.sgRed : Color.sgYellow).opacity(0.15))
+                            .clipShape(Capsule())
+                        }
                     }
 
                     Spacer()

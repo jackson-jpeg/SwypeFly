@@ -74,7 +74,6 @@ final class SavedStore {
 
     /// Remove all saved deals.
     func clear() {
-        let ids = savedDeals.map(\.id)
         savedDeals.removeAll()
         saveToDisk()
         CSSearchableIndex.default().deleteSearchableItems(

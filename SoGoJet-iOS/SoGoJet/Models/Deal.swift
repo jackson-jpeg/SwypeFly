@@ -139,6 +139,31 @@ extension Deal {
         return "$\(Int(price))"
     }
 
+    /// Days until departure. Nil if no departure date or already passed.
+    var daysUntilDeparture: Int? {
+        guard let dateStr = bestDepartureDate else { return nil }
+        let fmts = ["yyyy-MM-dd", "MM/dd/yyyy", "MMM dd, yyyy"]
+        var date: Date?
+        for fmt in fmts {
+            let f = DateFormatter()
+            f.dateFormat = fmt
+            if let d = f.date(from: dateStr) { date = d; break }
+        }
+        guard let dep = date else { return nil }
+        let days = Calendar.current.dateComponents([.day], from: Date(), to: dep).day ?? 0
+        return days >= 0 ? days : nil
+    }
+
+    /// Human-readable countdown for departure.
+    var countdownLabel: String? {
+        guard let days = daysUntilDeparture else { return nil }
+        if days == 0 { return "Departs today!" }
+        if days == 1 { return "Departs tomorrow" }
+        if days <= 7 { return "Departs in \(days) days" }
+        if days <= 30 { return "In \(days / 7) weeks" }
+        return nil // Don't show for far-future dates
+    }
+
     /// Destination name (alias for city)
     var destination: String { city }
 

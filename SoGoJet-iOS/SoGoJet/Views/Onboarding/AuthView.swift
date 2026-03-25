@@ -173,7 +173,7 @@ struct AuthView: View {
 
     private func handleAppleSignIn(_ authorization: ASAuthorization) {
         guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-              let identityToken = credential.identityToken else { return }
+              credential.identityToken != nil else { return }
 
         Task {
             // The AuthStore's delegate methods handle the actual authentication
