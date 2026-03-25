@@ -265,7 +265,7 @@ struct FeedView: View {
         let nowSaved = savedStore.toggle(deal: deal)
         feedStore.recordSwipe(dealId: deal.id, action: nowSaved ? "saved" : "unsaved")
         toastManager.show(
-            message: nowSaved ? "\(deal.city) saved!" : "\(deal.city) removed",
+            message: nowSaved ? saveToastMessage(for: deal) : "\(deal.city) removed",
             type: nowSaved ? .success : .info,
             duration: 1.2
         )
@@ -644,10 +644,27 @@ struct FeedView: View {
         let nowSaved = savedStore.toggle(deal: deal)
         feedStore.recordSwipe(dealId: deal.id, action: nowSaved ? "saved" : "unsaved")
         toastManager.show(
-            message: nowSaved ? "\(deal.city) saved!" : "\(deal.city) removed",
+            message: nowSaved ? saveToastMessage(for: deal) : "\(deal.city) removed",
             type: nowSaved ? .success : .info,
             duration: 1.5
         )
+    }
+
+    /// Urgency-aware save toast: shows countdown when departure is imminent.
+    private func saveToastMessage(for deal: Deal) -> String {
+        guard let days = deal.daysUntilDeparture else {
+            return "\(deal.city) saved!"
+        }
+        if days <= 3 {
+            return "Saved! Departs in \(days) days -- book now"
+        }
+        if days <= 7 {
+            return "Saved! Departs in \(days) days -- time to pack"
+        }
+        if days <= 14 {
+            return "Saved! Departs in \(days) days"
+        }
+        return "\(deal.city) saved!"
     }
 
     private func shareDeal(_ deal: Deal) {
