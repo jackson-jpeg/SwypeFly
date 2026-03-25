@@ -1,8 +1,11 @@
 import SwiftUI
 import CryptoKit
+import ImageIO
 
 // MARK: - Image Cache
 // Two-tier cache: in-memory NSCache + on-disk FileManager in Caches directory.
+// Images are downsampled to screen size on decode to prevent OOM crashes from
+// multi-megapixel Unsplash photos (a 4000x3000 image = ~48 MB uncompressed).
 
 actor ImageCache {
     static let shared = ImageCache()
@@ -11,13 +14,37 @@ actor ImageCache {
     private let diskDirectory: URL
     private let maxDiskBytes = 100 * 1024 * 1024
 
+    /// Maximum pixel dimension for downsampled images.
+    /// Based on the longest screen edge at the device's native scale.
+    private let maxPixelSize: CGFloat
+
     private init() {
         memoryCache.countLimit = 50
+        // Cap memory cache at ~120 MB of decoded pixel data.
+        // Each cached image is downsampled so this is generous.
+        memoryCache.totalCostLimit = 120 * 1024 * 1024
+
+        let screen = UIScreen.main
+        maxPixelSize = max(screen.bounds.width, screen.bounds.height) * screen.scale
 
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         diskDirectory = caches.appendingPathComponent("SGImageCache", isDirectory: true)
 
         try? FileManager.default.createDirectory(at: diskDirectory, withIntermediateDirectories: true)
+
+        // Flush memory cache when the system is under memory pressure.
+        // NSCache auto-evicts, but this explicit flush is more aggressive and
+        // prevents the OS from terminating the app on older devices.
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak memoryCache] _ in
+            memoryCache?.removeAllObjects()
+            #if DEBUG
+            print("[ImageCache] Memory warning — flushed in-memory cache")
+            #endif
+        }
     }
 
     // MARK: Public API
@@ -29,6 +56,7 @@ actor ImageCache {
     }
 
     /// Load image from cache or network. Returns nil on failure.
+    /// Images are automatically downsampled to screen resolution.
     func image(for urlString: String) async -> UIImage? {
         let key = cacheKey(for: urlString)
 
@@ -37,11 +65,12 @@ actor ImageCache {
             return cached
         }
 
-        // 2. Disk
+        // 2. Disk (downsample on decode to avoid full-size bitmap)
         let diskPath = diskDirectory.appendingPathComponent(key)
-        if let data = try? Data(contentsOf: diskPath),
-           let img = UIImage(data: data) {
-            memoryCache.setObject(img, forKey: key as NSString)
+        if FileManager.default.fileExists(atPath: diskPath.path),
+           let img = downsampledImage(at: diskPath) {
+            let cost = imageCost(img)
+            memoryCache.setObject(img, forKey: key as NSString, cost: cost)
             touch(fileURL: diskPath)
             return img
         }
@@ -51,15 +80,24 @@ actor ImageCache {
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             guard let http = response as? HTTPURLResponse,
-                  (200...299).contains(http.statusCode),
-                  let img = UIImage(data: data) else { return nil }
+                  (200...299).contains(http.statusCode) else { return nil }
 
-            // Store in memory + disk
-            memoryCache.setObject(img, forKey: key as NSString)
+            // Write raw data to disk first, then downsample from disk.
+            // This avoids holding both the raw data AND the full bitmap in memory.
             try? data.write(to: diskPath, options: .atomic)
             touch(fileURL: diskPath)
             enforceDiskLimit()
 
+            guard let img = downsampledImage(at: diskPath) else {
+                // Fallback: decode in-memory if disk downsample fails
+                guard let fallback = UIImage(data: data) else { return nil }
+                let cost = imageCost(fallback)
+                memoryCache.setObject(fallback, forKey: key as NSString, cost: cost)
+                return fallback
+            }
+
+            let cost = imageCost(img)
+            memoryCache.setObject(img, forKey: key as NSString, cost: cost)
             return img
         } catch {
             return nil
@@ -71,6 +109,38 @@ actor ImageCache {
         memoryCache.removeAllObjects()
         try? FileManager.default.removeItem(at: diskDirectory)
         try? FileManager.default.createDirectory(at: diskDirectory, withIntermediateDirectories: true)
+    }
+
+    // MARK: - Downsampling
+
+    /// Downsample an image file to at most `maxPixelSize` on its longest edge.
+    /// Uses ImageIO to decode only the thumbnail-sized bitmap, avoiding the
+    /// full-resolution decode that UIImage(data:) performs.
+    private func downsampledImage(at fileURL: URL) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceShouldCache: false   // Don't cache the full-size CGImage
+        ]
+        guard let source = CGImageSourceCreateWithURL(fileURL as CFURL, options as CFDictionary) else {
+            return nil
+        }
+
+        let thumbOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+            kCGImageSourceCreateThumbnailWithTransform: true,  // Respect EXIF orientation
+            kCGImageSourceShouldCacheImmediately: true         // Decode bitmap right away
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbOptions as CFDictionary) else {
+            return nil
+        }
+
+        return UIImage(cgImage: cgImage)
+    }
+
+    /// Approximate decoded memory cost in bytes (width * height * 4 bytes per pixel).
+    private func imageCost(_ image: UIImage) -> Int {
+        guard let cg = image.cgImage else { return 0 }
+        return cg.width * cg.height * 4
     }
 
     // MARK: Private
