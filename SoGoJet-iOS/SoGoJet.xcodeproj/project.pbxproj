@@ -60,6 +60,7 @@
 		FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB866D9B233B25ABE980F3 /* HapticEngine.swift */; };
 		B1C2D3E4F5061728394A5B6C /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F30415263748596A7B8C /* SearchView.swift */; };
 		F1E2D3C4B5A6978877665544 /* VintageTerminalKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6071827364554 /* VintageTerminalKit.swift */; };
+		A2B3C4D5E6F70819203A4B5C /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -117,6 +118,7 @@
 		EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealTier.swift; sourceTree = "<group>"; };
 		E1F2A3B4C5D6071827364554 /* VintageTerminalKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VintageTerminalKit.swift; sourceTree = "<group>"; };
 		EE14299AB5353027DFB0660B /* DealExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealExpiredView.swift; sourceTree = "<group>"; };
+		F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		FED8FD386433B5D295222C68 /* SplitFlapRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -178,6 +180,7 @@
 				C1BB98540188B677B6BA65C8 /* APIClient.swift */,
 				15EB866D9B233B25ABE980F3 /* HapticEngine.swift */,
 				B618C73022C992B057112952 /* ImageCache.swift */,
+				F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -440,6 +443,7 @@
 				0FF6FAFB4044541CB3E0527D /* Fonts.swift in Sources */,
 				FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */,
 				E850016A707ECF37DCBB2E5B /* ImageCache.swift in Sources */,
+				A2B3C4D5E6F70819203A4B5C /* NetworkMonitor.swift in Sources */,
 				7C6DDB40DD657B3C82381D4D /* OnboardingView.swift in Sources */,
 				C997FC98E346CCB10C0DFCD4 /* PassengerForm.swift in Sources */,
 				53483EF17FE30C880A54DB70 /* PriceAlertCTA.swift in Sources */,

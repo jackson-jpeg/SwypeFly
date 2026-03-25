@@ -7,6 +7,7 @@ struct ContentView: View {
     @Environment(BookingStore.self) private var bookingStore
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
+    @Environment(NetworkMonitor.self) private var network
 
     var body: some View {
         ZStack {
@@ -16,7 +17,30 @@ struct ContentView: View {
                 OnboardingView()
             }
         }
+        .overlay(alignment: .top) {
+            offlineBanner
+                .animation(.easeInOut(duration: 0.3), value: network.isConnected)
+        }
         .overlay { ToastOverlay() }
+    }
+
+    // MARK: - Offline Banner
+
+    @ViewBuilder
+    private var offlineBanner: some View {
+        if !network.isConnected {
+            HStack(spacing: 6) {
+                Image(systemName: "wifi.slash")
+                    .font(.caption)
+                Text("No internet connection")
+                    .font(.caption.weight(.medium))
+            }
+            .foregroundStyle(.black)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(Color.orange.opacity(0.9))
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
     }
 
     // MARK: - Tab View

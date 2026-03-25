@@ -8,6 +8,7 @@ struct SoGoJetApp: App {
     @State private var bookingStore = BookingStore()
     @State private var router = Router()
     @State private var toastManager = ToastManager()
+    @State private var networkMonitor = NetworkMonitor()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -19,6 +20,7 @@ struct SoGoJetApp: App {
                 .environment(bookingStore)
                 .environment(router)
                 .environment(toastManager)
+                .environment(networkMonitor)
                 .preferredColorScheme(.dark)
                 .task {
                     // Preload feed immediately on launch so content is
