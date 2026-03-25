@@ -79,7 +79,7 @@ struct BookingFlowView: View {
             flowChrome
         }
         .sheet(item: $shareItem) { item in
-            BookingFlowShareSheet(activityItems: [item.text])
+            BookingFlowShareSheet(activityItems: item.activityItems)
         }
         .overlay { ToastOverlay() }
         .onAppear {
@@ -152,7 +152,32 @@ struct BookingFlowView: View {
 
     private func shareBoardingPass() {
         HapticEngine.medium()
-        shareItem = BookingShareItem(text: boardingPassShareText)
+
+        // Generate a beautiful boarding pass card image
+        let origin = store.searchOrigin ?? settingsStore.departureCode
+        let destination = store.searchDestination ?? currentDeal.iataCode
+        let airline = store.selectedOffer?.airline ?? currentDeal.airlineName
+        let date = (store.searchDepartureDate ?? currentDeal.bestDepartureDate ?? "").shortDate
+        let reference: String = {
+            if case .confirmed(let ref) = store.step { return ref }
+            return store.bookingOrder?.bookingReference ?? "PENDING"
+        }()
+        let passenger = [store.passenger.title, store.passenger.firstName, store.passenger.lastName]
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .joined(separator: " ")
+
+        let image = ShareCardRenderer.renderBoardingPass(
+            origin: origin,
+            destination: destination,
+            destinationCity: currentDeal.destination,
+            airline: airline,
+            date: date,
+            reference: reference,
+            passenger: passenger.isEmpty ? "Traveler" : passenger,
+            price: store.totalPrice > 0 ? store.totalPrice : currentDeal.displayPrice
+        )
+
+        shareItem = BookingShareItem(text: boardingPassShareText, cardImage: image)
     }
 
     private var boardingPassShareText: String {
@@ -186,6 +211,16 @@ struct BookingFlowView: View {
 private struct BookingShareItem: Identifiable {
     let id = UUID()
     let text: String
+    let cardImage: UIImage?
+
+    var activityItems: [Any] {
+        var items: [Any] = []
+        if let image = cardImage {
+            items.append(image)
+        }
+        items.append(text)
+        return items
+    }
 }
 
 private struct BookingFlowShareSheet: UIViewControllerRepresentable {

@@ -66,8 +66,18 @@
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "2"
+         BundleIdentifier = "com.apple.springboard">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "69760285ADB2D9D8A6BBEF30"
+            BuildableName = "SoGoJetWidgetExtension.appex"
+            BlueprintName = "SoGoJetWidgetExtension"
+            ReferencedContainer = "container:SoGoJet.xcodeproj">
+         </BuildableReference>
+      </RemoteRunnable>
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CDA186B03F0A61442A47D80C"
@@ -75,7 +85,7 @@
             BlueprintName = "SoGoJet"
             ReferencedContainer = "container:SoGoJet.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "_XCWidgetKind"

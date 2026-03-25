@@ -15,12 +15,11 @@
 		186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */; };
 		2142C1B9F778DA6E1229A8D3 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */; };
 		238AFE49E080789B4A349D58 /* PlayfairDisplay-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */; };
-		2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */; };
+		2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */; };
 		325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 105C4B165D8E99F29DACC00B /* Assets.xcassets */; };
 		3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */; };
 		38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D680A370273663B3CD6E753 /* SeatMapView.swift */; };
 		3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CC0F70008C6C01B861DABF /* DealCard.swift */; };
-		D1A2B3C4E5F607182930A1B2 /* SwipeableCardStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */; };
 		44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */; };
 		49A8722EEA92DFC2EFF3AB59 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C004CCABD52B0D675FDC49BD /* SwiftUI.framework */; };
 		4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */; };
@@ -59,6 +58,8 @@
 		C997FC98E346CCB10C0DFCD4 /* PassengerForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1547ACCFAAACEFCCA028901 /* PassengerForm.swift */; };
 		CA52EA19F69F5ED6F93BE888 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37A502F1B6077B0E63A48EB6 /* Foundation.framework */; };
 		CFDCAE512ADD3A26FFFE6FAA /* TripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C1F35A4778E539A8BFE69F /* TripView.swift */; };
+		D1A2B3C4E5F607182930A1B2 /* SwipeableCardStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */; };
+		D5E6F7A8B9C0D1E2F3A4B5C6 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */; };
 		DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B905E64CC3B094A6DD5EC65C /* SavedCard.swift */; };
 		DEC62E0D0B58D36DBD56A1B1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E239452DD558CBC5AAC6EB99 /* ContentView.swift */; };
 		E7F8A9B0C1D2E3F405162738 /* Airlines.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6071829A1B2C3A4B5C6 /* Airlines.swift */; };
@@ -70,7 +71,6 @@
 		F3D138CE2009D3A9E09200BA /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98C552C4DAAA2703852D6E9 /* Colors.swift */; };
 		F4892DAAA2C0C21D26E5ABB5 /* SplitFlapRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED8FD386433B5D295222C68 /* SplitFlapRow.swift */; };
 		FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB866D9B233B25ABE980F3 /* HapticEngine.swift */; };
-		D5E6F7A8B9C0D1E2F3A4B5C6 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,15 +84,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		39A31622C48E414133ABA809 /* Embed App Extensions */ = {
+		39A31622C48E414133ABA809 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed App Extensions */,
+				2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed App Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -108,27 +108,27 @@
 		15845A1828ED10D7538A074A /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
 		15EB866D9B233B25ABE980F3 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
 		16BFE848CB96BAF94AC32178 /* AirportPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirportPicker.swift; sourceTree = "<group>"; };
-		1C12788850DB43FBA624BD7C /* SoGoJetWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; name = SoGoJetWidget.entitlements; path = SoGoJetWidget.entitlements; sourceTree = "<group>"; };
+		1C12788850DB43FBA624BD7C /* SoGoJetWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = SoGoJetWidget.entitlements; sourceTree = "<group>"; };
 		223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SoGoJetWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		27FF07F009DE3FAB0F64FF9C /* SoGoJetWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SoGoJetWidget.swift; path = SoGoJetWidget.swift; sourceTree = "<group>"; };
-		354C5BCFFB698ADB127A0E69 /* WidgetAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetAPIClient.swift; path = WidgetAPIClient.swift; sourceTree = "<group>"; };
+		27FF07F009DE3FAB0F64FF9C /* SoGoJetWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoGoJetWidget.swift; sourceTree = "<group>"; };
+		354C5BCFFB698ADB127A0E69 /* WidgetAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetAPIClient.swift; sourceTree = "<group>"; };
 		37A502F1B6077B0E63A48EB6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAlertCTA.swift; sourceTree = "<group>"; };
 		3E16299CD23179DBDA9EB1BE /* DealBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealBadge.swift; sourceTree = "<group>"; };
 		42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceSparkline.swift; sourceTree = "<group>"; };
 		49888397D14E02F727A4C21F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4C5452CDA36D6D93F24AAFB2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		4D65B575FB3FC80F5E47388E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
+		4D65B575FB3FC80F5E47388E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoGoJetApp.swift; sourceTree = "<group>"; };
 		5A79039C721A4E068A129336 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
-		5B005B3E34958EE89A4FDA7B /* FlightEntry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FlightEntry.swift; path = FlightEntry.swift; sourceTree = "<group>"; };
+		5B005B3E34958EE89A4FDA7B /* FlightEntry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlightEntry.swift; sourceTree = "<group>"; };
 		5B3D90ABB9744258D6621AC9 /* SavedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedView.swift; sourceTree = "<group>"; };
 		61C46CA93B008D3D761A2E79 /* BookingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingStore.swift; sourceTree = "<group>"; };
 		6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic.ttf"; sourceTree = "<group>"; };
-		6F407BD1805C70ABB402B7C8 /* SharedDefaults.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedDefaults.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
+		6F407BD1805C70ABB402B7C8 /* SharedDefaults.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationDetailView.swift; sourceTree = "<group>"; };
 		74190F28733D8C3D21B157F7 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
-		7ED335D8717153C9C30C0BBF /* SoGoJetWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SoGoJetWidgetBundle.swift; path = SoGoJetWidgetBundle.swift; sourceTree = "<group>"; };
+		7ED335D8717153C9C30C0BBF /* SoGoJetWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoGoJetWidgetBundle.swift; sourceTree = "<group>"; };
 		852DCAC63412CB4B4FB1291C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -136,20 +136,20 @@
 		9445CC8160636D040B7643A6 /* FilterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterSheet.swift; sourceTree = "<group>"; };
 		9D680A370273663B3CD6E753 /* SeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeatMapView.swift; sourceTree = "<group>"; };
 		A389ABB1A418871FD1196D90 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
 		A5C1F35A4778E539A8BFE69F /* TripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripView.swift; sourceTree = "<group>"; };
 		A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Accessibility.swift"; sourceTree = "<group>"; };
 		A7CC0F70008C6C01B861DABF /* DealCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealCard.swift; sourceTree = "<group>"; };
-		C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeableCardStack.swift; sourceTree = "<group>"; };
 		B2E252AF3479003C4AEEB610 /* DepartureRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureRow.swift; sourceTree = "<group>"; };
 		B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		B618C73022C992B057112952 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
-		A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
 		B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureBoardView.swift; sourceTree = "<group>"; };
 		B905E64CC3B094A6DD5EC65C /* SavedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedCard.swift; sourceTree = "<group>"; };
 		C004CCABD52B0D675FDC49BD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		C1BB98540188B677B6BA65C8 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		C1D2E3F405162738495A6B7C /* BookingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingFlowView.swift; sourceTree = "<group>"; };
 		C26A3648EF4C6E3292D0A4A8 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeableCardStack.swift; sourceTree = "<group>"; };
 		C98C552C4DAAA2703852D6E9 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingModels.swift; sourceTree = "<group>"; };
 		CF053BF9554FA03D569D4310 /* BebasNeue-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BebasNeue-Regular.ttf"; sourceTree = "<group>"; };
@@ -161,7 +161,7 @@
 		E239452DD558CBC5AAC6EB99 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E9260F42534404374D49FA21 /* BoardingPassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardingPassView.swift; sourceTree = "<group>"; };
 		E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsBanner.swift; sourceTree = "<group>"; };
-		EAEFB51AD3D165D42F043068 /* WidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetViews.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
+		EAEFB51AD3D165D42F043068 /* WidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
 		EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapChar.swift; sourceTree = "<group>"; };
 		EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealTier.swift; sourceTree = "<group>"; };
 		F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
@@ -378,7 +378,6 @@
 				4D65B575FB3FC80F5E47388E /* Info.plist */,
 				1C12788850DB43FBA624BD7C /* SoGoJetWidget.entitlements */,
 			);
-			name = SoGoJetWidget;
 			path = SoGoJetWidget;
 			sourceTree = "<group>";
 		};
@@ -467,7 +466,7 @@
 			buildPhases = (
 				3E452D97E5F3A71F04CF6ABA /* Sources */,
 				B275C3D2FE848D8516140C56 /* Resources */,
-				39A31622C48E414133ABA809 /* Embed App Extensions */,
+				39A31622C48E414133ABA809 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);

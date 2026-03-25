@@ -95,20 +95,15 @@ struct FlightRow: View {
             RoundedRectangle(cornerRadius: 1)
                 .fill(highlighted ? WD.gold : Color.clear)
                 .frame(width: 3, height: ch)
-                .padding(.trailing, 4)
+                .padding(.trailing, 3)
 
-            // IATA code (3 chars)
-            SplitFlapText(text: flight.iataCode, length: 3, color: highlighted ? WD.white : WD.muted, w: cw, h: ch, fs: fs)
-
-            Spacer().frame(width: 4)
-
-            // Destination
+            // Destination (full name, no IATA code — saves 4 chars of space)
             SplitFlapText(text: flight.city, length: destLen, color: WD.white, w: cw, h: ch, fs: fs)
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 3)
 
             // Price
-            SplitFlapText(text: "$\(flight.price)", length: 5, color: priceColor, w: cw, h: ch, fs: fs, align: .trailing)
+            SplitFlapText(text: "$\(flight.price)", length: 4, color: priceColor, w: cw, h: ch, fs: fs, align: .trailing)
         }
     }
 
@@ -126,14 +121,15 @@ struct FlightRow: View {
 struct MediumBoardView: View {
     let entry: FlightEntry
 
-    // Maximized cells to fill the medium widget (~155pt height)
-    private let cw: CGFloat = 18
-    private let ch: CGFloat = 26
-    private let fs: CGFloat = 15
+    // Sized to fill medium widget (~329x155pt)
+    // With 14pt cells: 13 dest chars + 4 price chars = 17 × 14 = 238pt + gaps ≈ fits
+    private let cw: CGFloat = 15
+    private let ch: CGFloat = 22
+    private let fs: CGFloat = 12
 
     var body: some View {
         VStack(spacing: 0) {
-            // Compact header — just icon + DEPARTURES + code
+            // Compact header
             HStack(spacing: 4) {
                 Image(systemName: "airplane.departure")
                     .font(.system(size: 9, weight: .bold))
@@ -147,24 +143,25 @@ struct MediumBoardView: View {
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .foregroundStyle(WD.muted)
             }
-            .padding(.bottom, 5)
 
-            // Flight rows — maximize space, no column labels needed
-            VStack(spacing: 5) {
+            Spacer(minLength: 2)
+
+            // Flight rows — fill available vertical space
+            VStack(spacing: 8) {
                 let flights = Array(entry.flights.prefix(3))
                 ForEach(Array(flights.enumerated()), id: \.element.id) { i, flight in
                     Link(destination: deepLink(for: flight)) {
-                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 8)
+                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 13)
                     }
                 }
                 ForEach(0..<max(0, 3 - entry.flights.count), id: \.self) { _ in
-                    emptyRow(cw: cw, ch: ch, destLen: 8)
+                    emptyRow(cw: cw, ch: ch, destLen: 13)
                 }
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 2)
 
-            // Minimal branding
+            // Minimal branding, tight to bottom
             HStack {
                 Spacer()
                 HStack(spacing: 2) {
@@ -178,7 +175,7 @@ struct MediumBoardView: View {
                 }
             }
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 8)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(WD.bg)
@@ -190,59 +187,44 @@ struct MediumBoardView: View {
 struct LargeBoardView: View {
     let entry: FlightEntry
 
-    private let cw: CGFloat = 18
-    private let ch: CGFloat = 26
-    private let fs: CGFloat = 15
+    // Large widget has more space — use bigger cells
+    private let cw: CGFloat = 16
+    private let ch: CGFloat = 24
+    private let fs: CGFloat = 13
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack(spacing: 5) {
                 Image(systemName: "airplane.departure")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(WD.gold)
                 Text("DEPARTURES")
-                    .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                    .font(.system(size: 12, weight: .heavy, design: .monospaced))
                     .foregroundStyle(WD.white)
                     .tracking(2)
                 Spacer()
                 Text(entry.departureCode)
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundStyle(WD.muted)
             }
-            .padding(.bottom, 8)
 
-            Rectangle().fill(WD.border.opacity(0.5)).frame(height: 0.5)
-                .padding(.bottom, 6)
+            Spacer(minLength: 4)
 
-            // Column labels
-            HStack(spacing: 0) {
-                Color.clear.frame(width: 7)
-                Text("CODE").frame(width: cw * 3 + 2, alignment: .leading)
-                Spacer().frame(width: 4)
-                Text("DESTINATION").frame(alignment: .leading)
-                Spacer()
-                Text("FARE").frame(alignment: .trailing)
-            }
-            .font(.system(size: 8, weight: .bold, design: .monospaced))
-            .foregroundStyle(WD.muted.opacity(0.5))
-            .padding(.bottom, 6)
-
-            // 5 flight rows — fill available space
+            // 5 flight rows — fill available space, no column labels
             VStack(spacing: 8) {
                 let flights = Array(entry.flights.prefix(5))
                 ForEach(Array(flights.enumerated()), id: \.element.id) { i, flight in
                     Link(destination: deepLink(for: flight)) {
-                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 9)
+                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 14)
                     }
 
                     if i < min(flights.count, 5) - 1 {
-                        Rectangle().fill(WD.border.opacity(0.3)).frame(height: 0.5).padding(.leading, 7)
+                        Rectangle().fill(WD.border.opacity(0.3)).frame(height: 0.5).padding(.leading, 6)
                     }
                 }
-                // Fill empty
                 ForEach(0..<max(0, 5 - entry.flights.count), id: \.self) { _ in
-                    emptyRow(cw: cw, ch: ch, destLen: 9)
+                    emptyRow(cw: cw, ch: ch, destLen: 14)
                 }
             }
 
@@ -279,9 +261,9 @@ struct LargeBoardView: View {
 
 private func emptyRow(cw: CGFloat, ch: CGFloat, destLen: Int) -> some View {
     HStack(spacing: 0) {
-        Color.clear.frame(width: 3, height: ch).padding(.trailing, 4)
+        Color.clear.frame(width: 3, height: ch).padding(.trailing, 3)
         HStack(spacing: 1) {
-            ForEach(0..<(3 + destLen + 5), id: \.self) { _ in
+            ForEach(0..<(destLen + 4), id: \.self) { _ in
                 RoundedRectangle(cornerRadius: 2.5)
                     .fill(WD.cellBg)
                     .overlay(RoundedRectangle(cornerRadius: 2.5).strokeBorder(WD.border, lineWidth: 0.5))

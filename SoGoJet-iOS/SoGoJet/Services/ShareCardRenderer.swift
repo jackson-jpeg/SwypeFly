@@ -39,6 +39,182 @@ enum ShareCardRenderer {
 
         return renderer.uiImage
     }
+
+    /// Render a boarding pass confirmation as a shareable image.
+    static func renderBoardingPass(
+        origin: String,
+        destination: String,
+        destinationCity: String,
+        airline: String,
+        date: String,
+        reference: String,
+        passenger: String,
+        price: Double?
+    ) -> UIImage? {
+        let view = BoardingPassCardView(
+            origin: origin,
+            destination: destination,
+            destinationCity: destinationCity,
+            airline: airline,
+            date: date,
+            reference: reference,
+            passenger: passenger,
+            price: price
+        )
+        .frame(width: 1080, height: 1080)
+
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 3
+        renderer.proposedSize = .init(width: 1080, height: 1080)
+        return renderer.uiImage
+    }
+}
+
+// MARK: - Boarding Pass Card View
+
+private struct BoardingPassCardView: View {
+    let origin: String
+    let destination: String
+    let destinationCity: String
+    let airline: String
+    let date: String
+    let reference: String
+    let passenger: String
+    let price: Double?
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.039, green: 0.039, blue: 0.039)
+
+            VStack(spacing: 0) {
+                Spacer().frame(height: 80)
+
+                // "Just booked" header
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(Color(red: 0.29, green: 0.87, blue: 0.50))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("TRIP BOOKED")
+                            .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .tracking(3)
+                        Text("I'm going to \(destinationCity)!")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 60)
+
+                Spacer().frame(height: 50)
+
+                // Boarding pass ticket
+                VStack(spacing: 0) {
+                    // Top section — route
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("FROM")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.5))
+                            Text(origin)
+                                .font(.system(size: 48, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white)
+                        }
+                        Spacer()
+                        Image(systemName: "airplane")
+                            .font(.system(size: 32))
+                            .foregroundStyle(Color(red: 0.969, green: 0.910, blue: 0.627))
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("TO")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.5))
+                            Text(destination)
+                                .font(.system(size: 48, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.vertical, 30)
+                    .background(Color(red: 0.094, green: 0.094, blue: 0.094))
+
+                    // Perforated line
+                    HStack(spacing: 6) {
+                        ForEach(0..<40, id: \.self) { _ in
+                            Circle()
+                                .fill(Color(red: 0.039, green: 0.039, blue: 0.039))
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, -3)
+                    .zIndex(1)
+
+                    // Bottom section — details
+                    VStack(spacing: 20) {
+                        HStack {
+                            detailField("PASSENGER", value: passenger)
+                            Spacer()
+                            detailField("DATE", value: date)
+                        }
+                        HStack {
+                            detailField("AIRLINE", value: airline)
+                            Spacer()
+                            detailField("BOOKING REF", value: reference)
+                        }
+                        if let price, price > 0 {
+                            HStack {
+                                detailField("TOTAL", value: "$\(Int(price))")
+                                Spacer()
+                            }
+                        }
+
+                        // Barcode
+                        HStack(spacing: 1.5) {
+                            ForEach(0..<50, id: \.self) { i in
+                                Rectangle()
+                                    .fill(.white.opacity(i.isMultiple(of: 3) ? 0.4 : 0.8))
+                                    .frame(width: CGFloat.random(in: 2...5), height: 40)
+                            }
+                        }
+                        .padding(.top, 10)
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.vertical, 30)
+                    .background(Color(red: 0.078, green: 0.078, blue: 0.078))
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .padding(.horizontal, 50)
+
+                Spacer().frame(height: 50)
+
+                // Branding
+                HStack(spacing: 8) {
+                    Image(systemName: "airplane")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color(red: 0.969, green: 0.910, blue: 0.627))
+                    Text("SOGOJET")
+                        .font(.system(size: 18, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .tracking(4)
+                }
+
+                Spacer()
+            }
+        }
+    }
+
+    private func detailField(_ label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.white.opacity(0.4))
+            Text(value.uppercased())
+                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
+        }
+    }
 }
 
 // MARK: - Share Card View
