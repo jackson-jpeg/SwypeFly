@@ -43,7 +43,7 @@ struct SimilarDeals: View {
                             } label: {
                                 card(for: deal)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(SimilarDealButtonStyle())
                             .frame(width: 220)
                         }
                     }
@@ -105,6 +105,17 @@ struct SimilarDeals: View {
             RoundedRectangle(cornerRadius: Radius.md)
                 .strokeBorder(Color.sgBorder, lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Similar Deal Button Style
+
+private struct SimilarDealButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
