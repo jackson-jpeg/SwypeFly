@@ -281,6 +281,33 @@ enum APIError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
+            return "Something went wrong. Please try again."
+        case .invalidResponse:
+            return "We couldn't reach the server. Check your connection and try again."
+        case let .httpError(code, _):
+            switch code {
+            case 401:
+                return "Sign in to continue."
+            case 403:
+                return "You don't have access to this. Try signing in again."
+            case 404:
+                return "We couldn't find what you're looking for."
+            case 429:
+                return "Too many requests. Please wait a moment and try again."
+            case 500...599:
+                return "Our servers are having a moment. Please try again shortly."
+            default:
+                return "Something went wrong (error \(code)). Please try again."
+            }
+        case .decodingFailed:
+            return "We got an unexpected response. Please try again."
+        }
+    }
+
+    /// Raw technical detail for logging — never show this to users.
+    var technicalDescription: String {
+        switch self {
+        case .invalidURL:
             return "Invalid URL"
         case .invalidResponse:
             return "Invalid server response"

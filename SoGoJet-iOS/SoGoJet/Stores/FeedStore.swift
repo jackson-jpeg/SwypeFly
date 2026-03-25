@@ -65,7 +65,7 @@ final class FeedStore {
             } catch {
                 guard activeRequestID == requestID, activeOrigin == origin else { return }
                 if deals.isEmpty {
-                    self.error = error.localizedDescription
+                    self.error = userFacingMessage(for: error)
                 }
             }
         } catch {
@@ -73,7 +73,7 @@ final class FeedStore {
             #if DEBUG
             print("❌ [FeedStore] fetchDeals failed: \(error)")
             #endif
-            self.error = error.localizedDescription
+            self.error = userFacingMessage(for: error)
         }
 
         guard activeRequestID == requestID, activeOrigin == origin else { return }
@@ -108,12 +108,12 @@ final class FeedStore {
             } catch {
                 guard activeRequestID == requestID, activeOrigin == origin else { return }
                 if deals.isEmpty {
-                    self.error = error.localizedDescription
+                    self.error = userFacingMessage(for: error)
                 }
             }
         } catch {
             guard activeRequestID == requestID, activeOrigin == origin else { return }
-            self.error = error.localizedDescription
+            self.error = userFacingMessage(for: error)
         }
 
         guard activeRequestID == requestID, activeOrigin == origin else { return }
@@ -230,6 +230,35 @@ final class FeedStore {
         }
 
         return merged
+    }
+
+    /// Convert any error into a user-friendly message.
+    private func userFacingMessage(for error: Error) -> String {
+        // APIError already has user-friendly messages via errorDescription
+        if let apiError = error as? APIError {
+            return apiError.localizedDescription
+        }
+
+        // URLError — network/connectivity issues
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost:
+                return "No internet connection. Check your Wi-Fi or cellular data and try again."
+            case .timedOut:
+                return "The request timed out. Please try again."
+            case .cannotFindHost, .cannotConnectToHost:
+                return "Couldn't connect to the server. Please try again later."
+            default:
+                return "A network error occurred. Please try again."
+            }
+        }
+
+        // CancellationError — user or system cancelled, no message needed
+        if error is CancellationError {
+            return "Request was cancelled."
+        }
+
+        return "Something went wrong. Please try again."
     }
 
     static func region(for country: String) -> String? {
