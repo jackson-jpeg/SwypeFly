@@ -58,29 +58,27 @@ struct DealCard: View {
 
                     Spacer()
 
-                    // Bottom: city name, flight teaser, price badge
-                    HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            SplitFlapRow(
-                                text: deal.city.uppercased(),
-                                maxLength: 12,
-                                size: .md,
-                                color: Color.sgWhite,
-                                alignment: .leading,
-                                animate: animate,
-                                startDelay: 0.1,
-                                staggerMs: 50
-                            )
+                    // Bottom: city name + flight teaser above, price badge below-right
+                    VStack(alignment: .leading, spacing: 6) {
+                        SplitFlapRow(
+                            text: deal.city.uppercased(),
+                            maxLength: 12,
+                            size: .md,
+                            color: Color.sgWhite,
+                            alignment: .leading,
+                            animate: animate,
+                            startDelay: 0.1,
+                            staggerMs: 50
+                        )
 
+                        HStack {
                             flightTeaser
+                            Spacer()
+                            priceBadge
                         }
-
-                        Spacer()
-
-                        priceBadge
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 120) // Clear tab bar (49pt) + home indicator (34pt) + breathing room
+                    .padding(.bottom, 120)
                 }
 
                 // Swipe hint — only on the first card, auto-dismisses
