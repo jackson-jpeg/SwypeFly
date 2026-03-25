@@ -42,7 +42,7 @@ struct SavedCard: View {
 
                         Text(deal.country.uppercased())
                             .font(SGFont.bodySmall)
-                            .foregroundStyle(Color.sgWhite.opacity(0.6))
+                            .foregroundStyle(Color.sgWhite.opacity(0.8))
                             .lineLimit(1)
                     }
 

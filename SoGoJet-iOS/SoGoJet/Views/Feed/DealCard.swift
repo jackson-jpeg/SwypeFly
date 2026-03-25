@@ -32,7 +32,7 @@ struct DealCard: View {
                 VStack {
                     Spacer()
                     LinearGradient(
-                        colors: [.clear, Color(hex: 0x0A0A0A, alpha: 0.75)],
+                        colors: [.clear, Color(hex: 0x0A0A0A, alpha: 0.85)],
                         startPoint: .init(x: 0.5, y: 0),
                         endPoint: .init(x: 0.5, y: 1)
                     )
@@ -48,9 +48,11 @@ struct DealCard: View {
                         if !deal.country.isEmpty {
                             Text(deal.country.uppercased())
                                 .font(SGFont.bodySmall)
-                                .foregroundStyle(Color.sgWhite.opacity(0.6))
-                                .padding(.horizontal, 12)
+                                .foregroundStyle(Color.sgWhite.opacity(0.9))
+                                .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
+                                .background(Color.black.opacity(0.45))
+                                .clipShape(Capsule())
                         }
                     }
                     .padding(.top, geo.safeAreaInsets.top + 56)
@@ -208,7 +210,7 @@ struct DealCard: View {
         if !parts.isEmpty {
             Text(parts)
                 .font(SGFont.bodySmall)
-                .foregroundStyle(Color.sgWhite.opacity(0.7))
+                .foregroundStyle(Color.sgWhite.opacity(0.85))
                 .lineLimit(1)
         }
     }
