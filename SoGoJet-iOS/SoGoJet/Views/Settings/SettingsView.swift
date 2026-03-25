@@ -1,7 +1,6 @@
 import SwiftUI
 
 // MARK: - Settings View
-// Vintage control lounge for departure preferences, archive management, and app policies.
 
 struct SettingsView: View {
     @Environment(SettingsStore.self) private var settings
@@ -10,37 +9,27 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
 
     @State private var showClearConfirmation = false
-    @State private var diagnosticsExpanded = false
-
-    private let modeCards: [ModeOption] = [
-        .init(
-            id: "grid",
-            title: "Swipe Feed",
-            subtitle: "TikTok-style discovery with immersive destination cards.",
-            stamp: "Feed",
-            tone: .amber
-        ),
-        .init(
-            id: "list",
-            title: "Terminal Board",
-            subtitle: "Compact rows in a departure-board layout.",
-            stamp: "Board",
-            tone: .ivory
-        ),
-    ]
 
     var body: some View {
         VintageTerminalScreen(headerSpacing: Spacing.md) {
-            headerSection
+            // Header
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("Settings")
+                    .font(SGFont.cardTitle)
+                    .foregroundStyle(Color.sgWhite)
+
+                Text("v\(appVersion)")
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
+            }
+            .padding(.top, Spacing.sm)
         } content: {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                operationsLounge
-                displayDeck
-                alertDeck
-                archiveDeck
-                aboutDeck
-                diagnosticsDeck
-                footerCluster
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                departureSection
+                displaySection
+                notificationsSection
+                savedSection
+                aboutSection
             }
         }
         .navigationTitle("")
@@ -52,289 +41,203 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will remove all \(savedStore.count) saved flights from your archive. This action cannot be undone.")
+            Text("This will remove all \(savedStore.count) saved flights. This cannot be undone.")
         }
     }
 
-    // MARK: - Header
+    // MARK: - Departure Airport
 
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack(alignment: .top, spacing: Spacing.md) {
-                VintageTerminalHeroLockup(
-                    eyebrow: "Settings",
-                    title: "Settings",
-                    subtitle: "",
-                    accent: .amber
-                )
-
-                Spacer(minLength: 0)
-
-                VintageTerminalPassportStamp(
-                    title: "Version",
-                    subtitle: appVersion,
-                    tone: .ember
-                )
-            }
-
-            VintageTerminalTagCloud(
-                tags: activeTags,
-                tone: .ivory
-            )
-        }
-        .padding(.top, Spacing.sm)
-    }
-
-    // MARK: - Operations
-
-    private var operationsLounge: some View {
-        VintageTerminalPanel(
-            title: "Departure",
-            subtitle: "Change your home airport.",
-            stamp: "Origin",
-            tone: .amber
-        ) {
+    private var departureSection: some View {
+        settingsSection("Departure Airport") {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(alignment: .top, spacing: Spacing.md) {
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text("Airport")
-                            .font(SGFont.bodyBold(size: 10))
-                            .foregroundStyle(Color.sgMuted)
-                            .tracking(1.4)
+                HStack(alignment: .center, spacing: Spacing.md) {
+                    SplitFlapRow(
+                        text: settings.departureCode,
+                        maxLength: 3,
+                        size: .lg,
+                        color: Color.sgYellow,
+                        animate: true,
+                        staggerMs: 35
+                    )
 
-                        SplitFlapRow(
-                            text: settings.departureCode,
-                            maxLength: 3,
-                            size: .lg,
-                            color: Color.sgYellow,
-                            animate: true,
-                            staggerMs: 35
-                        )
-
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(settings.departureCity)
                             .font(SGFont.sectionHead)
                             .foregroundStyle(Color.sgWhite)
 
-                        Text("Every live price refresh is anchored to this airport unless a booking flow overrides it.")
+                        Text("All prices shown from this airport")
                             .font(SGFont.body(size: 12))
                             .foregroundStyle(Color.sgMuted)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer(minLength: 0)
-
-                    VintageTerminalPassportStamp(
-                        title: "Mode",
-                        subtitle: preferredViewLabel,
-                        tone: settings.preferredView == "list" ? .ivory : .amber
-                    )
                 }
 
-                VintageTerminalRouteDisplay(
-                    originCode: settings.departureCode,
-                    originLabel: settings.departureCity,
-                    destinationCode: settings.preferredView == "list" ? "LST" : "CRD",
-                    destinationLabel: settings.preferredView == "list" ? "Board view" : "Card view",
-                    detail: "Change the origin once here and the rest of the app follows.",
-                    tone: .amber
-                )
-
-                VintageTerminalActionCluster {
-                    VintageTerminalActionButton(
-                        title: "Choose Departure Airport",
-                        subtitle: "Open the airport picker",
-                        icon: "airplane.departure",
-                        tone: .amber,
-                        fillsWidth: true
-                    ) {
-                        HapticEngine.selection()
-                        router.showDeparturePicker()
+                Button {
+                    HapticEngine.selection()
+                    router.showDeparturePicker()
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "airplane.departure")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Change Airport")
+                            .font(SGFont.bodyBold(size: 14))
                     }
-                } secondary: {
-                    VintageTerminalSecondaryButton(
-                        title: "Return to Explore",
-                        subtitle: "Jump back into active deal discovery",
-                        icon: "airplane",
-                        tone: .neutral,
-                        fillsWidth: true
-                    ) {
-                        router.activeTab = .feed
-                    }
+                    .foregroundStyle(Color.sgBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Spacing.sm)
+                    .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
+                .buttonStyle(.plain)
             }
         }
     }
 
-    // MARK: - Display
+    // MARK: - Display Mode
 
-    private var displayDeck: some View {
-        VintageTerminalPanel(
-            title: "Display",
-            subtitle: "",
-            stamp: "View",
-            tone: .ivory
-        ) {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                ForEach(modeCards) { option in
-                    modeCard(for: option)
-                }
-
-                VintageTerminalInsetPanel(tone: settings.preferredView == "list" ? .ivory : .amber) {
-                    VintageTerminalInfoRow(
-                        icon: settings.preferredView == "list" ? "rectangle.grid.1x2" : "rectangle.portrait.on.rectangle.portrait",
-                        title: currentModeHeadline,
-                        value: currentModeExplanation,
-                        detail: "Both surfaces use the same deals. This setting only changes presentation.",
-                        tone: settings.preferredView == "list" ? .ivory : .amber
-                    )
-                }
-            }
-        }
-    }
-
-    private func modeCard(for option: ModeOption) -> some View {
-        Button {
-            HapticEngine.selection()
-            settings.preferredView = option.id
-        } label: {
+    private var displaySection: some View {
+        settingsSection("View Mode") {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack(spacing: Spacing.sm) {
-                    VintageTerminalSelectablePill(
-                        title: option.stamp,
-                        isSelected: settings.preferredView == option.id,
-                        tone: option.tone
-                    ) {}
-                    .allowsHitTesting(false)
-
-                    Spacer(minLength: 0)
-
-                    if settings.preferredView == option.id {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(option.tone.accent)
-                    }
+                // Segmented-style picker
+                HStack(spacing: 0) {
+                    viewModeButton(id: "grid", label: "Swipe Feed", icon: "rectangle.portrait.on.rectangle.portrait")
+                    viewModeButton(id: "list", label: "Board", icon: "rectangle.grid.1x2")
                 }
+                .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
 
-                Text(option.title)
-                    .font(SGFont.sectionHead)
-                    .foregroundStyle(Color.sgWhite)
-
-                Text(option.subtitle)
+                Text(settings.preferredView == "list"
+                     ? "Compact rows in a departure-board layout."
+                     : "Full-bleed destination cards with vertical paging.")
                     .font(SGFont.body(size: 12))
-                    .foregroundStyle(Color.sgWhiteDim)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(Color.sgMuted)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(Spacing.md)
-            .background(option.tone.softFill, in: RoundedRectangle(cornerRadius: Radius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md)
-                    .strokeBorder(
-                        settings.preferredView == option.id ? option.tone.accent : option.tone.border,
-                        lineWidth: 1
-                    )
+        }
+    }
+
+    private func viewModeButton(id: String, label: String, icon: String) -> some View {
+        let isSelected = settings.preferredView == id
+        return Button {
+            HapticEngine.selection()
+            settings.preferredView = id
+        } label: {
+            HStack(spacing: Spacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(label)
+                    .font(SGFont.bodyBold(size: 13))
+            }
+            .foregroundStyle(isSelected ? Color.sgBg : Color.sgWhiteDim)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                isSelected ? Color.sgYellow : Color.clear,
+                in: RoundedRectangle(cornerRadius: Radius.md)
             )
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - Alerts
+    // MARK: - Notifications
 
-    private var alertDeck: some View {
-        VintageTerminalPanel(
-            title: "Notifications",
-            subtitle: "Manage your notification preferences.",
-            stamp: "Alerts",
-            tone: .moss
-        ) {
+    private var notificationsSection: some View {
+        settingsSection("Notifications") {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                VintageTerminalToggleRow(
+                toggleRow(
                     icon: "bell.badge.fill",
-                    title: "Push notifications",
-                    subtitle: "Trip nudges, booking reminders, and major app notices.",
-                    isOn: notificationBinding,
-                    tone: .moss
+                    title: "Push Notifications",
+                    isOn: notificationBinding
                 )
 
-                VintageTerminalToggleRow(
+                Divider().overlay(Color.sgBorder)
+
+                toggleRow(
                     icon: "tag.fill",
-                    title: "Price alert emails",
-                    subtitle: "Enable destination email alerts from detail cards and booking surfaces.",
-                    isOn: priceAlertsBinding,
-                    tone: .amber
+                    title: "Price Alert Emails",
+                    isOn: priceAlertsBinding
                 )
 
-                VintageTerminalInsetPanel(tone: settings.priceAlertsEnabled ? .amber : .neutral) {
-                    VintageTerminalInfoRow(
-                        icon: settings.priceAlertsEnabled ? "envelope.badge.fill" : "envelope.open",
-                        title: settings.priceAlertsEnabled ? "Alert route active" : "Alerts paused",
-                        value: alertSummaryTitle,
-                        detail: alertSummaryDetail,
-                        tone: settings.priceAlertsEnabled ? .amber : .neutral
-                    )
+                if !settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(maskedEmail(settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines)))
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgMuted)
+                        .padding(.leading, 28)
                 }
             }
         }
     }
 
-    // MARK: - Archive
+    private func toggleRow(icon: String, title: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.sgYellow)
+                .frame(width: 20)
 
-    private var archiveDeck: some View {
-        VintageTerminalPanel(
-            title: "Saved Stats",
-            subtitle: "",
-            stamp: "Saved",
-            tone: .ember
-        ) {
+            Text(title)
+                .font(SGFont.bodyBold(size: 14))
+                .foregroundStyle(Color.sgWhite)
+
+            Spacer()
+
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(Color.sgYellow)
+        }
+    }
+
+    // MARK: - Saved
+
+    private var savedSection: some View {
+        settingsSection("Saved Flights") {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                VintageTerminalMetricDeck(metrics: [
-                    VintageTerminalMetric(
-                        title: "Saved Routes",
-                        value: "\(savedStore.count)",
-                        footnote: savedStore.count == 0 ? "No trips saved yet" : "Trips saved for quick access",
-                        tone: .amber
-                    ),
-                    VintageTerminalMetric(
-                        title: "Tracked Savings",
-                        value: savedStore.totalSavings == 0 ? "$0" : "$\(Int(savedStore.totalSavings))",
-                        footnote: savedStore.totalSavings == 0 ? "Waiting on the next fare drop" : "Total savings across saved trips",
-                        tone: .moss
-                    ),
-                    VintageTerminalMetric(
-                        title: "Archive Value",
-                        value: savedStore.totalValue == 0 ? "$0" : "$\(Int(savedStore.totalValue))",
-                        footnote: "Combined fare value of saved trips",
-                        tone: .ivory
-                    ),
-                    VintageTerminalMetric(
-                        title: "Collection",
-                        value: savedStore.count >= 6 ? "Stacked" : savedStore.count >= 1 ? "Growing" : "Empty",
-                        footnote: savedStore.count >= 6 ? "Your collection status" : "A few more saves will make this useful",
-                        tone: .ember
-                    ),
-                ])
+                HStack {
+                    Text("\(savedStore.count)")
+                        .font(SGFont.cardTitle)
+                        .foregroundStyle(Color.sgYellow)
+                    Text(savedStore.count == 1 ? "trip saved" : "trips saved")
+                        .font(SGFont.body(size: 14))
+                        .foregroundStyle(Color.sgMuted)
+                    Spacer()
+                }
 
-                VintageTerminalActionCluster {
-                    VintageTerminalActionButton(
-                        title: "Open Saved Archive",
-                        subtitle: "Review your saved trips",
-                        icon: "heart.fill",
-                        tone: .ember,
-                        fillsWidth: true
-                    ) {
+                HStack(spacing: Spacing.sm) {
+                    Button {
                         router.activeTab = .saved
+                    } label: {
+                        HStack(spacing: Spacing.xs) {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 12))
+                            Text("View Saved")
+                                .font(SGFont.bodyBold(size: 13))
+                        }
+                        .foregroundStyle(Color.sgYellow)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.sgYellow.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.md))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.md)
+                                .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
+                        )
                     }
-                } secondary: {
-                    VintageTerminalSecondaryButton(
-                        title: "Clear Saved Flights",
-                        subtitle: savedStore.count == 0 ? "Nothing saved yet" : "Remove all saved trips",
-                        icon: "trash",
-                        tone: .neutral,
-                        fillsWidth: true
-                    ) {
+                    .buttonStyle(.plain)
+
+                    Button {
                         showClearConfirmation = true
+                    } label: {
+                        HStack(spacing: Spacing.xs) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12))
+                            Text("Clear All")
+                                .font(SGFont.bodyBold(size: 13))
+                        }
+                        .foregroundStyle(Color.sgMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
                     }
+                    .buttonStyle(.plain)
                     .disabled(savedStore.count == 0)
+                    .opacity(savedStore.count == 0 ? 0.4 : 1)
                 }
             }
         }
@@ -342,124 +245,70 @@ struct SettingsView: View {
 
     // MARK: - About
 
-    private var aboutDeck: some View {
-        VintageTerminalPanel(
-            title: "About",
-            subtitle: "",
-            stamp: "Info",
-            tone: .neutral
-        ) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                VintageTerminalLinkRow(
-                    icon: "lock.shield",
-                    title: "Privacy Policy",
-                    detail: "How SoGoJet handles account, pricing, and alert data.",
-                    tone: .neutral
-                ) {
+    private var aboutSection: some View {
+        settingsSection("About") {
+            VStack(alignment: .leading, spacing: 0) {
+                linkRow(icon: "lock.shield", title: "Privacy Policy") {
                     openURL(URL(string: "https://sogojet.com/legal/privacy")!)
                 }
 
-                VintageTerminalLinkRow(
-                    icon: "doc.text",
-                    title: "Terms of Service",
-                    detail: "Usage terms, booking assumptions, and affiliate disclosures.",
-                    tone: .neutral
-                ) {
+                Divider().overlay(Color.sgBorder)
+
+                linkRow(icon: "doc.text", title: "Terms of Service") {
                     openURL(URL(string: "https://sogojet.com/legal/terms")!)
                 }
 
-                VintageTerminalLinkRow(
-                    icon: "envelope",
-                    title: "Contact SoGoJet",
-                    detail: "hello@sogojet.com",
-                    tone: .neutral
-                ) {
+                Divider().overlay(Color.sgBorder)
+
+                linkRow(icon: "envelope", title: "Contact Us") {
                     openURL(URL(string: "mailto:hello@sogojet.com")!)
                 }
             }
         }
     }
 
-    // MARK: - Diagnostics
+    // MARK: - Reusable Components
 
-    private var diagnosticsDeck: some View {
-        VintageTerminalPanel(
-            title: "App Info",
-            subtitle: "",
-            stamp: diagnosticsExpanded ? "Expanded" : "Summary",
-            tone: .ivory
-        ) {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                VintageTerminalActionCluster {
-                    VintageTerminalSecondaryButton(
-                        title: diagnosticsExpanded ? "Collapse notes" : "Expand notes",
-                        subtitle: "Show what these controls actually influence in the app",
-                        icon: diagnosticsExpanded ? "chevron.up" : "chevron.down",
-                        tone: .ivory,
-                        fillsWidth: true
-                    ) {
-                        HapticEngine.selection()
-                        withAnimation(.easeInOut(duration: 0.22)) {
-                            diagnosticsExpanded.toggle()
-                        }
-                    }
-                } secondary: {
-                    VintageTerminalSecondaryButton(
-                        title: "Current departure label",
-                        subtitle: settings.departureLabel,
-                        icon: "location",
-                        tone: .neutral,
-                        fillsWidth: true
-                    ) {}
-                    .disabled(true)
-                }
+    private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text(title.uppercased())
+                .font(SGFont.bodyBold(size: 11))
+                .foregroundStyle(Color.sgMuted)
+                .tracking(1.2)
 
-                if diagnosticsExpanded {
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        VintageTerminalChecklistItem(
-                            title: "Origin synchronization",
-                            detail: "Feed searches, board mode, and booking all read from the same departure code unless a route-specific override is in play.",
-                            tone: .amber
-                        )
-                        VintageTerminalChecklistItem(
-                            title: "Display mode",
-                            detail: "Swipe Feed and Terminal Board are just two presentations over the same deal pool, so changing the mode does not change your data source.",
-                            tone: .ivory
-                        )
-                        VintageTerminalChecklistItem(
-                            title: "Alerts",
-                            detail: "Email alerts are active. Native push alerts coming soon.",
-                            tone: .moss
-                        )
-                    }
-                }
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                content()
             }
+            .padding(Spacing.md)
+            .background(Color.sgWhite.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.lg)
+                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+            )
         }
     }
 
-    // MARK: - Footer
+    private func linkRow(icon: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.sgMuted)
+                    .frame(width: 20)
 
-    private var footerCluster: some View {
-        VintageTerminalActionCluster {
-            VintageTerminalActionButton(
-                title: "Return to Explore",
-                subtitle: "Browse deals",
-                icon: "airplane.departure",
-                tone: .amber,
-                fillsWidth: true
-            ) {
-                router.activeTab = .feed
+                Text(title)
+                    .font(SGFont.body(size: 14))
+                    .foregroundStyle(Color.sgWhite)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.sgMuted)
             }
-        } secondary: {
-            VintageTerminalSecondaryButton(
-                title: "Current build",
-                subtitle: "SoGoJet \(appVersion)",
-                icon: "info.circle",
-                tone: .neutral,
-                fillsWidth: true
-            ) {}
-            .disabled(true)
+            .padding(.vertical, Spacing.sm)
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Bindings and Helpers
@@ -478,45 +327,6 @@ struct SettingsView: View {
         )
     }
 
-    private var preferredViewLabel: String {
-        settings.preferredView == "list" ? "Terminal Board" : "Swipe Feed"
-    }
-
-    private var currentModeHeadline: String {
-        settings.preferredView == "list" ? "Board mode is live" : "Swipe mode is live"
-    }
-
-    private var currentModeExplanation: String {
-        settings.preferredView == "list"
-            ? "The explore tab opens on the departure board with compact deal rows."
-            : "The explore tab opens on full-bleed destination cards with vertical paging and richer imagery."
-    }
-
-    private var alertSummaryTitle: String {
-        let trimmedEmail = settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedEmail.isEmpty else {
-            return "No alert email on file yet"
-        }
-
-        return maskedEmail(trimmedEmail)
-    }
-
-    private var alertSummaryDetail: String {
-        let trimmedEmail = settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedEmail.isEmpty else {
-            return "Set up a destination alert from a detail screen or booking flow and the email appears here."
-        }
-
-        return "Email notifications are enabled."
-    }
-
-    private var activeTags: [String] {
-        var tags = [settings.departureCode, preferredViewLabel]
-        tags.append(settings.notificationsEnabled ? "Push On" : "Push Off")
-        tags.append(settings.priceAlertsEnabled ? "Alerts On" : "Alerts Off")
-        return tags
-    }
-
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
     }
@@ -530,14 +340,6 @@ struct SettingsView: View {
         let maskCount = max(local.count - visiblePrefix.count, 2)
         return "\(visiblePrefix)\(String(repeating: "*", count: maskCount))@\(parts[1])"
     }
-}
-
-private struct ModeOption: Identifiable {
-    let id: String
-    let title: String
-    let subtitle: String
-    let stamp: String
-    let tone: VintageTerminalTone
 }
 
 // MARK: - Preview
