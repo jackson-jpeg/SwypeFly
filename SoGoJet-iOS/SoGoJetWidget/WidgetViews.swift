@@ -126,55 +126,37 @@ struct FlightRow: View {
 struct MediumBoardView: View {
     let entry: FlightEntry
 
-    // Larger cells to fill the medium widget (155pt height available)
-    private let cw: CGFloat = 16
-    private let ch: CGFloat = 22
-    private let fs: CGFloat = 13
+    // Maximized cells to fill the medium widget (~155pt height)
+    private let cw: CGFloat = 18
+    private let ch: CGFloat = 26
+    private let fs: CGFloat = 15
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Compact header — just icon + DEPARTURES + code
             HStack(spacing: 4) {
                 Image(systemName: "airplane.departure")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(WD.gold)
                 Text("DEPARTURES")
-                    .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                    .font(.system(size: 9, weight: .heavy, design: .monospaced))
                     .foregroundStyle(WD.white)
-                    .tracking(1.5)
+                    .tracking(1)
                 Spacer()
                 Text(entry.departureCode)
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .foregroundStyle(WD.muted)
             }
-            .padding(.bottom, 6)
+            .padding(.bottom, 5)
 
-            // Separator
-            Rectangle().fill(WD.border.opacity(0.5)).frame(height: 0.5)
-                .padding(.bottom, 4)
-
-            // Column labels
-            HStack(spacing: 0) {
-                Color.clear.frame(width: 7)
-                Text("CODE").frame(width: cw * 3 + 2, alignment: .leading)
-                Spacer().frame(width: 4)
-                Text("DESTINATION").frame(alignment: .leading)
-                Spacer()
-                Text("FARE").frame(alignment: .trailing)
-            }
-            .font(.system(size: 7, weight: .bold, design: .monospaced))
-            .foregroundStyle(WD.muted.opacity(0.5))
-            .padding(.bottom, 4)
-
-            // Flight rows — fill remaining space
-            VStack(spacing: 6) {
+            // Flight rows — maximize space, no column labels needed
+            VStack(spacing: 5) {
                 let flights = Array(entry.flights.prefix(3))
                 ForEach(Array(flights.enumerated()), id: \.element.id) { i, flight in
                     Link(destination: deepLink(for: flight)) {
                         FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 8)
                     }
                 }
-                // Fill empty slots
                 ForEach(0..<max(0, 3 - entry.flights.count), id: \.self) { _ in
                     emptyRow(cw: cw, ch: ch, destLen: 8)
                 }
@@ -182,22 +164,22 @@ struct MediumBoardView: View {
 
             Spacer(minLength: 0)
 
-            // Branding
+            // Minimal branding
             HStack {
                 Spacer()
-                HStack(spacing: 3) {
+                HStack(spacing: 2) {
                     Image(systemName: "airplane")
-                        .font(.system(size: 6, weight: .bold))
+                        .font(.system(size: 5, weight: .bold))
                         .foregroundStyle(WD.gold)
                     Text("SOGOJET")
-                        .font(.system(size: 7, weight: .heavy, design: .monospaced))
-                        .foregroundStyle(WD.muted.opacity(0.4))
-                        .tracking(2)
+                        .font(.system(size: 6, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(WD.muted.opacity(0.3))
+                        .tracking(1.5)
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(WD.bg)
     }
