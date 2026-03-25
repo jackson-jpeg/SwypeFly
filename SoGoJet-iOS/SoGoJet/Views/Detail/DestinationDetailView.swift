@@ -26,6 +26,7 @@ struct DestinationDetailView: View {
                     photoGallerySection
                     travelGuideSection
                     weatherSection
+                    tripBudgetSection
                     itinerarySection
                     restaurantsSection
                     similarDealsSection
@@ -452,6 +453,135 @@ struct DestinationDetailView: View {
         let currentFull = fullFormatter.string(from: Date())
         return month.localizedCaseInsensitiveContains(current) ||
                month.localizedCaseInsensitiveContains(currentFull)
+    }
+
+    // MARK: - Trip Budget Estimator
+
+    @ViewBuilder
+    private var tripBudgetSection: some View {
+        let days = deal.tripDays
+        let flightCost = deal.displayPrice ?? 0
+        let hotelNight = deal.hotelPricePerNight ?? deal.liveHotelPrice
+        let hasData = flightCost > 0 && days > 0
+
+        if hasData {
+            let hotelTotal = (hotelNight ?? 0) * Double(max(days - 1, 1)) // nights = days - 1
+            let dailySpend: Double = estimateDailySpend() // food + transport + activities
+            let dailyTotal = dailySpend * Double(days)
+            let grandTotal = flightCost + hotelTotal + dailyTotal
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("TRIP BUDGET")
+                        .font(SGFont.bodyBold(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                        .tracking(1.5)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    Text("\(days)-day trip")
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgYellow)
+                }
+
+                // Line items
+                VStack(spacing: 8) {
+                    budgetRow(
+                        icon: "airplane",
+                        label: "Flights (round trip)",
+                        amount: flightCost,
+                        color: Color.sgWhite,
+                        isEstimate: deal.isEstimatedPrice
+                    )
+
+                    if let hotelNight, hotelNight > 0 {
+                        budgetRow(
+                            icon: "bed.double",
+                            label: "Hotel (\(max(days - 1, 1)) nights × $\(Int(hotelNight)))",
+                            amount: hotelTotal,
+                            color: Color.sgWhite
+                        )
+                    }
+
+                    budgetRow(
+                        icon: "fork.knife",
+                        label: "Food & activities (~$\(Int(dailySpend))/day)",
+                        amount: dailyTotal,
+                        color: Color.sgWhiteDim
+                    )
+
+                    Rectangle()
+                        .fill(Color.sgBorder)
+                        .frame(height: 1)
+                        .padding(.vertical, 2)
+
+                    // Grand total
+                    HStack {
+                        Text("Estimated total")
+                            .font(SGFont.bodyBold(size: 15))
+                            .foregroundStyle(Color.sgWhite)
+                        Spacer()
+                        Text("~$\(Int(grandTotal))")
+                            .font(.system(size: 22, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.sgYellow)
+                    }
+
+                    if grandTotal > 0 {
+                        Text("~$\(Int(grandTotal / Double(days)))/day per person")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+        }
+    }
+
+    private func budgetRow(icon: String, label: String, amount: Double, color: Color, isEstimate: Bool = false) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(Color.sgMuted)
+                .frame(width: 20)
+            Text(label)
+                .font(SGFont.body(size: 13))
+                .foregroundStyle(color)
+            Spacer()
+            Text(isEstimate ? "~$\(Int(amount))" : "$\(Int(amount))")
+                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .foregroundStyle(color)
+        }
+    }
+
+    /// Estimate daily spending based on destination region/cost of living.
+    private func estimateDailySpend() -> Double {
+        let country = deal.country.lowercased()
+        // Southeast Asia / budget destinations
+        if ["indonesia", "thailand", "vietnam", "cambodia", "philippines", "india", "nepal", "morocco", "egypt"].contains(country) {
+            return 40
+        }
+        // Eastern Europe / Latin America
+        if ["mexico", "colombia", "peru", "brazil", "argentina", "czech republic", "hungary", "poland", "turkey", "portugal", "greece"].contains(country) {
+            return 60
+        }
+        // Western Europe / developed Asia
+        if ["spain", "italy", "france", "germany", "south korea", "taiwan"].contains(country) {
+            return 85
+        }
+        // Expensive destinations
+        if ["japan", "uk", "switzerland", "norway", "iceland", "australia", "singapore", "maldives"].contains(country) {
+            return 110
+        }
+        // US domestic
+        if ["usa", "united states"].contains(country) {
+            return 75
+        }
+        // Default moderate estimate
+        return 70
     }
 
     // MARK: - Itinerary
