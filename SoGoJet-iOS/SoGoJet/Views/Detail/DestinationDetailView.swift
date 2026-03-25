@@ -117,9 +117,9 @@ struct DestinationDetailView: View {
     private func buildDateLine() -> String {
         var parts: [String] = []
         if let dep = deal.bestDepartureDate, let ret = deal.bestReturnDate {
-            parts.append("\(dep) \u{2013} \(ret)")
+            parts.append("\(dep.shortDate) \u{2013} \(ret.shortDate)")
         } else if let dep = deal.bestDepartureDate {
-            parts.append(dep)
+            parts.append(dep.shortDate)
         }
         if deal.tripDays > 0 { parts.append("\(deal.tripDays) days") }
         return parts.joined(separator: " \u{00B7} ")
