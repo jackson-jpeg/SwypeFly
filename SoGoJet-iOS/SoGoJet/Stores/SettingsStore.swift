@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import WidgetKit
 
 // MARK: - Settings Store
 // Lightweight user preferences backed by @AppStorage (UserDefaults).
@@ -55,8 +56,20 @@ final class SettingsStore {
     }
 
     /// Update departure in one call.
+    /// Also syncs to the shared App Group so the widget can read it,
+    /// and tells WidgetKit to refresh the departure board widget.
     func setDeparture(code: String, city: String) {
         departureCode = code
         departureCity = city
+
+        // Sync to App Group for the widget extension
+        SharedDefaults.syncDeparture(code: code, city: city)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// One-time sync of current departure to shared defaults.
+    /// Called on app launch to ensure the widget has up-to-date data.
+    func syncToWidget() {
+        SharedDefaults.syncDeparture(code: departureCode, city: departureCity)
     }
 }

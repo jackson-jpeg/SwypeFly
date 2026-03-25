@@ -23,6 +23,9 @@ struct SoGoJetApp: App {
                 .environment(networkMonitor)
                 .preferredColorScheme(.dark)
                 .task {
+                    // Sync departure airport to shared App Group for the widget
+                    settingsStore.syncToWidget()
+
                     // Set actual screen pixel size for image downsampling
                     let scenes = UIApplication.shared.connectedScenes
                     if let windowScene = scenes.compactMap({ $0 as? UIWindowScene }).first {

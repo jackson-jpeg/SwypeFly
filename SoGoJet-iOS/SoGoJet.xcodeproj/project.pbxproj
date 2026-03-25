@@ -55,6 +55,7 @@
 		E8BE30C939BF890644F26213 /* DepartureBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */; };
 		EB682CF09A002D1E66EE834E /* BoardingPassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9260F42534404374D49FA21 /* BoardingPassView.swift */; };
 		F1E2D3C4B5A6978877665544 /* VintageTerminalKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6071827364554 /* VintageTerminalKit.swift */; };
+		A3B4C5D6E7F80920314A5B6D /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */; };
 		F3D138CE2009D3A9E09200BA /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98C552C4DAAA2703852D6E9 /* Colors.swift */; };
 		F4892DAAA2C0C21D26E5ABB5 /* SplitFlapRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED8FD386433B5D295222C68 /* SplitFlapRow.swift */; };
 		FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB866D9B233B25ABE980F3 /* HapticEngine.swift */; };
@@ -113,6 +114,7 @@
 		EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapChar.swift; sourceTree = "<group>"; };
 		EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealTier.swift; sourceTree = "<group>"; };
 		F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		FED8FD386433B5D295222C68 /* SplitFlapRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -174,6 +176,7 @@
 				15EB866D9B233B25ABE980F3 /* HapticEngine.swift */,
 				B618C73022C992B057112952 /* ImageCache.swift */,
 				F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */,
+				B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -447,6 +450,7 @@
 				44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */,
 				38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */,
 				147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */,
+				A3B4C5D6E7F80920314A5B6D /* SharedDefaults.swift in Sources */,
 				9B90FD58377C44FB5A40B515 /* SettingsView.swift in Sources */,
 				8EFFDD228E5BB7CD0338E0CE /* SoGoJetApp.swift in Sources */,
 				B5B1CA9671DA7794DC4C2996 /* Spacing.swift in Sources */,
