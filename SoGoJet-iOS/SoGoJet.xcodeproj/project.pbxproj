@@ -20,6 +20,7 @@
 		3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */; };
 		38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D680A370273663B3CD6E753 /* SeatMapView.swift */; };
 		3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CC0F70008C6C01B861DABF /* DealCard.swift */; };
+		D1A2B3C4E5F607182930A1B2 /* SwipeableCardStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */; };
 		44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */; };
 		49A8722EEA92DFC2EFF3AB59 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C004CCABD52B0D675FDC49BD /* SwiftUI.framework */; };
 		4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */; };
@@ -137,6 +138,7 @@
 		A5C1F35A4778E539A8BFE69F /* TripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripView.swift; sourceTree = "<group>"; };
 		A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Accessibility.swift"; sourceTree = "<group>"; };
 		A7CC0F70008C6C01B861DABF /* DealCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealCard.swift; sourceTree = "<group>"; };
+		C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeableCardStack.swift; sourceTree = "<group>"; };
 		B2E252AF3479003C4AEEB610 /* DepartureRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureRow.swift; sourceTree = "<group>"; };
 		B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		B618C73022C992B057112952 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 				A7CC0F70008C6C01B861DABF /* DealCard.swift */,
 				74190F28733D8C3D21B157F7 /* FeedView.swift */,
 				42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */,
+				C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */,
 			);
 			path = Feed;
 			sourceTree = "<group>";
@@ -560,6 +563,7 @@
 				993EFA650A4598CAFF429893 /* Deal.swift in Sources */,
 				67DCDEC854E4520A41258D4B /* DealBadge.swift in Sources */,
 				3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */,
+				D1A2B3C4E5F607182930A1B2 /* SwipeableCardStack.swift in Sources */,
 				A18BBEE887522B62B698C5D3 /* DealTier.swift in Sources */,
 				E8BE30C939BF890644F26213 /* DepartureBoardView.swift in Sources */,
 				05F7DF22220DB265402C6C0F /* DepartureRow.swift in Sources */,

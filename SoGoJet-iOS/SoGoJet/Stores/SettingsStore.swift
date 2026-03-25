@@ -28,6 +28,12 @@ final class SettingsStore {
         set { UserDefaults.standard.set(newValue, forKey: "sg_preferred_view") }
     }
 
+    /// Whether the feed uses swipe-to-save card stack mode vs vertical scroll.
+    var swipeMode: Bool {
+        get { UserDefaults.standard.bool(forKey: "sg_swipe_mode") }
+        set { UserDefaults.standard.set(newValue, forKey: "sg_swipe_mode") }
+    }
+
     var notificationsEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: "sg_notifications_enabled") }
         set { UserDefaults.standard.set(newValue, forKey: "sg_notifications_enabled") }

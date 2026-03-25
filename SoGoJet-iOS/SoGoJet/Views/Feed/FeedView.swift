@@ -17,6 +17,7 @@ struct FeedView: View {
     @State private var headerVisible: Bool = true
     @State private var shareItem: SharedDealItem?
     @State private var headerHideTask: Task<Void, Never>?
+    @State private var swipeModeIndex: Int = 0
 
     private var currentDeal: Deal? {
         guard let currentIndex,
@@ -36,6 +37,8 @@ struct FeedView: View {
                 loadingState
             } else if feedStore.isEmpty {
                 emptyState
+            } else if settingsStore.swipeMode {
+                swipeFeedContent
             } else {
                 feedContent
             }
@@ -49,6 +52,7 @@ struct FeedView: View {
         }
         .onChange(of: settingsStore.departureCode) { _, newCode in
             currentIndex = 0
+            swipeModeIndex = 0
             swipeCount = 0
             headerVisible = true
             headerHideTask?.cancel()
@@ -110,6 +114,7 @@ struct FeedView: View {
             withAnimation(.easeOut(duration: 0.3)) {
                 currentIndex = 0
             }
+            swipeModeIndex = 0
             swipeCount = 0
             if !headerVisible {
                 withAnimation(.easeOut(duration: 0.3)) {
@@ -124,10 +129,143 @@ struct FeedView: View {
             headerHideTask?.cancel()
         }
         .overlay(alignment: .top) {
-            if headerVisible && !feedStore.deals.isEmpty {
+            if (headerVisible || settingsStore.swipeMode) && !feedStore.deals.isEmpty {
                 headerOverlay
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
+        }
+    }
+
+    // MARK: - Swipe Feed Content (Card Stack)
+
+    private var swipeFeedContent: some View {
+        ZStack {
+            SwipeableCardStack(
+                deals: feedStore.deals,
+                currentIndex: swipeModeIndex,
+                isSaved: { savedStore.isSaved(id: $0) },
+                onSave: { deal in swipeSaveDeal(deal) },
+                onSkip: { deal in swipeSkipDeal(deal) },
+                onTap: { deal in openDeal(deal) },
+                onVibeFilter: { vibe in filterByVibe(vibe) },
+                onAdvance: { advanceSwipeIndex() }
+            )
+            .ignoresSafeArea()
+
+            // Bottom action buttons (undo, skip, save shortcuts)
+            VStack {
+                Spacer()
+                swipeActionBar
+            }
+        }
+        .onChange(of: feedStore.deals.map(\.id)) { _, _ in
+            if swipeModeIndex >= feedStore.deals.count {
+                swipeModeIndex = 0
+            }
+        }
+    }
+
+    private var swipeActionBar: some View {
+        HStack(spacing: 24) {
+            // Skip button
+            Button {
+                guard swipeModeIndex < feedStore.deals.count else { return }
+                let deal = feedStore.deals[swipeModeIndex]
+                swipeSkipDeal(deal)
+                advanceSwipeIndex()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Color.sgRed)
+                    .frame(width: 56, height: 56)
+                    .background(Color.sgSurface)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().strokeBorder(Color.sgRed.opacity(0.3), lineWidth: 1.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Skip this deal")
+
+            // Tap to view details
+            Button {
+                guard swipeModeIndex < feedStore.deals.count else { return }
+                openDeal(feedStore.deals[swipeModeIndex])
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.sgYellow)
+                    .frame(width: 48, height: 48)
+                    .background(Color.sgSurface)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().strokeBorder(Color.sgYellow.opacity(0.3), lineWidth: 1.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("View deal details")
+
+            // Save button
+            Button {
+                guard swipeModeIndex < feedStore.deals.count else { return }
+                let deal = feedStore.deals[swipeModeIndex]
+                swipeSaveDeal(deal)
+                advanceSwipeIndex()
+            } label: {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Color.sgDealAmazing)
+                    .frame(width: 56, height: 56)
+                    .background(Color.sgSurface)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().strokeBorder(Color.sgDealAmazing.opacity(0.3), lineWidth: 1.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Save this deal")
+        }
+        .padding(.bottom, 36)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    private func swipeSaveDeal(_ deal: Deal) {
+        let nowSaved = savedStore.toggle(deal: deal)
+        feedStore.recordSwipe(dealId: deal.id, action: nowSaved ? "saved" : "unsaved")
+        toastManager.show(
+            message: nowSaved ? "\(deal.city) saved!" : "\(deal.city) removed",
+            type: nowSaved ? .success : .info,
+            duration: 1.2
+        )
+    }
+
+    private func swipeSkipDeal(_ deal: Deal) {
+        feedStore.recordSwipe(dealId: deal.id, action: "skipped")
+    }
+
+    private func advanceSwipeIndex() {
+        swipeModeIndex += 1
+
+        // Prefetch images
+        if swipeModeIndex < feedStore.deals.count {
+            prefetchImages(around: swipeModeIndex)
+        }
+
+        // Fetch more when approaching end
+        if swipeModeIndex >= feedStore.deals.count - 3 {
+            Task {
+                await feedStore.fetchMore(origin: settingsStore.departureCode)
+            }
+        }
+
+        // Reset if we've gone past the end
+        if swipeModeIndex >= feedStore.deals.count && !feedStore.hasMore {
+            swipeModeIndex = 0
+            toastManager.show(
+                message: "You've seen all deals! Starting over.",
+                type: .info,
+                duration: 2.0
+            )
         }
     }
 
@@ -219,6 +357,29 @@ struct FeedView: View {
             .accessibilityHint("Open airport picker")
 
             Spacer(minLength: 0)
+
+            FeedHeaderButton(
+                systemName: settingsStore.swipeMode ? "rectangle.stack" : "hand.draw",
+                isActive: settingsStore.swipeMode,
+                action: {
+                    HapticEngine.medium()
+                    settingsStore.swipeMode.toggle()
+                    if settingsStore.swipeMode {
+                        // Sync swipe index to current scroll position
+                        swipeModeIndex = currentIndex ?? 0
+                        toastManager.show(
+                            message: "Swipe mode: Right to save, left to skip",
+                            type: .info,
+                            duration: 2.5
+                        )
+                    } else {
+                        // Sync scroll position to swipe index
+                        currentIndex = swipeModeIndex
+                    }
+                }
+            )
+            .accessibilityLabel(settingsStore.swipeMode ? "Switch to scroll mode" : "Switch to swipe mode")
+            .accessibilityHint("Toggle between swipe-to-save cards and vertical scrolling")
 
             FeedHeaderButton(
                 systemName: "magnifyingglass",
