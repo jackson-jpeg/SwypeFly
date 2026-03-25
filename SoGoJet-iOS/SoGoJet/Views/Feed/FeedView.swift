@@ -1,42 +1,65 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Feed View
-// Full-screen vertical paging feed of flight deal cards.
-// Uses iOS 17+ scrollTargetBehavior(.paging) for TikTok-style snapping.
+// Full-screen paging feed of flight deal cards with minimal header chrome.
 
 struct FeedView: View {
     @Environment(FeedStore.self) private var feedStore
     @Environment(SavedStore.self) private var savedStore
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(Router.self) private var router
 
     @State private var currentIndex: Int? = 0
     @State private var swipeCount: Int = 0
     @State private var headerVisible: Bool = true
-    @State private var showShareSheet: Bool = false
-    @State private var shareURL: URL?
+    @State private var shareItem: SharedLinkItem?
+    @State private var headerHideTask: Task<Void, Never>?
+
+    private var currentDeal: Deal? {
+        guard let currentIndex,
+              currentIndex >= 0,
+              currentIndex < feedStore.deals.count else {
+            return feedStore.deals.first
+        }
+
+        return feedStore.deals[currentIndex]
+    }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            if feedStore.isLoading && feedStore.deals.isEmpty {
+        ZStack {
+            Color.sgBg.ignoresSafeArea()
+
+            if feedStore.isLoading && feedStore.allDeals.isEmpty {
                 loadingState
             } else if feedStore.isEmpty {
                 emptyState
             } else {
                 feedContent
             }
-
-            // Header overlay (fades after 2+ swipes)
-            if headerVisible {
-                headerOverlay
-                    .transition(.opacity)
-                    .accessibilityHidden(false)
+        }
+        .task {
+            if feedStore.allDeals.isEmpty {
+                await feedStore.fetchDeals(origin: settingsStore.departureCode)
             }
         }
-        .background(Color.sgBg)
-        .ignoresSafeArea()
-        .task {
-            if feedStore.deals.isEmpty {
-                await feedStore.fetchDeals(origin: settingsStore.departureCode)
+        .onChange(of: settingsStore.departureCode) { _, newCode in
+            currentIndex = 0
+            swipeCount = 0
+            headerVisible = true
+            headerHideTask?.cancel()
+            Task {
+                await feedStore.fetchDeals(origin: newCode)
+            }
+        }
+        .onChange(of: feedStore.deals.map(\.id)) { _, deals in
+            guard !deals.isEmpty else {
+                currentIndex = 0
+                return
+            }
+
+            if let index = currentIndex, index >= deals.count {
+                currentIndex = 0
             }
         }
         .onChange(of: currentIndex) { oldValue, newValue in
@@ -45,14 +68,12 @@ struct FeedView: View {
             swipeCount += 1
             HapticEngine.light()
 
-            // Fade header after 2+ swipes
             if swipeCount >= 2 && headerVisible {
                 withAnimation(.easeOut(duration: 0.4)) {
                     headerVisible = false
                 }
             }
 
-            // Record swipe for personalization
             if oldIdx < feedStore.deals.count {
                 let skippedDeal = feedStore.deals[oldIdx]
                 if !savedStore.isSaved(id: skippedDeal.id) {
@@ -60,14 +81,30 @@ struct FeedView: View {
                 }
             }
 
-            // Prefetch more deals when nearing the end
             if newIdx >= feedStore.deals.count - 2 {
-                Task { await feedStore.fetchMore() }
+                Task {
+                    await feedStore.fetchMore(origin: settingsStore.departureCode)
+                }
+            }
+
+            if newIdx < feedStore.deals.count {
+                let deal = feedStore.deals[newIdx]
+                UIAccessibility.post(
+                    notification: .announcement,
+                    argument: "\(deal.destination), \(deal.priceFormatted)"
+                )
             }
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let url = shareURL {
-                ShareSheet(activityItems: [url])
+        .sheet(item: $shareItem) { item in
+            ShareSheet(activityItems: [item.url])
+        }
+        .onDisappear {
+            headerHideTask?.cancel()
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if headerVisible && !feedStore.deals.isEmpty {
+                headerOverlay
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
     }
@@ -86,7 +123,7 @@ struct FeedView: View {
                         onSave: { saveDeal(deal) },
                         onShare: { shareDeal(deal) },
                         onBook: { bookDeal(deal) },
-                        onTap: { restoreHeader() }
+                        onTap: { openDeal(deal) }
                     )
                     .containerRelativeFrame([.horizontal, .vertical])
                     .id(index)
@@ -96,71 +133,96 @@ struct FeedView: View {
         }
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $currentIndex)
+        .refreshable {
+            await feedStore.fetchDeals(origin: settingsStore.departureCode)
+        }
         .accessibilityHint("Swipe up or down to browse flight deals")
     }
 
     // MARK: - Header Overlay
 
     private var headerOverlay: some View {
-        VStack(spacing: Spacing.xs) {
-            HStack {
-                // Logo
+        headerControls
+            .padding(.horizontal, Spacing.md)
+            .padding(.top, Spacing.sm)
+            .padding(.bottom, Spacing.sm)
+            .background(Color.sgBg.opacity(0.84))
+            .background(.ultraThinMaterial)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color.sgBorder.opacity(0.45))
+                    .frame(height: 1)
+            }
+    }
+
+    private var headerControls: some View {
+        HStack(spacing: Spacing.sm) {
+            Button {
+                HapticEngine.selection()
+                router.showDeparturePicker()
+            } label: {
                 HStack(spacing: Spacing.xs) {
-                    Text("\u{2708}")
-                        .font(.system(size: 18))
-                    Text("SOGOJET")
-                        .font(SGFont.display(size: 22))
-                        .foregroundStyle(Color.sgYellow)
-                        .tracking(2)
+                    Image(systemName: "airplane.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(settingsStore.departureCode)
+                        .font(SGFont.bodyBold(size: 13))
+                    Text(settingsStore.departureCity)
+                        .font(SGFont.body(size: 12))
+                        .lineLimit(1)
                 }
-
-                Spacer()
-
-                // Airport badge
-                Text(settingsStore.departureCode)
-                    .font(SGFont.bodyBold(size: 13))
-                    .foregroundStyle(Color.sgYellow)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
-                    .background(
-                        Capsule()
-                            .strokeBorder(Color.sgYellow.opacity(0.3), lineWidth: 1)
-                    )
+                .foregroundStyle(Color.sgYellow)
+                .padding(.horizontal, Spacing.sm)
+                .padding(.vertical, Spacing.sm)
+                .background(Color.sgYellow.opacity(0.1), in: RoundedRectangle(cornerRadius: Radius.md))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md)
+                        .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
+                )
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Departure airport \(settingsStore.departureCode)")
+            .accessibilityHint("Open airport picker")
 
-            // Deal counter subtitle
-            if !feedStore.deals.isEmpty {
-                let avgSavings = averageSavingsPercent
-                Text("\(feedStore.deals.count) deals\(avgSavings > 0 ? " \u{00B7} avg \(avgSavings)% off" : "")")
-                    .font(SGFont.body(size: 12))
-                    .foregroundStyle(Color.sgMuted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .padding(.horizontal, Spacing.md)
-        .padding(.top, 54) // below status bar
-        .padding(.bottom, Spacing.sm)
-        .background(
-            LinearGradient(
-                colors: [Color.sgBg.opacity(0.9), Color.sgBg.opacity(0.5), Color.clear],
-                startPoint: .top,
-                endPoint: .bottom
+            Spacer(minLength: 0)
+
+            FeedHeaderButton(
+                systemName: "magnifyingglass",
+                tone: .ivory,
+                action: {
+                    HapticEngine.light()
+                    router.showSearch()
+                }
             )
-            .accessibilityHidden(true)
-        )
+            .accessibilityLabel("Search destinations")
+
+            FeedHeaderButton(
+                systemName: "slider.horizontal.3",
+                badge: feedStore.activeFilterCount > 0 ? "\(feedStore.activeFilterCount)" : nil,
+                tone: feedStore.activeFilterCount > 0 ? .amber : .ivory,
+                action: {
+                    HapticEngine.light()
+                    router.showFilters()
+                }
+            )
+            .accessibilityLabel(feedStore.activeFilterCount > 0 ? "Filters, \(feedStore.activeFilterCount) active" : "Open filters")
+        }
     }
 
     // MARK: - Loading State
 
     private var loadingState: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: Spacing.md) {
             Spacer()
+
             ProgressView()
+                .progressViewStyle(.circular)
                 .tint(Color.sgYellow)
-                .scaleEffect(1.2)
-            Text("Finding deals...")
-                .font(SGFont.bodyBold(size: 15))
-                .foregroundStyle(Color.sgMuted)
+                .scaleEffect(1.3)
+
+            Text("Loading flights from \(settingsStore.departureCode)…")
+                .font(SGFont.body(size: 14))
+                .foregroundStyle(Color.sgWhiteDim)
+
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -169,78 +231,102 @@ struct FeedView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: Spacing.lg) {
-            Spacer()
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                // Title
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text(feedStore.hasActiveFilters ? "No Matches" : "No Routes")
+                        .font(SGFont.display(size: 28))
+                        .foregroundStyle(Color.sgWhite)
 
-            SplitFlapRow(
-                text: "NO FLIGHTS",
-                maxLength: 12,
-                size: .lg,
-                color: Color.sgMuted,
-                alignment: .center,
-                animate: true
-            )
+                    Text(feedStore.hasActiveFilters
+                        ? "Your filters ruled out all routes. Clear them or try a nearby airport."
+                        : "No live routes from \(settingsStore.departureCode) right now. Try a nearby airport.")
+                        .font(SGFont.body(size: 14))
+                        .foregroundStyle(Color.sgWhiteDim)
+                }
 
-            if let error = feedStore.error {
-                Text(error)
-                    .font(SGFont.body(size: 13))
-                    .foregroundStyle(Color.sgRed)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Spacing.xl)
-            }
+                // Error detail
+                if let error = feedStore.error {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Color.sgOrange)
+                        Text(error)
+                            .font(SGFont.body(size: 13))
+                            .foregroundStyle(Color.sgWhiteDim)
+                    }
+                    .padding(Spacing.md)
+                    .background(Color.sgOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: Radius.md))
+                }
 
-            Text("No deals found from \(settingsStore.departureCode)")
-                .font(SGFont.body(size: 15))
-                .foregroundStyle(Color.sgMuted)
-
-            // Nearby airport suggestions
-            VStack(spacing: Spacing.sm) {
-                Text("Try a nearby airport:")
-                    .font(SGFont.body(size: 13))
-                    .foregroundStyle(Color.sgFaint)
-
-                HStack(spacing: Spacing.sm) {
-                    ForEach(nearbyAirports, id: \.self) { code in
-                        Button {
-                            Task {
-                                settingsStore.departureCode = code
-                                await feedStore.fetchDeals(origin: code)
-                            }
-                        } label: {
-                            Text(code)
-                                .font(SGFont.bodyBold(size: 14))
-                                .foregroundStyle(Color.sgYellow)
-                                .padding(.horizontal, Spacing.md)
-                                .padding(.vertical, Spacing.sm)
-                                .background(
-                                    Capsule()
-                                        .strokeBorder(Color.sgYellow.opacity(0.4), lineWidth: 1)
-                                )
+                // Clear filters
+                if feedStore.hasActiveFilters {
+                    Button {
+                        Task {
+                            await feedStore.clearFilters(origin: settingsStore.departureCode)
                         }
-                        .accessibilityLabel("Try \(code) airport")
+                    } label: {
+                        Label("Clear Filters", systemImage: "line.3.horizontal.decrease.circle")
+                            .font(SGFont.bodyBold(size: 14))
+                            .foregroundStyle(Color.sgYellow)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, Spacing.md)
+                            .background(Color.sgYellow.opacity(0.1), in: RoundedRectangle(cornerRadius: Radius.md))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.md)
+                                    .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Nearby airports
+                if !feedStore.hasActiveFilters {
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        Text("Nearby Airports")
+                            .font(SGFont.bodyBold(size: 13))
+                            .foregroundStyle(Color.sgWhiteDim)
+
+                        HStack(spacing: Spacing.sm) {
+                            ForEach(nearbyAirports, id: \.self) { code in
+                                NearbyAirportButton(code: code) {
+                                    Task {
+                                        if let airport = AirportPicker.airports.first(where: { $0.code == code }) {
+                                            settingsStore.setDeparture(code: code, city: airport.city)
+                                        } else {
+                                            settingsStore.departureCode = code
+                                        }
+                                        await feedStore.fetchDeals(origin: code)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
 
-            Button {
-                Task { await feedStore.fetchDeals(origin: settingsStore.departureCode) }
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Retry")
+                // Retry
+                Button {
+                    Task {
+                        await feedStore.fetchDeals(origin: settingsStore.departureCode)
+                    }
+                } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                        .font(SGFont.bodyBold(size: 14))
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Spacing.md)
+                        .background(Color.sgWhite.opacity(0.08), in: RoundedRectangle(cornerRadius: Radius.md))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.md)
+                                .strokeBorder(Color.sgWhiteDim.opacity(0.28), lineWidth: 1)
+                        )
                 }
-                .font(SGFont.bodyBold(size: 15))
-                .foregroundStyle(Color.sgBg)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.sm + Spacing.xs)
-                .background(Color.sgYellow)
-                .clipShape(Capsule())
+                .buttonStyle(.plain)
             }
-            .accessibilityLabel("Retry loading deals")
-
-            Spacer()
+            .padding(.horizontal, Spacing.md)
+            .padding(.top, Spacing.xl)
+            .padding(.bottom, Spacing.xl)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Actions
@@ -253,41 +339,25 @@ struct FeedView: View {
 
     private func shareDeal(_ deal: Deal) {
         HapticEngine.light()
-        shareURL = URL(string: "https://sogojet.com/destination/\(deal.id)")
-        showShareSheet = true
+        if let url = deal.shareURL ?? deal.affiliateUrl.flatMap(URL.init(string:)) {
+            shareItem = SharedLinkItem(url: url)
+        }
+    }
+
+    private func openDeal(_ deal: Deal) {
+        HapticEngine.light()
+        feedStore.recordSwipe(dealId: deal.id, action: "viewed")
+        router.showDeal(deal)
     }
 
     private func bookDeal(_ deal: Deal) {
         HapticEngine.medium()
         feedStore.recordSwipe(dealId: deal.id, action: "viewed")
-        // TODO: Navigate to booking flow
-    }
-
-    private func restoreHeader() {
-        if !headerVisible {
-            withAnimation(.easeIn(duration: 0.3)) {
-                headerVisible = true
-            }
-            // Auto-hide again after 3 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                if swipeCount >= 2 {
-                    withAnimation(.easeOut(duration: 0.4)) {
-                        headerVisible = false
-                    }
-                }
-            }
-        }
+        router.startBooking(deal)
     }
 
     // MARK: - Helpers
 
-    private var averageSavingsPercent: Int {
-        let percents = feedStore.deals.compactMap(\.savingsPercent)
-        guard !percents.isEmpty else { return 0 }
-        return Int(percents.reduce(0, +) / Double(percents.count))
-    }
-
-    /// Nearby airport codes based on current departure.
     private var nearbyAirports: [String] {
         let nearby: [String: [String]] = [
             "JFK": ["EWR", "LGA", "PHL"],
@@ -299,6 +369,7 @@ struct FeedView: View {
             "MDW": ["ORD"],
             "MIA": ["FLL", "PBI"],
             "FLL": ["MIA", "PBI"],
+            "TPA": ["PIE", "SRQ", "MCO", "FLL"],
             "ATL": ["CLT"],
             "DFW": ["DAL", "IAH"],
             "SEA": ["PDX"],
@@ -306,6 +377,66 @@ struct FeedView: View {
         ]
         return nearby[settingsStore.departureCode] ?? ["JFK", "LAX", "ORD"]
     }
+}
+
+// MARK: - Local Components
+
+private struct FeedHeaderButton: View {
+    let systemName: String
+    var badge: String? = nil
+    var tone: VintageTerminalTone = .ivory
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: systemName)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(tone.text)
+                    .frame(width: 40, height: 40)
+                    .background(tone.softFill, in: RoundedRectangle(cornerRadius: Radius.md))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md)
+                            .strokeBorder(tone.border, lineWidth: 1)
+                    )
+
+                if let badge {
+                    Text(badge)
+                        .font(SGFont.bodyBold(size: 10))
+                        .foregroundStyle(Color.sgBg)
+                        .frame(minWidth: 18, minHeight: 18)
+                        .background(Color.sgYellow, in: Circle())
+                        .offset(x: 5, y: -5)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct NearbyAirportButton: View {
+    let code: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(code)
+                .font(SGFont.bodyBold(size: 14))
+                .foregroundStyle(Color.sgYellow)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+                .background(
+                    Capsule()
+                        .strokeBorder(Color.sgYellow.opacity(0.35), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct SharedLinkItem: Identifiable {
+    let id = UUID()
+    let url: URL
 }
 
 // MARK: - Share Sheet (UIKit bridge)
@@ -327,4 +458,5 @@ private struct ShareSheet: UIViewControllerRepresentable {
         .environment(FeedStore())
         .environment(SavedStore())
         .environment(SettingsStore())
+        .environment(Router())
 }
