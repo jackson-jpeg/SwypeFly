@@ -56,7 +56,6 @@ struct DepartureBoardView: View {
                     if let deal = activeDeal {
                         detailStrip(for: deal)
                     }
-                    Spacer()
                     actionButtons
                 }
             }
@@ -101,33 +100,24 @@ struct DepartureBoardView: View {
 
     private var boardPanel: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Flight Information")
-                        .font(SGFont.bodyBold(size: 12))
-                        .foregroundStyle(Color.sgYellow)
-                        .tracking(1.2)
-                    Text("Vintage terminal board for \(settingsStore.departureCode)")
-                        .font(SGFont.body(size: 12))
-                        .foregroundStyle(Color.sgMuted)
-                }
+            HStack(alignment: .center) {
+                Text(terminalStampTitle)
+                    .font(SGFont.bodyBold(size: 11))
+                    .foregroundStyle(Color.sgWhiteDim)
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(terminalStampTitle)
-                        .font(SGFont.bodyBold(size: 11))
-                        .foregroundStyle(Color.sgWhiteDim)
-                    Text(terminalStampSubtitle)
-                        .font(SGFont.caption)
-                        .foregroundStyle(Color.sgMuted)
-                }
+                Text(terminalStampSubtitle)
+                    .font(SGFont.caption)
+                    .foregroundStyle(Color.sgMuted)
             }
 
             boardLegend
             boardSection
+            Spacer(minLength: 0)
         }
         .padding(Spacing.md)
+        .frame(maxHeight: .infinity)
         .background(boardPanelBackground)
         .overlay(
             RoundedRectangle(cornerRadius: Radius.lg)
@@ -293,7 +283,7 @@ struct DepartureBoardView: View {
                     animate: true,
                     animationID: animationCycle
                 )
-                .frame(minHeight: 72)
+                .frame(minHeight: 80, maxHeight: .infinity)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     guard let deal = slot.deal, !isBoardTransitioning else { return }
