@@ -21,7 +21,9 @@ struct DestinationDetailView: View {
                 VStack(spacing: 0) {
                     heroSection
                     flightInfoSection
+                    dealHighlightSection
                     vibeTagsSection
+                    photoGallerySection
                     travelGuideSection
                     weatherSection
                     itinerarySection
@@ -159,6 +161,39 @@ struct DestinationDetailView: View {
         return parts.joined(separator: " \u{00B7} ")
     }
 
+    // MARK: - Photo Gallery
+
+    @ViewBuilder
+    private var photoGallerySection: some View {
+        // Show gallery only if there are 2+ photos (hero already shows the first)
+        if let urls = deal.imageUrls, urls.count >= 2 {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("PHOTOS")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .padding(.horizontal, 16)
+                    .accessibilityAddTraits(.isHeader)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        // Skip the first image (already in hero), show the rest
+                        ForEach(Array(urls.dropFirst().prefix(6).enumerated()), id: \.offset) { _, url in
+                            CachedAsyncImage(url: url) {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.sgSurface)
+                            }
+                            .frame(width: 180, height: 130)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            .padding(.top, 12)
+        }
+    }
+
     // MARK: - Travel Guide
     @ViewBuilder
     private var travelGuideSection: some View {
@@ -207,6 +242,74 @@ struct DestinationDetailView: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
         }
+    }
+
+    // MARK: - Deal Highlight
+
+    @ViewBuilder
+    private var dealHighlightSection: some View {
+        let hasSavings = deal.savingsLabel != nil
+        let hasTier = deal.dealTier != nil && deal.dealTier != .fair
+        let isInSeason = deal.isGoodTimeToVisit
+        let isNonstop = deal.isNonstop == true
+
+        if hasSavings || hasTier || isInSeason || isNonstop {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    // Deal tier badge
+                    if let tier = deal.dealTier, tier != .fair {
+                        highlightChip(
+                            icon: "sparkles",
+                            text: tier.label,
+                            color: tier.color
+                        )
+                    }
+
+                    // Savings badge
+                    if let savings = deal.savingsLabel {
+                        highlightChip(
+                            icon: "tag.fill",
+                            text: savings,
+                            color: Color.sgDealAmazing
+                        )
+                    }
+
+                    // Nonstop badge
+                    if isNonstop {
+                        highlightChip(
+                            icon: "arrow.right",
+                            text: "Nonstop",
+                            color: Color.sgGreen
+                        )
+                    }
+
+                    // In season badge
+                    if isInSeason {
+                        highlightChip(
+                            icon: "sun.max.fill",
+                            text: "In Season",
+                            color: Color.sgYellow
+                        )
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private func highlightChip(icon: String, text: String, color: Color) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+            Text(text)
+                .font(.system(size: 11, weight: .semibold))
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(color.opacity(0.12))
+        .clipShape(Capsule())
     }
 
     // MARK: - Vibe Tags

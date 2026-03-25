@@ -74,7 +74,14 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.bg,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
         <ActivityIndicator color={colors.yellow} size="large" />
       </View>
     );
@@ -84,9 +91,15 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <Head>
         <title>SoGoJet — Discover Cheap Flights</title>
-        <meta name="description" content="Swipe through stunning destinations and find the cheapest flights from your city. Book in seconds." />
+        <meta
+          name="description"
+          content="Swipe through stunning destinations and find the cheapest flights from your city. Book in seconds."
+        />
         <meta property="og:title" content="SoGoJet — Discover Cheap Flights" />
-        <meta property="og:description" content="TikTok-style flight deal discovery. Swipe, save, and book the cheapest flights." />
+        <meta
+          property="og:description"
+          content="TikTok-style flight deal discovery. Swipe, save, and book the cheapest flights."
+        />
         <meta property="og:image" content="https://sogojet.com/api/og" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="SoGoJet" />
@@ -102,11 +115,7 @@ export default function RootLayout() {
           sizes="64x64"
           data-sogojet-favicon="true"
         />
-        <link
-          rel="shortcut icon"
-          href="/assets/favicon-frame-0.png"
-          data-sogojet-favicon="true"
-        />
+        <link rel="shortcut icon" href="/assets/favicon-frame-0.png" data-sogojet-favicon="true" />
       </Head>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>

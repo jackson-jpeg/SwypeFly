@@ -231,10 +231,10 @@ func drawCell(
 
 func drawBoardMark(_ ctx: CGContext, size: CGFloat, mode: RenderMode, frame: BoardFrame) {
   let transparent = mode == .transparentMark
-  let markWidth = size * (transparent ? 0.86 : 0.84)
+  let markWidth = size * (transparent ? 0.9 : 0.88)
   let cellWidth = markWidth * 0.488
-  let cellHeight = size * (transparent ? 0.46 : 0.44)
-  let cellGap = markWidth * 0.024
+  let cellHeight = size * (transparent ? 0.52 : 0.5)
+  let cellGap = markWidth * 0.02
   let totalWidth = cellWidth * 2 + cellGap
   let originX = (size - totalWidth) / 2
   let originY = (size - cellHeight) / 2
