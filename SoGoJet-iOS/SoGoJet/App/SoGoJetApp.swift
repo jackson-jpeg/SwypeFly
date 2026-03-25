@@ -118,6 +118,18 @@ struct SoGoJetApp: App {
                 .onContinueUserActivity("com.sogojet.board") { _ in
                     router.handleQuickAction("com.sogojet.board")
                 }
+                .onContinueUserActivity("com.sogojet.search-flights") { _ in
+                    router.handleQuickAction("com.sogojet.search")
+                }
+                .onContinueUserActivity("com.sogojet.view-deal") { activity in
+                    if let dealId = activity.userInfo?["dealId"] as? String {
+                        if let deal = feedStore.allDeals.first(where: { $0.id == dealId }) {
+                            router.showDeal(deal)
+                        } else {
+                            router.pendingDeepLinkId = dealId
+                        }
+                    }
+                }
         }
     }
 }

@@ -12,6 +12,7 @@
 		0DEE3F28B43A25859CA87BAA /* BookingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */; };
 		0FF6FAFB4044541CB3E0527D /* Fonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A79039C721A4E068A129336 /* Fonts.swift */; };
 		147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A389ABB1A418871FD1196D90 /* SettingsStore.swift */; };
+		14E68176ADDAB3D2E442586E /* SiriShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445C27DF7FF249F5C899C2E7 /* SiriShortcuts.swift */; };
 		150C44A52C23D89A7EE8B379 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A102B73E5AC13E98A75404C /* AuthView.swift */; };
 		186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */; };
 		2142C1B9F778DA6E1229A8D3 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */; };
@@ -123,6 +124,7 @@
 		3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAlertCTA.swift; sourceTree = "<group>"; };
 		3E16299CD23179DBDA9EB1BE /* DealBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealBadge.swift; sourceTree = "<group>"; };
 		42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceSparkline.swift; sourceTree = "<group>"; };
+		445C27DF7FF249F5C899C2E7 /* SiriShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SiriShortcuts.swift; path = SoGoJet/Services/SiriShortcuts.swift; sourceTree = "<group>"; };
 		49888397D14E02F727A4C21F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4C5452CDA36D6D93F24AAFB2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		4D65B575FB3FC80F5E47388E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -320,6 +322,7 @@
 				FE1BDF6D6619708FAF3F2870 /* DealNotificationManager.swift */,
 				82809A0431A6F9652C82CC5D /* AuthStore.swift */,
 				3A102B73E5AC13E98A75404C /* AuthView.swift */,
+				445C27DF7FF249F5C899C2E7 /* SiriShortcuts.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -623,6 +626,7 @@
 				43BAE364D487368CD36A6483 /* DealNotificationManager.swift in Sources */,
 				D6BA8C20ABC7A67AED322DA9 /* AuthStore.swift in Sources */,
 				150C44A52C23D89A7EE8B379 /* AuthView.swift in Sources */,
+				14E68176ADDAB3D2E442586E /* SiriShortcuts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

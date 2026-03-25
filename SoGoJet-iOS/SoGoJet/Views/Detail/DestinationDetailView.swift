@@ -38,6 +38,10 @@ struct DestinationDetailView: View {
 
             stickyBottomBar
         }
+        .onAppear {
+            // Donate Siri shortcut for this destination
+            SiriShortcuts.donateDealView(city: deal.city, dealId: deal.id)
+        }
         .sheet(item: $shareItem) { item in
             DetailShareSheet(activityItems: item.activityItems)
         }

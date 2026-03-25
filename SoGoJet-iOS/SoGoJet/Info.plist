@@ -18,6 +18,12 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.sogojet.search-flights</string>
+		<string>com.sogojet.saved</string>
+		<string>com.sogojet.view-deal</string>
+	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>SoGoJet uses Face ID to verify your identity before completing a flight purchase.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
