@@ -14,6 +14,8 @@ struct DealCard: View {
     var onBook: () -> Void = {}
     var onTap: () -> Void = {}
 
+    @State private var heartBounce: Bool = false
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
@@ -102,13 +104,22 @@ struct DealCard: View {
     // MARK: - Components
 
     private var saveButton: some View {
-        Button(action: onSave) {
+        Button {
+            heartBounce = true
+            onSave()
+            // Reset bounce after the animation completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                heartBounce = false
+            }
+        } label: {
             Image(systemName: isSaved ? "heart.fill" : "heart")
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(isSaved ? Color.sgYellow : Color.sgWhite)
                 .frame(width: 44, height: 44)
                 .background(Color.black.opacity(0.3))
                 .clipShape(Circle())
+                .scaleEffect(heartBounce ? 1.3 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.5), value: heartBounce)
         }
         .accessibilityLabel(isSaved ? "Remove from saved" : "Save")
     }

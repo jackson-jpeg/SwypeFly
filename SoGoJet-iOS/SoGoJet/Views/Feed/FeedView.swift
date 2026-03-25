@@ -9,6 +9,7 @@ struct FeedView: View {
     @Environment(SavedStore.self) private var savedStore
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
+    @Environment(ToastManager.self) private var toastManager
 
     @State private var currentIndex: Int? = 0
     @State private var swipeCount: Int = 0
@@ -340,6 +341,11 @@ struct FeedView: View {
         HapticEngine.medium()
         let nowSaved = savedStore.toggle(deal: deal)
         feedStore.recordSwipe(dealId: deal.id, action: nowSaved ? "saved" : "unsaved")
+        toastManager.show(
+            message: nowSaved ? "\(deal.city) saved!" : "\(deal.city) removed",
+            type: nowSaved ? .success : .info,
+            duration: 1.5
+        )
     }
 
     private func shareDeal(_ deal: Deal) {
