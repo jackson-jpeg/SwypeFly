@@ -15,6 +15,8 @@ struct DealCard: View {
     var onTap: () -> Void = {}
 
     @State private var heartBounce: Bool = false
+    @State private var showSwipeHint: Bool = false
+    @State private var swipeHintOffset: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
@@ -80,6 +82,12 @@ struct DealCard: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 20)
                 }
+
+                // Swipe hint — only on the first card, auto-dismisses
+                if isFirst && showSwipeHint {
+                    swipeHintView
+                        .transition(.opacity)
+                }
             }
         }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — overlay text must fit on photo
@@ -88,6 +96,58 @@ struct DealCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(dealCardAccessibilityLabel)
         .accessibilityAddTraits(.isButton)
+        .onAppear {
+            guard isFirst else { return }
+            // Delay appearance so the card loads first
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                withAnimation(.easeOut(duration: 0.5)) {
+                    showSwipeHint = true
+                }
+                startSwipeHintBounce()
+            }
+            // Auto-dismiss after a few seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+                withAnimation(.easeIn(duration: 0.4)) {
+                    showSwipeHint = false
+                }
+            }
+        }
+    }
+
+    // MARK: - Swipe Hint
+
+    private var swipeHintView: some View {
+        VStack(spacing: 4) {
+            Spacer()
+
+            VStack(spacing: 2) {
+                Image(systemName: "chevron.compact.up")
+                    .font(.system(size: 22, weight: .medium))
+                Image(systemName: "chevron.compact.up")
+                    .font(.system(size: 22, weight: .medium))
+                    .opacity(0.5)
+            }
+            .foregroundStyle(Color.sgWhite.opacity(0.7))
+            .offset(y: swipeHintOffset)
+
+            Text("Swipe up")
+                .font(SGFont.bodyBold(size: 12))
+                .foregroundStyle(Color.sgWhite.opacity(0.6))
+                .offset(y: swipeHintOffset)
+
+            Spacer()
+                .frame(height: 90)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func startSwipeHintBounce() {
+        withAnimation(
+            .easeInOut(duration: 0.8)
+            .repeatCount(4, autoreverses: true)
+        ) {
+            swipeHintOffset = -10
+        }
     }
 
     // MARK: - Fallback
