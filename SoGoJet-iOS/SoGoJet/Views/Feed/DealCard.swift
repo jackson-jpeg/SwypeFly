@@ -206,29 +206,38 @@ struct DealCard: View {
     }
 
     private var priceBadge: some View {
-        HStack(spacing: 4) {
-            // Price trend arrow
-            if deal.priceTrend != .stable {
-                Image(systemName: deal.priceTrend.icon)
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(deal.priceTrend == .down ? Color.sgDealAmazing : Color.sgRed)
+        VStack(alignment: .trailing, spacing: 2) {
+            // "from" label for estimated/cached prices
+            if deal.isEstimatedPrice {
+                Text("from")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(Color.sgWhite.opacity(0.7))
             }
 
-            SplitFlapRow(
-                text: deal.priceFormatted,
-                maxLength: 6,
-                size: .sm,
-                color: Color.sgWhite,
-                alignment: .trailing,
-                animate: animate,
-                startDelay: 0.3,
-                staggerMs: 60
-            )
+            HStack(spacing: 4) {
+                // Price trend arrow
+                if deal.priceTrend != .stable {
+                    Image(systemName: deal.priceTrend.icon)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(deal.priceTrend == .down ? Color.sgDealAmazing : Color.sgRed)
+                }
+
+                SplitFlapRow(
+                    text: deal.priceFormatted,
+                    maxLength: 6,
+                    size: .sm,
+                    color: Color.sgWhite,
+                    alignment: .trailing,
+                    animate: animate,
+                    startDelay: 0.3,
+                    staggerMs: 60
+                )
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(deal.tierColor)
+            .clipShape(Capsule())
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(deal.tierColor)
-        .clipShape(Capsule())
     }
 
     @ViewBuilder

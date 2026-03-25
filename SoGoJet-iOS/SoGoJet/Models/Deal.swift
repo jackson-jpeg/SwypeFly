@@ -114,8 +114,28 @@ extension Deal {
 
     /// Formatted price string.
     /// Returns "Check price" when price is zero or nil (avoids showing "$0" in the UI).
+    /// Prefixes with "from" when the price is from cached/promotional data
+    /// to set expectations that live booking prices may differ.
     var priceFormatted: String {
         guard let price = displayPrice, price > 0 else { return "Check price" }
+        return "$\(Int(price))"
+    }
+
+    /// Whether the displayed price is an estimate (from Travelpayouts cache)
+    /// vs a confirmed live price (from Duffel).
+    var isEstimatedPrice: Bool {
+        // If we have a livePrice from Duffel, it's confirmed
+        if livePrice != nil && livePrice! > 0 { return false }
+        // flightPrice from Travelpayouts is always an estimate
+        return flightPrice != nil
+    }
+
+    /// Price label for the card — "from $X" for estimates, "$X" for live prices
+    var cardPriceLabel: String {
+        guard let price = displayPrice, price > 0 else { return "Check price" }
+        if isEstimatedPrice {
+            return "from $\(Int(price))"
+        }
         return "$\(Int(price))"
     }
 

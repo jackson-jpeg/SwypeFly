@@ -78,13 +78,20 @@ struct DestinationDetailView: View {
                         }
                     }
                     Spacer()
-                    Text(deal.priceFormatted)
-                        .font(SGFont.bodyBold(size: 24))
-                        .foregroundStyle(Color.sgWhite)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(deal.tierColor)
-                        .clipShape(Capsule())
+                    VStack(alignment: .trailing, spacing: 2) {
+                        if deal.isEstimatedPrice {
+                            Text("from")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.sgWhite.opacity(0.7))
+                        }
+                        Text(deal.priceFormatted)
+                            .font(SGFont.bodyBold(size: 24))
+                            .foregroundStyle(Color.sgWhite)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(deal.tierColor)
+                            .clipShape(Capsule())
+                    }
                 }
                 .padding(16)
             }
@@ -112,6 +119,17 @@ struct DestinationDetailView: View {
                 Text(dateLine)
                     .font(SGFont.body(size: 15))
                     .foregroundStyle(Color.sgMuted)
+            }
+            // Price transparency disclaimer for estimated prices
+            if deal.isEstimatedPrice {
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 11))
+                    Text("Price shown is an estimate. Live prices are confirmed when you search flights.")
+                        .font(.system(size: 11))
+                }
+                .foregroundStyle(Color.sgMuted.opacity(0.7))
+                .padding(.top, 2)
             }
         }
         .padding(16)
@@ -215,18 +233,38 @@ struct DestinationDetailView: View {
 
     // MARK: - Itinerary
 
+    /// The itinerary trimmed to match the trip duration.
+    /// If the trip is 5 days, show 5 days. If 7, show 7.
+    /// Falls back to showing all available days.
+    private var matchedItinerary: [ItineraryDay] {
+        guard let itinerary = deal.itinerary, !itinerary.isEmpty else { return [] }
+        let tripLength = deal.tripDays
+        if tripLength > 0 {
+            return Array(itinerary.prefix(tripLength))
+        }
+        return itinerary
+    }
+
     @ViewBuilder
     private var itinerarySection: some View {
-        if let itinerary = deal.itinerary, !itinerary.isEmpty {
+        if !matchedItinerary.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                Text("THINGS TO DO")
-                    .font(SGFont.bodyBold(size: 13))
-                    .foregroundStyle(Color.sgMuted)
-                    .tracking(1.5)
-                    .accessibilityAddTraits(.isHeader)
+                HStack {
+                    Text(deal.tripDays > 0 ? "\(deal.tripDays)-DAY ITINERARY" : "THINGS TO DO")
+                        .font(SGFont.bodyBold(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                        .tracking(1.5)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    if deal.tripDays > 0 {
+                        Text("\(deal.tripDays) days")
+                            .font(SGFont.body(size: 12))
+                            .foregroundStyle(Color.sgYellow)
+                    }
+                }
 
                 VStack(alignment: .leading, spacing: 16) {
-                    ForEach(Array(itinerary.enumerated()), id: \.offset) { index, day in
+                    ForEach(Array(matchedItinerary.enumerated()), id: \.offset) { _, day in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 8) {
                                 Text("Day \(day.day)")
@@ -240,16 +278,28 @@ struct DestinationDetailView: View {
                             }
 
                             ForEach(day.activities, id: \.self) { activity in
-                                HStack(alignment: .top, spacing: 8) {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(Color.sgGreen)
-                                        .frame(width: 20)
-                                    Text(activity)
-                                        .font(SGFont.body(size: 14))
-                                        .foregroundStyle(Color.sgWhiteDim)
-                                        .lineSpacing(2)
+                                // Tappable — opens in Apple Maps search
+                                Button {
+                                    openInMaps(activity, city: deal.city)
+                                } label: {
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: "mappin.circle.fill")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(Color.sgGreen)
+                                            .frame(width: 20)
+                                        Text(activity)
+                                            .font(SGFont.body(size: 14))
+                                            .foregroundStyle(Color.sgWhiteDim)
+                                            .lineSpacing(2)
+                                            .multilineTextAlignment(.leading)
+                                        Spacer(minLength: 0)
+                                        Image(systemName: "arrow.up.right.square")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.sgMuted)
+                                    }
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Open \(activity) in Maps")
                             }
                         }
                     }
@@ -261,6 +311,14 @@ struct DestinationDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding(.horizontal, 16)
             .padding(.top, 12)
+        }
+    }
+
+    /// Open a place in Apple Maps by searching for it in the destination city.
+    private func openInMaps(_ place: String, city: String) {
+        let query = "\(place), \(city)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? place
+        if let url = URL(string: "maps://?q=\(query)") {
+            UIApplication.shared.open(url)
         }
     }
 
