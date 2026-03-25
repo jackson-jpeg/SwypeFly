@@ -39,7 +39,9 @@ struct FeedView: View {
             }
         }
         .task {
-            if feedStore.allDeals.isEmpty {
+            // Feed is preloaded at app launch (SoGoJetApp.task).
+            // Only fetch here if not already loading/loaded (e.g., navigated back after a reset).
+            if feedStore.allDeals.isEmpty && !feedStore.isLoading {
                 await feedStore.fetchDeals(origin: settingsStore.departureCode)
             }
         }

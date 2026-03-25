@@ -20,6 +20,13 @@ struct SoGoJetApp: App {
                 .environment(router)
                 .environment(toastManager)
                 .preferredColorScheme(.dark)
+                .task {
+                    // Preload feed immediately on launch so content is
+                    // ready (or loading) by the time the user sees the feed tab.
+                    if feedStore.allDeals.isEmpty {
+                        await feedStore.fetchDeals(origin: settingsStore.departureCode)
+                    }
+                }
                 .onChange(of: scenePhase) { oldPhase, newPhase in
                     if oldPhase != .active && newPhase == .active {
                         Task {

@@ -69,7 +69,7 @@ struct DepartureBoardView: View {
             }
         }
         .task {
-            if feedStore.allDeals.isEmpty {
+            if feedStore.allDeals.isEmpty && !feedStore.isLoading {
                 await feedStore.fetchDeals(origin: settingsStore.departureCode)
             }
             syncBoardWindow(animated: false)
