@@ -1,7 +1,29 @@
 import SwiftUI
+import UIKit
+
+// MARK: - App Delegate (Quick Actions)
+
+class SoGoJetAppDelegate: NSObject, UIApplicationDelegate {
+    /// Stores the shortcut action type when the app is launched from a quick action.
+    static var pendingShortcutType: String?
+
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        // Capture quick action on cold launch
+        if let shortcut = options.shortcutItem {
+            Self.pendingShortcutType = shortcut.type
+        }
+        let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        return config
+    }
+}
 
 @main
 struct SoGoJetApp: App {
+    @UIApplicationDelegateAdaptor(SoGoJetAppDelegate.self) var appDelegate
     @State private var feedStore = FeedStore()
     @State private var savedStore = SavedStore()
     @State private var settingsStore = SettingsStore()
@@ -55,7 +77,22 @@ struct SoGoJetApp: App {
                         Task {
                             await feedStore.refreshIfStale(origin: settingsStore.departureCode)
                         }
+
+                        // Handle quick action from cold launch
+                        if let shortcutType = SoGoJetAppDelegate.pendingShortcutType {
+                            SoGoJetAppDelegate.pendingShortcutType = nil
+                            router.handleQuickAction(shortcutType)
+                        }
                     }
+                }
+                .onContinueUserActivity("com.sogojet.search") { _ in
+                    router.handleQuickAction("com.sogojet.search")
+                }
+                .onContinueUserActivity("com.sogojet.saved") { _ in
+                    router.handleQuickAction("com.sogojet.saved")
+                }
+                .onContinueUserActivity("com.sogojet.board") { _ in
+                    router.handleQuickAction("com.sogojet.board")
                 }
         }
     }

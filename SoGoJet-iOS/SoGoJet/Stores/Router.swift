@@ -252,6 +252,23 @@ final class Router {
         }
     }
 
+    // MARK: - Quick Actions (Home Screen Shortcuts)
+
+    func handleQuickAction(_ type: String) {
+        switch type {
+        case "com.sogojet.search":
+            activeTab = .feed
+            showSearch()
+        case "com.sogojet.saved":
+            activeTab = .saved
+        case "com.sogojet.board":
+            activeTab = .feed
+            // The board view is toggled via SettingsStore.preferredView
+        default:
+            break
+        }
+    }
+
     private func presentFullScreen(_ destination: FullScreenDestination) {
         queuedPresentationTask?.cancel()
         if fullScreenDestination?.id == destination.id || queuedFullScreenDestination?.id == destination.id {

@@ -33,6 +33,33 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.sogojet.search</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Search Flights</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>magnifyingglass</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.sogojet.saved</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Saved Trips</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>heart.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.sogojet.board</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Departure Board</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>rectangle.split.3x1</string>
+		</dict>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>BebasNeue-Regular.ttf</string>
