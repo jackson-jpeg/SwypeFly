@@ -32,6 +32,7 @@ struct DestinationDetailView: View {
                     itinerarySection
                     restaurantsSection
                     similarDealsSection
+                    nearbyDestinationsSection
                 }
                 .padding(.bottom, 100)
             }
@@ -947,6 +948,86 @@ struct DestinationDetailView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(otherDeal.city), \(otherDeal.priceFormatted)")
+        .accessibilityHint("View deal details")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    // MARK: - Nearby Destinations
+
+    private var nearbyDeals: [(deal: Deal, distanceKm: Int)] {
+        guard deal.latitude != nil, deal.longitude != nil else { return [] }
+        return allDeals
+            .compactMap { other -> (Deal, Int)? in
+                guard other.id != deal.id,
+                      let km = Deal.distanceKm(from: deal, to: other),
+                      km <= 1500, km > 0 else { return nil }
+                return (other, Int(km))
+            }
+            .sorted { $0.1 < $1.1 }
+            .prefix(5)
+            .map { (deal: $0.0, distanceKm: $0.1) }
+    }
+
+    @ViewBuilder
+    private var nearbyDestinationsSection: some View {
+        let nearby = nearbyDeals
+        if !nearby.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("NEARBY DESTINATIONS")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .padding(.horizontal, 16)
+                    .accessibilityAddTraits(.isHeader)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(nearby, id: \.deal.id) { item in
+                            nearbyCard(item.deal, distanceKm: item.distanceKm)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            .padding(.top, 16)
+        }
+    }
+
+    private func nearbyCard(_ otherDeal: Deal, distanceKm: Int) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ZStack(alignment: .topTrailing) {
+                CachedAsyncImage(url: otherDeal.imageUrl) {
+                    RoundedRectangle(cornerRadius: 8).fill(Color.sgSurface)
+                }
+                .frame(width: 140, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                Text("\(distanceKm)km")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.sgBg)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.sgWhite.opacity(0.85))
+                    .clipShape(Capsule())
+                    .padding(6)
+            }
+
+            Text(otherDeal.city)
+                .font(SGFont.bodyBold(size: 14))
+                .foregroundStyle(Color.sgWhite)
+                .lineLimit(1)
+            Text(otherDeal.priceFormatted)
+                .font(SGFont.bodyBold(size: 13))
+                .foregroundStyle(Color.sgYellow)
+        }
+        .frame(width: 140)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            HapticEngine.light()
+            router.showDeal(otherDeal)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(otherDeal.city), \(distanceKm) kilometers away, \(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
         .accessibilityAddTraits(.isButton)
     }

@@ -341,6 +341,25 @@ extension Deal {
     }
 }
 
+// MARK: - Geo Helpers
+
+extension Deal {
+    /// Haversine distance in kilometers between two deals.
+    /// Returns nil if either deal lacks coordinates.
+    static func distanceKm(from a: Deal, to b: Deal) -> Double? {
+        guard let lat1 = a.latitude, let lon1 = a.longitude,
+              let lat2 = b.latitude, let lon2 = b.longitude else { return nil }
+        let R = 6371.0 // Earth radius in km
+        let dLat = (lat2 - lat1) * .pi / 180
+        let dLon = (lon2 - lon1) * .pi / 180
+        let a1 = sin(dLat / 2) * sin(dLat / 2) +
+                 cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) *
+                 sin(dLon / 2) * sin(dLon / 2)
+        let c = 2 * atan2(sqrt(a1), sqrt(1 - a1))
+        return R * c
+    }
+}
+
 // MARK: - Preview Mock
 
 extension Deal {
