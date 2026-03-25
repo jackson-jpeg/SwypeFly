@@ -14,6 +14,11 @@ struct PassengerForm: View {
     @State private var passportExpiry = Calendar.current.date(byAdding: .year, value: 5, to: Date()) ?? Date()
     @State private var nationality = "US"
     @State private var hasSeededState = false
+    @FocusState private var focusedField: FormField?
+
+    private enum FormField: Hashable {
+        case givenName, familyName, passportNumber, nationality, email, phone
+    }
 
     private var isValid: Bool {
         !givenName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -43,6 +48,17 @@ struct PassengerForm: View {
             }
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.xl)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    focusedField = nil
+                }
+                .font(SGFont.bodyBold(size: 16))
+                .foregroundStyle(Color.sgYellow)
+            }
         }
         .onAppear {
             seedFromStoreIfNeeded()
@@ -117,6 +133,9 @@ struct PassengerForm: View {
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.words)
                         .foregroundStyle(Color.sgWhite)
+                        .focused($focusedField, equals: .givenName)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .familyName }
                 }
 
                 fieldShell(label: "Family name", hint: "Last name as shown on your ID.") {
@@ -125,6 +144,9 @@ struct PassengerForm: View {
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.words)
                         .foregroundStyle(Color.sgWhite)
+                        .focused($focusedField, equals: .familyName)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .email }
                 }
 
                 HStack(alignment: .top, spacing: Spacing.md) {
@@ -178,6 +200,9 @@ struct PassengerForm: View {
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .foregroundStyle(Color.sgWhite)
+                        .focused($focusedField, equals: .passportNumber)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .nationality }
                 }
 
                 HStack(alignment: .top, spacing: Spacing.md) {
@@ -203,6 +228,9 @@ struct PassengerForm: View {
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .foregroundStyle(Color.sgWhite)
+                            .focused($focusedField, equals: .nationality)
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .email }
                     }
                 }
             }
@@ -224,6 +252,9 @@ struct PassengerForm: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .foregroundStyle(Color.sgWhite)
+                        .focused($focusedField, equals: .email)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .phone }
                 }
 
                 fieldShell(label: "Phone", hint: "A mobile number is best for airline updates.") {
@@ -231,6 +262,7 @@ struct PassengerForm: View {
                         .textContentType(.telephoneNumber)
                         .keyboardType(.phonePad)
                         .foregroundStyle(Color.sgWhite)
+                        .focused($focusedField, equals: .phone)
                 }
             }
         }

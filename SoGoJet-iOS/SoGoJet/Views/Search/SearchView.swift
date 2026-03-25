@@ -68,6 +68,7 @@ struct SearchView: View {
                     .padding(.horizontal, Spacing.md)
                     .padding(.vertical, Spacing.md)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.inline)
@@ -117,6 +118,10 @@ struct SearchView: View {
                 .foregroundStyle(Color.sgWhite)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
+                .submitLabel(.search)
+                .onSubmit {
+                    scheduleSearch(for: trimmedQuery)
+                }
 
             if !query.isEmpty {
                 Button {

@@ -205,6 +205,7 @@ struct AirportPicker: View {
                         }
                     }
                 }
+                .scrollDismissesKeyboard(.interactively)
                 .frame(minHeight: 220, maxHeight: dismissOnSelection ? .infinity : 320)
             }
         }

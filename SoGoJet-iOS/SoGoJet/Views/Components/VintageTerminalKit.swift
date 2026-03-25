@@ -665,6 +665,7 @@ struct VintageTerminalSearchField: View {
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .tint(tone.accent)
+            .submitLabel(.search)
 
             if !text.isEmpty {
                 Button {
