@@ -37,8 +37,17 @@ enum Airlines {
         "Y4": "Volaris",
     ]
 
+    /// Values that appear in the airline field but are data sources, not airlines
+    static let blocklist: Set<String> = [
+        "TRAVELPAYOUTS", "AMADEUS", "DUFFEL", "SKYSCANNER",
+        "GOOGLE", "KAYAK", "KIWI", "MOMONDO",
+    ]
+
     static func name(for code: String?) -> String? {
         guard let code, !code.isEmpty else { return nil }
-        return names[code.uppercased()]
+        let upper = code.uppercased()
+        // Filter out data source names masquerading as airlines
+        if blocklist.contains(upper) { return nil }
+        return names[upper]
     }
 }

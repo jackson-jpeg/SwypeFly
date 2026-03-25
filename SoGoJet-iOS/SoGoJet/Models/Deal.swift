@@ -159,7 +159,16 @@ extension Deal {
     /// Airline display name — resolved from IATA code, falls back to raw code, then "—"
     var airlineName: String {
         if let code = airline {
-            return Airlines.name(for: code) ?? code
+            // Known airline name from lookup
+            if let name = Airlines.name(for: code) {
+                return name
+            }
+            // Valid IATA codes are exactly 2 characters; anything longer is likely a data source name
+            if code.count <= 2 {
+                return code
+            }
+            // Unrecognized long string (e.g. "TRAVELPAYOUTS") — hide it
+            return "—"
         }
         return "—"
     }
