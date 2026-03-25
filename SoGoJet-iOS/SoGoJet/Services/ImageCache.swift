@@ -22,6 +22,12 @@ actor ImageCache {
 
     // MARK: Public API
 
+    /// Check if an image is already in the memory cache (instant load, no fade needed).
+    func isInMemory(_ urlString: String) -> Bool {
+        let key = cacheKey(for: urlString)
+        return memoryCache.object(forKey: key as NSString) != nil
+    }
+
     /// Load image from cache or network. Returns nil on failure.
     func image(for urlString: String) async -> UIImage? {
         let key = cacheKey(for: urlString)
@@ -151,6 +157,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
 
     @State private var uiImage: UIImage?
     @State private var isLoading = true
+    @State private var fromCache = false
 
     init(url urlString: String?, @ViewBuilder placeholder: @escaping () -> Placeholder) {
         self.urlString = urlString
@@ -163,19 +170,26 @@ struct CachedAsyncImage<Placeholder: View>: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-            } else if isLoading {
-                placeholder()
+                    .transition(.opacity)
             } else {
                 placeholder()
+                    .transition(.opacity)
             }
         }
+        .animation(.easeIn(duration: fromCache ? 0 : 0.3), value: uiImage != nil)
         .task(id: urlString) {
             guard let urlString else {
                 isLoading = false
                 return
             }
             isLoading = true
-            uiImage = await ImageCache.shared.image(for: urlString)
+            // Check if already in memory cache (instant, no fade needed)
+            let startedFromCache = await ImageCache.shared.isInMemory(urlString)
+            let loaded = await ImageCache.shared.image(for: urlString)
+            fromCache = startedFromCache
+            withAnimation(startedFromCache ? nil : .easeIn(duration: 0.3)) {
+                uiImage = loaded
+            }
             isLoading = false
         }
     }
