@@ -15,19 +15,14 @@ actor ImageCache {
     private let maxDiskBytes = 100 * 1024 * 1024
 
     /// Maximum pixel dimension for downsampled images.
-    /// Based on the longest screen edge at the device's native scale.
-    private let maxPixelSize: CGFloat
+    /// Defaults to 3x of 430pt (1290px) which covers iPhone Pro Max.
+    /// Updated from main thread on first access if possible.
+    private var maxPixelSize: CGFloat = 1290
 
     private init() {
         memoryCache.countLimit = 50
         // Cap memory cache at ~120 MB of decoded pixel data.
-        // Each cached image is downsampled so this is generous.
         memoryCache.totalCostLimit = 120 * 1024 * 1024
-
-        let screen = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first?.screen ?? UIScreen.main
-        maxPixelSize = max(screen.bounds.width, screen.bounds.height) * screen.scale
 
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         diskDirectory = caches.appendingPathComponent("SGImageCache", isDirectory: true)
@@ -35,8 +30,6 @@ actor ImageCache {
         try? FileManager.default.createDirectory(at: diskDirectory, withIntermediateDirectories: true)
 
         // Flush memory cache when the system is under memory pressure.
-        // NSCache auto-evicts, but this explicit flush is more aggressive and
-        // prevents the OS from terminating the app on older devices.
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
@@ -47,6 +40,11 @@ actor ImageCache {
             print("[ImageCache] Memory warning — flushed in-memory cache")
             #endif
         }
+    }
+
+    /// Call from @MainActor context to set the actual screen pixel size.
+    func updateMaxPixelSize(_ size: CGFloat) {
+        maxPixelSize = size
     }
 
     // MARK: Public API

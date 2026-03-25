@@ -19,16 +19,29 @@ struct OnboardingView: View {
     ]
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: Spacing.xl) {
-                welcomeHeader
-                dealPreview
-                airportSelection
-                getStartedButton
+        ZStack(alignment: .bottom) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: Spacing.xl) {
+                    welcomeHeader
+                    dealPreview
+                    airportSelection
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.md)
+                .padding(.top, Spacing.xl)
+                .padding(.bottom, 80) // space for sticky button
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.top, Spacing.xl)
-            .padding(.bottom, 60)
+            .scrollDismissesKeyboard(.interactively)
+
+            // Sticky "Start Exploring" button — always visible
+            getStartedButton
+                .padding(.horizontal, Spacing.md)
+                .padding(.bottom, Spacing.md)
+                .background(
+                    Color.sgBg.opacity(0.95)
+                        .background(.ultraThinMaterial)
+                        .ignoresSafeArea(edges: .bottom)
+                )
         }
         .background(Color.sgBg)
         .navigationTitle("")
@@ -75,8 +88,8 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 SplitFlapRow(
                     text: currentShowcase.city,
-                    maxLength: 14,
-                    size: .lg,
+                    maxLength: 12,
+                    size: .md,
                     color: Color.sgWhite,
                     alignment: .leading,
                     animate: animateFlap,
@@ -163,7 +176,7 @@ struct OnboardingView: View {
                 ),
                 dismissOnSelection: false
             )
-            .frame(height: 430)
+            .frame(height: 340)
             .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.lg)

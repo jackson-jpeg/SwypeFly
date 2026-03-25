@@ -23,6 +23,14 @@ struct SoGoJetApp: App {
                 .environment(networkMonitor)
                 .preferredColorScheme(.dark)
                 .task {
+                    // Set actual screen pixel size for image downsampling
+                    let scenes = UIApplication.shared.connectedScenes
+                    if let windowScene = scenes.compactMap({ $0 as? UIWindowScene }).first {
+                        let screen = windowScene.screen
+                        let pixelSize = max(screen.bounds.width, screen.bounds.height) * screen.scale
+                        await ImageCache.shared.updateMaxPixelSize(pixelSize)
+                    }
+
                     // Trim disk image cache so we aren't always at capacity
                     await ImageCache.shared.trimDiskCacheOnStartup()
 
