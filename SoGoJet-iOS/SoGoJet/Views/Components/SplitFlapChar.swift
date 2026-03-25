@@ -94,6 +94,7 @@ struct SplitFlapChar: View {
                 .frame(height: 0.5)
         }
         .frame(width: size.cellWidth, height: size.cellHeight)
+        .dynamicTypeSize(.large) // Lock split-flap cells — pixel-precise sizing must not scale
         .onAppear {
             guard !hasInitialized else { return }
             hasInitialized = true

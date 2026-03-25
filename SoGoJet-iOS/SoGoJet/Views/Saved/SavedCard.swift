@@ -99,6 +99,7 @@ struct SavedCard: View {
         }
         .frame(minHeight: 200, maxHeight: 220)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — tight grid cards
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")
     }

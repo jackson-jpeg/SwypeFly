@@ -157,6 +157,7 @@ struct DepartureRow: View {
                 .fill(isActive && !slot.isBlank ? Color.sgYellow : Color.clear)
                 .frame(width: 3)
         }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — fixed-width split-flap columns
         .opacity(slot.isBlank ? 0.35 : (isActive ? 1.0 : 0.6))
         .animation(.easeInOut(duration: 0.25), value: isActive)
         .allowsHitTesting(!slot.isBlank)

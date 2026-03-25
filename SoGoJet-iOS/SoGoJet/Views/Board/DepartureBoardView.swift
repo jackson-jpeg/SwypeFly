@@ -133,6 +133,7 @@ struct DepartureBoardView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
         .shadow(color: Color.black.opacity(0.32), radius: 18, y: 10)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — fixed-width board columns
         .padding(.horizontal, Spacing.md)
         .padding(.top, Spacing.md)
     }

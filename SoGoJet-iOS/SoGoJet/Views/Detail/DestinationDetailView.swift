@@ -77,6 +77,7 @@ struct DestinationDetailView: View {
             }
         }
         .frame(height: UIScreen.main.bounds.height * 0.4)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — hero overlay text
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(deal.city), \(deal.country), \(deal.priceFormatted)")
         .accessibilityAddTraits(.isHeader)
@@ -284,6 +285,7 @@ struct DestinationDetailView: View {
             Color.sgBg.opacity(0.95)
                 .background(.ultraThinMaterial)
         )
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — sticky bar layout
     }
 }
 

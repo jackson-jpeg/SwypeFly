@@ -155,6 +155,7 @@ struct FeedView: View {
         }
         .background(Color.sgBg.opacity(0.84))
         .background(.ultraThinMaterial)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — header controls
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color.sgBorder.opacity(0.45))

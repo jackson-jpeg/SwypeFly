@@ -82,6 +82,7 @@ struct DealCard: View {
                 }
             }
         }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — overlay text must fit on photo
         .contentShape(Rectangle())
         .onTapGesture { onTap() }
         .accessibilityElement(children: .ignore)

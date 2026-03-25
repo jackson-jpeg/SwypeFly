@@ -53,6 +53,7 @@ struct ContentView: View {
             settingsTab
         }
         .tint(Color.sgYellow)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling app-wide for layout safety
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarBackground(Color.sgBg, for: .tabBar)
         .sheet(item: $router.activeSheet, onDismiss: {
