@@ -6,6 +6,7 @@ import SwiftUI
 
 struct SavedCard: View {
     let deal: Deal
+    var onTap: () -> Void = {}
     var onBook: () -> Void = {}
     var onRemove: () -> Void = {}
 
@@ -99,9 +100,15 @@ struct SavedCard: View {
         }
         .frame(minHeight: 200, maxHeight: 220)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        .contentShape(RoundedRectangle(cornerRadius: Radius.md))
+        .onTapGesture {
+            HapticEngine.light()
+            onTap()
+        }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — tight grid cards
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")
+        .accessibilityHint("Tap to view details")
     }
 
     // MARK: - Fallback

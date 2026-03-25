@@ -94,6 +94,7 @@ struct SavedView: View {
             ForEach(sortedDeals) { deal in
                 SavedCard(
                     deal: deal,
+                    onTap: { router.showDeal(deal) },
                     onBook: { bookDeal(deal) },
                     onRemove: { removeDeal(deal) }
                 )
