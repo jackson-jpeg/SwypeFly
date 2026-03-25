@@ -73,6 +73,9 @@ struct DepartureBoardView: View {
                 await feedStore.fetchDeals(origin: settingsStore.departureCode)
             }
             syncBoardWindow(animated: false)
+            // Prefetch images for the visible window + the next window
+            prefetchImages(from: boardIndex)
+            prefetchImages(from: boardIndex + visibleCount)
         }
         .onChange(of: settingsStore.departureCode) { _, newCode in
             boardIndex = 0
@@ -290,18 +293,21 @@ struct DepartureBoardView: View {
     private var boardSection: some View {
         VStack(spacing: 2) {
             ForEach(Array(renderedSlots.enumerated()), id: \.element.id) { index, slot in
-                DepartureRow(
-                    slot: slot,
-                    isActive: index == 0 && !slot.isBlank,
-                    animate: true,
-                    animationID: animationCycle
-                )
-                .frame(minHeight: 80, maxHeight: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture {
+                Button {
                     guard let deal = slot.deal, !isBoardTransitioning else { return }
                     handleRowTap(index: index, deal: deal)
+                } label: {
+                    DepartureRow(
+                        slot: slot,
+                        isActive: index == 0 && !slot.isBlank,
+                        animate: true,
+                        animationID: animationCycle
+                    )
+                    .frame(minHeight: 80, maxHeight: .infinity)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(BoardRowButtonStyle())
+                .disabled(slot.isBlank)
                 .accessibilityLabel(slot.accessibilityText)
                 .accessibilityHint(
                     slot.isBlank
@@ -624,9 +630,24 @@ struct DepartureBoardView: View {
         HapticEngine.light()
         boardIndex += 1
 
+        // Prefetch images for the next window of deals beyond the current view.
+        prefetchImages(from: boardIndex + visibleCount)
+
         if boardIndex >= feedStore.deals.count - 3 {
             Task {
                 await feedStore.fetchMore(origin: settingsStore.departureCode)
+            }
+        }
+    }
+
+    /// Prefetch images for the next window of deals (up to `visibleCount` ahead).
+    /// Warms the image cache so the next board advance shows photos instantly.
+    private func prefetchImages(from startIndex: Int) {
+        let deals = feedStore.deals
+        for i in startIndex..<min(startIndex + visibleCount, deals.count) {
+            guard let url = deals[i].imageUrl else { continue }
+            Task {
+                await ImageCache.shared.prefetch(url)
             }
         }
     }
@@ -708,6 +729,18 @@ struct DepartureBoardView: View {
             "BOS": ["PVD", "BDL"],
         ]
         return nearby[settingsStore.departureCode] ?? ["JFK", "LAX", "ORD"]
+    }
+}
+
+// MARK: - Board Row Button Style
+// Subtle scale + opacity press feedback for departure board rows.
+
+private struct BoardRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
