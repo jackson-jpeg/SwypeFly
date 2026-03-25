@@ -32,6 +32,7 @@ struct SoGoJetApp: App {
     @State private var router = Router()
     @State private var toastManager = ToastManager()
     @State private var networkMonitor = NetworkMonitor()
+    @State private var authStore = AuthStore()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -44,6 +45,7 @@ struct SoGoJetApp: App {
                 .environment(router)
                 .environment(toastManager)
                 .environment(networkMonitor)
+                .environment(authStore)
                 .preferredColorScheme(.dark)
                 .task {
                     // Sync departure airport to shared App Group for the widget

@@ -12,6 +12,7 @@
 		0DEE3F28B43A25859CA87BAA /* BookingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */; };
 		0FF6FAFB4044541CB3E0527D /* Fonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A79039C721A4E068A129336 /* Fonts.swift */; };
 		147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A389ABB1A418871FD1196D90 /* SettingsStore.swift */; };
+		150C44A52C23D89A7EE8B379 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A102B73E5AC13E98A75404C /* AuthView.swift */; };
 		186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */; };
 		2142C1B9F778DA6E1229A8D3 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */; };
 		238AFE49E080789B4A349D58 /* PlayfairDisplay-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */; };
@@ -64,6 +65,7 @@
 		CFDCAE512ADD3A26FFFE6FAA /* TripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C1F35A4778E539A8BFE69F /* TripView.swift */; };
 		D1A2B3C4E5F607182930A1B2 /* SwipeableCardStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B809102C3D4E5F /* SwipeableCardStack.swift */; };
 		D5E6F7A8B9C0D1E2F3A4B5C6 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */; };
+		D6BA8C20ABC7A67AED322DA9 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82809A0431A6F9652C82CC5D /* AuthStore.swift */; };
 		DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B905E64CC3B094A6DD5EC65C /* SavedCard.swift */; };
 		DEC62E0D0B58D36DBD56A1B1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E239452DD558CBC5AAC6EB99 /* ContentView.swift */; };
 		E7F8A9B0C1D2E3F405162738 /* Airlines.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6071829A1B2C3A4B5C6 /* Airlines.swift */; };
@@ -117,6 +119,7 @@
 		27FF07F009DE3FAB0F64FF9C /* SoGoJetWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoGoJetWidget.swift; sourceTree = "<group>"; };
 		354C5BCFFB698ADB127A0E69 /* WidgetAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetAPIClient.swift; sourceTree = "<group>"; };
 		37A502F1B6077B0E63A48EB6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		3A102B73E5AC13E98A75404C /* AuthView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthView.swift; path = SoGoJet/Views/Onboarding/AuthView.swift; sourceTree = "<group>"; };
 		3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAlertCTA.swift; sourceTree = "<group>"; };
 		3E16299CD23179DBDA9EB1BE /* DealBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealBadge.swift; sourceTree = "<group>"; };
 		42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceSparkline.swift; sourceTree = "<group>"; };
@@ -134,6 +137,7 @@
 		74190F28733D8C3D21B157F7 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		7E784374E7AD4C57758AD932 /* FlightSearchLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FlightSearchLiveActivity.swift; path = SoGoJetWidget/FlightSearchLiveActivity.swift; sourceTree = "<group>"; };
 		7ED335D8717153C9C30C0BBF /* SoGoJetWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoGoJetWidgetBundle.swift; sourceTree = "<group>"; };
+		82809A0431A6F9652C82CC5D /* AuthStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthStore.swift; path = SoGoJet/Stores/AuthStore.swift; sourceTree = "<group>"; };
 		852DCAC63412CB4B4FB1291C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -314,6 +318,8 @@
 				C98B9A555BAADD3DDB97630F /* FlightSearchActivity.swift */,
 				7E784374E7AD4C57758AD932 /* FlightSearchLiveActivity.swift */,
 				FE1BDF6D6619708FAF3F2870 /* DealNotificationManager.swift */,
+				82809A0431A6F9652C82CC5D /* AuthStore.swift */,
+				3A102B73E5AC13E98A75404C /* AuthView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -615,6 +621,8 @@
 				F1E2D3C4B5A6978877665544 /* VintageTerminalKit.swift in Sources */,
 				43B5B6854B7A8115E42FFF9C /* FlightSearchActivity.swift in Sources */,
 				43BAE364D487368CD36A6483 /* DealNotificationManager.swift in Sources */,
+				D6BA8C20ABC7A67AED322DA9 /* AuthStore.swift in Sources */,
+				150C44A52C23D89A7EE8B379 /* AuthView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

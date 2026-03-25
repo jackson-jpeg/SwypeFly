@@ -8,13 +8,19 @@ struct ContentView: View {
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
     @Environment(NetworkMonitor.self) private var network
+    @Environment(AuthStore.self) private var auth
 
     var body: some View {
         ZStack {
-            if settings.hasOnboarded {
-                mainTabView
+            if !settings.hasOnboarded {
+                // New users: auth → onboarding → main app
+                if auth.isAuthenticated {
+                    OnboardingView()
+                } else {
+                    AuthView()
+                }
             } else {
-                OnboardingView()
+                mainTabView
             }
         }
         .overlay(alignment: .top) {
