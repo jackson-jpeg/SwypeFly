@@ -44,6 +44,7 @@
 		7C6DDB40DD657B3C82381D4D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */; };
 		7E28294784B2E6F2AFC718D5 /* FlightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B005B3E34958EE89A4FDA7B /* FlightEntry.swift */; };
 		8D529374476E8130BF35AFF5 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B5B2939A8FD86EA37A140D /* Router.swift */; };
+		8D919AEAB371A27AD22F9D2B /* ExploreMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD4E47DCFE32BC0D3EA1A66 /* ExploreMapView.swift */; };
 		8EFFDD228E5BB7CD0338E0CE /* SoGoJetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */; };
 		90AEFDFE22FA857641A033E9 /* PriceSparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */; };
 		993EFA650A4598CAFF429893 /* Deal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEF50684FC3E48F9C3A1F6C /* Deal.swift */; };
@@ -110,6 +111,7 @@
 		0462DA9750B48F6D57FEE257 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Regular.ttf"; sourceTree = "<group>"; };
 		07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedStore.swift; sourceTree = "<group>"; };
 		08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		0DD4E47DCFE32BC0D3EA1A66 /* ExploreMapView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExploreMapView.swift; path = SoGoJet/Views/Feed/ExploreMapView.swift; sourceTree = "<group>"; };
 		0EEF50684FC3E48F9C3A1F6C /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
 		105C4B165D8E99F29DACC00B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedStore.swift; sourceTree = "<group>"; };
@@ -326,6 +328,7 @@
 				3A102B73E5AC13E98A75404C /* AuthView.swift */,
 				445C27DF7FF249F5C899C2E7 /* SiriShortcuts.swift */,
 				6D057DFC84E8B9B1125CCB22 /* FareDropMonitor.swift */,
+				0DD4E47DCFE32BC0D3EA1A66 /* ExploreMapView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -631,6 +634,7 @@
 				150C44A52C23D89A7EE8B379 /* AuthView.swift in Sources */,
 				14E68176ADDAB3D2E442586E /* SiriShortcuts.swift in Sources */,
 				22091ED92838265DEC1262C6 /* FareDropMonitor.swift in Sources */,
+				8D919AEAB371A27AD22F9D2B /* ExploreMapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

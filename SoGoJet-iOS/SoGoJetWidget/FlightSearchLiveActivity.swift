@@ -52,31 +52,37 @@ struct FlightSearchLiveActivity: Widget {
                     }
                 }
             } compactLeading: {
-                // Compact: left side
-                HStack(spacing: 2) {
-                    Image(systemName: "airplane")
-                        .font(.system(size: 10))
+                // Compact: left side — airplane with departure animation
+                HStack(spacing: 3) {
+                    Image(systemName: context.state.status == .searching ? "airplane.departure" : "airplane")
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(gold)
+                        .contentTransition(.symbolEffect(.replace))
                     Text(context.attributes.destination)
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(.white)
+                        .contentTransition(.numericText())
                 }
             } compactTrailing: {
-                // Compact: right side
+                // Compact: right side — price or searching indicator
                 if let price = context.state.bestPrice {
                     Text("$\(price)")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundStyle(gold)
+                        .contentTransition(.numericText())
                 } else {
-                    ProgressView()
-                        .tint(gold)
-                        .scaleEffect(0.6)
+                    // Animated searching dots
+                    Text("···")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(gold)
+                        .contentTransition(.numericText())
                 }
             } minimal: {
-                // Minimal: just the icon
-                Image(systemName: "airplane")
-                    .font(.system(size: 10))
+                // Minimal: airplane icon that changes based on status
+                Image(systemName: context.state.status == .found ? "airplane.arrival" : "airplane.departure")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(gold)
+                    .contentTransition(.symbolEffect(.replace))
             }
         }
     }

@@ -18,6 +18,7 @@ struct FeedView: View {
     @State private var shareItem: SharedDealItem?
     @State private var headerHideTask: Task<Void, Never>?
     @State private var swipeModeIndex: Int = 0
+    @State private var showMap: Bool = false
 
     private var currentDeal: Deal? {
         guard let currentIndex,
@@ -124,6 +125,17 @@ struct FeedView: View {
         }
         .sheet(item: $shareItem) { item in
             ShareSheet(activityItems: item.activityItems)
+        }
+        .fullScreenCover(isPresented: $showMap) {
+            ExploreMapView(
+                deals: feedStore.allDeals,
+                onSelect: { deal in
+                    showMap = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        router.showDeal(deal)
+                    }
+                }
+            )
         }
         .onDisappear {
             headerHideTask?.cancel()
@@ -381,6 +393,15 @@ struct FeedView: View {
             )
             .accessibilityLabel(settingsStore.swipeMode ? "Switch to scroll mode" : "Switch to swipe mode")
             .accessibilityHint("Toggle between swipe-to-save cards and vertical scrolling")
+
+            FeedHeaderButton(
+                systemName: "map",
+                action: {
+                    HapticEngine.light()
+                    showMap = true
+                }
+            )
+            .accessibilityLabel("Explore on map")
 
             FeedHeaderButton(
                 systemName: "magnifyingglass",
