@@ -26,6 +26,7 @@ struct DestinationDetailView: View {
                 }
                 .padding(.bottom, 100)
             }
+            .coordinateSpace(name: "detailScroll")
             .background(Color.sgBg)
 
             stickyBottomBar
@@ -35,14 +36,26 @@ struct DestinationDetailView: View {
         }
     }
 
-    // MARK: - Hero Section
+    // MARK: - Hero Section (Parallax)
+    private let heroHeight: CGFloat = (UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .first?.screen.bounds.height ?? 800) * 0.4
+    private let parallaxFactor: CGFloat = 0.35
+
     private var heroSection: some View {
         GeometryReader { geo in
+            let scrollY = geo.frame(in: .named("detailScroll")).minY
+            let isPullingDown = scrollY > 0
+
             ZStack(alignment: .bottomLeading) {
                 CachedAsyncImage(url: deal.imageUrl) {
                     Rectangle().fill(Color.sgSurface)
                 }
-                .frame(width: geo.size.width, height: geo.size.height)
+                .frame(
+                    width: geo.size.width,
+                    height: isPullingDown ? heroHeight + scrollY : heroHeight
+                )
+                .offset(y: isPullingDown ? -scrollY : -scrollY * parallaxFactor)
                 .clipped()
 
                 LinearGradient(
@@ -76,9 +89,8 @@ struct DestinationDetailView: View {
                 .padding(16)
             }
         }
-        .frame(height: (UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first?.screen.bounds.height ?? 800) * 0.4)
+        .frame(height: heroHeight)
+        .clipped()
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — hero overlay text
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(deal.city), \(deal.country), \(deal.priceFormatted)")
