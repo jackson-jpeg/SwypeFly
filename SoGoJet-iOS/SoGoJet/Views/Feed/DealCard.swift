@@ -86,7 +86,7 @@ struct DealCard: View {
                         priceBadge
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, geo.safeAreaInsets.bottom + 70)
+                    .padding(.bottom, 120) // Clear tab bar (49pt) + home indicator (34pt) + breathing room
                 }
 
                 // Swipe hint — only on the first card, auto-dismisses

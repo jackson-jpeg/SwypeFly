@@ -77,7 +77,7 @@ struct DepartureRow: View {
         if slot.isBlank {
             return Color.sgFaint.opacity(0.45)
         }
-        return slot.deal?.hasPrice == true ? Color.sgYellow : Color.sgFaint
+        return slot.deal?.hasPrice == true ? Color.sgWhite : Color.sgFaint
     }
 
     private var destinationColor: Color {
@@ -101,7 +101,7 @@ struct DepartureRow: View {
                     text: slot.code,
                     maxLength: 3,
                     size: .sm,
-                    color: slot.isBlank ? Color.sgFaint.opacity(0.5) : Color.sgYellow,
+                    color: slot.isBlank ? Color.sgFaint.opacity(0.5) : Color.sgWhite,
                     alignment: .leading,
                     animate: animate,
                     startDelay: 0,

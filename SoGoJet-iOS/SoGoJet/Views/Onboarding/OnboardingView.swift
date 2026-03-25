@@ -62,7 +62,7 @@ struct OnboardingView: View {
                 text: "SOGOJET",
                 maxLength: 7,
                 size: .lg,
-                color: Color.sgYellow,
+                color: Color.sgWhite,
                 alignment: .leading,
                 animate: animateFlap,
                 staggerMs: 50
@@ -101,7 +101,7 @@ struct OnboardingView: View {
                         text: currentShowcase.price,
                         maxLength: 6,
                         size: .md,
-                        color: Color.sgYellow,
+                        color: Color.sgWhite,
                         alignment: .leading,
                         animate: animateFlap,
                         startDelay: 0.12,
@@ -158,7 +158,7 @@ struct OnboardingView: View {
                     text: settings.departureCode,
                     maxLength: 3,
                     size: .md,
-                    color: Color.sgYellow,
+                    color: Color.sgWhite,
                     alignment: .leading,
                     animate: true,
                     staggerMs: 28

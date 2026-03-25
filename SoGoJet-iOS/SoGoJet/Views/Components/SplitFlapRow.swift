@@ -98,7 +98,7 @@ struct SplitFlapRow: View {
                     text: price,
                     maxLength: 6,
                     size: .md,
-                    color: Color.sgYellow,
+                    color: Color.sgWhite,
                     alignment: .trailing,
                     animate: showText,
                     startDelay: 0.3,

@@ -261,7 +261,7 @@ struct SeatMapView: View {
                         text: selectedSeatLabel,
                         maxLength: 6,
                         size: .lg,
-                        color: selectedSeat == nil ? Color.sgWhiteDim : Color.sgYellow,
+                        color: selectedSeat == nil ? Color.sgWhiteDim : Color.sgWhite,
                         alignment: .leading,
                         animate: true,
                         staggerMs: 24

@@ -1352,7 +1352,7 @@ struct TripView: View {
                 text: "YOUR TRIP",
                 maxLength: 10,
                 size: .md,
-                color: Color.sgYellow,
+                color: Color.sgWhite,
                 animate: true,
                 staggerMs: 40
             )

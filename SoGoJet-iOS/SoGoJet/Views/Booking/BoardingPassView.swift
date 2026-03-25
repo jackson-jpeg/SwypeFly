@@ -54,7 +54,7 @@ struct BoardingPassView: View {
                         text: bookingReference.uppercased(),
                         maxLength: 8,
                         size: .md,
-                        color: Color.sgYellow,
+                        color: Color.sgWhite,
                         alignment: .leading,
                         animate: true,
                         staggerMs: 30

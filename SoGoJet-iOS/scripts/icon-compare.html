@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoGoJet App Icon Concepts</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #f5f5f5; font-family: -apple-system, system-ui, sans-serif; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .subtitle { text-align: center; color: #888; font-size: 15px; margin-bottom: 48px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto; }
+  .card { text-align: center; }
+  .card img {
+    width: 200px; height: 200px; border-radius: 44px; /* iOS icon radius */
+    box-shadow: 0 8px 32px rgba(247, 232, 160, 0.12), 0 2px 8px rgba(0,0,0,0.6);
+    transition: transform 0.2s ease;
+  }
+  .card img:hover { transform: scale(1.08); }
+  .card h3 { margin-top: 16px; font-size: 17px; font-weight: 600; color: #F7E8A0; }
+  .card p { margin-top: 6px; font-size: 13px; color: #888; line-height: 1.5; max-width: 260px; margin-left: auto; margin-right: auto; }
+  .tag { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-top: 8px; }
+  .pick { background: rgba(74, 222, 128, 0.15); color: #4ADE80; }
+  .bold { background: rgba(247, 232, 160, 0.15); color: #F7E8A0; }
+  .minimal { background: rgba(245, 245, 245, 0.1); color: #ccc; }
+
+  /* Simulated home screen preview */
+  .home-preview { margin-top: 60px; text-align: center; }
+  .home-preview h2 { font-size: 20px; margin-bottom: 24px; color: #888; }
+  .home-row { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+  .home-icon { text-align: center; }
+  .home-icon img { width: 60px; height: 60px; border-radius: 13px; }
+  .home-icon span { display: block; font-size: 11px; color: #888; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>SoGoJet App Icon Concepts</h1>
+<p class="subtitle">7 variations on the split-flap "GO" — pick your favorite</p>
+
+<div class="grid">
+  <div class="card">
+    <img src="go-1A-depth.png" alt="1A Depth">
+    <h3>1A: Premium Depth</h3>
+    <p>Mounting screws, top/bottom cell contrast, rich gold glow. Feels like real hardware.</p>
+    <span class="tag bold">Refined</span>
+  </div>
+
+  <div class="card">
+    <img src="go-1B-midflip.png" alt="1B Mid-Flip">
+    <h3>1B: Mid-Flip</h3>
+    <p>The "O" caught mid-rotation from "N". Captures the kinetic energy of the board in motion.</p>
+    <span class="tag bold">Most Distinctive</span>
+  </div>
+
+  <div class="card">
+    <img src="go-1C-departures.png" alt="1C Departures">
+    <h3>1C: Departures</h3>
+    <p>Gold indicator bar, "DEPARTURES" header, tiny airplane. Directly references the app's board UI.</p>
+    <span class="tag pick">Recommended</span>
+  </div>
+
+  <div class="card">
+    <img src="go-1D-runway.png" alt="1D Runway">
+    <h3>1D: Runway</h3>
+    <p>Dashed runway lines extending from the split gap with a departure aircraft. Travel + flipboard.</p>
+    <span class="tag bold">Clever</span>
+  </div>
+
+  <div class="card">
+    <img src="go-1E-stacked.png" alt="1E Stacked">
+    <h3>1E: Stacked</h3>
+    <p>G over O vertically with gold indicator bar. Fills the square format, feels like a board column.</p>
+    <span class="tag bold">Compact</span>
+  </div>
+
+  <div class="card">
+    <img src="go-1F-price.png" alt="1F Price">
+    <h3>1F: GO + $99</h3>
+    <p>Gold GO on top, green $99 below. Brand AND value prop in one — "Go. Cheap flights."</p>
+    <span class="tag bold">Communicates Value</span>
+  </div>
+
+  <div class="card">
+    <img src="go-1G-mono.png" alt="1G Mono">
+    <h3>1G: Monochrome</h3>
+    <p>Pure white on matte black. Zero color. Dieter Rams energy. The quietest icon on any home screen.</p>
+    <span class="tag minimal">Boldest Statement</span>
+  </div>
+</div>
+
+<div class="home-preview">
+  <h2>How they'd look on your home screen (60px)</h2>
+  <div class="home-row">
+    <div class="home-icon"><img src="go-1A-depth.png"><span>1A</span></div>
+    <div class="home-icon"><img src="go-1B-midflip.png"><span>1B</span></div>
+    <div class="home-icon"><img src="go-1C-departures.png"><span>1C</span></div>
+    <div class="home-icon"><img src="go-1D-runway.png"><span>1D</span></div>
+    <div class="home-icon"><img src="go-1E-stacked.png"><span>1E</span></div>
+    <div class="home-icon"><img src="go-1F-price.png"><span>1F</span></div>
+    <div class="home-icon"><img src="go-1G-mono.png"><span>1G</span></div>
+  </div>
+</div>
+
+</body>
+</html>

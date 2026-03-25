@@ -55,7 +55,7 @@ struct SettingsView: View {
                         text: settings.departureCode,
                         maxLength: 3,
                         size: .lg,
-                        color: Color.sgYellow,
+                        color: Color.sgWhite,
                         animate: true,
                         staggerMs: 35
                     )

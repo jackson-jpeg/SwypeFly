@@ -212,7 +212,7 @@ struct DepartureBoardView: View {
                 text: "DEPARTURES",
                 maxLength: 10,
                 size: .sm,
-                color: Color.sgYellow,
+                color: Color.sgWhite,
                 animate: true,
                 staggerMs: 30
             )
