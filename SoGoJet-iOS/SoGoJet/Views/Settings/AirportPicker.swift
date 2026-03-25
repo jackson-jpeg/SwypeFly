@@ -31,7 +31,7 @@ struct AirportPicker: View {
 
     private var resultsSubtitle: String {
         if searchText.isEmpty {
-            return "Browse the full airport roster or jump via the quick picks above."
+            return "Browse all airports or tap a quick pick above."
         }
 
         return "Matching airports for \(searchText)."
@@ -71,7 +71,7 @@ struct AirportPicker: View {
     private var summaryPanel: some View {
         VintageTerminalPanel(
             title: "Departure Gate",
-            subtitle: "Choose the airport that should anchor every feed refresh, search result, and nearby-market scan.",
+            subtitle: "We'll show deals and prices from this airport.",
             stamp: "Origin",
             tone: .amber
         ) {
@@ -113,7 +113,7 @@ struct AirportPicker: View {
                     originLabel: selectedAirport?.city ?? "Departure city",
                     destinationCode: "ALL",
                     destinationLabel: "Feed and booking searches",
-                    detail: "This preference updates the core browsing and booking wiring across the app.",
+                    detail: "All deals and searches will use this as your starting point.",
                     tone: .amber
                 )
             }
@@ -234,7 +234,7 @@ struct AirportPicker: View {
                     .font(SGFont.bodyBold(size: 13))
                     .foregroundStyle(Color.sgWhite)
                     .lineLimit(2)
-                Text("\(airport.city) departure profile")
+                Text("Departs from \(airport.city)")
                     .font(SGFont.body(size: 11))
                     .foregroundStyle(Color.sgMuted)
             }

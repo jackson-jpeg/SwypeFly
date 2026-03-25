@@ -927,11 +927,11 @@ struct TripView: View {
 
                             if let currentFarePrice {
                                 let gap = Int(currentFarePrice - option.price)
-                                Text(gap > 0 ? "$\(gap) cheaper than \(settingsStore.departureCode)" : "Tap to search this market")
+                                Text(gap > 0 ? "$\(gap) cheaper than \(settingsStore.departureCode)" : "Tap to search flights")
                                     .font(SGFont.body(size: 11))
                                     .foregroundStyle(gap > 0 ? Color.sgGreen : Color.sgMuted)
                             } else {
-                                Text("Tap to search this market")
+                                Text("Tap to search flights")
                                     .font(SGFont.body(size: 11))
                                     .foregroundStyle(Color.sgMuted)
                             }

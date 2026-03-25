@@ -69,7 +69,7 @@ struct ReviewView: View {
                         .scaleEffect(1.3)
                 }
             } content: {
-                Text("The payment intent has been created and we are waiting on the provider to issue the order. Do not close this screen yet.")
+                Text("Your payment is being processed. Please don't close this screen.")
                     .font(SGFont.body(size: 13))
                     .foregroundStyle(Color.sgWhiteDim)
                     .fixedSize(horizontal: false, vertical: true)
@@ -261,8 +261,8 @@ struct ReviewView: View {
         ) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 VintageTerminalChecklistItem(
-                    title: "Live provider price is already reflected above",
-                    detail: "If the route changed again, we'll check for the latest price.",
+                    title: "Current price is shown above",
+                    detail: "We'll verify the final price before charging you.",
                     tone: .amber
                 )
                 VintageTerminalChecklistItem(

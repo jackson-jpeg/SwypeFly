@@ -631,7 +631,7 @@ struct SeatMapView: View {
                     .init(title: "Route", value: routeLabel, footnote: travelWindowLabel, tone: .amber),
                     .init(title: "Status", value: "Continue", footnote: "Seat map missing but booking stays open", tone: .moss),
                     .init(title: "Traveler", value: "\(store.passengerCount)", footnote: "Lead traveler on this order", tone: .ivory),
-                    .init(title: "Desk", value: "Seat map unavailable", footnote: "Seat selection not available for this flight", tone: .ember),
+                    .init(title: "Seats", value: "Seat map unavailable", footnote: "Seat selection not available for this flight", tone: .ember),
                 ])
             }
         }
@@ -732,7 +732,7 @@ struct SeatMapView: View {
             icon: "airplane.circle.fill",
             title: title,
             value: detail,
-            detail: "Seats are live inventory. Another refresh can change availability at any time.",
+            detail: "Seat availability may change. Select yours before it's taken.",
             tone: tone
         )
     }

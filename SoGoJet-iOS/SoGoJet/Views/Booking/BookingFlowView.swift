@@ -51,15 +51,15 @@ struct BookingFlowView: View {
     private var chromeSubtitle: String {
         switch store.step {
         case .idle, .searching:
-            return "Compare live inventory, date windows, and nearby origin markets before booking."
+            return "Searching for the best available flights."
         case .trip:
-            return "Choose the live fare that feels right, then move into traveler details."
+            return "Pick the flight that works for you, then add your details."
         case .failed:
-            return "The live route needs another scan. Adjust the window or try the search again."
+            return "We couldn't find flights for this route. Try different dates or check back later."
         case .passengers:
             return "Enter passenger details as shown on their ID."
         case .seats:
-            return "Pick a cabin position or skip ahead if you want the provider to assign it later."
+            return "Choose your seat or skip to let the airline assign one."
         case .review:
             return "Review your trip details before paying."
         case .paying:

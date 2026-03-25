@@ -226,8 +226,6 @@ actor APIClient {
             request.httpBody = body
         }
 
-        // TODO: Inject auth token from AuthStore when authentication is implemented.
-        // request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         let (data, response) = try await session.data(for: request)
 
