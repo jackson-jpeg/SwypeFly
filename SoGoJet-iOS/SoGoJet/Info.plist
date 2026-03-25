@@ -18,6 +18,8 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>SoGoJet uses Face ID to verify your identity before completing a flight purchase.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>SoGoJet uses your location to suggest the nearest departure airport.</string>
 	<key>UILaunchScreen</key>

@@ -115,10 +115,11 @@ struct SettingsView: View {
     }
 
     private func viewModeButton(id: String, label: String, icon: String) -> some View {
-        let isSelected = settings.preferredView == id
-        return Button {
-            HapticEngine.selection()
-            settings.preferredView = id
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                HapticEngine.selection()
+                settings.preferredView = id
+            }
         } label: {
             HStack(spacing: Spacing.xs) {
                 Image(systemName: icon)
@@ -126,11 +127,11 @@ struct SettingsView: View {
                 Text(label)
                     .font(SGFont.bodyBold(size: 13))
             }
-            .foregroundStyle(isSelected ? Color.sgBg : Color.sgWhiteDim)
+            .foregroundStyle(settings.preferredView == id ? Color.sgBg : Color.sgWhiteDim)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .background(
-                isSelected ? Color.sgYellow : Color.clear,
+                settings.preferredView == id ? Color.sgYellow : Color.clear,
                 in: RoundedRectangle(cornerRadius: Radius.md)
             )
         }

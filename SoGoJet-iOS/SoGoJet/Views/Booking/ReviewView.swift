@@ -1,4 +1,5 @@
 import SwiftUI
+import LocalAuthentication
 
 struct ReviewView: View {
     @Environment(BookingStore.self) private var store
@@ -279,15 +280,41 @@ struct ReviewView: View {
         }
     }
 
+    /// Authenticate with Face ID / Touch ID / passcode before confirming payment.
+    private func authenticateAndPay() {
+        let context = LAContext()
+        var error: NSError?
+
+        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
+            context.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: "Confirm your \(totalLabel) flight purchase"
+            ) { success, _ in
+                Task { @MainActor in
+                    if success {
+                        HapticEngine.success()
+                        await store.confirmBooking()
+                    } else {
+                        HapticEngine.error()
+                        store.paymentError = "Authentication required to complete purchase."
+                    }
+                }
+            }
+        } else {
+            // Device doesn't support biometrics — proceed without auth
+            Task {
+                await store.confirmBooking()
+            }
+        }
+    }
+
     private var actionCluster: some View {
         VStack(spacing: Spacing.sm) {
             Button {
-                Task {
-                    await store.confirmBooking()
-                }
+                authenticateAndPay()
             } label: {
                 HStack(spacing: Spacing.sm) {
-                    Image(systemName: "lock.fill")
+                    Image(systemName: "faceid")
                         .font(.system(size: 14, weight: .semibold))
                     Text("Pay \(totalLabel)")
                         .font(SGFont.bodyBold(size: 16))
