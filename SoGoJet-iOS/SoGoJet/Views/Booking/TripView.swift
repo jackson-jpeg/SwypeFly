@@ -1,8 +1,8 @@
 import SwiftUI
 
 // MARK: - Trip View
-// Flight-shopping console for a destination.
-// Lets the user tune dates/cabin class, inspect route intel, and then search live fares.
+// Flight search screen for a destination.
+// Lets the user tune dates/cabin class, view price info, and then search live fares.
 
 struct TripView: View {
     @Environment(BookingStore.self) private var store
@@ -178,7 +178,7 @@ struct TripView: View {
         }
     }
 
-    // MARK: - Search Console
+    // MARK: - Search
 
     private func shoppingContent(isSearching: Bool) -> some View {
         ScrollView(showsIndicators: false) {
@@ -204,10 +204,10 @@ struct TripView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Flight Search Console")
+                    Text("Search Flights")
                         .font(SGFont.sectionHead)
                         .foregroundStyle(Color.sgWhite)
-                    Text("Tune the trip window before we hit live inventory.")
+                    Text("Set your travel dates and preferences.")
                         .font(SGFont.body(size: 12))
                         .foregroundStyle(Color.sgMuted)
                 }
@@ -306,7 +306,7 @@ struct TripView: View {
 
     private var quickSearchControls: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Route Flex")
+            Text("Options")
                 .font(SGFont.bodyBold(size: 12))
                 .foregroundStyle(Color.sgMuted)
                 .textCase(.uppercase)
@@ -538,7 +538,7 @@ struct TripView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Search Mission Control")
+                    Text("Searching...")
                         .font(SGFont.sectionHead)
                         .foregroundStyle(Color.sgWhite)
                     Text("Live booking engine status for this route.")
@@ -593,11 +593,11 @@ struct TripView: View {
                     .foregroundStyle(delta > 0 ? Color.sgOrange : (delta < 0 ? Color.sgGreen : Color.sgMuted))
                 }
             } else if store.step == .searching {
-                Text("Running a live availability sweep across the booking engine.")
+                Text("Finding available flights...")
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             } else {
-                Text("No live fare response yet. Route Flex chips above can re-run the search instantly.")
+                Text("No flights found. Try different dates or options above.")
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             }
@@ -734,17 +734,17 @@ struct TripView: View {
         )
     }
 
-    // MARK: - Fare Intel
+    // MARK: - Price Info
 
     @ViewBuilder
     private var fareIntelSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Fare Intelligence")
+                    Text("Price Info")
                         .font(SGFont.sectionHead)
                         .foregroundStyle(Color.sgWhite)
-                    Text("Context from archived route pricing and nearby origin coverage.")
+                    Text("Price context for this route.")
                         .font(SGFont.body(size: 12))
                         .foregroundStyle(Color.sgMuted)
                 }
@@ -791,17 +791,17 @@ struct TripView: View {
 
             let delta = Int(abs(currentFarePrice - cheapestPrice))
             if currentFarePrice > cheapestPrice {
-                return "$\(delta) above the lowest archived month"
+                return "$\(delta) above the monthly low"
             }
             if cheapestPrice > currentFarePrice {
-                return "$\(delta) under the archived month low"
+                return "$\(delta) below the monthly low"
             }
-            return "Matching the archived month low"
+            return "At the monthly low"
         }()
 
         return VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack {
-                Label("Best Month On File", systemImage: "calendar")
+                Label("Best Month", systemImage: "calendar")
                     .font(SGFont.bodyBold(size: 13))
                     .foregroundStyle(Color.sgWhite)
 
@@ -858,7 +858,7 @@ struct TripView: View {
                     }
                 }
 
-                Text("Tap a month to reseed dates and rerun live search.")
+                Text("Tap a month to search new dates.")
                     .font(SGFont.body(size: 11))
                     .foregroundStyle(Color.sgMuted)
             }
@@ -1016,7 +1016,7 @@ struct TripView: View {
 
     private var intelEmptyState: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text("No additional route intel yet")
+            Text("More info loading...")
                 .font(SGFont.bodyBold(size: 13))
                 .foregroundStyle(Color.sgWhiteDim)
             Text("We'll still search the live booking engine using your selected dates.")
@@ -1520,7 +1520,7 @@ struct TripView: View {
         monthlyIntel = monthly
 
         if detail == nil && monthly == nil {
-            marketIntelError = "Route intel is still warming up for this city."
+            marketIntelError = "Loading price info..."
         }
 
         isLoadingMarketIntel = false
