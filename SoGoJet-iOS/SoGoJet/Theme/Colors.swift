@@ -6,10 +6,10 @@ import SwiftUI
 
 extension Color {
     // MARK: Core Palette
-    static let sgBg         = Color(hex: 0x0A0806)
-    static let sgSurface    = Color(hex: 0x151210)
-    static let sgCell       = Color(hex: 0x1A1510)
-    static let sgBorder     = Color(hex: 0x2A231A)
+    static let sgBg         = Color(hex: 0x0A0A0A)
+    static let sgSurface    = Color(hex: 0x141414)
+    static let sgCell       = Color(hex: 0x1A1A1A)
+    static let sgBorder     = Color(hex: 0x2A2A2A)
 
     // MARK: Accent
     static let sgYellow     = Color(hex: 0xF7E8A0)
@@ -17,10 +17,10 @@ extension Color {
     static let sgOrange     = Color(hex: 0xE8A849)
 
     // MARK: Text
-    static let sgWhite      = Color(hex: 0xFFF8F0)
-    static let sgWhiteDim   = Color(hex: 0xD4C8B8)
-    static let sgMuted      = Color(hex: 0x8B7D6B)
-    static let sgFaint      = Color(hex: 0x5A4F42)
+    static let sgWhite      = Color(hex: 0xF5F5F5)
+    static let sgWhiteDim   = Color(hex: 0xCCCCCC)
+    static let sgMuted      = Color(hex: 0x888888)
+    static let sgFaint      = Color(hex: 0x555555)
 
     // MARK: Deal Tiers
     static let sgDealAmazing = Color(hex: 0x4ADE80)
@@ -33,7 +33,7 @@ extension Color {
     static let cardGradient = LinearGradient(
         colors: [
             Color.clear,
-            Color(hex: 0x0A0806).opacity(0.85)
+            Color(hex: 0x0A0A0A).opacity(0.85)
         ],
         startPoint: .top,
         endPoint: .bottom
