@@ -65,6 +65,16 @@ final class Router {
     // MARK: State
 
     var activeTab: Tab = .feed
+    /// Incremented when the user taps the already-active tab (scroll-to-top convention).
+    var scrollToTopTrigger: Int = 0
+
+    /// Call from the tab selection binding when the same tab is re-tapped.
+    func tabSelected(_ tab: Tab) {
+        if tab == activeTab {
+            scrollToTopTrigger += 1
+        }
+        activeTab = tab
+    }
     var feedPath = NavigationPath()
     var savedPath = NavigationPath()
     var settingsPath = NavigationPath()

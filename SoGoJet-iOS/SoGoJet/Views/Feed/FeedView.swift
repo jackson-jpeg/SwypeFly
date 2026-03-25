@@ -11,6 +11,7 @@ struct FeedView: View {
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
 
+    @State private var scrollToTop: Bool = false
     @State private var currentIndex: Int? = 0
     @State private var swipeCount: Int = 0
     @State private var headerVisible: Bool = true
@@ -96,6 +97,18 @@ struct FeedView: View {
                     notification: .announcement,
                     argument: "\(deal.destination), \(deal.priceFormatted)"
                 )
+            }
+        }
+        .onChange(of: router.scrollToTopTrigger) { _, _ in
+            guard router.activeTab == .feed else { return }
+            withAnimation(.easeOut(duration: 0.3)) {
+                currentIndex = 0
+            }
+            swipeCount = 0
+            if !headerVisible {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    headerVisible = true
+                }
             }
         }
         .sheet(item: $shareItem) { item in

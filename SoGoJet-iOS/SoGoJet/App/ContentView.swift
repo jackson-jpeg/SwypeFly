@@ -47,7 +47,11 @@ struct ContentView: View {
 
     private var mainTabView: some View {
         @Bindable var router = router
-        return TabView(selection: $router.activeTab) {
+        let tabBinding = Binding<Router.Tab>(
+            get: { router.activeTab },
+            set: { router.tabSelected($0) }
+        )
+        return TabView(selection: tabBinding) {
             feedTab
             savedTab
             settingsTab

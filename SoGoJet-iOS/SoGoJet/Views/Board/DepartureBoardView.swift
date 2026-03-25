@@ -99,6 +99,10 @@ struct DepartureBoardView: View {
             }
             syncBoardWindow(animated: true)
         }
+        .onChange(of: router.scrollToTopTrigger) { _, _ in
+            guard router.activeTab == .feed else { return }
+            boardIndex = 0
+        }
         .onDisappear {
             boardTransitionTask?.cancel()
         }
