@@ -36,7 +36,14 @@ final class SettingsStore {
 
     var notificationsEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: "sg_notifications_enabled") }
-        set { UserDefaults.standard.set(newValue, forKey: "sg_notifications_enabled") }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "sg_notifications_enabled")
+            if newValue {
+                DealNotificationManager.requestAndSchedule(departureCode: departureCode)
+            } else {
+                DealNotificationManager.cancelDailyDeal()
+            }
+        }
     }
 
     var priceAlertsEnabled: Bool {

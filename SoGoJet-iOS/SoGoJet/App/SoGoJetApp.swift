@@ -65,6 +65,13 @@ struct SoGoJetApp: App {
                     if feedStore.allDeals.isEmpty {
                         await feedStore.fetchDeals(origin: settingsStore.departureCode)
                     }
+
+                    // Schedule daily deal notification if notifications are enabled
+                    if settingsStore.notificationsEnabled {
+                        await DealNotificationManager.scheduleDailyDeal(
+                            departureCode: settingsStore.departureCode
+                        )
+                    }
                 }
                 .onOpenURL { url in
                     router.handleDeepLink(url, feedStore: feedStore)

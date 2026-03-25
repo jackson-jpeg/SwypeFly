@@ -21,6 +21,7 @@
 		38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D680A370273663B3CD6E753 /* SeatMapView.swift */; };
 		3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CC0F70008C6C01B861DABF /* DealCard.swift */; };
 		43B5B6854B7A8115E42FFF9C /* FlightSearchActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98B9A555BAADD3DDB97630F /* FlightSearchActivity.swift */; };
+		43BAE364D487368CD36A6483 /* DealNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1BDF6D6619708FAF3F2870 /* DealNotificationManager.swift */; };
 		44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */; };
 		49A8722EEA92DFC2EFF3AB59 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C004CCABD52B0D675FDC49BD /* SwiftUI.framework */; };
 		4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */; };
@@ -170,6 +171,7 @@
 		EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapChar.swift; sourceTree = "<group>"; };
 		EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealTier.swift; sourceTree = "<group>"; };
 		F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		FE1BDF6D6619708FAF3F2870 /* DealNotificationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DealNotificationManager.swift; path = SoGoJet/Services/DealNotificationManager.swift; sourceTree = "<group>"; };
 		FED8FD386433B5D295222C68 /* SplitFlapRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -311,6 +313,7 @@
 				C38A8685ED1D49573CE30426 /* SoGoJetWidget */,
 				C98B9A555BAADD3DDB97630F /* FlightSearchActivity.swift */,
 				7E784374E7AD4C57758AD932 /* FlightSearchLiveActivity.swift */,
+				FE1BDF6D6619708FAF3F2870 /* DealNotificationManager.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -611,6 +614,7 @@
 				4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */,
 				F1E2D3C4B5A6978877665544 /* VintageTerminalKit.swift in Sources */,
 				43B5B6854B7A8115E42FFF9C /* FlightSearchActivity.swift in Sources */,
+				43BAE364D487368CD36A6483 /* DealNotificationManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
