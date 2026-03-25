@@ -493,6 +493,9 @@ struct DestinationDetailView: View {
                         }
                     }
                 }
+
+                // 12-month seasonality bar chart
+                monthSeasonalityBar
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -501,6 +504,56 @@ struct DestinationDetailView: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
         }
+    }
+
+    private var monthSeasonalityBar: some View {
+        let allMonths = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        let labels = ["J","F","M","A","M","J","J","A","S","O","N","D"]
+        let bestSet: Set<String> = {
+            guard let best = deal.bestMonths else { return [] }
+            // Normalize: match both "May" and "May" style
+            var set = Set<String>()
+            for m in best {
+                for full in allMonths {
+                    if m.localizedCaseInsensitiveContains(full) || full.localizedCaseInsensitiveContains(m) {
+                        set.insert(full)
+                    }
+                }
+            }
+            return set
+        }()
+        let currentMonthIndex = Calendar.current.component(.month, from: Date()) - 1
+
+        return VStack(spacing: 0) {
+            // Bars
+            HStack(alignment: .bottom, spacing: 4) {
+                ForEach(0..<12, id: \.self) { i in
+                    let isBest = bestSet.contains(allMonths[i])
+                    let isCurrent = i == currentMonthIndex
+                    VStack(spacing: 3) {
+                        // Marker dot for current month
+                        if isCurrent {
+                            Circle()
+                                .fill(Color.sgWhite)
+                                .frame(width: 4, height: 4)
+                        } else {
+                            Spacer().frame(height: 4)
+                        }
+                        // Bar
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(isBest ? Color.sgYellow : Color.sgBorder)
+                            .frame(height: isBest ? 24 : 8)
+                        // Label
+                        Text(labels[i])
+                            .font(.system(size: 8, weight: isBest ? .bold : .regular, design: .monospaced))
+                            .foregroundStyle(isBest ? Color.sgYellow : Color.sgMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 40)
+        }
+        .padding(.top, 8)
     }
 
     private func tempIcon(_ temp: Double) -> String {
