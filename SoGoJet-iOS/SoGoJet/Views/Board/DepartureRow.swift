@@ -1,134 +1,157 @@
 import SwiftUI
 
+// MARK: - Departure Board Slot
+// Stable board slots let the terminal blank and refill rows without rebuilding views.
+
+struct DepartureBoardSlot: Identifiable, Equatable {
+    let id: Int
+    let deal: Deal?
+    let code: String
+    let destination: String
+    let price: String
+    let airlineName: String
+    let country: String
+
+    var isBlank: Bool {
+        deal == nil
+    }
+
+    static func blank(slot: Int) -> DepartureBoardSlot {
+        DepartureBoardSlot(
+            id: slot,
+            deal: nil,
+            code: "   ",
+            destination: "        ",
+            price: "    ",
+            airlineName: "",
+            country: ""
+        )
+    }
+
+    static func fromDeal(_ deal: Deal, slot: Int) -> DepartureBoardSlot {
+        DepartureBoardSlot(
+            id: slot,
+            deal: deal,
+            code: deal.iataCode.uppercased(),
+            destination: deal.city.uppercased(),
+            price: deal.priceFormatted,
+            airlineName: deal.airlineName,
+            country: deal.country
+        )
+    }
+
+    var accessibilityText: String {
+        if let deal {
+            return "\(deal.iataCode), \(deal.city), \(deal.priceFormatted), \(deal.airlineName)"
+        }
+        return "Empty departure board row"
+    }
+}
+
 // MARK: - Departure Row
-// A single row in the departure board showing time, destination, flight code, price, and status.
-// Each column is a SplitFlapRow with appropriate sizing, color, and alignment.
 
 struct DepartureRow: View {
-    let deal: Deal
+    let slot: DepartureBoardSlot
     var isActive: Bool = false
     var animate: Bool = false
-    var onAnimationComplete: (() -> Void)?
+    var animationID: Int = 0
 
-    // MARK: Computed
-
-    /// Departure time (derived from departureDate or airline code).
-    private var timeText: String {
-        // Use IATA code as compact identifier
-        deal.iataCode
-    }
-
-    /// Destination name uppercased.
-    private var destinationText: String {
-        deal.city.uppercased()
-    }
-
-    /// Flight code from airline code.
-    private var flightCodeText: String {
-        deal.airlineName
-    }
-
-    /// Price as a short string.
-    private var priceText: String {
-        deal.priceFormatted
-    }
-
-    /// Price column color.
     private var priceColor: Color {
-        deal.displayPrice != nil ? Color.sgGreen : Color.sgFaint
-    }
-
-    /// Status text showing savings percent or tier.
-    private var statusText: String {
-        if let pct = deal.savingsPercent, pct > 0 {
-            return "-\(Int(pct))%"
+        if slot.isBlank {
+            return Color.sgFaint.opacity(0.45)
         }
-        return deal.dealTier?.label.prefix(5).uppercased().trimmingCharacters(in: .whitespaces) ?? "DEAL"
+        return slot.deal?.displayPrice != nil ? Color.sgYellow : Color.sgFaint
     }
 
-    /// Status color derived from deal tier.
-    private var statusColor: Color {
-        (deal.dealTier ?? .fair).color
+    private var destinationColor: Color {
+        if slot.isBlank {
+            return Color.sgFaint.opacity(0.45)
+        }
+        return isActive ? Color.sgWhite : Color.sgWhiteDim
     }
 
-    // MARK: Body
+    private var accessibilityTraits: AccessibilityTraits {
+        if slot.isBlank {
+            return .isStaticText
+        }
+        return isActive ? [.isSelected, .isButton] : .isButton
+    }
 
     var body: some View {
-        HStack(spacing: Spacing.sm) {
-            // Time column — 5 chars, right-aligned, yellow, sm
-            SplitFlapRow(
-                text: timeText,
-                maxLength: 5,
-                size: .sm,
-                color: Color.sgYellow,
-                alignment: .trailing,
-                animate: animate,
-                startDelay: 0,
-                staggerMs: 40
-            )
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: Spacing.sm) {
+                SplitFlapRow(
+                    text: slot.code,
+                    maxLength: 3,
+                    size: .sm,
+                    color: slot.isBlank ? Color.sgFaint.opacity(0.5) : Color.sgYellow,
+                    alignment: .leading,
+                    animate: animate,
+                    startDelay: 0,
+                    staggerMs: 40,
+                    animationID: animationID
+                )
+                .frame(width: 64, alignment: .leading)
 
-            // Destination column — 12 chars, left-aligned, yellow, md
-            SplitFlapRow(
-                text: destinationText,
-                maxLength: 12,
-                size: .md,
-                color: Color.sgYellow,
-                alignment: .leading,
-                animate: animate,
-                startDelay: 0.05,
-                staggerMs: 40
-            )
+                SplitFlapRow(
+                    text: slot.destination,
+                    maxLength: 8,
+                    size: .md,
+                    color: destinationColor,
+                    alignment: .leading,
+                    animate: animate,
+                    startDelay: 0.05,
+                    staggerMs: 40,
+                    animationID: animationID
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Flight code column — 6 chars, left-aligned, whiteDim, sm
-            SplitFlapRow(
-                text: flightCodeText,
-                maxLength: 6,
-                size: .sm,
-                color: Color.sgWhiteDim,
-                alignment: .leading,
-                animate: animate,
-                startDelay: 0.10,
-                staggerMs: 40
-            )
+                SplitFlapRow(
+                    text: slot.price,
+                    maxLength: 4,
+                    size: .sm,
+                    color: priceColor,
+                    alignment: .trailing,
+                    animate: animate,
+                    startDelay: 0.10,
+                    staggerMs: 40,
+                    animationID: animationID
+                )
+                .frame(width: 82, alignment: .trailing)
+            }
 
-            // Price column — 5 chars, right-aligned, green/faint, md
-            SplitFlapRow(
-                text: priceText,
-                maxLength: 5,
-                size: .md,
-                color: priceColor,
-                alignment: .trailing,
-                animate: animate,
-                startDelay: 0.15,
-                staggerMs: 40
-            )
-
-            // Status column — 5 chars, right-aligned, tier color
-            SplitFlapRow(
-                text: statusText,
-                maxLength: 5,
-                size: .sm,
-                color: statusColor,
-                alignment: .trailing,
-                animate: animate,
-                startDelay: 0.20,
-                staggerMs: 40,
-                onComplete: onAnimationComplete
-            )
+            // Country + flight info subtitle
+            if !slot.isBlank, let deal = slot.deal {
+                HStack(spacing: 4) {
+                    Text(slot.country)
+                    if let dur = deal.flightDuration, !dur.isEmpty {
+                        Text("·").foregroundStyle(Color.sgFaint)
+                        Text(dur)
+                    }
+                    let stops = deal.stopsLabel
+                    if !stops.isEmpty {
+                        Text("·").foregroundStyle(Color.sgFaint)
+                        Text(stops.lowercased())
+                    }
+                }
+                .font(SGFont.caption)
+                .foregroundStyle(Color.sgMuted)
+                .padding(.leading, 64 + Spacing.sm)
+            }
         }
         .padding(.vertical, Spacing.xs)
         .padding(.horizontal, Spacing.sm)
         .overlay(alignment: .leading) {
-            // Active row indicator: yellow left border
             RoundedRectangle(cornerRadius: 1.5)
-                .fill(isActive ? Color.sgYellow : Color.clear)
+                .fill(isActive && !slot.isBlank ? Color.sgYellow : Color.clear)
                 .frame(width: 3)
         }
-        .opacity(isActive ? 1.0 : 0.45)
+        .opacity(slot.isBlank ? 0.35 : (isActive ? 1.0 : 0.6))
         .animation(.easeInOut(duration: 0.25), value: isActive)
+        .allowsHitTesting(!slot.isBlank)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(deal.city), \(deal.airlineName), \(priceText)")
-        .accessibilityAddTraits(isActive ? [.isSelected, .isButton] : .isButton)
+        .accessibilityLabel(slot.accessibilityText)
+        .accessibilityAddTraits(accessibilityTraits)
     }
 }
 
@@ -137,12 +160,17 @@ struct DepartureRow: View {
 #Preview("Departure Row") {
     VStack(spacing: 2) {
         DepartureRow(
-            deal: Deal.preview,
+            slot: .fromDeal(.preview, slot: 0),
             isActive: true,
             animate: true
         )
         DepartureRow(
-            deal: Deal.preview,
+            slot: .fromDeal(.preview, slot: 1),
+            isActive: false,
+            animate: true
+        )
+        DepartureRow(
+            slot: .blank(slot: 2),
             isActive: false,
             animate: true
         )
