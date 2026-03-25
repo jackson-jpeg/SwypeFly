@@ -30,12 +30,15 @@ actor ImageCache {
         try? FileManager.default.createDirectory(at: diskDirectory, withIntermediateDirectories: true)
 
         // Flush memory cache when the system is under memory pressure.
+        // NSCache is thread-safe internally; nonisolated(unsafe) silences the
+        // Sendable warning for the capture in the NotificationCenter closure.
+        nonisolated(unsafe) let cache = memoryCache
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
-        ) { [weak memoryCache] _ in
-            memoryCache?.removeAllObjects()
+        ) { _ in
+            cache.removeAllObjects()
             #if DEBUG
             print("[ImageCache] Memory warning — flushed in-memory cache")
             #endif

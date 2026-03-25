@@ -159,7 +159,7 @@ struct SavedView: View {
         let store = savedStore
 
         // Optimistically remove from list
-        _ = withAnimation(.easeOut(duration: 0.25)) {
+        withAnimation(.easeOut(duration: 0.25)) {
             store.remove(id: deal.id)
         }
 
