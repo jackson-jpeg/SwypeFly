@@ -106,9 +106,16 @@ extension Deal {
         livePrice ?? flightPrice
     }
 
-    /// Formatted price string
+    /// Whether this deal has a valid, displayable price.
+    var hasPrice: Bool {
+        guard let price = displayPrice else { return false }
+        return price > 0
+    }
+
+    /// Formatted price string.
+    /// Returns "Check price" when price is zero or nil (avoids showing "$0" in the UI).
     var priceFormatted: String {
-        guard let price = displayPrice else { return "—" }
+        guard let price = displayPrice, price > 0 else { return "Check price" }
         return "$\(Int(price))"
     }
 
@@ -180,10 +187,9 @@ extension Deal {
 
     /// Rich share text including destination, price, and URL.
     var shareText: String {
-        let price = priceFormatted
         let url = shareURL?.absoluteString ?? "https://sogojet.com"
-        if price != "—" {
-            return "Check out flights to \(city) from \(price) on SoGoJet! ✈️\n\(url)"
+        if hasPrice {
+            return "Check out flights to \(city) from \(priceFormatted) on SoGoJet! ✈️\n\(url)"
         }
         return "Check out \(city) on SoGoJet! ✈️\n\(url)"
     }
