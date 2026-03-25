@@ -144,8 +144,11 @@ struct TripView: View {
         }
         .task(id: routeKey) {
             seedSearchControlsIfNeeded(force: true, preferredOrigin: effectiveOriginCode)
-            await loadMarketIntel()
-            await autoSearchIfNeeded()
+            // Run market intel and auto-search in parallel so the flight search
+            // starts immediately instead of waiting for market intel API calls.
+            async let intel: Void = loadMarketIntel()
+            async let search: Void = autoSearchIfNeeded()
+            _ = await (intel, search)
         }
         .onChange(of: departureDate) { _, newValue in
             let minimumReturn = Calendar.current.date(byAdding: .day, value: 1, to: newValue) ?? newValue
@@ -594,6 +597,10 @@ struct TripView: View {
                 }
             } else if store.step == .searching {
                 Text("Finding available flights...")
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
+            } else if store.step == .idle && store.lastSearchStartedAt == nil {
+                Text("Preparing to search live fares...")
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             } else {
