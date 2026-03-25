@@ -82,7 +82,25 @@ struct PriceSparkline: View {
                 context.fill(Circle().path(in: dotRect), with: .color(lineColor))
             }
             .frame(width: width, height: height)
+            .accessibilityElement()
+            .accessibilityLabel(accessibilitySummary)
         }
+    }
+
+    // MARK: - Accessibility
+
+    private var accessibilitySummary: String {
+        guard prices.count >= 3 else { return "" }
+        let median = prices.sorted()[prices.count / 2]
+        let trend: String
+        if currentPrice < median * 0.95 {
+            trend = "below average"
+        } else if currentPrice > median * 1.05 {
+            trend = "above average"
+        } else {
+            trend = "near average"
+        }
+        return "Price trend: currently \(trend)"
     }
 }
 
