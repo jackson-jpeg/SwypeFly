@@ -18,6 +18,10 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.sogojet.fare-drop-check</string>
+	</array>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>com.sogojet.search-flights</string>

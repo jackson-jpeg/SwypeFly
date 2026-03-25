@@ -68,6 +68,21 @@ struct SoGoJetApp: App {
                         await feedStore.fetchDeals(origin: settingsStore.departureCode)
                     }
 
+                    // Register background fare drop checks
+                    FareDropMonitor.registerBackgroundTask()
+                    FareDropMonitor.scheduleNextCheck()
+
+                    // Check for fare drops on saved destinations (foreground)
+                    if !savedStore.savedDeals.isEmpty && settingsStore.priceAlertsEnabled {
+                        let drops = await FareDropMonitor.checkForFareDrops(
+                            savedDeals: savedStore.savedDeals,
+                            origin: settingsStore.departureCode
+                        )
+                        if !drops.isEmpty {
+                            FareDropMonitor.notifyFareDrops(drops)
+                        }
+                    }
+
                     // Schedule daily deal notification if notifications are enabled
                     if settingsStore.notificationsEnabled {
                         await DealNotificationManager.scheduleDailyDeal(
