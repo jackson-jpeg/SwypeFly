@@ -1,8 +1,8 @@
 import SwiftUI
 
 // MARK: - Deal Card
-// Full-screen card displayed in the vertical paging feed.
-// Overlays destination info, price, deal badge, and actions on a full-bleed background image.
+// Full-bleed destination photo with minimal overlay.
+// City, country, price badge, flight teaser — that's it.
 
 struct DealCard: View {
     let deal: Deal
@@ -16,360 +16,131 @@ struct DealCard: View {
 
     var body: some View {
         GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                // MARK: Background Image
-                backgroundImage(size: geo.size)
+            ZStack {
+                // Full-bleed photo
+                CachedAsyncImage(url: deal.imageUrl) {
+                    fallbackBackground
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
 
-                // MARK: Gradient Overlay
-                LinearGradient(
-                    colors: [
-                        Color.clear,
-                        Color.sgBg.opacity(0.3),
-                        Color.sgBg.opacity(0.85),
-                    ],
-                    startPoint: .init(x: 0.5, y: 0.3),
-                    endPoint: .bottom
-                )
-                .accessibilityHidden(true)
-
-                // MARK: Top Overlay (badges + price)
+                // Bottom gradient for text legibility
                 VStack {
-                    topOverlay
                     Spacer()
+                    LinearGradient(
+                        colors: [.clear, Color(hex: 0x0A0A0A, alpha: 0.75)],
+                        startPoint: .init(x: 0.5, y: 0),
+                        endPoint: .init(x: 0.5, y: 1)
+                    )
+                    .frame(height: geo.size.height * 0.45)
                 }
 
-                // MARK: Bottom Content
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    destinationHeader
-                    tripWindow
-                    taglineView
-                    flightInfoChips
-                    vibeTagPills
-                    actionButtons
+                // Content overlay
+                VStack {
+                    // Top row: save button + country
+                    HStack {
+                        saveButton
+                        Spacer()
+                        if !deal.country.isEmpty {
+                            Text(deal.country.uppercased())
+                                .font(SGFont.bodySmall)
+                                .foregroundStyle(Color.sgWhite.opacity(0.6))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 4)
+                        }
+                    }
+                    .padding(.top, 8)
+                    .padding(.horizontal, 16)
+
+                    Spacer()
+
+                    // Bottom: city name, flight teaser, price badge
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(deal.city.uppercased())
+                                .font(SGFont.display(size: 34))
+                                .foregroundStyle(Color.sgWhite)
+                                .lineLimit(1)
+
+                            flightTeaser
+                        }
+
+                        Spacer()
+
+                        priceBadge
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 20)
                 }
-                .padding(.horizontal, Spacing.md)
-                .padding(.bottom, Spacing.xl + Spacing.lg) // room for tab bar
             }
-            .frame(width: geo.size.width, height: geo.size.height)
         }
         .contentShape(Rectangle())
         .onTapGesture { onTap() }
-        .accessibilityHint("Tap to restore header. Long press for more options.")
-        .contextMenu {
-            Button { onShare() } label: {
-                Label("Share", systemImage: "square.and.arrow.up")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(deal.city), \(deal.country), \(deal.priceFormatted)")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    // MARK: - Fallback
+
+    private var fallbackBackground: some View {
+        Rectangle()
+            .fill(Color.sgSurface)
+            .overlay {
+                Text(deal.city.uppercased())
+                    .font(SGFont.display(size: 48))
+                    .foregroundStyle(Color.sgMuted.opacity(0.3))
             }
-            Button { onSave() } label: {
-                Label(isSaved ? "Unsave" : "Save", systemImage: isSaved ? "heart.slash" : "heart")
-            }
-            Button { onBook() } label: {
-                Label("Search Flights", systemImage: "airplane.departure")
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(deal.destination), \(deal.country). \(deal.priceFormatted) round trip.")
     }
 
-    // MARK: - Background
+    // MARK: - Components
 
-    @ViewBuilder
-    private func backgroundImage(size: CGSize) -> some View {
-        CachedAsyncImage(url: deal.imageUrl) {
-            Color.sgSurface
+    private var saveButton: some View {
+        Button(action: onSave) {
+            Image(systemName: isSaved ? "heart.fill" : "heart")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(isSaved ? Color.sgYellow : Color.sgWhite)
+                .frame(width: 44, height: 44)
+                .background(Color.black.opacity(0.3))
+                .clipShape(Circle())
         }
-        .frame(width: size.width, height: size.height)
-        .clipped()
-        .accessibilityLabel("\(deal.destination) destination photo")
+        .accessibilityLabel(isSaved ? "Remove from saved" : "Save")
     }
 
-    // MARK: - Top Overlay
-
-    private var topOverlay: some View {
-        HStack(alignment: .top) {
-            // Deal badge (top-left)
-            if let tier = deal.dealTier {
-                DealBadge(
-                    dealTier: tier,
-                    savingsPercent: deal.savingsPercent.map { Int($0) }
-                )
-            }
-
-            Spacer()
-
-            // Price tag (top-right)
-            priceTag
-        }
-        .padding(.horizontal, Spacing.md)
-        .padding(.top, 70)
-        .overlay(alignment: .top) {
-            // "DEAL OF THE DAY" badge (top-center)
-            if isFirst && deal.dealTier == .amazing {
-                dealOfTheDayBadge
-                    .padding(.top, 70)
-            }
-        }
-    }
-
-    // MARK: - Deal of the Day Badge
-
-    private var dealOfTheDayBadge: some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: "star.fill")
-                .font(.system(size: 10))
-            Text("DEAL OF THE DAY")
-                .font(SGFont.bodyBold(size: 10))
-                .tracking(1.2)
-        }
-        .foregroundStyle(Color.sgBg)
-        .padding(.horizontal, Spacing.sm + Spacing.xs)
-        .padding(.vertical, Spacing.xs)
-        .background(
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.sgOrange, Color.sgYellow],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-        )
-        .accessibilityLabel("Deal of the day")
-    }
-
-    // MARK: - Price Tag
-
-    private var priceTag: some View {
-        VStack(alignment: .trailing, spacing: 2) {
-            Text("from")
-                .font(SGFont.caption)
-                .foregroundStyle(Color.sgMuted)
-
-            SplitFlapRow(
-                text: deal.priceFormatted,
-                maxLength: 5,
-                size: .sm,
-                color: Color.sgYellow,
-                alignment: .trailing,
-                animate: animate,
-                startDelay: 0.2,
-                staggerMs: 50
-            )
-
-            Text("round trip")
-                .font(SGFont.caption)
-                .foregroundStyle(Color.sgMuted)
-
-            // Savings row
-            if let usual = deal.usualPrice, let savings = deal.savingsAmount, savings > 0 {
-                HStack(spacing: Spacing.xs) {
-                    Text("$\(Int(usual))")
-                        .font(SGFont.body(size: 12))
-                        .strikethrough()
-                        .foregroundStyle(Color.sgMuted)
-                    Text("Save $\(Int(savings))")
-                        .font(SGFont.bodyBold(size: 11))
-                        .foregroundStyle(Color.sgGreen)
-                }
-            }
-
-            // Sparkline
-            if let history = deal.priceHistory, let price = deal.displayPrice {
-                PriceSparkline(prices: history, currentPrice: price)
-            }
-        }
-    }
-
-    // MARK: - Destination Header
-
-    private var destinationHeader: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            SplitFlapRow(
-                text: deal.destination.uppercased(),
-                maxLength: 10,
-                size: .md,
-                color: Color.sgWhite,
-                animate: animate,
-                staggerMs: 35
-            )
-
-            HStack(spacing: Spacing.sm) {
-                Text(deal.country)
-                    .font(SGFont.bodyBold(size: 14))
-                    .foregroundStyle(Color.sgWhiteDim)
-
-                if let nearbyLabel = deal.nearbyOriginLabel {
-                    Text("·")
-                        .foregroundStyle(Color.sgFaint)
-                    Text("from \(nearbyLabel)")
-                        .font(SGFont.body(size: 13))
-                        .foregroundStyle(Color.sgMuted)
-                }
-            }
-        }
-    }
-
-    // MARK: - Trip Window
-
-    private var tripWindow: some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: "calendar")
-                .font(.system(size: 12))
-                .foregroundStyle(Color.sgMuted)
-
-            Text(deal.safeDepartureDate)
-                .font(SGFont.body(size: 13))
-                .foregroundStyle(Color.sgWhiteDim)
-
-            Text("·")
-                .foregroundStyle(Color.sgFaint)
-
-            Text(deal.tripDays == 0 ? "— days" : "\(deal.tripDays) days")
-                .font(SGFont.body(size: 13))
-                .foregroundStyle(Color.sgMuted)
-        }
-    }
-
-    // MARK: - Tagline
-
-    private var taglineView: some View {
-        Text(deal.tagline)
-            .font(SGFont.tagline)
-            .foregroundStyle(Color.sgWhiteDim)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    // MARK: - Flight Info Chips
-
-    private var flightInfoChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Spacing.sm) {
-                // Airline
-                flightChip(text: deal.airlineName, icon: "airplane")
-
-                // Flight code (split flap)
-                flightCodeChip
-
-                // Duration
-                flightChip(text: deal.safeFlightDuration, icon: "clock")
-
-                // Nonstop / stops
-                if deal.isNonstop == true {
-                    nonstopBadge
-                } else if let stops = deal.totalStops, stops > 0 {
-                    flightChip(text: deal.stopsLabel, icon: "arrow.triangle.branch")
-                }
-            }
-        }
-    }
-
-    private func flightChip(text: String, icon: String) -> some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: icon)
-                .font(.system(size: 10))
-            Text(text)
-                .font(SGFont.body(size: 12))
-        }
-        .foregroundStyle(Color.sgWhiteDim)
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.xs)
-        .background(Color.sgSurface.opacity(0.7))
-        .clipShape(Capsule())
-    }
-
-    private var flightCodeChip: some View {
-        Text(deal.airlineName)
-            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-            .foregroundStyle(Color.sgWhiteDim)
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.xs)
-            .background(Color.sgSurface.opacity(0.7))
+    private var priceBadge: some View {
+        Text(deal.priceFormatted)
+            .font(SGFont.bodyBold(size: 20))
+            .foregroundStyle(Color.sgWhite)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(deal.tierColor)
             .clipShape(Capsule())
     }
 
-    private var nonstopBadge: some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 10))
-            Text("Nonstop")
-                .font(SGFont.bodyBold(size: 11))
-        }
-        .foregroundStyle(Color.sgGreen)
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.xs)
-        .background(Color.sgGreen.opacity(0.15))
-        .clipShape(Capsule())
-    }
-
-    // MARK: - Vibe Tag Pills
-
-    private var vibeTagPills: some View {
-        HStack(spacing: Spacing.sm) {
-            ForEach(Array(deal.safeVibeTags.prefix(3)), id: \.self) { vibe in
-                Text(vibe)
-                    .font(SGFont.bodyBold(size: 11))
-                    .foregroundStyle(Color.sgYellow)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
-                    .background(
-                        Capsule()
-                            .strokeBorder(Color.sgYellow.opacity(0.3), lineWidth: 1)
-                    )
-            }
+    @ViewBuilder
+    private var flightTeaser: some View {
+        let parts = buildFlightTeaser()
+        if !parts.isEmpty {
+            Text(parts)
+                .font(SGFont.bodySmall)
+                .foregroundStyle(Color.sgWhite.opacity(0.7))
+                .lineLimit(1)
         }
     }
 
-    // MARK: - Action Buttons
-
-    private var actionButtons: some View {
-        HStack(spacing: Spacing.sm) {
-            // Save (heart)
-            Button {
-                onSave()
-            } label: {
-                Image(systemName: isSaved ? "heart.fill" : "heart")
-                    .font(.system(size: 20))
-                    .foregroundStyle(isSaved ? Color.sgRed : Color.sgWhite)
-                    .frame(width: 48, height: 48)
-                    .background(Color.sgSurface.opacity(0.7))
-                    .clipShape(Circle())
-            }
-            .accessibilityLabel(isSaved ? "Unsave deal" : "Save deal")
-
-            // Share
-            Button {
-                onShare()
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.sgWhite)
-                    .frame(width: 48, height: 48)
-                    .background(Color.sgSurface.opacity(0.7))
-                    .clipShape(Circle())
-            }
-            .accessibilityLabel("Share deal")
-
-            Spacer()
-
-            // Search Flights (primary CTA)
-            Button {
-                onBook()
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "airplane.departure")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Search Flights")
-                        .font(SGFont.bodyBold(size: 15))
-                }
-                .foregroundStyle(Color.sgBg)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.sm + Spacing.xs)
-                .background(Color.sgYellow)
-                .clipShape(Capsule())
-            }
-            .accessibilityLabel("Search flights to \(deal.destination)")
+    private func buildFlightTeaser() -> String {
+        var parts: [String] = []
+        if deal.airlineName != "—" {
+            parts.append(deal.airlineName)
         }
-        .padding(.top, Spacing.xs)
+        if let duration = deal.flightDuration, !duration.isEmpty {
+            parts.append(duration)
+        }
+        let stops = deal.stopsLabel
+        if !stops.isEmpty {
+            parts.append(stops.lowercased())
+        }
+        return parts.joined(separator: " · ")
     }
 }
 
@@ -379,14 +150,7 @@ struct DealCard: View {
     DealCard(
         deal: .preview,
         isSaved: false,
-        isFirst: true,
-        animate: true,
-        onSave: { print("Save") },
-        onShare: { print("Share") },
-        onBook: { print("Book") },
-        onTap: { print("Tap") }
+        isFirst: true
     )
-    .ignoresSafeArea()
+    .frame(height: 700)
 }
-
-// Preview data is in Models/Deal.swift as Deal.preview
