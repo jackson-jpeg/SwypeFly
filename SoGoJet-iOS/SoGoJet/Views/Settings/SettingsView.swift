@@ -11,27 +11,29 @@ struct SettingsView: View {
     @State private var showClearConfirmation = false
 
     var body: some View {
-        VintageTerminalScreen(headerSpacing: Spacing.md) {
-            // Header
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Settings")
-                    .font(SGFont.cardTitle)
-                    .foregroundStyle(Color.sgWhite)
-
-                Text("v\(appVersion)")
-                    .font(SGFont.body(size: 12))
-                    .foregroundStyle(Color.sgMuted)
-            }
-            .padding(.top, Spacing.sm)
-        } content: {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.lg) {
+                // Header
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("Settings")
+                        .font(SGFont.cardTitle)
+                        .foregroundStyle(Color.sgWhite)
+                    Text("v\(appVersion)")
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgMuted)
+                }
+                .padding(.top, Spacing.lg)
+
                 departureSection
                 displaySection
                 notificationsSection
                 savedSection
                 aboutSection
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.xl)
         }
+        .background(Color.sgBg)
         .navigationTitle("")
         .navigationBarHidden(true)
         .alert("Clear Saved Flights", isPresented: $showClearConfirmation) {

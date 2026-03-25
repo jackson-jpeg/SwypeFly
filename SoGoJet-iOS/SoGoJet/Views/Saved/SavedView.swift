@@ -22,19 +22,23 @@ struct SavedView: View {
     ]
 
     var body: some View {
-        VintageTerminalScreen(headerSpacing: Spacing.md) {
-            headerSection
-        } content: {
-            if savedStore.savedDeals.isEmpty {
-                emptyState
-            } else {
-                VStack(alignment: .leading, spacing: Spacing.md) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                headerSection
+                    .padding(.top, Spacing.lg)
+
+                if savedStore.savedDeals.isEmpty {
+                    emptyState
+                } else {
                     summaryLine
                     sortBar
                     cardGrid
                 }
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.xl)
         }
+        .background(Color.sgBg)
         .navigationTitle("")
         .navigationBarHidden(true)
     }
@@ -42,13 +46,18 @@ struct SavedView: View {
     // MARK: - Header
 
     private var headerSection: some View {
-        VintageTerminalHeroLockup(
-            eyebrow: "Saved Trips",
-            title: "Saved Routes",
-            subtitle: "Your saved destinations.",
-            accent: .amber
-        )
-        .padding(.top, Spacing.sm)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("SAVED TRIPS")
+                .font(SGFont.bodyBold(size: 11))
+                .foregroundStyle(Color.sgYellow)
+                .tracking(1.5)
+            Text("Saved Routes")
+                .font(SGFont.display(size: 28))
+                .foregroundStyle(Color.sgWhite)
+            Text("Your saved destinations.")
+                .font(SGFont.accent(size: 15))
+                .foregroundStyle(Color.sgMuted)
+        }
     }
 
     // MARK: - Summary Line
