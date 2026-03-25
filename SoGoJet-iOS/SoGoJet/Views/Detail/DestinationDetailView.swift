@@ -101,6 +101,11 @@ struct DestinationDetailView: View {
                             .padding(.vertical, 8)
                             .background(deal.tierColor)
                             .clipShape(Capsule())
+                        if let localPrice = deal.displayPrice.flatMap({ CurrencyHelper.convertFromUSD(amount: $0) }) {
+                            Text(localPrice)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.sgWhite.opacity(0.6))
+                        }
                     }
                 }
                 .padding(16)

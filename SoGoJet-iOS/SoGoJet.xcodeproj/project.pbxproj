@@ -73,6 +73,7 @@
 		DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B905E64CC3B094A6DD5EC65C /* SavedCard.swift */; };
 		DEC62E0D0B58D36DBD56A1B1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E239452DD558CBC5AAC6EB99 /* ContentView.swift */; };
 		E7F8A9B0C1D2E3F405162738 /* Airlines.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6071829A1B2C3A4B5C6 /* Airlines.swift */; };
+		E7F8A9B0C1D2E3F405162739 /* CurrencyHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A2B3C4D5E6F70819203140 /* CurrencyHelper.swift */; };
 		E850016A707ECF37DCBB2E5B /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B618C73022C992B057112952 /* ImageCache.swift */; };
 		E8BE30C939BF890644F26213 /* DepartureBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */; };
 		EB682CF09A002D1E66EE834E /* BoardingPassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9260F42534404374D49FA21 /* BoardingPassView.swift */; };
@@ -173,6 +174,7 @@
 		CF053BF9554FA03D569D4310 /* BebasNeue-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BebasNeue-Regular.ttf"; sourceTree = "<group>"; };
 		D1547ACCFAAACEFCCA028901 /* PassengerForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassengerForm.swift; sourceTree = "<group>"; };
 		D1E2F30415263748596A7B8C /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		C1A2B3C4D5E6F70819203140 /* CurrencyHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyHelper.swift; sourceTree = "<group>"; };
 		D4E5F6071829A1B2C3A4B5C6 /* Airlines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Airlines.swift; sourceTree = "<group>"; };
 		DC8B9447F998A5DDECD34B35 /* Inter-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-SemiBold.ttf"; sourceTree = "<group>"; };
 		E1F2A3B4C5D6071827364554 /* VintageTerminalKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VintageTerminalKit.swift; sourceTree = "<group>"; };
@@ -339,6 +341,7 @@
 			isa = PBXGroup;
 			children = (
 				D4E5F6071829A1B2C3A4B5C6 /* Airlines.swift */,
+				C1A2B3C4D5E6F70819203140 /* CurrencyHelper.swift */,
 				15845A1828ED10D7538A074A /* Date+Formatting.swift */,
 				A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */,
 			);
@@ -590,6 +593,7 @@
 				5002C9215848904D881FE29E /* BookingStore.swift in Sources */,
 				F3D138CE2009D3A9E09200BA /* Colors.swift in Sources */,
 				DEC62E0D0B58D36DBD56A1B1 /* ContentView.swift in Sources */,
+				E7F8A9B0C1D2E3F405162739 /* CurrencyHelper.swift in Sources */,
 				E7F8A9B0C1D2E3F405162738 /* Airlines.swift in Sources */,
 				7C25A63FB40E066F28957B06 /* Date+Formatting.swift in Sources */,
 				993EFA650A4598CAFF429893 /* Deal.swift in Sources */,
