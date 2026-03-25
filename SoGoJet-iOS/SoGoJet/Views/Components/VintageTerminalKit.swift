@@ -440,34 +440,6 @@ struct VintageTerminalStamp: View {
     }
 }
 
-struct VintageTerminalStatusChip: View {
-    let title: String
-    let subtitle: String?
-    var tone: VintageTerminalTone = .neutral
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title.uppercased())
-                .font(SGFont.bodyBold(size: 10))
-                .foregroundStyle(tone.text)
-                .tracking(1.2)
-
-            if let subtitle {
-                Text(subtitle)
-                    .font(SGFont.body(size: 11))
-                    .foregroundStyle(Color.sgMuted)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.sm)
-        .background(tone.softFill, in: RoundedRectangle(cornerRadius: Radius.sm))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.sm)
-                .strokeBorder(tone.border, lineWidth: 1)
-        )
-    }
-}
 
 struct VintageTerminalTagCloud: View {
     let tags: [String]
@@ -765,99 +737,7 @@ struct VintageTerminalInfoRow: View {
     }
 }
 
-struct VintageTerminalLinkRow: View {
-    let icon: String
-    let title: String
-    var detail: String?
-    var tone: VintageTerminalTone = .neutral
-    var action: () -> Void
 
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: Spacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(tone.softFill)
-                    Image(systemName: icon)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(tone.text)
-                }
-                .frame(width: 32, height: 32)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(SGFont.bodyBold(size: 14))
-                        .foregroundStyle(Color.sgWhite)
-
-                    if let detail {
-                        Text(detail)
-                            .font(SGFont.body(size: 12))
-                            .foregroundStyle(Color.sgMuted)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.sgFaint)
-            }
-            .padding(Spacing.sm + 2)
-            .background(tone.softFill, in: RoundedRectangle(cornerRadius: Radius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md)
-                    .strokeBorder(tone.border, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-struct VintageTerminalToggleRow: View {
-    let icon: String
-    let title: String
-    let subtitle: String?
-    @Binding var isOn: Bool
-    var tone: VintageTerminalTone = .moss
-
-    var body: some View {
-        HStack(spacing: Spacing.md) {
-            ZStack {
-                Circle()
-                    .fill(tone.softFill)
-                Image(systemName: icon)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(tone.text)
-            }
-            .frame(width: 32, height: 32)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(SGFont.bodyBold(size: 14))
-                    .foregroundStyle(Color.sgWhite)
-
-                if let subtitle {
-                    Text(subtitle)
-                        .font(SGFont.body(size: 12))
-                        .foregroundStyle(Color.sgMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            Spacer()
-
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .tint(tone.accent)
-        }
-        .padding(Spacing.sm + 2)
-        .background(tone.softFill, in: RoundedRectangle(cornerRadius: Radius.md))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md)
-                .strokeBorder(tone.border, lineWidth: 1)
-        )
-    }
-}
 
 struct VintageTerminalManifestRow: View {
     let prefix: String
@@ -965,50 +845,6 @@ struct VintageTerminalRouteDisplay: View {
     }
 }
 
-struct VintageTerminalPoster: View {
-    let imageURL: String?
-    let title: String
-    let subtitle: String
-    let eyebrow: String
-    var tone: VintageTerminalTone = .amber
-
-    var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            CachedAsyncImage(url: imageURL) {
-                Color.sgSurface
-            }
-            .frame(height: 220)
-            .clipped()
-
-            LinearGradient(
-                colors: [
-                    Color.clear,
-                    Color.sgBg.opacity(0.9),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            VStack(alignment: .leading, spacing: 4) {
-                VintageTerminalSectionLabel(text: eyebrow, tone: tone)
-                Text(title)
-                    .font(SGFont.display(size: 34))
-                    .foregroundStyle(Color.sgWhite)
-                    .tracking(1.2)
-                Text(subtitle)
-                    .font(SGFont.accent(size: 15))
-                    .foregroundStyle(Color.sgWhiteDim)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(Spacing.md)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg)
-                .strokeBorder(Color.sgBorder, lineWidth: 1)
-        )
-    }
-}
 
 struct VintageTerminalChecklistItem: View {
     let title: String
@@ -1277,30 +1113,6 @@ struct VintageTerminalPassportStamp: View {
                 .foregroundStyle(tone.border)
         )
         .rotationEffect(.degrees(-2))
-    }
-}
-
-struct VintageTerminalOrbitDecoration: View {
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.sgYellow.opacity(0.18), lineWidth: 1)
-                .frame(width: 160, height: 160)
-
-            Circle()
-                .stroke(Color.sgOrange.opacity(0.12), lineWidth: 1)
-                .frame(width: 220, height: 220)
-
-            Circle()
-                .fill(Color.sgYellow.opacity(0.18))
-                .frame(width: 12, height: 12)
-                .offset(x: 72, y: -14)
-
-            Circle()
-                .fill(Color.sgOrange.opacity(0.18))
-                .frame(width: 8, height: 8)
-                .offset(x: -56, y: 74)
-        }
     }
 }
 
