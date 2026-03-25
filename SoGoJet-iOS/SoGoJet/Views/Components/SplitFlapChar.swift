@@ -39,82 +39,87 @@ struct SplitFlapChar: View {
     let character: Character
     let size: SplitFlapSize
     let color: Color
+    var animate: Bool = true
     var delay: Double = 0
+    var trigger: Int = 0
 
-    @State private var currentChar: Character = " "
-    @State private var nextChar: Character = " "
-    @State private var topAngle: Double = 0    // 0 = flat, -90 = flipped down
-    @State private var bottomAngle: Double = 90 // 90 = hidden, 0 = visible
-    @State private var isAnimating = false
+    @State private var displayedChar: Character = " "
+    @State private var pendingChar: Character?
+    @State private var queuedChar: Character?
+    @State private var flipPhase: FlipPhase = .idle
+    @State private var hasInitialized = false
+    @State private var sequenceID = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    enum FlipPhase {
+        case idle
+        case topFolding
+        case bottomLanding
+    }
 
     private var charFont: Font {
         .system(size: size.fontSize, weight: .bold, design: .monospaced)
     }
 
     private let gap: CGFloat = 1
+    // Exact +/-90deg creates a singular projection matrix in SwiftUI.
+    // Staying just under the limit preserves the visual while avoiding log spam.
+    private let maximumFoldAngle: Double = 89.6
     private var halfH: CGFloat { (size.cellHeight - gap) / 2 }
+    private var incomingChar: Character { pendingChar ?? displayedChar }
+    private var topAngle: Double { flipPhase == .topFolding ? -maximumFoldAngle : 0 }
+    private var bottomAngle: Double { flipPhase == .bottomLanding ? 0 : maximumFoldAngle }
+    private var topBackgroundChar: Character { flipPhase == .idle ? displayedChar : incomingChar }
+    private var bottomBackgroundChar: Character { flipPhase == .idle ? displayedChar : displayedChar }
 
     var body: some View {
         ZStack {
-            // Static bottom half — shows CURRENT char (visible behind flipping top)
-            flapHalf(char: currentChar, isTop: false, angle: 0)
+            RoundedRectangle(cornerRadius: size.cornerRadius)
+                .fill(Color.sgCell)
+
+            flapHalf(char: bottomBackgroundChar, isTop: false, angle: 0)
                 .offset(y: halfH / 2 + gap / 2)
 
-            // Static top half — shows NEXT char (revealed when top flips away)
-            flapHalf(char: nextChar, isTop: true, angle: 0)
+            flapHalf(char: topBackgroundChar, isTop: true, angle: 0)
                 .offset(y: -(halfH / 2 + gap / 2))
 
-            // Animated top flap — shows CURRENT char, flips down
-            flapHalf(char: currentChar, isTop: true, angle: topAngle)
+            flapHalf(char: displayedChar, isTop: true, angle: topAngle)
                 .offset(y: -(halfH / 2 + gap / 2))
 
-            // Animated bottom flap — shows NEXT char, flips up into place
-            flapHalf(char: nextChar, isTop: false, angle: bottomAngle)
+            flapHalf(char: incomingChar, isTop: false, angle: bottomAngle)
                 .offset(y: halfH / 2 + gap / 2)
+
+            Rectangle()
+                .fill(Color.sgBorder.opacity(0.8))
+                .frame(height: 0.5)
         }
         .frame(width: size.cellWidth, height: size.cellHeight)
         .onAppear {
-            currentChar = character
-            nextChar = character
+            guard !hasInitialized else { return }
+            hasInitialized = true
+            initializeCharacter()
         }
         .onChange(of: character) { _, newValue in
-            guard newValue != currentChar, !isAnimating else { return }
+            guard hasInitialized else { return }
 
-            if reduceMotion {
-                currentChar = newValue
-                nextChar = newValue
-                return
+            if !animate || reduceMotion {
+                setStatic(newValue)
+            } else {
+                enqueueCharacter(newValue)
             }
+        }
+        .onChange(of: animate) { _, shouldAnimate in
+            guard hasInitialized else { return }
 
-            nextChar = newValue
-            isAnimating = true
-
-            let flipDuration = 0.15
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                // Phase 1: Top flap peels down (0 → -89)
-                withAnimation(.easeIn(duration: flipDuration)) {
-                    topAngle = -89
-                }
-
-                // Phase 2: Bottom flap falls into place (89 → 0)
-                DispatchQueue.main.asyncAfter(deadline: .now() + flipDuration) {
-                    // Reset top, update current
-                    topAngle = 0
-                    currentChar = newValue
-
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
-                        bottomAngle = 0
-                    }
-
-                    // Reset for next animation
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        bottomAngle = 89
-                        isAnimating = false
-                    }
-                }
+            if shouldAnimate && !reduceMotion {
+                replayCurrentCharacter()
+            } else {
+                setStatic(character)
             }
+        }
+        .onChange(of: trigger) { _, _ in
+            guard hasInitialized, animate, !reduceMotion else { return }
+            replayCurrentCharacter()
         }
         .accessibilityHidden(true)
     }
@@ -123,26 +128,113 @@ struct SplitFlapChar: View {
 
     @ViewBuilder
     private func flapHalf(char: Character, isTop: Bool, angle: Double) -> some View {
-        let clampedAngle = min(max(angle, -89), 89)
-
         ZStack {
-            RoundedRectangle(cornerRadius: size.cornerRadius / 2)
+            Rectangle()
                 .fill(Color.sgCell)
 
             Text(String(char))
                 .font(charFont)
                 .foregroundStyle(color)
-                // Offset the text so the correct half is centered in the frame
                 .offset(y: isTop ? halfH / 2 : -halfH / 2)
         }
         .frame(width: size.cellWidth, height: halfH)
         .clipped()
         .rotation3DEffect(
-            .degrees(clampedAngle),
+            .degrees(angle),
             axis: (x: 1, y: 0, z: 0),
             anchor: isTop ? .bottom : .top,
-            perspective: 0.5
+            perspective: 0.3
         )
+        .allowsHitTesting(false)
+    }
+
+    private func initializeCharacter() {
+        if !animate || reduceMotion {
+            setStatic(character)
+        } else {
+            replayCurrentCharacter()
+        }
+    }
+
+    private func setStatic(_ newValue: Character) {
+        sequenceID += 1
+        displayedChar = newValue
+        pendingChar = nil
+        queuedChar = nil
+        flipPhase = .idle
+    }
+
+    private func replayCurrentCharacter() {
+        guard character != " " else {
+            setStatic(" ")
+            return
+        }
+
+        sequenceID += 1
+        queuedChar = nil
+        pendingChar = character
+        displayedChar = " "
+        flipPhase = .idle
+        startFlip(sequence: sequenceID)
+    }
+
+    private func enqueueCharacter(_ newValue: Character) {
+        guard newValue != displayedChar || flipPhase != .idle else { return }
+
+        if newValue == " " {
+            setStatic(" ")
+            return
+        }
+
+        if flipPhase == .idle, pendingChar == nil {
+            pendingChar = newValue
+            sequenceID += 1
+            startFlip(sequence: sequenceID)
+        } else {
+            queuedChar = newValue
+        }
+    }
+
+    private func startFlip(sequence: Int) {
+        guard pendingChar != nil else { return }
+
+        withAnimation(
+            .easeIn(duration: 0.12).delay(delay),
+            completionCriteria: .logicallyComplete
+        ) {
+            guard sequence == sequenceID else { return }
+            flipPhase = .topFolding
+        } completion: {
+            guard sequence == sequenceID else { return }
+
+            withAnimation(
+                .spring(response: 0.15, dampingFraction: 0.7),
+                completionCriteria: .logicallyComplete
+            ) {
+                guard sequence == sequenceID else { return }
+                flipPhase = .bottomLanding
+            } completion: {
+                finishFlip(sequence: sequence)
+            }
+        }
+    }
+
+    private func finishFlip(sequence: Int) {
+        guard sequence == sequenceID else { return }
+
+        displayedChar = pendingChar ?? displayedChar
+        pendingChar = nil
+        flipPhase = .idle
+
+        guard let queuedChar, queuedChar != displayedChar else {
+            self.queuedChar = nil
+            return
+        }
+
+        self.queuedChar = nil
+        pendingChar = queuedChar
+        sequenceID += 1
+        startFlip(sequence: sequenceID)
     }
 }
 

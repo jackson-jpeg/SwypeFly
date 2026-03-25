@@ -36,21 +36,33 @@ struct ToastItem: Identifiable {
 
 // MARK: - Toast Manager
 
+@MainActor
 @Observable
 final class ToastManager {
     var toasts: [ToastItem] = []
+    private var dismissalTasks: [UUID: Task<Void, Never>] = [:]
 
     func show(message: String, type: ToastType = .info, duration: TimeInterval = 2.5) {
         let toast = ToastItem(message: message, type: type, duration: duration)
-        toasts.append(toast)
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            toasts.append(toast)
+        }
 
-        // Auto-dismiss
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
-            self?.dismiss(id: toast.id)
+        dismissalTasks[toast.id]?.cancel()
+        dismissalTasks[toast.id] = Task { [weak self] in
+            let durationNs = UInt64(max(duration, 0) * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: durationNs)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                self?.dismiss(id: toast.id)
+            }
         }
     }
 
     func dismiss(id: UUID) {
+        dismissalTasks[id]?.cancel()
+        dismissalTasks[id] = nil
+
         withAnimation(.easeOut(duration: 0.25)) {
             toasts.removeAll { $0.id == id }
         }
@@ -64,16 +76,20 @@ struct ToastOverlay: View {
     @Environment(ToastManager.self) private var manager
 
     var body: some View {
-        VStack(spacing: Spacing.sm) {
-            ForEach(manager.toasts) { toast in
-                toastRow(toast)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+        GeometryReader { geo in
+            VStack(spacing: Spacing.sm) {
+                ForEach(manager.toasts) { toast in
+                    toastRow(toast)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                Spacer()
             }
-            Spacer()
+            .padding(.horizontal, Spacing.md)
+            .padding(.top, geo.safeAreaInsets.top + Spacing.sm)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.top, 54) // below status bar
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: manager.toasts.map(\.id))
+        .allowsHitTesting(false)
     }
 
     // MARK: - Toast Row
@@ -104,6 +120,7 @@ struct ToastOverlay: View {
         .onTapGesture {
             manager.dismiss(id: toast.id)
         }
+        .allowsHitTesting(true)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(toast.type == .error ? "Error" : toast.type == .success ? "Success" : "Info"): \(toast.message)")
         .accessibilityAddTraits(.isButton)

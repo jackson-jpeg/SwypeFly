@@ -1,26 +1,22 @@
 import SwiftUI
 
-// MARK: - SimilarDeals
-// 2-column grid of deals with matching vibes.
-
 struct SimilarDeals: View {
     let deals: [Deal]
     let currentDealId: String
     var onTap: (Deal) -> Void = { _ in }
 
-    private let columns = [
-        GridItem(.flexible(), spacing: Spacing.sm),
-        GridItem(.flexible(), spacing: Spacing.sm),
-    ]
-
-    /// Deals that share at least one vibe tag with the current deal, excluding itself.
     private var similarDeals: [Deal] {
         guard let current = deals.first(where: { $0.id == currentDealId }) else {
             return []
         }
         let currentVibes = Set(current.safeVibeTags)
+        var seen = Set<String>()
+
         return deals
             .filter { $0.id != currentDealId && !Set($0.safeVibeTags).isDisjoint(with: currentVibes) }
+            .filter { deal in
+                seen.insert(deal.id).inserted
+            }
             .prefix(4)
             .map { $0 }
     }
@@ -28,68 +24,84 @@ struct SimilarDeals: View {
     var body: some View {
         if !similarDeals.isEmpty {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Similar Deals")
-                    .font(SGFont.sectionHead)
-                    .foregroundStyle(Color.sgWhite)
-                    .padding(.horizontal, Spacing.md)
-
-                LazyVGrid(columns: columns, spacing: Spacing.sm) {
-                    ForEach(similarDeals) { deal in
-                        similarCard(deal)
-                            .onTapGesture { onTap(deal) }
-                    }
-                }
+                VintageTerminalCollectionHeader(
+                    title: "Related Routes",
+                    subtitle: "More destinations carrying a similar mood to the route you are reading now.",
+                    tone: .amber
+                )
                 .padding(.horizontal, Spacing.md)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Spacing.md) {
+                        ForEach(similarDeals) { deal in
+                            Button {
+                                onTap(deal)
+                            } label: {
+                                card(for: deal)
+                            }
+                            .buttonStyle(.plain)
+                            .frame(width: 280)
+                        }
+                    }
+                    .padding(.horizontal, Spacing.md)
+                }
             }
         }
     }
 
-    // MARK: - Card
+    private func card(for deal: Deal) -> some View {
+        VintageTravelTicket(tone: .amber) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    VintageTerminalSectionLabel(text: deal.country, tone: .amber)
+                    Text(deal.destination)
+                        .font(SGFont.display(size: 28))
+                        .foregroundStyle(Color.sgWhite)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
 
-    @ViewBuilder
-    private func similarCard(_ deal: Deal) -> some View {
-        ZStack(alignment: .bottomLeading) {
-            CachedAsyncImage(url: deal.imageUrl) {
-                Color.sgSurface
+                Spacer(minLength: 0)
+
+                Text(deal.priceFormatted)
+                    .font(SGFont.display(size: 28))
+                    .foregroundStyle(Color.sgYellow)
             }
-            .frame(height: 120)
-            .clipped()
+        } content: {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                CachedAsyncImage(url: deal.imageUrl) {
+                    Color.sgSurface
+                }
+                .frame(height: 148)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md)
+                        .strokeBorder(Color.sgBorder, lineWidth: 1)
+                )
 
-            // Gradient overlay
-            LinearGradient(
-                colors: [.clear, Color.sgBg.opacity(0.85)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+                Text(deal.tagline.isEmpty ? "Another board-worthy route with a related travel mood." : deal.tagline)
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgWhiteDim)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(deal.destination)
-                    .font(SGFont.bodyBold(size: 14))
-                    .foregroundStyle(Color.sgWhite)
-                    .lineLimit(1)
-                Text(deal.country)
-                    .font(SGFont.caption)
-                    .foregroundStyle(Color.sgMuted)
-                    .lineLimit(1)
-                if let price = deal.displayPrice {
-                    Text("$\(Int(price))")
-                        .font(SGFont.bodyBold(size: 14))
-                        .foregroundStyle(Color.sgYellow)
+                if !deal.safeVibeTags.isEmpty {
+                    VintageTerminalTagCloud(tags: Array(deal.safeVibeTags.prefix(3)), tone: .amber)
                 }
             }
-            .padding(Spacing.sm)
+        } footer: {
+            HStack(alignment: .top) {
+                VintageTerminalCaptionBlock(title: "IATA", value: deal.iataCode, tone: .amber)
+                Spacer()
+                VintageTerminalCaptionBlock(title: "Duration", value: deal.safeFlightDuration, tone: .ivory, alignment: .trailing)
+            }
         }
-        .frame(height: 120)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
     }
 }
 
-// MARK: - Preview
-
 #Preview {
     SimilarDeals(
-        deals: [.preview],
-        currentDealId: "other"
+        deals: [.preview, .previewNonstop],
+        currentDealId: Deal.preview.id
     )
     .background(Color.sgBg)
 }

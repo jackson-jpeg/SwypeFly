@@ -1,213 +1,389 @@
 import SwiftUI
 
 // MARK: - Onboarding View
-// First-run experience with split-flap teaser, value props, and airport picker.
+// First-run boarding hall that introduces the product as a vintage travel object.
 
 struct OnboardingView: View {
     @Environment(SettingsStore.self) private var settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var currentDestinationIndex: Int = 0
-    @State private var animateFlap: Bool = false
-    @State private var timer: Timer?
+    @State private var currentDestinationIndex = 0
+    @State private var animateFlap = false
+    @State private var cyclingTask: Task<Void, Never>?
 
-    private let destinations: [(city: String, price: String)] = [
-        ("BARCELONA", "$287"),
-        ("TOKYO", "$412"),
-        ("BALI", "$389"),
-        ("PARIS", "$310"),
-        ("SANTORINI", "$345"),
+    private let showcases: [OnboardingShowcase] = [
+        .init(code: "BCN", city: "BARCELONA", country: "Spain", price: "$287", note: "Late-spring departures with warm nights and architecture-heavy days.", vibe: "Culture"),
+        .init(code: "HND", city: "TOKYO", country: "Japan", price: "$412", note: "City lights, ramen counters, and clean rail connections from the airport.", vibe: "Nightlife"),
+        .init(code: "DPS", city: "BALI", country: "Indonesia", price: "$389", note: "Resort energy, beach resets, and better shoulder-season value.", vibe: "Beach"),
+        .init(code: "CDG", city: "PARIS", country: "France", price: "$310", note: "Museum mornings, wine bars, and a classic long-weekend reward trip.", vibe: "Romance"),
+        .init(code: "JTR", city: "SANTORINI", country: "Greece", price: "$345", note: "Blue-water views and sunset ferry energy at a surprisingly humane fare.", vibe: "Island"),
     ]
 
-    private var currentCity: String {
-        destinations[currentDestinationIndex].city
-    }
-
-    private var currentPrice: String {
-        destinations[currentDestinationIndex].price
-    }
-
     var body: some View {
-        ZStack {
-            Color.sgBg.ignoresSafeArea()
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: Spacing.lg) {
-                    // MARK: Logo Area
-                    logoSection
-                        .padding(.top, Spacing.xl + Spacing.lg)
-
-                    // MARK: Split-Flap Teaser
-                    splitFlapTeaser
-
-                    // MARK: Value Props
-                    valueProps
-
-                    // MARK: Airport Picker
-                    airportSection
-
-                    // MARK: CTA
-                    letsGoButton
-                        .padding(.bottom, Spacing.xl)
-                }
-                .padding(.horizontal, Spacing.md)
+        VintageTerminalScreen(headerSpacing: Spacing.md) {
+            headerSection
+        } content: {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                departureHallHero
+                boardingSummary
+                promiseDeck
+                airportSelectionDeck
+                firstTripNotes
+                ctaCluster
             }
         }
+        .navigationTitle("")
+        .navigationBarHidden(true)
         .onAppear {
             startCycling()
         }
         .onDisappear {
-            timer?.invalidate()
-            timer = nil
+            stopCycling()
         }
     }
 
-    // MARK: - Logo Section
+    // MARK: - Header
 
-    private var logoSection: some View {
-        VStack(spacing: Spacing.sm) {
-            Text("\u{2708}\u{FE0F}")
-                .font(.system(size: 72))
-                .accessibilityHidden(true)
-
-            Text("SOGOJET")
-                .font(SGFont.display(size: 48))
-                .foregroundStyle(Color.sgYellow)
-                .tracking(4)
-                .accessibilityAddTraits(.isHeader)
-
-            Text("Swipe. Save. Fly.")
-                .font(SGFont.accent(size: 18))
-                .foregroundStyle(Color.sgWhiteDim)
-        }
-    }
-
-    // MARK: - Split-Flap Teaser
-
-    private var splitFlapTeaser: some View {
-        VStack(spacing: Spacing.sm) {
-            SplitFlapRow(
-                text: currentCity,
-                maxLength: 12,
-                size: .lg,
-                color: Color.sgWhite,
-                alignment: .center,
-                animate: animateFlap,
-                staggerMs: 35
+    private var headerSection: some View {
+        HStack(alignment: .top, spacing: Spacing.md) {
+            VintageTerminalHeroLockup(
+                eyebrow: "First Call",
+                title: "Welcome to SoGoJet",
+                subtitle: "A feed for people who still romanticize departure boards, paper tickets, and the moment a fare finally looks right.",
+                accent: .amber
             )
 
-            SplitFlapRow(
-                text: currentPrice,
-                maxLength: 6,
-                size: .md,
-                color: Color.sgGreen,
-                alignment: .center,
-                animate: animateFlap,
-                startDelay: 0.2,
-                staggerMs: 50
+            Spacer(minLength: 0)
+
+            VintageTerminalPassportStamp(
+                title: "Origin",
+                subtitle: settings.departureCode,
+                tone: .ember
             )
         }
-        .padding(.vertical, Spacing.md)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Flight deals cycling through destinations. Currently \(currentCity) for \(currentPrice)")
+        .padding(.top, Spacing.sm)
     }
 
-    // MARK: - Value Props
+    // MARK: - Hero
 
-    private var valueProps: some View {
-        VStack(spacing: Spacing.md) {
-            valuePropRow(icon: "tag.fill", text: "Cheapest Prices")
-            valuePropRow(icon: "airplane.departure", text: "Book in Seconds")
-            valuePropRow(icon: "heart.fill", text: "Save Favorites")
-        }
-        .padding(.vertical, Spacing.sm)
-    }
+    private var departureHallHero: some View {
+        VintageTerminalPanel(
+            title: "Live Deal Board",
+            subtitle: "The split-flap is the signature gesture in the app, so onboarding starts by showing it like a departure hall centerpiece.",
+            stamp: currentShowcase.vibe,
+            tone: .amber
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                ZStack(alignment: .topTrailing) {
+                    VintageTerminalInsetPanel(tone: .amber) {
+                        VStack(alignment: .leading, spacing: Spacing.md) {
+                            SplitFlapRow(
+                                text: currentShowcase.city,
+                                maxLength: 12,
+                                size: .lg,
+                                color: Color.sgWhite,
+                                alignment: .leading,
+                                animate: animateFlap,
+                                staggerMs: 34
+                            )
 
-    private func valuePropRow(icon: String, text: String) -> some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundStyle(Color.sgYellow)
-                .frame(width: 36, height: 36)
-                .background(Color.sgYellow.opacity(0.12))
-                .clipShape(Circle())
-                .accessibilityHidden(true)
+                            SplitFlapRow(
+                                text: currentShowcase.price,
+                                maxLength: 6,
+                                size: .md,
+                                color: Color.sgYellow,
+                                alignment: .leading,
+                                animate: animateFlap,
+                                startDelay: 0.12,
+                                staggerMs: 50
+                            )
 
-            Text(text)
-                .font(SGFont.bodyBold(size: 17))
-                .foregroundStyle(Color.sgWhite)
-
-            Spacer()
-        }
-        .padding(.horizontal, Spacing.md)
-    }
-
-    // MARK: - Airport Section
-
-    private var airportSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Where are you flying from?")
-                .font(SGFont.sectionHead)
-                .foregroundStyle(Color.sgWhite)
-                .padding(.horizontal, Spacing.xs)
-
-            AirportPicker(selectedCode: Binding(
-                get: { settings.departureCode },
-                set: { newCode in
-                    if let airport = AirportPicker.airports.first(where: { $0.code == newCode }) {
-                        settings.setDeparture(code: newCode, city: airport.city)
-                    } else {
-                        settings.departureCode = newCode
+                            Text(currentShowcase.note)
+                                .font(SGFont.body(size: 12))
+                                .foregroundStyle(Color.sgWhiteDim)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
+
+                    VintageTerminalOrbitDecoration()
+                        .frame(width: 160, height: 160)
+                        .opacity(0.55)
+                        .offset(x: 18, y: -18)
+                        .allowsHitTesting(false)
                 }
-            ))
-            .frame(height: 280)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-        }
-    }
 
-    // MARK: - Let's Go Button
-
-    private var letsGoButton: some View {
-        Button {
-            HapticEngine.success()
-            settings.hasOnboarded = true
-        } label: {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: "airplane.departure")
-                    .font(.system(size: 16, weight: .semibold))
-                Text("Let's Go")
-                    .font(SGFont.bodyBold(size: 18))
+                HStack(spacing: Spacing.sm) {
+                    VintageTerminalStatusChip(
+                        title: currentShowcase.code,
+                        subtitle: currentShowcase.country,
+                        tone: .ivory
+                    )
+                    VintageTerminalStatusChip(
+                        title: settings.departureCode,
+                        subtitle: settings.departureCity,
+                        tone: .amber
+                    )
+                    VintageTerminalStatusChip(
+                        title: currentShowcase.vibe,
+                        subtitle: "Mood tag",
+                        tone: .moss
+                    )
+                }
             }
-            .foregroundStyle(Color.sgBg)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.md)
-            .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
         }
-        .accessibilityLabel("Let's Go")
-        .accessibilityHint("Complete onboarding and start exploring deals")
-        .padding(.horizontal, Spacing.md)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Deal board showing \(currentShowcase.city) for \(currentShowcase.price) from \(settings.departureCode)")
     }
 
-    // MARK: - Timer
+    // MARK: - Boarding Summary
+
+    private var boardingSummary: some View {
+        VintageTerminalBoardingSummary(
+            originCode: settings.departureCode,
+            destinationCode: currentShowcase.code,
+            fare: currentShowcase.price,
+            detail: "From \(settings.departureCity) to \(currentShowcase.city.capitalized), with search, save, and booking all living in the same travel-language UI.",
+            tone: .amber
+        )
+    }
+
+    // MARK: - Promise Deck
+
+    private var promiseDeck: some View {
+        VintageTerminalPanel(
+            title: "What you get",
+            subtitle: "The first-run pitch, expressed like an airline lounge operations board instead of a generic checklist.",
+            stamp: "Benefits",
+            tone: .ivory
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                VintageTerminalMetricDeck(metrics: [
+                    VintageTerminalMetric(
+                        title: "Search",
+                        value: "Live",
+                        footnote: "Booking searches reprice against the current market instead of relying on static feed math.",
+                        tone: .amber
+                    ),
+                    VintageTerminalMetric(
+                        title: "Save",
+                        value: "Archive",
+                        footnote: "Saved routes become boarding stubs you can revisit without losing the vibe of the app.",
+                        tone: .ember
+                    ),
+                    VintageTerminalMetric(
+                        title: "Board",
+                        value: "Vintage",
+                        footnote: "Terminal mode leans into the tactile split-flap aesthetic you asked for.",
+                        tone: .ivory
+                    ),
+                    VintageTerminalMetric(
+                        title: "Book",
+                        value: "Fast",
+                        footnote: "Detail, search, booking, and seat selection are now wired as a single flow.",
+                        tone: .moss
+                    ),
+                ])
+
+                VintageTerminalDividerLabel(text: "Why it feels different", tone: .amber)
+
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    VintageTerminalChecklistItem(
+                        title: "The split-flap is the signature motion",
+                        detail: "We use it when a route changes, not on every idle card, so it still feels special and mechanical.",
+                        tone: .amber
+                    )
+                    VintageTerminalChecklistItem(
+                        title: "The palette stays warm and terminal-like",
+                        detail: "This app should feel like old travel hardware lit by amber gate displays, not anonymous dark mode.",
+                        tone: .ivory
+                    )
+                    VintageTerminalChecklistItem(
+                        title: "Search Flights stays the hero action",
+                        detail: "The booking CTA keeps the most visual weight across feed, detail, saved routes, and booking itself.",
+                        tone: .moss
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: - Airport Selection
+
+    private var airportSelectionDeck: some View {
+        VintageTerminalPanel(
+            title: "Set your departure gate",
+            subtitle: "Choose the airport that should anchor your first feed and every nearby-market suggestion that follows.",
+            stamp: "Departure",
+            tone: .amber
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                selectedOriginSummary
+
+                AirportPicker(
+                    selectedCode: Binding(
+                        get: { settings.departureCode },
+                        set: updateDeparture(code:)
+                    ),
+                    dismissOnSelection: false
+                )
+                .frame(height: 430)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.lg)
+                        .strokeBorder(Color.sgBorder, lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private var selectedOriginSummary: some View {
+        VintageTerminalInsetPanel(tone: .amber) {
+            HStack(alignment: .top, spacing: Spacing.md) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Text("Selected departure")
+                        .font(SGFont.bodyBold(size: 10))
+                        .foregroundStyle(Color.sgMuted)
+                        .tracking(1.4)
+
+                    SplitFlapRow(
+                        text: settings.departureCode,
+                        maxLength: 3,
+                        size: .md,
+                        color: Color.sgYellow,
+                        alignment: .leading,
+                        animate: true,
+                        staggerMs: 28
+                    )
+
+                    Text(settings.departureCity)
+                        .font(SGFont.sectionHead)
+                        .foregroundStyle(Color.sgWhite)
+                }
+
+                Spacer(minLength: 0)
+
+                VintageTerminalStatusChip(
+                    title: currentShowcase.code,
+                    subtitle: "Current rotating sample",
+                    tone: .ivory
+                )
+            }
+        }
+    }
+
+    // MARK: - Notes
+
+    private var firstTripNotes: some View {
+        VintageTerminalPanel(
+            title: "First trip notes",
+            subtitle: "A few expectations before you leave onboarding and start tapping around the app.",
+            stamp: "Guide",
+            tone: .neutral
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                VintageTerminalInfoRow(
+                    icon: "airplane.circle.fill",
+                    title: "Explore tab",
+                    value: "You can browse in swipe mode or terminal-board mode immediately after onboarding.",
+                    detail: "That preference is adjustable in Settings at any time.",
+                    tone: .amber
+                )
+
+                VintageTerminalInfoRow(
+                    icon: "heart.circle.fill",
+                    title: "Saved routes",
+                    value: "Anything you heart becomes an archive card you can reopen and book from later.",
+                    detail: "The saved tab now leans fully into the paper-ticket archive idea.",
+                    tone: .ember
+                )
+
+                VintageTerminalInfoRow(
+                    icon: "creditcard.circle.fill",
+                    title: "Booking flow",
+                    value: "Trip, passenger, seat, review, and boarding pass are now a single orchestrated journey.",
+                    detail: "If live fares drift, the booking UI tells you instead of silently failing.",
+                    tone: .moss
+                )
+            }
+        }
+    }
+
+    // MARK: - CTA
+
+    private var ctaCluster: some View {
+        VintageTerminalActionCluster {
+            VintageTerminalActionButton(
+                title: "Begin Boarding",
+                subtitle: "Finish onboarding and open SoGoJet",
+                icon: "airplane.departure",
+                tone: .amber,
+                fillsWidth: true
+            ) {
+                HapticEngine.success()
+                settings.hasOnboarded = true
+            }
+        } secondary: {
+            VintageTerminalSecondaryButton(
+                title: "Current departure gate",
+                subtitle: "\(settings.departureCity) (\(settings.departureCode))",
+                icon: "mappin.and.ellipse",
+                tone: .neutral,
+                fillsWidth: true
+            ) {}
+            .disabled(true)
+        }
+    }
+
+    // MARK: - Cycling
+
+    private var currentShowcase: OnboardingShowcase {
+        showcases[currentDestinationIndex]
+    }
+
+    private func updateDeparture(code: String) {
+        if let airport = AirportPicker.airports.first(where: { $0.code == code }) {
+            settings.setDeparture(code: airport.code, city: airport.city)
+        } else {
+            settings.departureCode = code
+        }
+    }
 
     private func startCycling() {
-        // Initial animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        stopCycling()
+
+        cyclingTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 280_000_000)
+            guard !Task.isCancelled else { return }
             animateFlap = true
-        }
 
-        guard !reduceMotion else { return }
+            guard !reduceMotion else { return }
 
-        timer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { _ in
-            animateFlap = false
-            let nextIndex = (currentDestinationIndex + 1) % destinations.count
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                currentDestinationIndex = nextIndex
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 2_700_000_000)
+                guard !Task.isCancelled else { break }
+                animateFlap = false
+
+                try? await Task.sleep(nanoseconds: 120_000_000)
+                guard !Task.isCancelled else { break }
+                currentDestinationIndex = (currentDestinationIndex + 1) % showcases.count
                 animateFlap = true
             }
         }
     }
+
+    private func stopCycling() {
+        cyclingTask?.cancel()
+        cyclingTask = nil
+    }
+}
+
+private struct OnboardingShowcase {
+    let code: String
+    let city: String
+    let country: String
+    let price: String
+    let note: String
+    let vibe: String
 }
 
 // MARK: - Preview

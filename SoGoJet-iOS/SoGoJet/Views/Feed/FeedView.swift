@@ -187,7 +187,6 @@ struct FeedView: View {
 
             FeedHeaderButton(
                 systemName: "magnifyingglass",
-                tone: .ivory,
                 action: {
                     HapticEngine.light()
                     router.showSearch()
@@ -198,7 +197,7 @@ struct FeedView: View {
             FeedHeaderButton(
                 systemName: "slider.horizontal.3",
                 badge: feedStore.activeFilterCount > 0 ? "\(feedStore.activeFilterCount)" : nil,
-                tone: feedStore.activeFilterCount > 0 ? .amber : .ivory,
+                isActive: feedStore.activeFilterCount > 0,
                 action: {
                     HapticEngine.light()
                     router.showFilters()
@@ -384,20 +383,24 @@ struct FeedView: View {
 private struct FeedHeaderButton: View {
     let systemName: String
     var badge: String? = nil
-    var tone: VintageTerminalTone = .ivory
+    var isActive: Bool = false
     let action: () -> Void
+
+    private var foreground: Color { isActive ? Color.sgYellow : Color.sgWhite }
+    private var fill: Color { isActive ? Color.sgYellow.opacity(0.11) : Color.sgWhite.opacity(0.08) }
+    private var border: Color { isActive ? Color.sgYellow.opacity(0.28) : Color.sgWhiteDim.opacity(0.28) }
 
     var body: some View {
         Button(action: action) {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: systemName)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(tone.text)
+                    .foregroundStyle(foreground)
                     .frame(width: 40, height: 40)
-                    .background(tone.softFill, in: RoundedRectangle(cornerRadius: Radius.md))
+                    .background(fill, in: RoundedRectangle(cornerRadius: Radius.md))
                     .overlay(
                         RoundedRectangle(cornerRadius: Radius.md)
-                            .strokeBorder(tone.border, lineWidth: 1)
+                            .strokeBorder(border, lineWidth: 1)
                     )
 
                 if let badge {

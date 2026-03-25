@@ -1,326 +1,288 @@
 import SwiftUI
 
-// MARK: - Boarding Pass View
-// Confirmation screen styled as an airline boarding pass.
-
 struct BoardingPassView: View {
     @Environment(BookingStore.self) private var store
+    @Environment(SettingsStore.self) private var settingsStore
 
     var onBackToDeals: () -> Void = {}
     var onShare: () -> Void = {}
 
     var body: some View {
-        ZStack {
-            Color.sgBg.ignoresSafeArea()
-
-            ScrollView {
-                VStack(spacing: Spacing.lg) {
-                    successHeader
-                    boardingPass
-                    actionButtons
-                }
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.lg)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                successHeader
+                issuedTicket
+                travelerArchive
+                travelNotes
+                actionCluster
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.xl)
         }
     }
-
-    // MARK: - Success Header
 
     private var successHeader: some View {
-        VStack(spacing: Spacing.sm) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.sgGreen)
-                .accessibilityHidden(true)
+        HStack(alignment: .top, spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                VintageTerminalHeroLockup(
+                    eyebrow: "Issued",
+                    title: "Boarding Pass",
+                    subtitle: "The route is confirmed, archived, and ready to share like a real travel stub."
+                )
+                VintageTerminalSectionLabel(text: "Confirmation Terminal", tone: .moss)
+            }
 
-            Text("Booking Confirmed!")
-                .font(SGFont.cardTitle)
-                .foregroundStyle(Color.sgWhite)
-                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+
+            VintageTerminalPassportStamp(
+                title: "Status",
+                subtitle: bookingStatus,
+                tone: .moss
+            )
         }
-        .padding(.top, Spacing.md)
+        .padding(.top, Spacing.sm)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Booking confirmed")
+        .accessibilityLabel("Booking confirmed and boarding pass ready")
     }
 
-    // MARK: - Boarding Pass Card
-
-    private var boardingPass: some View {
-        VStack(spacing: 0) {
-            // Header strip
-            headerStrip
-
-            // Route section
-            routeSection
-
-            // Perforated divider
-            perforatedDivider
-
-            // Details grid
-            detailsGrid
-
-            // Booking reference
-            referenceSection
-
-            // Decorative barcode
-            barcodeStrip
-        }
-        .background(Color.sgCell)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg)
-                .strokeBorder(Color.sgBorder, lineWidth: 1)
-        )
-    }
-
-    // MARK: - Header Strip
-
-    private var headerStrip: some View {
-        HStack {
-            Text("SOGOJET")
-                .font(SGFont.bodyBold(size: 14))
-                .foregroundStyle(Color.sgBg)
-                .tracking(2)
-
-            Spacer()
-
-            Text("BOARDING PASS")
-                .font(SGFont.bodyBold(size: 11))
-                .foregroundStyle(Color.sgBg)
-                .tracking(1.5)
-        }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm + Spacing.xs)
-        .background(Color.sgYellow)
-    }
-
-    // MARK: - Route Section
-
-    private var routeSection: some View {
-        HStack(spacing: Spacing.lg) {
-            // Origin
-            VStack(spacing: Spacing.xs) {
-                Text("JFK")
-                    .font(SGFont.display(size: 36))
-                    .foregroundStyle(Color.sgWhite)
-
-                Text("New York")
-                    .font(SGFont.bodySmall)
-                    .foregroundStyle(Color.sgMuted)
-            }
-
-            // Arrow with airplane
-            VStack(spacing: 2) {
-                Image(systemName: "airplane")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.sgYellow)
-
-                // Dashed line
-                Rectangle()
-                    .fill(Color.sgBorder)
-                    .frame(width: 60, height: 1)
-            }
-            .accessibilityHidden(true)
-
-            // Destination
-            VStack(spacing: Spacing.xs) {
-                Text(store.deal?.iataCode ?? "---")
-                    .font(SGFont.display(size: 36))
-                    .foregroundStyle(Color.sgWhite)
-
-                Text(store.deal?.destination ?? "")
-                    .font(SGFont.bodySmall)
-                    .foregroundStyle(Color.sgMuted)
-            }
-        }
-        .padding(.vertical, Spacing.lg)
-        .frame(maxWidth: .infinity)
-    }
-
-    // MARK: - Perforated Divider
-
-    // MARK: - Perforated Divider (decorative)
-
-    private var perforatedDivider: some View {
-        HStack(spacing: 0) {
-            // Left semi-circle cutout
-            Circle()
-                .fill(Color.sgBg)
-                .frame(width: 20, height: 20)
-                .offset(x: -10)
-
-            // Dashed line
-            GeometryReader { geo in
-                Path { path in
-                    let dashWidth: CGFloat = 6
-                    let gapWidth: CGFloat = 4
-                    var x: CGFloat = 0
-                    while x < geo.size.width {
-                        path.move(to: CGPoint(x: x, y: geo.size.height / 2))
-                        path.addLine(to: CGPoint(x: min(x + dashWidth, geo.size.width), y: geo.size.height / 2))
-                        x += dashWidth + gapWidth
-                    }
+    private var issuedTicket: some View {
+        VintageTravelTicket(tone: .moss) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    VintageTerminalSectionLabel(text: "Booking Reference", tone: .moss)
+                    SplitFlapRow(
+                        text: bookingReference.uppercased(),
+                        maxLength: 8,
+                        size: .md,
+                        color: Color.sgYellow,
+                        alignment: .leading,
+                        animate: true,
+                        staggerMs: 30
+                    )
                 }
-                .stroke(Color.sgBorder, lineWidth: 1)
+
+                Spacer(minLength: 0)
+
+                Text(totalPaidLabel)
+                    .font(SGFont.display(size: 34))
+                    .foregroundStyle(Color.sgWhite)
             }
-            .frame(height: 20)
+        } content: {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                VintageTerminalRouteDisplay(
+                    originCode: store.searchOrigin ?? settingsStore.departureCode,
+                    originLabel: settingsStore.departureCity,
+                    destinationCode: store.searchDestination ?? store.deal?.iataCode ?? "DST",
+                    destinationLabel: store.deal?.destination ?? "Destination",
+                    detail: "\(departureDateLabel) to \(returnDateLabel)",
+                    tone: .moss
+                )
 
-            // Right semi-circle cutout
-            Circle()
-                .fill(Color.sgBg)
-                .frame(width: 20, height: 20)
-                .offset(x: 10)
-        }
-        .clipped()
-        .accessibilityHidden(true)
-    }
-
-    // MARK: - Details Grid
-
-    private var detailsGrid: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible()),
-        ], spacing: Spacing.md) {
-            detailCell(label: "PASSENGER", value: passengerName)
-            detailCell(label: "AIRLINE", value: store.selectedOffer?.airline ?? "---")
-            detailCell(label: "DEPART", value: formatDate(store.deal?.departureDate))
-            detailCell(label: "RETURN", value: formatDate(store.deal?.returnDate))
-        }
-        .padding(Spacing.md)
-    }
-
-    private func detailCell(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(label)
-                .font(SGFont.bodyBold(size: 10))
-                .foregroundStyle(Color.sgMuted)
-                .tracking(1)
-
-            Text(value)
-                .font(SGFont.bodyBold(size: 14))
-                .foregroundStyle(Color.sgWhite)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Reference Section
-
-    private var referenceSection: some View {
-        VStack(spacing: Spacing.xs) {
-            Text("BOOKING REFERENCE")
-                .font(SGFont.bodyBold(size: 10))
-                .foregroundStyle(Color.sgMuted)
-                .tracking(1)
-
-            if case .confirmed(let reference) = store.step {
-                Text(reference)
-                    .font(SGFont.display(size: 32))
-                    .foregroundStyle(Color.sgYellow)
-                    .tracking(4)
-            } else if let ref = store.bookingOrder?.bookingReference {
-                Text(ref)
-                    .font(SGFont.display(size: 32))
-                    .foregroundStyle(Color.sgYellow)
-                    .tracking(4)
+                barcodeStrip
+            }
+        } footer: {
+            HStack(alignment: .top) {
+                VintageTerminalCaptionBlock(title: "Passenger", value: passengerName, tone: .moss)
+                Spacer()
+                VintageTerminalCaptionBlock(title: "Seat", value: seatLabel, tone: .ivory, alignment: .trailing)
+                Spacer()
+                VintageTerminalCaptionBlock(title: "Cabin", value: cabinLabel, tone: .amber, alignment: .trailing)
             }
         }
-        .padding(.vertical, Spacing.md)
-        .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Barcode Strip
+    private var travelerArchive: some View {
+        VintageTerminalManifestCard(
+            title: "Trip Archive",
+            subtitle: "Everything the desk can hand back to the traveler in one glance.",
+            tone: .amber
+        ) {
+            VintageTerminalManifestRow(
+                prefix: "PAX",
+                title: passengerName,
+                value: routeLabel,
+                subtitle: bookingReference,
+                tone: .amber
+            )
+            manifestDivider
+            VintageTerminalManifestRow(
+                prefix: "FLY",
+                title: store.selectedOffer?.airline ?? store.deal?.airlineName ?? "Carrier pending",
+                value: store.selectedOffer?.flightNumber ?? "Flight number pending",
+                subtitle: store.selectedOffer?.duration ?? store.deal?.safeFlightDuration,
+                tone: .ivory
+            )
+            manifestDivider
+            VintageTerminalManifestRow(
+                prefix: "PAY",
+                title: totalPaidLabel,
+                value: bookingStatus,
+                subtitle: store.bookingOrder?.status.capitalized ?? "Confirmed order",
+                tone: .moss
+            )
+        }
+    }
+
+    private var travelNotes: some View {
+        VintageTerminalPanel(
+            title: "Travel Notes",
+            subtitle: "A vintage stub should still tell you what to do next.",
+            stamp: "Ready",
+            tone: .ember
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                VintageTerminalChecklistItem(
+                    title: "Keep the booking reference handy",
+                    detail: "You may need it again when the airline sends through check-in or schedule updates.",
+                    tone: .amber
+                )
+                VintageTerminalChecklistItem(
+                    title: "Seat assignment is already captured",
+                    detail: "If the carrier changes the cabin map later, the airline will still own the final seat allocation.",
+                    tone: .ivory
+                )
+                VintageTerminalChecklistItem(
+                    title: "Share this trip with one tap",
+                    detail: "The booking flow now exposes a working share action instead of a dead button.",
+                    tone: .moss
+                )
+            }
+        }
+    }
+
+    private var actionCluster: some View {
+        VStack(spacing: Spacing.sm) {
+            VintageTerminalActionButton(
+                title: "Back to Deals",
+                subtitle: "Return to deals",
+                icon: "airplane",
+                tone: .amber,
+                fillsWidth: true
+            ) {
+                onBackToDeals()
+            }
+
+            VintageTerminalSecondaryButton(
+                title: "Share Trip",
+                subtitle: "Send the confirmed route and booking reference.",
+                icon: "square.and.arrow.up",
+                tone: .moss,
+                fillsWidth: true
+            ) {
+                HapticEngine.light()
+                onShare()
+            }
+        }
+    }
 
     private var barcodeStrip: some View {
         HStack(spacing: 1) {
-            ForEach(0..<40, id: \.self) { i in
+            ForEach(0..<44, id: \.self) { index in
                 Rectangle()
-                    .fill(Color.sgWhite.opacity(i % 3 == 0 ? 0.5 : 0.8))
-                    .frame(width: barWidth(for: i), height: 32)
+                    .fill(index.isMultiple(of: 3) ? Color.sgWhite.opacity(0.45) : Color.sgWhite.opacity(0.82))
+                    .frame(width: barWidth(for: index), height: 34)
             }
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.bottom, Spacing.md)
         .frame(maxWidth: .infinity)
+        .padding(.top, Spacing.xs)
         .accessibilityHidden(true)
     }
 
-    // MARK: - Action Buttons
-
-    private var actionButtons: some View {
-        VStack(spacing: Spacing.md) {
-            // Share Trip
-            Button {
-                HapticEngine.light()
-                onShare()
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 14))
-                    Text("Share Trip")
-                        .font(SGFont.bodyBold(size: 15))
-                }
-                .foregroundStyle(Color.sgGreen)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
-                .background(Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.md)
-                        .strokeBorder(Color.sgGreen, lineWidth: 1.5)
-                )
-            }
-            .accessibilityLabel("Share trip details")
-
-            // Back to Deals
-            Button {
-                store.reset()
-                onBackToDeals()
-            } label: {
-                Text("Back to Deals")
-                    .font(SGFont.bodyBold(size: 15))
-                    .foregroundStyle(Color.sgBg)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.md)
-                    .background(Color.sgYellow)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-            }
-            .accessibilityLabel("Back to deals")
-        }
+    private var manifestDivider: some View {
+        Rectangle()
+            .fill(Color.sgBorder.opacity(0.6))
+            .frame(height: 1)
     }
 
-    // MARK: - Helpers
+    private var bookingReference: String {
+        if case .confirmed(let reference) = store.step {
+            return reference
+        }
+        return store.bookingOrder?.bookingReference ?? "PENDING"
+    }
+
+    private var bookingStatus: String {
+        (store.bookingOrder?.status ?? "confirmed").replacingOccurrences(of: "_", with: " ").capitalized
+    }
 
     private var passengerName: String {
-        let name = "\(store.passenger.firstName) \(store.passenger.lastName)".trimmingCharacters(in: .whitespaces)
-        return name.isEmpty ? "---" : name
+        if let bookedName = store.bookingOrder?.passengers.first?.name,
+           !bookedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return bookedName
+        }
+
+        let pieces = [store.passenger.title, store.passenger.firstName, store.passenger.lastName]
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let combined = pieces.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+        return combined.isEmpty ? "Traveler pending" : combined
+    }
+
+    private var seatLabel: String {
+        store.bookingOrder?.passengers.first?.seatDesignator ?? store.selectedSeatId ?? "Assigned later"
+    }
+
+    private var cabinLabel: String {
+        guard let rawValue = store.selectedOffer?.cabinClass,
+              let cabinClass = BookingCabinClass(rawValue: rawValue) else {
+            return "Economy"
+        }
+        return cabinClass.displayName
+    }
+
+    private var routeLabel: String {
+        let origin = store.searchOrigin ?? settingsStore.departureCode
+        let destination = store.searchDestination ?? store.deal?.iataCode ?? "DST"
+        return "\(origin) - \(destination)"
+    }
+
+    private var departureDateLabel: String {
+        formatDate(store.searchDepartureDate ?? store.bookingOrder?.slices.first?.departureTime ?? store.deal?.bestDepartureDate)
+    }
+
+    private var returnDateLabel: String {
+        formatDate(store.searchReturnDate ?? store.bookingOrder?.slices.dropFirst().first?.departureTime ?? store.deal?.bestReturnDate)
+    }
+
+    private var totalPaidLabel: String {
+        if let order = store.bookingOrder {
+            return currencyAmount(order.totalPaid, currency: order.currency)
+        }
+        return currencyAmount(store.totalPrice, currency: store.selectedOffer?.currency ?? "USD")
     }
 
     private func formatDate(_ dateString: String?) -> String {
         guard let dateString else { return "---" }
-        // Input: "2026-04-15", output: "Apr 15"
+        let isoFormatter = ISO8601DateFormatter()
         let inputFormatter = DateFormatter()
         inputFormatter.dateFormat = "yyyy-MM-dd"
-        guard let date = inputFormatter.date(from: dateString) else { return dateString }
+        inputFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        let date = isoFormatter.date(from: dateString) ?? inputFormatter.date(from: dateString)
+        guard let date else { return dateString }
 
         let outputFormatter = DateFormatter()
+        outputFormatter.locale = Locale(identifier: "en_US")
         outputFormatter.dateFormat = "MMM d"
         return outputFormatter.string(from: date)
     }
 
+    private func currencyAmount(_ amount: Double, currency: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = currency
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: amount)) ?? "$\(Int(amount.rounded()))"
+    }
+
     private func barWidth(for index: Int) -> CGFloat {
-        // Pseudo-random widths for the decorative barcode
-        let widths: [CGFloat] = [2, 1, 3, 1, 2, 3, 1, 2, 1, 3]
+        let widths: [CGFloat] = [2, 1, 3, 1, 2, 4, 1, 2, 1, 3]
         return widths[index % widths.count]
     }
 }
-
-// MARK: - Preview
 
 #Preview("Boarding Pass") {
     let store = BookingStore()
     BoardingPassView()
         .environment(store)
+        .environment(SettingsStore())
 }

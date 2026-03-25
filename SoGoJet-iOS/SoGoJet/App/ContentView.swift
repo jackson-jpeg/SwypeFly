@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(FeedStore.self) private var feedStore
     @Environment(SettingsStore.self) private var settings
     @Environment(SavedStore.self) private var savedStore
+    @Environment(BookingStore.self) private var bookingStore
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
 
@@ -27,10 +29,27 @@ struct ContentView: View {
             settingsTab
         }
         .tint(Color.sgYellow)
+        .sheet(item: $router.activeSheet, onDismiss: {
+            router.handleSheetDismissed()
+        }) { sheet in
+            sheetContent(for: sheet)
+                .overlay { ToastOverlay() }
+        }
+        .fullScreenCover(item: $router.fullScreenDestination, onDismiss: {
+            router.handleFullScreenDismissed()
+        }) { destination in
+            fullScreenContent(for: destination)
+        }
     }
 
     private var feedTab: some View {
-        FeedView()
+        Group {
+            if settings.preferredView == "list" {
+                DepartureBoardView()
+            } else {
+                FeedView()
+            }
+        }
             .tabItem {
                 Label(Router.Tab.feed.title, systemImage: Router.Tab.feed.iconName)
             }
@@ -60,5 +79,59 @@ struct ContentView: View {
 
     private var savedBadgeCount: Int {
         savedStore.count
+    }
+
+    @ViewBuilder
+    private func sheetContent(for sheet: Router.Sheet) -> some View {
+        switch sheet {
+        case .dealDetail(let deal):
+            DestinationDetailView(deal: deal, allDeals: feedStore.allDeals)
+                .environment(savedStore)
+                .environment(settings)
+                .environment(router)
+                .environment(toastManager)
+        case .search:
+            SearchView()
+                .environment(feedStore)
+                .environment(settings)
+                .environment(router)
+        case .departurePicker:
+            NavigationStack {
+                AirportPicker(selectedCode: departureCodeBinding)
+            }
+            .environment(settings)
+        case .filters:
+            FilterSheet()
+                .environment(feedStore)
+                .environment(settings)
+        }
+    }
+
+    @ViewBuilder
+    private func fullScreenContent(for destination: Router.FullScreenDestination) -> some View {
+        switch destination {
+        case .booking(let deal):
+            BookingFlowView(deal: deal)
+                .environment(bookingStore)
+                .environment(settings)
+                .environment(router)
+                .environment(toastManager)
+        case .onboarding:
+            OnboardingView()
+                .environment(settings)
+        }
+    }
+
+    private var departureCodeBinding: Binding<String> {
+        Binding(
+            get: { settings.departureCode },
+            set: { newCode in
+                if let airport = AirportPicker.airports.first(where: { $0.code == newCode }) {
+                    settings.setDeparture(code: newCode, city: airport.city)
+                } else {
+                    settings.departureCode = newCode
+                }
+            }
+        )
     }
 }

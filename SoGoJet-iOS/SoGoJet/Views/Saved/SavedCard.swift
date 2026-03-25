@@ -48,34 +48,20 @@ struct SavedCard: View {
 
             // MARK: Info Area
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                // Destination name (split flap)
-                SplitFlapRow(
-                    text: deal.destination.uppercased(),
-                    maxLength: 10,
-                    size: .sm,
-                    color: Color.sgWhite,
-                    animate: true,
-                    staggerMs: 30
-                )
+                Text(deal.destination.uppercased())
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.sgWhite)
+                    .lineLimit(1)
 
-                // Country
                 Text(deal.country)
                     .font(SGFont.body(size: 11))
                     .foregroundStyle(Color.sgMuted)
                     .lineLimit(1)
 
-                // Price (split flap)
-                SplitFlapRow(
-                    text: deal.priceFormatted,
-                    maxLength: 6,
-                    size: .sm,
-                    color: Color.sgYellow,
-                    animate: true,
-                    startDelay: 0.15,
-                    staggerMs: 40
-                )
+                Text(deal.priceFormatted)
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.sgYellow)
 
-                // Book chip
                 Button {
                     HapticEngine.medium()
                     onBook()

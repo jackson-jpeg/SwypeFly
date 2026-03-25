@@ -11,12 +11,12 @@ final class SettingsStore {
     // Each property reads/writes UserDefaults directly.
 
     var departureCode: String {
-        get { UserDefaults.standard.string(forKey: "sg_departure_code") ?? "JFK" }
+        get { UserDefaults.standard.string(forKey: "sg_departure_code") ?? "TPA" }
         set { UserDefaults.standard.set(newValue, forKey: "sg_departure_code") }
     }
 
     var departureCity: String {
-        get { UserDefaults.standard.string(forKey: "sg_departure_city") ?? "New York" }
+        get { UserDefaults.standard.string(forKey: "sg_departure_city") ?? "Tampa" }
         set { UserDefaults.standard.set(newValue, forKey: "sg_departure_city") }
     }
 
@@ -34,6 +34,11 @@ final class SettingsStore {
     var priceAlertsEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: "sg_price_alerts_enabled") }
         set { UserDefaults.standard.set(newValue, forKey: "sg_price_alerts_enabled") }
+    }
+
+    var alertEmail: String {
+        get { UserDefaults.standard.string(forKey: "sg_alert_email") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "sg_alert_email") }
     }
 
     var hasOnboarded: Bool {

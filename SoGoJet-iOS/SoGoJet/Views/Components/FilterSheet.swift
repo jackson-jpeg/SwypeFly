@@ -5,6 +5,7 @@ import SwiftUI
 
 struct FilterSheet: View {
     @Environment(FeedStore.self) private var feedStore
+    @Environment(SettingsStore.self) private var settingsStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedPrices: Set<String> = []
@@ -12,7 +13,7 @@ struct FilterSheet: View {
     @State private var selectedRegions: Set<String> = []
 
     private let priceRanges = ["Under $200", "$200-400", "$400-600", "$600+"]
-    private let vibes = ["Beach", "City", "Adventure", "Culture", "Nightlife", "Nature", "Food"]
+    private let vibes = ["beach", "city", "adventure", "culture", "nightlife", "nature", "food"]
     private let regions = ["Europe", "Asia", "Caribbean", "South America", "Africa", "Middle East"]
 
     private var hasFilters: Bool {
@@ -76,8 +77,9 @@ struct FilterSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onAppear {
-            // Sync current vibes from feed store
+            selectedPrices = Set(feedStore.selectedPrices)
             selectedVibes = Set(feedStore.selectedVibes)
+            selectedRegions = Set(feedStore.selectedRegions)
         }
     }
 
@@ -92,7 +94,7 @@ struct FilterSheet: View {
 
             FlowLayout(spacing: Spacing.sm) {
                 ForEach(items, id: \.self) { item in
-                    filterChip(item, isSelected: selection.wrappedValue.contains(item)) {
+                    filterChip(item, displayText: item.capitalized, isSelected: selection.wrappedValue.contains(item)) {
                         HapticEngine.selection()
                         if selection.wrappedValue.contains(item) {
                             selection.wrappedValue.remove(item)
@@ -107,9 +109,9 @@ struct FilterSheet: View {
 
     // MARK: - Filter Chip
 
-    private func filterChip(_ text: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func filterChip(_ value: String, displayText: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(text)
+            Text(displayText)
                 .font(SGFont.bodyBold(size: 13))
                 .foregroundStyle(isSelected ? Color.sgBg : Color.sgWhiteDim)
                 .padding(.horizontal, Spacing.md)
@@ -128,7 +130,7 @@ struct FilterSheet: View {
                         )
                 )
         }
-        .accessibilityLabel("\(text), \(isSelected ? "selected" : "not selected")")
+        .accessibilityLabel("\(displayText), \(isSelected ? "selected" : "not selected")")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -157,10 +159,13 @@ struct FilterSheet: View {
     // MARK: - Apply Logic
 
     private func applyFilters() {
-        // Sync vibes back to feed store and refresh
         Task {
+            feedStore.applyLocalFilters(
+                prices: Array(selectedPrices),
+                regions: Array(selectedRegions)
+            )
             feedStore.selectedVibes = Array(selectedVibes)
-            await feedStore.fetchDeals()
+            await feedStore.fetchDeals(origin: settingsStore.departureCode)
         }
     }
 }
@@ -223,5 +228,6 @@ struct FlowLayout: Layout {
         .sheet(isPresented: .constant(true)) {
             FilterSheet()
                 .environment(FeedStore())
+                .environment(SettingsStore())
         }
 }

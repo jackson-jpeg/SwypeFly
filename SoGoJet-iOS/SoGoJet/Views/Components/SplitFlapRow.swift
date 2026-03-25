@@ -13,10 +13,11 @@ struct SplitFlapRow: View {
     var animate: Bool = true
     var startDelay: Double = 0
     var staggerMs: Double = 40
-    var onComplete: (() -> Void)? = nil
+    var animationID: Int = 0
 
-    // Padded characters array, always `maxLength` long.
-    private var characters: [Character] {
+    @State private var replayTrigger = 0
+
+    private var paddedText: String {
         let padded: String
         let trimmed = String(text.prefix(maxLength))
         let padding = String(repeating: " ", count: max(0, maxLength - trimmed.count))
@@ -32,30 +33,36 @@ struct SplitFlapRow: View {
             padded = trimmed + padding
         }
 
-        return Array(padded)
+        return padded
+    }
+
+    private var characters: [Character] {
+        Array(paddedText)
     }
 
     var body: some View {
         HStack(spacing: 1) {
             ForEach(Array(characters.enumerated()), id: \.offset) { index, char in
                 SplitFlapChar(
-                    character: animate ? char : " ",
+                    character: char,
                     size: size,
                     color: color,
-                    delay: startDelay + Double(index) * (staggerMs / 1000.0)
+                    animate: animate,
+                    delay: startDelay + Double(index) * (staggerMs / 1000.0),
+                    trigger: replayTrigger
                 )
             }
         }
-        .onChange(of: animate) { _, isAnimating in
-            guard isAnimating, let onComplete else { return }
-            // Fire completion after the last character finishes its full flip.
-            let lastCharDelay = startDelay + Double(maxLength - 1) * (staggerMs / 1000.0)
-            let flipDuration = 0.30 // two phases of 0.15 each
-            let totalDuration = lastCharDelay + flipDuration
-            DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration) {
-                onComplete()
-            }
+        .onChange(of: animate) { _, _ in
+            guard animate else { return }
+            replayTrigger += 1
         }
+        .onChange(of: animationID) { _, _ in
+            guard animate else { return }
+            replayTrigger += 1
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(text))
     }
 }
 
@@ -66,7 +73,7 @@ struct SplitFlapRow: View {
         @State private var showText = false
         @State private var destination = "BALI"
         @State private var price = "$249"
-        @State private var completed = false
+        @State private var revealTask: Task<Void, Never>?
 
         private let destinations = ["BALI", "TOKYO", "PARIS", "LONDON", "NEW YORK", "REYKJAVIK"]
 
@@ -95,8 +102,7 @@ struct SplitFlapRow: View {
                     alignment: .trailing,
                     animate: showText,
                     startDelay: 0.3,
-                    staggerMs: 50,
-                    onComplete: { completed = true }
+                    staggerMs: 50
                 )
 
                 // Flight code — small
@@ -110,21 +116,11 @@ struct SplitFlapRow: View {
                     staggerMs: 60
                 )
 
-                if completed {
-                    Text("Animation complete")
-                        .font(SGFont.caption)
-                        .foregroundStyle(Color.sgGreen)
-                        .transition(.opacity)
-                }
-
                 Button {
                     showText = false
-                    completed = false
                     destination = destinations.randomElement() ?? "BALI"
                     price = "$\(Int.random(in: 99...999))"
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        showText = true
-                    }
+                    scheduleReveal(after: 0.1)
                 } label: {
                     Text("Shuffle")
                         .font(SGFont.bodyBold(size: 14))
@@ -140,9 +136,19 @@ struct SplitFlapRow: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.sgBg)
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    showText = true
-                }
+                scheduleReveal(after: 0.3)
+            }
+            .onDisappear {
+                revealTask?.cancel()
+            }
+        }
+
+        private func scheduleReveal(after delay: TimeInterval) {
+            revealTask?.cancel()
+            revealTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                showText = true
             }
         }
     }

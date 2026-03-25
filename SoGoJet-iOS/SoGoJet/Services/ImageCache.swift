@@ -9,6 +9,7 @@ actor ImageCache {
 
     private let memoryCache = NSCache<NSString, UIImage>()
     private let diskDirectory: URL
+    private let maxDiskBytes = 100 * 1024 * 1024
 
     private init() {
         memoryCache.countLimit = 50
@@ -35,6 +36,7 @@ actor ImageCache {
         if let data = try? Data(contentsOf: diskPath),
            let img = UIImage(data: data) {
             memoryCache.setObject(img, forKey: key as NSString)
+            touch(fileURL: diskPath)
             return img
         }
 
@@ -49,6 +51,8 @@ actor ImageCache {
             // Store in memory + disk
             memoryCache.setObject(img, forKey: key as NSString)
             try? data.write(to: diskPath, options: .atomic)
+            touch(fileURL: diskPath)
+            enforceDiskLimit()
 
             return img
         } catch {
@@ -68,6 +72,73 @@ actor ImageCache {
     private func cacheKey(for urlString: String) -> String {
         let digest = SHA256.hash(data: Data(urlString.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func touch(fileURL: URL) {
+        try? FileManager.default.setAttributes(
+            [.modificationDate: Date()],
+            ofItemAtPath: fileURL.path
+        )
+    }
+
+    private func enforceDiskLimit() {
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: diskDirectory,
+            includingPropertiesForKeys: Array(keys)
+        ) else {
+            return
+        }
+
+        var files: [(url: URL, size: Int, modified: Date)] = []
+        var totalSize = 0
+
+        for case let url as URL in enumerator {
+            guard
+                let values = try? url.resourceValues(forKeys: keys),
+                values.isRegularFile == true,
+                let size = values.fileSize
+            else {
+                continue
+            }
+
+            let modified = values.contentModificationDate ?? .distantPast
+            files.append((url, size, modified))
+            totalSize += size
+        }
+
+        guard totalSize > maxDiskBytes else { return }
+
+        for file in files.sorted(by: { $0.modified < $1.modified }) {
+            try? FileManager.default.removeItem(at: file.url)
+            totalSize -= file.size
+            if totalSize <= maxDiskBytes {
+                break
+            }
+        }
+    }
+}
+
+struct ShimmerView: View {
+    @State private var phase: CGFloat = -1
+
+    var body: some View {
+        Color.sgSurface
+            .overlay(
+                LinearGradient(
+                    colors: [.clear, Color.sgFaint.opacity(0.3), .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .offset(x: phase * 300)
+            )
+            .clipped()
+            .onAppear {
+                phase = -1
+                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                    phase = 1
+                }
+            }
     }
 }
 
@@ -110,11 +181,10 @@ struct CachedAsyncImage<Placeholder: View>: View {
     }
 }
 
-// Convenience initialiser with default shimmer placeholder.
-extension CachedAsyncImage where Placeholder == Color {
+extension CachedAsyncImage where Placeholder == ShimmerView {
     init(url urlString: String?) {
         self.init(url: urlString) {
-            Color.sgSurface
+            ShimmerView()
         }
     }
 }

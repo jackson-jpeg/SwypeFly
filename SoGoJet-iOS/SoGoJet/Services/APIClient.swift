@@ -6,7 +6,7 @@ import Foundation
 actor APIClient {
     static let shared = APIClient()
 
-    private let baseURL = "https://sogojet.com/api"
+    private let baseURL = "https://www.sogojet.com/api"
     private let session: URLSession
     private let decoder: JSONDecoder
 
@@ -27,33 +27,66 @@ actor APIClient {
     // MARK: Endpoints
 
     enum Endpoint {
-        case feed(origin: String, page: Int, vibes: [String])
-        case destination(id: String)
+        case feed(origin: String, page: Int, vibes: [String], search: String?)
+        case destination(id: String, origin: String?)
+        case destinationMonthly(origin: String, destination: String)
         case topDeals(origin: String, limit: Int)
-        case bookingSearch(origin: String, destination: String, date: String, returnDate: String, passengers: Int)
-        case bookingOrder(id: String)
-        case seatMap(offerId: String)
+        case bookingSearch(
+            origin: String,
+            destination: String,
+            date: String,
+            returnDate: String?,
+            passengers: Int,
+            cabinClass: String?,
+            priceHint: Double?
+        )
+        case bookingOffer(
+            offerId: String,
+            origin: String?,
+            destination: String?,
+            departureDate: String?,
+            returnDate: String?,
+            cabinClass: String?
+        )
+        case bookingPaymentIntent(
+            offerId: String,
+            amount: Int,
+            currency: String,
+            email: String?
+        )
+        case bookingCreateOrder(BookingCreateOrderRequest)
+        case bookingOrder(orderId: String)
         case swipe(dealId: String, action: String)
         case alertCreate(destination: String, maxPrice: Int)
         case subscribe(email: String)
 
         var path: String {
             switch self {
-            case .feed:           return "/feed"
-            case .destination:    return "/destination"
-            case .topDeals:       return "/top-deals"
-            case .bookingSearch:  return "/booking/search"
-            case .bookingOrder:   return "/booking/order"
-            case .seatMap:        return "/booking/seat-map"
-            case .swipe:          return "/swipe"
-            case .alertCreate:    return "/alerts"
-            case .subscribe:      return "/subscribe"
+                case .feed:           return "/feed"
+                case .destination,
+                     .destinationMonthly:
+                    return "/destination"
+                case .topDeals:       return "/top-deals"
+                case .bookingSearch,
+                     .bookingOffer,
+                     .bookingPaymentIntent,
+                     .bookingCreateOrder,
+                     .bookingOrder:
+                    return "/booking"
+                case .swipe:          return "/swipe"
+                case .alertCreate:    return "/alerts"
+                case .subscribe:      return "/subscribe"
             }
         }
 
         var method: String {
             switch self {
-            case .swipe, .alertCreate, .subscribe, .bookingSearch:
+            case .swipe,
+                 .alertCreate,
+                 .subscribe,
+                 .bookingSearch,
+                 .bookingPaymentIntent,
+                 .bookingCreateOrder:
                 return "POST"
             default:
                 return "GET"
@@ -62,7 +95,7 @@ actor APIClient {
 
         var queryItems: [URLQueryItem] {
             switch self {
-            case let .feed(origin, page, vibes):
+            case let .feed(origin, page, vibes, search):
                 var items = [
                     URLQueryItem(name: "origin", value: origin),
                     URLQueryItem(name: "page", value: String(page)),
@@ -70,10 +103,24 @@ actor APIClient {
                 if !vibes.isEmpty {
                     items.append(URLQueryItem(name: "vibes", value: vibes.joined(separator: ",")))
                 }
+                if let search, !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    items.append(URLQueryItem(name: "search", value: search))
+                }
                 return items
 
-            case let .destination(id):
-                return [URLQueryItem(name: "id", value: id)]
+            case let .destination(id, origin):
+                var items = [URLQueryItem(name: "id", value: id)]
+                if let origin {
+                    items.append(URLQueryItem(name: "origin", value: origin))
+                }
+                return items
+
+            case let .destinationMonthly(origin, destination):
+                return [
+                    URLQueryItem(name: "action", value: "monthly"),
+                    URLQueryItem(name: "origin", value: origin),
+                    URLQueryItem(name: "destination", value: destination),
+                ]
 
             case let .topDeals(origin, limit):
                 return [
@@ -81,11 +128,32 @@ actor APIClient {
                     URLQueryItem(name: "limit", value: String(limit)),
                 ]
 
-            case let .bookingOrder(id):
-                return [URLQueryItem(name: "id", value: id)]
+            case let .bookingOffer(offerId, origin, destination, departureDate, returnDate, cabinClass):
+                var items = [
+                    URLQueryItem(name: "action", value: "offer"),
+                    URLQueryItem(name: "offerId", value: offerId),
+                ]
+                if let origin { items.append(URLQueryItem(name: "origin", value: origin)) }
+                if let destination { items.append(URLQueryItem(name: "destination", value: destination)) }
+                if let departureDate { items.append(URLQueryItem(name: "departureDate", value: departureDate)) }
+                if let returnDate { items.append(URLQueryItem(name: "returnDate", value: returnDate)) }
+                if let cabinClass { items.append(URLQueryItem(name: "cabinClass", value: cabinClass)) }
+                return items
 
-            case let .seatMap(offerId):
-                return [URLQueryItem(name: "offerId", value: offerId)]
+            case let .bookingOrder(orderId):
+                return [
+                    URLQueryItem(name: "action", value: "order"),
+                    URLQueryItem(name: "orderId", value: orderId),
+                ]
+
+            case .bookingSearch:
+                return [URLQueryItem(name: "action", value: "search")]
+
+            case .bookingPaymentIntent:
+                return [URLQueryItem(name: "action", value: "payment-intent")]
+
+            case .bookingCreateOrder:
+                return [URLQueryItem(name: "action", value: "create-order")]
 
             default:
                 return []
@@ -105,14 +173,38 @@ actor APIClient {
             case let .subscribe(email):
                 return try? JSONEncoder().encode(["email": email])
 
-            case let .bookingSearch(origin, destination, date, returnDate, passengers):
-                return try? JSONSerialization.data(withJSONObject: [
+            case let .bookingSearch(origin, destination, date, returnDate, passengers, cabinClass, priceHint):
+                var body: [String: Any] = [
                     "origin": origin,
                     "destination": destination,
                     "departureDate": date,
-                    "returnDate": returnDate,
-                    "passengers": passengers,
-                ] as [String: Any])
+                    "passengers": Array(repeating: ["type": "adult"], count: max(passengers, 1)),
+                ]
+                if let returnDate {
+                    body["returnDate"] = returnDate
+                }
+                if let cabinClass {
+                    body["cabinClass"] = cabinClass
+                }
+                if let priceHint {
+                    body["priceHint"] = priceHint
+                }
+                return try? JSONSerialization.data(withJSONObject: body)
+
+            case let .bookingPaymentIntent(offerId, amount, currency, email):
+                var body: [String: Any] = [
+                    "offerId": offerId,
+                    "amount": amount,
+                    "currency": currency,
+                ]
+                if let email, !email.isEmpty {
+                    body["email"] = email
+                }
+                return try? JSONSerialization.data(withJSONObject: body)
+
+            case let .bookingCreateOrder(request):
+                let encoder = JSONEncoder()
+                return try? encoder.encode(request)
 
             default:
                 return nil

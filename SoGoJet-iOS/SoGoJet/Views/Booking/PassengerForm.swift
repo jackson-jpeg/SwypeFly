@@ -1,9 +1,5 @@
 import SwiftUI
 
-// MARK: - Passenger Form
-// Collects passenger details using native SwiftUI Form controls.
-// Real-time validation ensures all required fields are filled before continuing.
-
 struct PassengerForm: View {
     @Environment(BookingStore.self) private var store
 
@@ -14,194 +10,398 @@ struct PassengerForm: View {
     @State private var gender: PassengerData.Gender = .male
     @State private var email = ""
     @State private var phone = ""
+    @State private var passportNumber = ""
+    @State private var passportExpiry = Calendar.current.date(byAdding: .year, value: 5, to: Date()) ?? Date()
+    @State private var nationality = "US"
+    @State private var hasSeededState = false
 
     private var isValid: Bool {
-        !givenName.trimmingCharacters(in: .whitespaces).isEmpty
-        && !familyName.trimmingCharacters(in: .whitespaces).isEmpty
-        && !email.trimmingCharacters(in: .whitespaces).isEmpty
+        !givenName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        && !familyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        && !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         && isValidEmail(email)
+        && phone.trimmingCharacters(in: .whitespacesAndNewlines).count >= 5
         && dateOfBirth < Date()
     }
 
-    var body: some View {
-        ZStack {
-            Color.sgBg.ignoresSafeArea()
-
-            ScrollView {
-                VStack(spacing: Spacing.lg) {
-                    header
-                    formContent
-                    continueButton
-                }
-                .padding(.horizontal, Spacing.md)
-                .padding(.bottom, Spacing.xl)
-            }
-        }
+    private var routeTitle: String {
+        let origin = store.searchOrigin ?? store.deal?.nearbyOrigin ?? "ORG"
+        let destination = store.searchDestination ?? store.deal?.iataCode ?? "DST"
+        return "\(origin) - \(destination)"
     }
 
-    // MARK: - Header
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                header
+                travelerTicket
+                identityDeck
+                documentsDeck
+                contactDeck
+                reassuranceDeck
+                actionCluster
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.xl)
+        }
+        .onAppear {
+            seedFromStoreIfNeeded()
+        }
+    }
 
     private var header: some View {
-        HStack {
-            SplitFlapRow(
-                text: "PASSENGER",
-                maxLength: 10,
-                size: .md,
-                color: Color.sgYellow,
-                animate: true,
-                staggerMs: 40
-            )
-            Spacer()
-        }
-        .padding(.top, Spacing.md)
+        VintageTerminalCollectionHeader(
+            title: "Traveler Record",
+            subtitle: "Capture the lead passenger exactly as the desk should issue the booking."
+        )
+        .padding(.top, Spacing.sm)
     }
 
-    // MARK: - Form Content
+    private var travelerTicket: some View {
+        VintageTravelTicket(tone: .amber) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    VintageTerminalSectionLabel(text: "Lead Passenger", tone: .amber)
+                    Text(routeTitle)
+                        .font(SGFont.display(size: 30))
+                        .foregroundStyle(Color.sgWhite)
+                }
 
-    private var formContent: some View {
-        VStack(spacing: Spacing.md) {
-            // Title picker
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                fieldLabel("Title")
-                Picker("Title", selection: $title) {
-                    ForEach(PassengerTitle.allCases, id: \.self) { t in
-                        Text(t.rawValue).tag(t)
+                Spacer(minLength: 0)
+
+                Text(store.selectedOffer.map { "$\(Int($0.price.rounded()))" } ?? store.deal?.priceFormatted ?? "--")
+                    .font(SGFont.display(size: 30))
+                    .foregroundStyle(Color.sgYellow)
+            }
+        } content: {
+            VintageTerminalRouteDisplay(
+                originCode: store.searchOrigin ?? store.deal?.nearbyOrigin ?? "ORG",
+                originLabel: "Departure",
+                destinationCode: store.searchDestination ?? store.deal?.iataCode ?? "DST",
+                destinationLabel: store.deal?.destination ?? "Destination",
+                detail: travelerWindowDetail,
+                tone: .amber
+            )
+        } footer: {
+            HStack {
+                VintageTerminalCaptionBlock(title: "Cabin", value: cabinLabel, tone: .amber)
+                Spacer()
+                VintageTerminalCaptionBlock(title: "Travelers", value: "\(store.passengerCount)", tone: .ivory, alignment: .trailing)
+            }
+        }
+    }
+
+    private var identityDeck: some View {
+        VintageTerminalPanel(
+            title: "Identity Desk",
+            subtitle: "These fields should match the traveler exactly, not a nickname.",
+            stamp: "Identity",
+            tone: .amber
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                selectionRow(title: "Title", tone: .amber) {
+                    ForEach(PassengerTitle.allCases, id: \.self) { item in
+                        VintageTerminalSelectablePill(
+                            title: item.rawValue,
+                            isSelected: title == item,
+                            tone: .amber
+                        ) {
+                            title = item
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
-                .tint(Color.sgYellow)
-            }
 
-            // Given name
-            fieldGroup("Given Name", hint: "As on passport") {
-                TextField("", text: $givenName)
-                    .textContentType(.givenName)
-                    .autocorrectionDisabled()
-            }
-
-            // Family name
-            fieldGroup("Family Name", hint: "As on passport") {
-                TextField("", text: $familyName)
-                    .textContentType(.familyName)
-                    .autocorrectionDisabled()
-            }
-
-            // Date of birth
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                fieldLabel("Date of Birth")
-                DatePicker(
-                    "",
-                    selection: $dateOfBirth,
-                    in: ...Date(),
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .tint(Color.sgYellow)
-                .colorScheme(.dark)
-            }
-
-            // Gender
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                fieldLabel("Gender")
-                Picker("Gender", selection: $gender) {
-                    Text("Male").tag(PassengerData.Gender.male)
-                    Text("Female").tag(PassengerData.Gender.female)
+                fieldShell(label: "Given name", hint: "As shown on the passport or government ID.") {
+                    TextField("", text: $givenName, prompt: Text("Alex").foregroundStyle(Color.sgMuted))
+                        .textContentType(.givenName)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.words)
+                        .foregroundStyle(Color.sgWhite)
                 }
-                .pickerStyle(.segmented)
-                .tint(Color.sgYellow)
-            }
 
-            // Email
-            fieldGroup("Email", hint: nil) {
-                TextField("", text: $email)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-            }
+                fieldShell(label: "Family name", hint: "Surname exactly as the carrier should see it.") {
+                    TextField("", text: $familyName, prompt: Text("Morgan").foregroundStyle(Color.sgMuted))
+                        .textContentType(.familyName)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.words)
+                        .foregroundStyle(Color.sgWhite)
+                }
 
-            // Phone
-            fieldGroup("Phone", hint: nil) {
-                TextField("", text: $phone)
-                    .textContentType(.telephoneNumber)
-                    .keyboardType(.phonePad)
+                HStack(alignment: .top, spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        fieldLabel("Date of birth")
+                        DatePicker("", selection: $dateOfBirth, in: ...Date(), displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                            .tint(Color.sgYellow)
+                            .colorScheme(.dark)
+                            .padding(.horizontal, Spacing.sm + Spacing.xs)
+                            .padding(.vertical, Spacing.sm + Spacing.xs)
+                            .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.md))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.md)
+                                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+                            )
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        fieldLabel("Gender")
+                        selectionRow(title: nil, tone: .ivory) {
+                            ForEach(PassengerData.Gender.allCases, id: \.self) { option in
+                                VintageTerminalSelectablePill(
+                                    title: option.rawValue.capitalized,
+                                    isSelected: gender == option,
+                                    tone: .ivory
+                                ) {
+                                    gender = option
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
-        .padding(Spacing.md)
-        .background(Color.sgCell)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg)
-                .strokeBorder(Color.sgBorder, lineWidth: 1)
-        )
     }
 
-    // MARK: - Field Helpers
+    private var documentsDeck: some View {
+        VintageTerminalPanel(
+            title: "Document Notes",
+            subtitle: "Optional for now, but useful once this route graduates to fuller traveler profiles.",
+            stamp: "Docs",
+            tone: .ivory
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                fieldShell(label: "Passport number", hint: "Leave blank if you want to finish this booking first and add it later.") {
+                    TextField("", text: $passportNumber, prompt: Text("123456789").foregroundStyle(Color.sgMuted))
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .foregroundStyle(Color.sgWhite)
+                }
+
+                HStack(alignment: .top, spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: Spacing.sm) {
+                        fieldLabel("Passport expiry")
+                        DatePicker("", selection: $passportExpiry, in: Date()..., displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                            .tint(Color.sgYellow)
+                            .colorScheme(.dark)
+                            .padding(.horizontal, Spacing.sm + Spacing.xs)
+                            .padding(.vertical, Spacing.sm + Spacing.xs)
+                            .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.md))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.md)
+                                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+                            )
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    fieldShell(label: "Nationality", hint: "Use the ISO country code or full country name.") {
+                        TextField("", text: $nationality, prompt: Text("US").foregroundStyle(Color.sgMuted))
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                            .foregroundStyle(Color.sgWhite)
+                    }
+                }
+            }
+        }
+    }
+
+    private var contactDeck: some View {
+        VintageTerminalPanel(
+            title: "Contact Channel",
+            subtitle: "This is where live updates and order issues will reach the traveler.",
+            stamp: "Reach",
+            tone: .moss
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                fieldShell(label: "Email", hint: "Used for the booking receipt and any route changes.") {
+                    TextField("", text: $email, prompt: Text("name@example.com").foregroundStyle(Color.sgMuted))
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .foregroundStyle(Color.sgWhite)
+                }
+
+                fieldShell(label: "Phone", hint: "A mobile number is best for airline updates.") {
+                    TextField("", text: $phone, prompt: Text("+1 555 000 0000").foregroundStyle(Color.sgMuted))
+                        .textContentType(.telephoneNumber)
+                        .keyboardType(.phonePad)
+                        .foregroundStyle(Color.sgWhite)
+                }
+            }
+        }
+    }
+
+    private var reassuranceDeck: some View {
+        VintageTerminalPanel(
+            title: "Desk Notes",
+            subtitle: "A good vintage desk is calming. These are the guardrails.",
+            stamp: "Ready",
+            tone: .ember
+        ) {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                VintageTerminalChecklistItem(
+                    title: "Traveler details stay local to the booking flow",
+                    detail: "Nothing is issued until you confirm on the review screen.",
+                    tone: .amber
+                )
+                VintageTerminalChecklistItem(
+                    title: "You can still change seats after this step",
+                    detail: "If the carrier returns a seat map, you will see it before checkout.",
+                    tone: .ivory
+                )
+                VintageTerminalChecklistItem(
+                    title: "Direct route alerts are still maturing",
+                    detail: "We can still reach the traveler through email if the route changes while you are booking.",
+                    tone: .moss
+                )
+            }
+        }
+    }
+
+    private var actionCluster: some View {
+        VStack(spacing: Spacing.sm) {
+            Button {
+                applyToStore()
+                Task {
+                    await store.proceedToSeats()
+                }
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "person.text.rectangle.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Continue to Seat Map")
+                        .font(SGFont.bodyBold(size: 16))
+                    Spacer()
+                    Text(isValid ? "Ready" : "Incomplete")
+                        .font(SGFont.bodyBold(size: 11))
+                }
+                .foregroundStyle(isValid ? Color.sgBg : Color.sgFaint)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.md)
+                .background(isValid ? Color.sgYellow : Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.md))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md)
+                        .strokeBorder(isValid ? Color.sgYellow : Color.sgBorder, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(!isValid)
+
+            VintageTerminalSecondaryButton(
+                title: "Refresh Live Fares",
+                subtitle: "Go back to the route search if you want a fresh market scan first.",
+                icon: "arrow.clockwise",
+                tone: .ivory,
+                fillsWidth: true
+            ) {
+                Task {
+                    await store.retryLastSearch()
+                }
+            }
+        }
+    }
+
+    private var travelerWindowDetail: String {
+        let departure = (store.searchDepartureDate ?? store.deal?.bestDepartureDate ?? "---").shortDate
+        let returnDate = (store.searchReturnDate ?? store.deal?.bestReturnDate ?? "---").shortDate
+        return "\(departure) to \(returnDate)"
+    }
+
+    private var cabinLabel: String {
+        guard let rawValue = store.selectedOffer?.cabinClass,
+              let cabinClass = BookingCabinClass(rawValue: rawValue) else {
+            return store.searchCabinClass.displayName
+        }
+        return cabinClass.displayName
+    }
 
     private func fieldLabel(_ text: String) -> some View {
-        Text(text)
-            .font(SGFont.bodyBold(size: 12))
+        Text(text.uppercased())
+            .font(SGFont.bodyBold(size: 10))
             .foregroundStyle(Color.sgMuted)
-            .textCase(.uppercase)
-            .tracking(0.8)
+            .tracking(1.4)
     }
 
-    private func fieldGroup<Content: View>(_ label: String, hint: String?, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+    private func selectionRow<Content: View>(title: String?, tone: VintageTerminalTone, @ViewBuilder content: @escaping () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            if let title {
+                fieldLabel(title)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.xs) {
+                    content()
+                }
+            }
+        }
+    }
+
+    private func fieldShell<Content: View>(label: String, hint: String?, @ViewBuilder content: @escaping () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             fieldLabel(label)
-            content()
-                .font(SGFont.bodyDefault)
-                .foregroundStyle(Color.sgWhite)
-                .padding(Spacing.sm + Spacing.xs)
-                .background(Color.sgSurface)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.sm)
-                        .strokeBorder(Color.sgBorder, lineWidth: 1)
-                )
+            VintageTerminalInsetPanel(tone: .ivory) {
+                content()
+                    .font(SGFont.bodyDefault)
+                    .padding(.horizontal, Spacing.sm + Spacing.xs)
+                    .padding(.vertical, Spacing.sm + Spacing.xs)
+                    .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.md))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md)
+                            .strokeBorder(Color.sgBorder, lineWidth: 1)
+                    )
+            }
 
             if let hint {
                 Text(hint)
-                    .font(SGFont.caption)
-                    .foregroundStyle(Color.sgFaint)
+                    .font(SGFont.body(size: 11))
+                    .foregroundStyle(Color.sgMuted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    // MARK: - Continue Button
+    private func seedFromStoreIfNeeded() {
+        guard !hasSeededState else { return }
+        hasSeededState = true
 
-    private var continueButton: some View {
-        Button {
-            applyToStore()
-            Task {
-                await store.proceedToSeats()
-            }
-        } label: {
-            Text("Continue")
-                .font(SGFont.bodyBold(size: 16))
-                .foregroundStyle(isValid ? Color.sgBg : Color.sgFaint)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
-                .background(isValid ? Color.sgYellow : Color.sgSurface)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        let passenger = store.passenger
+        if let passengerTitle = PassengerTitle(rawValue: passenger.title), !passenger.title.isEmpty {
+            title = passengerTitle
         }
-        .disabled(!isValid)
-    }
+        givenName = passenger.firstName
+        familyName = passenger.lastName
+        email = passenger.email
+        phone = passenger.phone
+        passportNumber = passenger.passportNumber
+        nationality = passenger.nationality.isEmpty ? "US" : passenger.nationality
+        gender = passenger.gender
 
-    // MARK: - Helpers
+        if let parsedBirthDate = Self.storageFormatter.date(from: passenger.dateOfBirth) {
+            dateOfBirth = parsedBirthDate
+        }
+        if let parsedPassportExpiry = Self.storageFormatter.date(from: passenger.passportExpiry) {
+            passportExpiry = parsedPassportExpiry
+        }
+    }
 
     private func applyToStore() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-
         store.passenger = PassengerData(
-            firstName: givenName.trimmingCharacters(in: .whitespaces),
-            lastName: familyName.trimmingCharacters(in: .whitespaces),
-            email: email.trimmingCharacters(in: .whitespaces),
-            phone: phone.trimmingCharacters(in: .whitespaces),
-            dateOfBirth: formatter.string(from: dateOfBirth),
-            gender: gender
+            title: title.rawValue,
+            firstName: givenName.trimmingCharacters(in: .whitespacesAndNewlines),
+            lastName: familyName.trimmingCharacters(in: .whitespacesAndNewlines),
+            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+            phone: phone.trimmingCharacters(in: .whitespacesAndNewlines),
+            dateOfBirth: Self.storageFormatter.string(from: dateOfBirth),
+            gender: gender,
+            passportNumber: passportNumber.trimmingCharacters(in: .whitespacesAndNewlines),
+            passportExpiry: Self.storageFormatter.string(from: passportExpiry),
+            nationality: nationality.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         )
     }
 
@@ -209,9 +409,14 @@ struct PassengerForm: View {
         let pattern = #"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
         return email.range(of: pattern, options: .regularExpression) != nil
     }
-}
 
-// MARK: - Passenger Title
+    private static let storageFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+}
 
 enum PassengerTitle: String, CaseIterable {
     case mr = "Mr"
@@ -220,8 +425,6 @@ enum PassengerTitle: String, CaseIterable {
     case miss = "Miss"
     case dr = "Dr"
 }
-
-// MARK: - Preview
 
 #Preview("Passenger Form") {
     PassengerForm()

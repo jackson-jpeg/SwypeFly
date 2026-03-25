@@ -1478,7 +1478,7 @@ struct VintageTerminalBoardingSummary: View {
         VintageTravelTicket(tone: tone) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    VintageTerminalSectionLabel(text: "Fare Stub", tone: tone)
+                    VintageTerminalSectionLabel(text: "Trip Summary", tone: tone)
                     Text("\(originCode) - \(destinationCode)")
                         .font(SGFont.display(size: 34))
                         .foregroundStyle(Color.sgWhite)
