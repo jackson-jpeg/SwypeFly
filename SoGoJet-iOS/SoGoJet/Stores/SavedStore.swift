@@ -4,6 +4,7 @@ import Observation
 // MARK: - Saved Store
 // Persists saved deals to UserDefaults as JSON.
 
+@MainActor
 @Observable
 final class SavedStore {
     // MARK: State

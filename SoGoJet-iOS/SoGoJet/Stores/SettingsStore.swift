@@ -5,6 +5,7 @@ import SwiftUI
 // MARK: - Settings Store
 // Lightweight user preferences backed by @AppStorage (UserDefaults).
 
+@MainActor
 @Observable
 final class SettingsStore {
     // Using a wrapper to bridge @AppStorage into @Observable.
