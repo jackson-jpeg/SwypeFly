@@ -21,12 +21,16 @@ struct DealCard: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // Full-bleed photo
-                CachedAsyncImage(url: deal.imageUrl) {
-                    fallbackBackground
-                }
-                .frame(width: geo.size.width, height: geo.size.height)
-                .clipped()
+                // Full-bleed photo — contentMode .fill can offset the image
+                // so we must pin it inside a fixed-size container and clip.
+                Color.clear
+                    .overlay {
+                        CachedAsyncImage(url: deal.imageUrl) {
+                            fallbackBackground
+                        }
+                    }
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
 
                 // Bottom gradient for text legibility
                 VStack {
@@ -82,7 +86,7 @@ struct DealCard: View {
                         priceBadge
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, geo.safeAreaInsets.bottom + 70)
                 }
 
                 // Swipe hint — only on the first card, auto-dismisses
