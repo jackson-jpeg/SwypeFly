@@ -8,6 +8,7 @@ struct SoGoJetApp: App {
     @State private var bookingStore = BookingStore()
     @State private var router = Router()
     @State private var toastManager = ToastManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -19,6 +20,13 @@ struct SoGoJetApp: App {
                 .environment(router)
                 .environment(toastManager)
                 .preferredColorScheme(.dark)
+                .onChange(of: scenePhase) { oldPhase, newPhase in
+                    if oldPhase != .active && newPhase == .active {
+                        Task {
+                            await feedStore.refreshIfStale(origin: settingsStore.departureCode)
+                        }
+                    }
+                }
         }
     }
 }

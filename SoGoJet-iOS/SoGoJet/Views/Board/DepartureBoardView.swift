@@ -51,12 +51,20 @@ struct DepartureBoardView: View {
             } else if feedStore.deals.isEmpty {
                 emptyState
             } else {
-                VStack(spacing: 0) {
-                    boardPanel
-                    if let deal = activeDeal {
-                        detailStrip(for: deal)
+                ScrollView {
+                    VStack(spacing: 0) {
+                        boardPanel
+                        if let deal = activeDeal {
+                            detailStrip(for: deal)
+                        }
+                        actionButtons
                     }
-                    actionButtons
+                    .containerRelativeFrame([.horizontal, .vertical])
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .refreshable {
+                    boardIndex = 0
+                    await feedStore.fetchDeals(origin: settingsStore.departureCode)
                 }
             }
         }

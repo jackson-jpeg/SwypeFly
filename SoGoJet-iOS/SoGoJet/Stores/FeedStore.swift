@@ -14,6 +14,16 @@ final class FeedStore {
     var error: String?
     private var activeOrigin: String?
     private var activeRequestID = UUID()
+    private(set) var lastFetchDate: Date?
+
+    /// How long before data is considered stale (seconds).
+    static let stalenessThreshold: TimeInterval = 300 // 5 minutes
+
+    /// Whether the current data is stale and should be refreshed.
+    var isStale: Bool {
+        guard let lastFetch = lastFetchDate else { return true }
+        return Date().timeIntervalSince(lastFetch) > Self.stalenessThreshold
+    }
 
     // MARK: Filters
     var selectedPrices: [String] = []
@@ -59,6 +69,7 @@ final class FeedStore {
             loadedDeals = deduplicatedDeals(response.destinations)
             hasMore = response.nextCursor != nil
             page = 1
+            lastFetchDate = Date()
 
             do {
                 try await expandFilteredResultsIfNeeded(origin: origin, requestID: requestID)
@@ -142,6 +153,12 @@ final class FeedStore {
     func applyLocalFilters(prices: [String], regions: [String]) {
         selectedPrices = prices
         selectedRegions = regions
+    }
+
+    /// Refresh the feed only if data is stale (e.g., returning from background).
+    func refreshIfStale(origin: String) async {
+        guard isStale, !isLoading else { return }
+        await fetchDeals(origin: origin)
     }
 
     /// Record a swipe action (fire-and-forget).
