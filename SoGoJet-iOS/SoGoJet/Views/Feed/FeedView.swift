@@ -1,6 +1,21 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Shake Detection
+
+extension UIDevice {
+    static let deviceDidShakeNotification = Notification.Name("deviceDidShakeNotification")
+}
+
+extension UIWindow {
+    open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        super.motionEnded(motion, with: event)
+        if motion == .motionShake {
+            NotificationCenter.default.post(name: UIDevice.deviceDidShakeNotification, object: nil)
+        }
+    }
+}
+
 // MARK: - Feed View
 // Full-screen paging feed of flight deal cards with minimal header chrome.
 
@@ -139,6 +154,10 @@ struct FeedView: View {
         }
         .onDisappear {
             headerHideTask?.cancel()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIDevice.deviceDidShakeNotification)) { _ in
+            guard router.activeTab == .feed else { return }
+            shuffleFeed()
         }
         .overlay(alignment: .top) {
             if (headerVisible || settingsStore.swipeMode) && !feedStore.deals.isEmpty {
@@ -592,6 +611,32 @@ struct FeedView: View {
     }
 
     // MARK: - Actions
+
+    private func shuffleFeed() {
+        guard feedStore.deals.count > 1 else { return }
+        let current = settingsStore.swipeMode ? swipeModeIndex : (currentIndex ?? 0)
+        var randomIndex: Int
+        repeat {
+            randomIndex = Int.random(in: 0..<feedStore.deals.count)
+        } while randomIndex == current && feedStore.deals.count > 1
+
+        HapticEngine.medium()
+
+        if settingsStore.swipeMode {
+            swipeModeIndex = randomIndex
+        } else {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                currentIndex = randomIndex
+            }
+        }
+
+        let deal = feedStore.deals[randomIndex]
+        toastManager.show(
+            message: "Shuffled! 🎲 \(deal.city)",
+            type: .info,
+            duration: 1.5
+        )
+    }
 
     private func saveDeal(_ deal: Deal) {
         HapticEngine.medium()
