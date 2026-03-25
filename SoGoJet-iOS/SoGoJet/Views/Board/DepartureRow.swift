@@ -21,8 +21,8 @@ struct DepartureBoardSlot: Identifiable, Equatable {
             id: slot,
             deal: nil,
             code: "   ",
-            destination: "        ",
-            price: "    ",
+            destination: "            ",
+            price: "      ",
             airlineName: "",
             country: ""
         )
@@ -106,7 +106,7 @@ struct DepartureRow: View {
 
                 SplitFlapRow(
                     text: slot.destination,
-                    maxLength: 8,
+                    maxLength: 12,
                     size: .md,
                     color: destinationColor,
                     alignment: .leading,
@@ -119,7 +119,7 @@ struct DepartureRow: View {
 
                 SplitFlapRow(
                     text: slot.price,
-                    maxLength: 4,
+                    maxLength: 6,
                     size: .sm,
                     color: priceColor,
                     alignment: .trailing,
@@ -128,7 +128,7 @@ struct DepartureRow: View {
                     staggerMs: 40,
                     animationID: animationID
                 )
-                .frame(width: 82, alignment: .trailing)
+                .frame(width: 110, alignment: .trailing)
             }
 
             // Country + flight info subtitle

@@ -59,7 +59,7 @@ struct DealCard: View {
                         VStack(alignment: .leading, spacing: 4) {
                             SplitFlapRow(
                                 text: deal.city.uppercased(),
-                                maxLength: 12,
+                                maxLength: 14,
                                 size: .lg,
                                 color: Color.sgWhite,
                                 alignment: .leading,
@@ -116,7 +116,7 @@ struct DealCard: View {
     private var priceBadge: some View {
         SplitFlapRow(
             text: deal.priceFormatted,
-            maxLength: 5,
+            maxLength: 6,
             size: .sm,
             color: Color.sgWhite,
             alignment: .trailing,

@@ -56,6 +56,8 @@ struct DestinationDetailView: View {
                         Text(deal.city.uppercased())
                             .font(SGFont.display(size: 36))
                             .foregroundStyle(Color.sgWhite)
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(2)
                         if !deal.country.isEmpty {
                             Text(deal.country)
                                 .font(SGFont.body(size: 15))
