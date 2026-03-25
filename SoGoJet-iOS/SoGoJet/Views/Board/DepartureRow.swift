@@ -41,10 +41,21 @@ struct DepartureBoardSlot: Identifiable, Equatable {
     }
 
     var accessibilityText: String {
-        if let deal {
-            return "\(deal.iataCode), \(deal.city), \(deal.priceFormatted), \(deal.airlineName)"
+        guard let deal else {
+            return "Empty departure board row"
         }
-        return "Empty departure board row"
+        var parts = [deal.city, deal.country, deal.priceFormatted]
+        if deal.airlineName != "—" {
+            parts.append(deal.airlineName)
+        }
+        if let dur = deal.flightDuration, !dur.isEmpty {
+            parts.append(dur)
+        }
+        let stops = deal.stopsLabel
+        if !stops.isEmpty {
+            parts.append(stops)
+        }
+        return parts.joined(separator: ", ")
     }
 }
 

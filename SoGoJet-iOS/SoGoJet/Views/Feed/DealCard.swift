@@ -83,7 +83,7 @@ struct DealCard: View {
         .contentShape(Rectangle())
         .onTapGesture { onTap() }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(deal.city), \(deal.country), \(deal.priceFormatted)")
+        .accessibilityLabel(dealCardAccessibilityLabel)
         .accessibilityAddTraits(.isButton)
     }
 
@@ -139,6 +139,21 @@ struct DealCard: View {
                 .foregroundStyle(Color.sgWhite.opacity(0.7))
                 .lineLimit(1)
         }
+    }
+
+    private var dealCardAccessibilityLabel: String {
+        var parts: [String] = [deal.city, deal.country, deal.priceFormatted]
+        if deal.airlineName != "—" {
+            parts.append(deal.airlineName)
+        }
+        if let duration = deal.flightDuration, !duration.isEmpty {
+            parts.append(duration)
+        }
+        let stops = deal.stopsLabel
+        if !stops.isEmpty {
+            parts.append(stops)
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func buildFlightTeaser() -> String {

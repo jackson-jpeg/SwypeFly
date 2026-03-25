@@ -75,6 +75,9 @@ struct DestinationDetailView: View {
             }
         }
         .frame(height: UIScreen.main.bounds.height * 0.4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(deal.city), \(deal.country), \(deal.priceFormatted)")
+        .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: - Flight Info
@@ -96,6 +99,8 @@ struct DestinationDetailView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Flight info: \(buildFlightLine()). \(buildDateLine())")
     }
 
     private func buildFlightLine() -> String {
@@ -128,6 +133,7 @@ struct DestinationDetailView: View {
                     .font(SGFont.bodyBold(size: 13))
                     .foregroundStyle(Color.sgMuted)
                     .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
 
                 if !deal.description.isEmpty {
                     Text(deal.description)
@@ -178,6 +184,7 @@ struct DestinationDetailView: View {
                     .foregroundStyle(Color.sgMuted)
                     .tracking(1.5)
                     .padding(.horizontal, 16)
+                    .accessibilityAddTraits(.isHeader)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -211,6 +218,10 @@ struct DestinationDetailView: View {
         .frame(width: 140)
         .contentShape(Rectangle())
         .onTapGesture { router.showDeal(otherDeal) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(otherDeal.city), \(otherDeal.priceFormatted)")
+        .accessibilityHint("View deal details")
+        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Sticky Bottom Bar
@@ -227,6 +238,7 @@ struct DestinationDetailView: View {
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isSaved ? "Remove from saved" : "Save \(deal.city)")
 
             Button {
                 if let url = deal.shareURL {
@@ -241,6 +253,7 @@ struct DestinationDetailView: View {
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Share \(deal.city)")
 
             Button {
                 router.startBooking(deal)
@@ -257,6 +270,7 @@ struct DestinationDetailView: View {
                 .clipShape(Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Search flights to \(deal.city)")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
