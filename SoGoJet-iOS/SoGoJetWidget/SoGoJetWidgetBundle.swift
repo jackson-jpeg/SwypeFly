@@ -5,5 +5,6 @@ import SwiftUI
 struct SoGoJetWidgetBundle: WidgetBundle {
     var body: some Widget {
         DepartureBoardWidget()
+        FlightSearchLiveActivity()
     }
 }

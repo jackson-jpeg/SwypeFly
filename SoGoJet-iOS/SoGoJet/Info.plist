@@ -27,6 +27,8 @@
 		<key>UIImageName</key>
 		<string></string>
 	</dict>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIRequiresFullScreen</key>
 	<true/>
 	<key>UISupportedInterfaceOrientations</key>

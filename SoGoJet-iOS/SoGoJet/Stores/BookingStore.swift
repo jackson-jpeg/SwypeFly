@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import ActivityKit
 
 // MARK: - Booking Step State Machine
 
@@ -48,6 +49,7 @@ final class BookingStore {
     @ObservationIgnored private var activeSearchRequestID = UUID()
     @ObservationIgnored private var activeOfferRequestID = UUID()
     @ObservationIgnored private var activeCheckoutRequestID = UUID()
+    @ObservationIgnored private var liveActivity: Activity<FlightSearchAttributes>?
 
     private static let recentSearchesKey = "SGRecentSearches"
     private static let maxRecentSearches = 8
@@ -121,6 +123,14 @@ final class BookingStore {
         lastSearchCompletedAt = nil
         lastSearchErrorMessage = nil
 
+        // Start Live Activity on Lock Screen / Dynamic Island
+        startLiveActivity(
+            origin: origin,
+            destination: destination,
+            city: deal?.city ?? destination,
+            date: departureDate
+        )
+
         do {
             let response: BookingSearchResponse = try await APIClient.shared.fetch(
                 .bookingSearch(
@@ -152,9 +162,20 @@ final class BookingStore {
             if offers.isEmpty {
                 lastSearchErrorMessage = "No live fares were found for this route right now."
                 step = .failed(message: "No live fares were found for this route right now.")
+                endLiveActivity(bestPrice: nil, offerCount: 0, status: .noResults, message: "No fares available")
             } else {
                 lastTripOptions = offers
                 step = .trip(options: offers)
+
+                // Update Live Activity with results
+                let best = offers.first
+                updateLiveActivity(
+                    bestPrice: best.map { Int($0.price) },
+                    offerCount: offers.count,
+                    airline: best?.airline,
+                    status: .found,
+                    message: "\(offers.count) fares from $\(Int(best?.price ?? 0))"
+                )
 
                 // Record this as a recent search
                 recordRecentSearch(
@@ -172,6 +193,7 @@ final class BookingStore {
             lastSearchCompletedAt = Date()
             lastSearchErrorMessage = userFacingMessage(for: error)
             step = .failed(message: userFacingMessage(for: error))
+            endLiveActivity(bestPrice: nil, offerCount: 0, status: .noResults, message: "Search failed")
         }
     }
 
@@ -477,6 +499,66 @@ final class BookingStore {
         activeSearchRequestID = UUID()
         activeOfferRequestID = UUID()
         activeCheckoutRequestID = UUID()
+    }
+
+    // MARK: - Live Activity
+
+    private func startLiveActivity(origin: String, destination: String, city: String, date: String) {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+
+        let attributes = FlightSearchAttributes(
+            origin: origin,
+            destination: destination,
+            destinationCity: city,
+            departureDate: date
+        )
+        let state = FlightSearchAttributes.ContentState(
+            status: .searching,
+            bestPrice: nil,
+            offerCount: 0,
+            airline: nil,
+            message: "Searching live fares..."
+        )
+
+        do {
+            liveActivity = try Activity.request(
+                attributes: attributes,
+                content: .init(state: state, staleDate: Date().addingTimeInterval(120))
+            )
+        } catch {
+            #if DEBUG
+            print("[LiveActivity] Failed to start: \(error)")
+            #endif
+        }
+    }
+
+    private func updateLiveActivity(bestPrice: Int?, offerCount: Int, airline: String?, status: FlightSearchAttributes.ContentState.SearchStatus, message: String) {
+        guard let activity = liveActivity else { return }
+        let state = FlightSearchAttributes.ContentState(
+            status: status,
+            bestPrice: bestPrice,
+            offerCount: offerCount,
+            airline: airline,
+            message: message
+        )
+        Task {
+            await activity.update(.init(state: state, staleDate: Date().addingTimeInterval(120)))
+        }
+    }
+
+    private func endLiveActivity(bestPrice: Int?, offerCount: Int, status: FlightSearchAttributes.ContentState.SearchStatus, message: String) {
+        guard let activity = liveActivity else { return }
+        let state = FlightSearchAttributes.ContentState(
+            status: status,
+            bestPrice: bestPrice,
+            offerCount: offerCount,
+            airline: nil,
+            message: message
+        )
+        Task {
+            await activity.end(.init(state: state, staleDate: nil), dismissalPolicy: .after(.now + 300))
+        }
+        liveActivity = nil
     }
 
     // MARK: - Recent Searches
