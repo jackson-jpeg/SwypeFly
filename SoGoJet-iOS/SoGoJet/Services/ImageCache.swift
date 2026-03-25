@@ -319,17 +319,19 @@ struct CachedAsyncImage<Placeholder: View>: View {
 
     var body: some View {
         GeometryReader { geo in
+            let w = max(geo.size.width, 1)
+            let h = max(geo.size.height, 1)
             Group {
                 if let uiImage {
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: geo.size.width, height: geo.size.height)
+                        .frame(width: w, height: h)
                         .clipped()
                         .transition(.opacity)
                 } else {
                     placeholder()
-                        .frame(width: geo.size.width, height: geo.size.height)
+                        .frame(width: w, height: h)
                         .transition(.opacity)
                 }
             }
