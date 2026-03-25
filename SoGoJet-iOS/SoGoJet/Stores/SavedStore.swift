@@ -52,6 +52,19 @@ final class SavedStore {
         }
     }
 
+    /// Add a deal back (used by undo).
+    func add(deal: Deal) {
+        guard !savedDeals.contains(where: { $0.id == deal.id }) else { return }
+        savedDeals.insert(deal, at: 0)
+        saveToDisk()
+    }
+
+    /// Remove a specific deal by ID.
+    func remove(id: String) {
+        savedDeals.removeAll { $0.id == id }
+        saveToDisk()
+    }
+
     /// Remove all saved deals.
     func clear() {
         savedDeals.removeAll()

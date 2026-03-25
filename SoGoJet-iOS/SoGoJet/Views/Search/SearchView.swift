@@ -329,7 +329,7 @@ struct SearchView: View {
                     .strokeBorder(Color.sgBorder, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SearchCardButtonStyle())
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")
         .accessibilityHint("Open deal details")
     }
@@ -423,6 +423,17 @@ struct SearchView: View {
         }
 
         isLoadingPopular = false
+    }
+}
+
+// MARK: - Search Card Button Style
+
+private struct SearchCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 

@@ -6,6 +6,7 @@ import SwiftUI
 struct SavedView: View {
     @Environment(SavedStore.self) private var savedStore
     @Environment(Router.self) private var router
+    @Environment(ToastManager.self) private var toastManager
 
     @State private var sortMode: SortMode = .recent
 
@@ -154,8 +155,24 @@ struct SavedView: View {
     }
 
     private func removeDeal(_ deal: Deal) {
+        let store = savedStore
+
+        // Optimistically remove from list
         _ = withAnimation(.easeOut(duration: 0.25)) {
-            savedStore.toggle(deal: deal)
+            store.remove(id: deal.id)
+        }
+
+        // Show undo toast (4s auto-dismiss; tap Undo to re-add)
+        toastManager.show(
+            message: "\(deal.city) removed",
+            type: .info,
+            duration: 4.0,
+            actionLabel: "Undo"
+        ) {
+            withAnimation(.easeOut(duration: 0.25)) {
+                store.add(deal: deal)
+            }
+            HapticEngine.success()
         }
     }
 }
@@ -168,4 +185,5 @@ struct SavedView: View {
     }
     .environment(SavedStore())
     .environment(Router())
+    .environment(ToastManager())
 }

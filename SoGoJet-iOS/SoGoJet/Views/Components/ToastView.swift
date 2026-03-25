@@ -32,6 +32,8 @@ struct ToastItem: Identifiable {
     let message: String
     let type: ToastType
     let duration: TimeInterval
+    var actionLabel: String?
+    var action: (() -> Void)?
 }
 
 // MARK: - Toast Manager
@@ -42,8 +44,14 @@ final class ToastManager {
     var toasts: [ToastItem] = []
     private var dismissalTasks: [UUID: Task<Void, Never>] = [:]
 
-    func show(message: String, type: ToastType = .info, duration: TimeInterval = 2.5) {
-        let toast = ToastItem(message: message, type: type, duration: duration)
+    func show(
+        message: String,
+        type: ToastType = .info,
+        duration: TimeInterval = 2.5,
+        actionLabel: String? = nil,
+        action: (() -> Void)? = nil
+    ) {
+        let toast = ToastItem(message: message, type: type, duration: duration, actionLabel: actionLabel, action: action)
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             toasts.append(toast)
         }
@@ -82,14 +90,13 @@ struct ToastOverlay: View {
                     toastRow(toast)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                Spacer()
             }
             .padding(.horizontal, Spacing.md)
             .padding(.top, geo.safeAreaInsets.top + Spacing.sm)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: manager.toasts.map(\.id))
-        .allowsHitTesting(false)
+        .allowsHitTesting(!manager.toasts.isEmpty)
     }
 
     // MARK: - Toast Row
@@ -106,6 +113,20 @@ struct ToastOverlay: View {
                 .lineLimit(2)
 
             Spacer()
+
+            if let label = toast.actionLabel, let action = toast.action {
+                Button {
+                    action()
+                    manager.dismiss(id: toast.id)
+                } label: {
+                    Text(label)
+                        .font(SGFont.bodyBold(size: 13))
+                        .foregroundStyle(Color.sgYellow)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.sgYellow.opacity(0.15), in: Capsule())
+                }
+            }
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm + Spacing.xs)
