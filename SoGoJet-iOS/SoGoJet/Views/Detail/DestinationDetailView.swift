@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import MapKit
 
 struct DestinationDetailView: View {
     let deal: Deal
@@ -24,6 +25,7 @@ struct DestinationDetailView: View {
                     dealHighlightSection
                     vibeTagsSection
                     photoGallerySection
+                    miniMapSection
                     travelGuideSection
                     weatherSection
                     tripBudgetSection
@@ -194,6 +196,73 @@ struct DestinationDetailView: View {
                     }
                     .padding(.horizontal, 16)
                 }
+            }
+            .padding(.top, 12)
+        }
+    }
+
+    // MARK: - Mini Map
+
+    @ViewBuilder
+    private var miniMapSection: some View {
+        if let lat = deal.latitude, let lon = deal.longitude {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("LOCATION")
+                        .font(SGFont.bodyBold(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                        .tracking(1.5)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    // Open in Apple Maps
+                    Button {
+                        let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                        let placemark = MKPlacemark(coordinate: coordinate)
+                        let mapItem = MKMapItem(placemark: placemark)
+                        mapItem.name = "\(deal.city), \(deal.country)"
+                        mapItem.openInMaps(launchOptions: [
+                            MKLaunchOptionsMapCenterKey: NSValue(mkCoordinate: coordinate),
+                            MKLaunchOptionsMapSpanKey: NSValue(mkCoordinateSpan: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05))
+                        ])
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.system(size: 11))
+                            Text("Open in Maps")
+                                .font(SGFont.body(size: 11))
+                        }
+                        .foregroundStyle(Color.sgYellow)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+
+                let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                Map(initialPosition: .region(MKCoordinateRegion(
+                    center: coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+                ))) {
+                    Annotation(deal.city, coordinate: coordinate) {
+                        VStack(spacing: 2) {
+                            Text(deal.priceFormatted)
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color.sgBg)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.sgYellow)
+                                .clipShape(Capsule())
+                            Image(systemName: "arrowtriangle.down.fill")
+                                .font(.system(size: 6))
+                                .foregroundStyle(Color.sgYellow)
+                                .offset(y: -2)
+                        }
+                    }
+                }
+                .mapStyle(.standard(pointsOfInterest: .including([.airport, .beach, .museum, .nationalPark, .restaurant])))
+                .frame(height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 16)
+                .allowsHitTesting(true)
             }
             .padding(.top, 12)
         }
