@@ -32,25 +32,42 @@ struct DepartureBoardProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<FlightEntry>) -> Void) {
         Task {
             let code = SharedDefaults.departureCode
-            let allFlights = await WidgetAPIClient.fetchFlights(origin: code, limit: 7)
+            let allFlights = await WidgetAPIClient.fetchFlights(origin: code, limit: 12)
 
             if allFlights.isEmpty {
-                // No data — show placeholder with short retry
-                let entry = FlightEntry(date: .now, flights: WidgetFlight.samples, departureCode: code)
-                let timeline = Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(300)))
+                // API failed — rotate samples so widget still feels alive
+                let rowCount = context.family == .systemLarge ? 5 : 3
+                let samples = WidgetFlight.samples
+                var fallbackEntries: [FlightEntry] = []
+                let now = Date()
+                for offset in 0..<3 {
+                    let entryDate = now.addingTimeInterval(Double(offset) * 300) // 5 min apart
+                    let rotated = Array(samples.dropFirst(offset).prefix(rowCount))
+                        + Array(samples.prefix(max(0, rowCount - (samples.count - offset))))
+                    fallbackEntries.append(FlightEntry(
+                        date: entryDate,
+                        flights: Array(rotated.prefix(rowCount)),
+                        departureCode: code
+                    ))
+                }
+                let timeline = Timeline(entries: fallbackEntries, policy: .after(Date().addingTimeInterval(900)))
                 completion(timeline)
                 return
             }
 
-            // Create 4 entries that rotate which flights are visible.
-            // This creates a "scrolling board" effect across timeline updates.
+            // Create entries that rotate flights every ~3-4 minutes.
+            // WidgetKit coalesces rapid updates, so space them 3+ min apart.
+            // With 12 flights and showing 3-5 at a time, this creates a
+            // "scrolling departure board" effect throughout the hour.
             let rowCount = context.family == .systemLarge ? 5 : 3
             var entries: [FlightEntry] = []
             let now = Date()
+            let rotationCount = max(allFlights.count / rowCount, 4)
 
-            for offset in 0..<4 {
-                let entryDate = now.addingTimeInterval(Double(offset) * 30)
-                let rotated = rotateFlights(allFlights, by: offset, showing: rowCount)
+            for offset in 0..<rotationCount {
+                // Space entries 3 minutes apart so WidgetKit actually shows each one
+                let entryDate = now.addingTimeInterval(Double(offset) * 180)
+                let rotated = rotateFlights(allFlights, by: offset * rowCount, showing: rowCount)
                 entries.append(FlightEntry(
                     date: entryDate,
                     flights: rotated,
@@ -58,8 +75,8 @@ struct DepartureBoardProvider: TimelineProvider {
                 ))
             }
 
-            // Refresh after 15 minutes (WidgetKit minimum)
-            let refreshDate = now.addingTimeInterval(900)
+            // Refresh when all rotations have played (or max 1 hour)
+            let refreshDate = now.addingTimeInterval(Double(rotationCount) * 180)
             let timeline = Timeline(entries: entries, policy: .after(refreshDate))
             completion(timeline)
         }
