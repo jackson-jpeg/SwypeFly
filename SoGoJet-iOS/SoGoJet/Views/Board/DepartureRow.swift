@@ -112,7 +112,7 @@ struct DepartureRow: View {
 
                 SplitFlapRow(
                     text: slot.destination,
-                    maxLength: 12,
+                    maxLength: 9,
                     size: .md,
                     color: destinationColor,
                     alignment: .leading,
