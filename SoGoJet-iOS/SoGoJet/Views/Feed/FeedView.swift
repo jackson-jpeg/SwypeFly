@@ -632,7 +632,7 @@ struct FeedView: View {
 
         let deal = feedStore.deals[randomIndex]
         toastManager.show(
-            message: "Shuffled! 🎲 \(deal.city)",
+            message: "Shuffled to \(deal.city)",
             type: .info,
             duration: 1.5
         )

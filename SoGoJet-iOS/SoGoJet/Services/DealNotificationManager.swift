@@ -29,7 +29,7 @@ enum DealNotificationManager {
         guard let deal = await fetchBestDeal(origin: departureCode) else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "✈️ Deal of the Day"
+        content.title = "Deal of the Day"
         content.body = "\(deal.city), \(deal.country) from $\(deal.price) — \(deal.tagline)"
         content.sound = .default
         content.userInfo = ["dealId": deal.id]
