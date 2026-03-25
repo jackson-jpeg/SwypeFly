@@ -57,10 +57,16 @@ struct DealCard: View {
                     // Bottom: city name, flight teaser, price badge
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(deal.city.uppercased())
-                                .font(SGFont.display(size: 34))
-                                .foregroundStyle(Color.sgWhite)
-                                .lineLimit(1)
+                            SplitFlapRow(
+                                text: deal.city.uppercased(),
+                                maxLength: 12,
+                                size: .lg,
+                                color: Color.sgWhite,
+                                alignment: .leading,
+                                animate: animate,
+                                startDelay: 0.1,
+                                staggerMs: 50
+                            )
 
                             flightTeaser
                         }
@@ -108,13 +114,20 @@ struct DealCard: View {
     }
 
     private var priceBadge: some View {
-        Text(deal.priceFormatted)
-            .font(SGFont.bodyBold(size: 20))
-            .foregroundStyle(Color.sgWhite)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(deal.tierColor)
-            .clipShape(Capsule())
+        SplitFlapRow(
+            text: deal.priceFormatted,
+            maxLength: 5,
+            size: .sm,
+            color: Color.sgWhite,
+            alignment: .trailing,
+            animate: animate,
+            startDelay: 0.3,
+            staggerMs: 60
+        )
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(deal.tierColor)
+        .clipShape(Capsule())
     }
 
     @ViewBuilder
