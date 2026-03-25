@@ -144,6 +144,13 @@ struct FeedView: View {
                     .containerRelativeFrame([.horizontal, .vertical])
                     .id(index)
                 }
+
+                // End-of-feed indicator
+                if !feedStore.hasMore && !feedStore.deals.isEmpty {
+                    endOfFeedView
+                        .containerRelativeFrame([.horizontal, .vertical])
+                        .id(feedStore.deals.count)
+                }
             }
             .scrollTargetLayout()
         }
@@ -347,6 +354,51 @@ struct FeedView: View {
             .padding(.top, Spacing.xl)
             .padding(.bottom, Spacing.xl)
         }
+    }
+
+    // MARK: - End of Feed
+
+    private var endOfFeedView: some View {
+        VStack(spacing: Spacing.lg) {
+            Spacer()
+
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 48, weight: .light))
+                .foregroundStyle(Color.sgYellow.opacity(0.7))
+
+            VStack(spacing: Spacing.xs) {
+                Text("You've seen all \(feedStore.deals.count) deals")
+                    .font(SGFont.display(size: 22))
+                    .foregroundStyle(Color.sgWhite)
+
+                Text("from \(settingsStore.departureCode)")
+                    .font(SGFont.body(size: 14))
+                    .foregroundStyle(Color.sgWhiteDim)
+            }
+
+            Button {
+                HapticEngine.medium()
+                currentIndex = 0
+                swipeCount = 0
+                headerVisible = true
+                headerHideTask?.cancel()
+                Task {
+                    await feedStore.fetchDeals(origin: settingsStore.departureCode)
+                }
+            } label: {
+                Label("Refresh Deals", systemImage: "arrow.clockwise")
+                    .font(SGFont.bodyBold(size: 15))
+                    .foregroundStyle(Color.sgBg)
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.vertical, Spacing.md)
+                    .background(Color.sgYellow, in: Capsule())
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.sgBg)
     }
 
     // MARK: - Actions
