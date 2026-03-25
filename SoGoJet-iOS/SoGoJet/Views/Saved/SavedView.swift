@@ -9,6 +9,10 @@ struct SavedView: View {
     @Environment(ToastManager.self) private var toastManager
 
     @State private var sortMode: SortMode = .recent
+    @State private var showComparePicker = false
+    @State private var showCompareView = false
+    @State private var compareA: Deal?
+    @State private var compareB: Deal?
 
     private enum SortMode: String, CaseIterable {
         case recent = "Latest"
@@ -41,6 +45,28 @@ struct SavedView: View {
         .background(Color.sgBg)
         .navigationTitle("")
         .navigationBarHidden(true)
+        .sheet(isPresented: $showComparePicker) {
+            ComparePickerView(
+                deals: sortedDeals,
+                selectedA: $compareA,
+                selectedB: $compareB,
+                onCompare: {
+                    // Small delay so picker sheet dismisses first
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showCompareView = true
+                    }
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showCompareView) {
+            if let a = compareA, let b = compareB {
+                CompareView(dealA: a, dealB: b)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+        }
     }
 
     // MARK: - Header
@@ -80,17 +106,40 @@ struct SavedView: View {
     // MARK: - Sort Bar
 
     private var sortBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Spacing.sm) {
-                ForEach(SortMode.allCases, id: \.self) { mode in
-                    VintageTerminalSelectablePill(
-                        title: mode.rawValue,
-                        isSelected: sortMode == mode,
-                        tone: .amber
-                    ) {
-                        HapticEngine.selection()
-                        sortMode = mode
+        HStack(spacing: Spacing.sm) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.sm) {
+                    ForEach(SortMode.allCases, id: \.self) { mode in
+                        VintageTerminalSelectablePill(
+                            title: mode.rawValue,
+                            isSelected: sortMode == mode,
+                            tone: .amber
+                        ) {
+                            HapticEngine.selection()
+                            sortMode = mode
+                        }
                     }
+                }
+            }
+
+            if savedStore.savedDeals.count >= 2 {
+                Button {
+                    HapticEngine.selection()
+                    compareA = nil
+                    compareB = nil
+                    showComparePicker = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("Compare")
+                            .font(SGFont.bodyBold(size: 12))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .padding(.horizontal, Spacing.sm + Spacing.xs)
+                    .padding(.vertical, Spacing.sm)
+                    .background(Color.sgYellow)
+                    .clipShape(Capsule())
                 }
             }
         }
