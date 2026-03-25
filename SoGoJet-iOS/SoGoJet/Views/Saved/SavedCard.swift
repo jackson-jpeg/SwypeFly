@@ -10,8 +10,6 @@ struct SavedCard: View {
     var onBook: () -> Void = {}
     var onRemove: () -> Void = {}
 
-    @State private var isPressed = false
-
     var body: some View {
         ZStack(alignment: .topTrailing) {
             // Full-bleed photo
@@ -103,25 +101,10 @@ struct SavedCard: View {
         .frame(minHeight: 200, maxHeight: 220)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
         .contentShape(RoundedRectangle(cornerRadius: Radius.md))
-        .scaleEffect(isPressed ? 0.97 : 1.0)
-        .opacity(isPressed ? 0.7 : 1.0)
-        .animation(.easeOut(duration: 0.15), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if !isPressed { isPressed = true }
-                }
-                .onEnded { value in
-                    isPressed = false
-                    // Only fire tap if finger stayed within card bounds
-                    let size = CGSize(width: 220, height: 220)
-                    if abs(value.translation.width) < size.width / 2 &&
-                       abs(value.translation.height) < size.height / 2 {
-                        HapticEngine.light()
-                        onTap()
-                    }
-                }
-        )
+        .onTapGesture {
+            HapticEngine.light()
+            onTap()
+        }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — tight grid cards
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")

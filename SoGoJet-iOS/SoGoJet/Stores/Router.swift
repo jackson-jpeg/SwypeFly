@@ -162,7 +162,7 @@ final class Router {
         isDismissingSheet = false
         queuedPresentationTask?.cancel()
         queuedPresentationTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(220))
+            try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
             if let nextFullScreen {
                 self?.fullScreenDestination = nextFullScreen
@@ -180,7 +180,7 @@ final class Router {
         isDismissingFullScreen = false
         queuedPresentationTask?.cancel()
         queuedPresentationTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(220))
+            try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
             if let nextFullScreen {
                 self?.fullScreenDestination = nextFullScreen
