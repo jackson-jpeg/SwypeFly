@@ -29,6 +29,8 @@ struct ContentView: View {
             settingsTab
         }
         .tint(Color.sgYellow)
+        .toolbarBackground(.visible, for: .tabBar)
+        .toolbarBackground(Color.sgBg, for: .tabBar)
         .sheet(item: $router.activeSheet, onDismiss: {
             router.handleSheetDismissed()
         }) { sheet in

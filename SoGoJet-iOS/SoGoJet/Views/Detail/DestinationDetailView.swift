@@ -219,7 +219,10 @@ struct DestinationDetailView: View {
         }
         .frame(width: 140)
         .contentShape(Rectangle())
-        .onTapGesture { router.showDeal(otherDeal) }
+        .onTapGesture {
+            HapticEngine.light()
+            router.showDeal(otherDeal)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(otherDeal.city), \(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
@@ -230,6 +233,7 @@ struct DestinationDetailView: View {
     private var stickyBottomBar: some View {
         HStack(spacing: 12) {
             Button {
+                HapticEngine.medium()
                 savedStore.toggle(deal: deal)
             } label: {
                 Image(systemName: isSaved ? "heart.fill" : "heart")
@@ -243,6 +247,7 @@ struct DestinationDetailView: View {
             .accessibilityLabel(isSaved ? "Remove from saved" : "Save \(deal.city)")
 
             Button {
+                HapticEngine.light()
                 if let url = deal.shareURL {
                     shareItem = DetailShareItem(url: url)
                 }
@@ -258,6 +263,7 @@ struct DestinationDetailView: View {
             .accessibilityLabel("Share \(deal.city)")
 
             Button {
+                HapticEngine.medium()
                 router.startBooking(deal)
             } label: {
                 HStack(spacing: 6) {
