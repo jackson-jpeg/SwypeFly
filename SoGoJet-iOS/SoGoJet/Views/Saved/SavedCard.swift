@@ -1,7 +1,8 @@
 import SwiftUI
 
 // MARK: - Saved Card
-// Grid card for saved destinations with background image, destination info, and actions.
+// Photo-forward grid card — mini version of the feed's DealCard.
+// Full-bleed destination photo with bottom gradient overlay for text.
 
 struct SavedCard: View {
     let deal: Deal
@@ -9,84 +10,109 @@ struct SavedCard: View {
     var onRemove: () -> Void = {}
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // MARK: Image Area
-            ZStack(alignment: .topTrailing) {
-                CachedAsyncImage(url: deal.imageUrl) {
-                    Color.sgSurface
-                }
-                .frame(height: 80)
-                .clipped()
-                .overlay(alignment: .bottom) {
-                    // Bottom gradient for text legibility
-                    LinearGradient(
-                        colors: [Color.clear, Color.sgBg.opacity(0.7)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 40)
-                    .accessibilityHidden(true)
-                }
-                .accessibilityLabel("\(deal.destination) photo")
+        ZStack(alignment: .topTrailing) {
+            // Full-bleed photo
+            CachedAsyncImage(url: deal.imageUrl) {
+                fallbackBackground
+            }
+            .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 220)
+            .clipped()
 
-                // Heart remove button
-                Button {
-                    HapticEngine.medium()
-                    onRemove()
-                } label: {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.sgRed)
-                        .frame(width: 28, height: 28)
-                        .background(Color.sgBg.opacity(0.6))
-                        .clipShape(Circle())
-                }
-                .padding(Spacing.xs)
-                .accessibilityLabel("Remove \(deal.destination) from saved")
-                .accessibilityHint("Unsaves this flight deal")
+            // Bottom gradient for text legibility
+            VStack {
+                Spacer()
+                LinearGradient(
+                    colors: [.clear, Color(hex: 0x0A0A0A, alpha: 0.8)],
+                    startPoint: .init(x: 0.5, y: 0),
+                    endPoint: .init(x: 0.5, y: 1)
+                )
+                .frame(height: 110)
             }
 
-            // MARK: Info Area
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(deal.destination.uppercased())
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.sgWhite)
-                    .lineLimit(1)
+            // Bottom content: city, country, price, book button
+            VStack {
+                Spacer()
 
-                Text(deal.country)
-                    .font(SGFont.body(size: 11))
-                    .foregroundStyle(Color.sgMuted)
-                    .lineLimit(1)
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(deal.city.uppercased())
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.sgWhite)
+                            .lineLimit(1)
 
-                Text(deal.priceFormatted)
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.sgYellow)
+                        Text(deal.country.uppercased())
+                            .font(SGFont.bodySmall)
+                            .foregroundStyle(Color.sgWhite.opacity(0.6))
+                            .lineLimit(1)
+                    }
 
+                    Spacer()
+
+                    // Price badge
+                    Text(deal.priceFormatted)
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.sgWhite)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(deal.tierColor)
+                        .clipShape(Capsule())
+                }
+                .padding(.bottom, 6)
+
+                // Compact book button
                 Button {
                     HapticEngine.medium()
                     onBook()
                 } label: {
                     HStack(spacing: Spacing.xs) {
                         Text("Book")
-                            .font(SGFont.bodyBold(size: 11))
+                            .font(SGFont.bodyBold(size: 12))
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 10, weight: .bold))
                     }
                     .foregroundStyle(Color.sgBg)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                     .background(Color.sgYellow)
                     .clipShape(Capsule())
                 }
                 .accessibilityLabel("Book flight to \(deal.destination)")
             }
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.sm)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
+
+            // Heart remove button (top-right)
+            Button {
+                HapticEngine.medium()
+                onRemove()
+            } label: {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.sgRed)
+                    .frame(width: 28, height: 28)
+                    .background(Color.black.opacity(0.4))
+                    .clipShape(Circle())
+            }
+            .padding(8)
+            .accessibilityLabel("Remove \(deal.destination) from saved")
+            .accessibilityHint("Unsaves this flight deal")
         }
-        .background(Color.sgCell)
+        .frame(minHeight: 200, maxHeight: 220)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")
+    }
+
+    // MARK: - Fallback
+
+    private var fallbackBackground: some View {
+        Rectangle()
+            .fill(Color.sgSurface)
+            .overlay {
+                Text(deal.city.uppercased())
+                    .font(SGFont.display(size: 28))
+                    .foregroundStyle(Color.sgMuted.opacity(0.3))
+            }
     }
 }
 
