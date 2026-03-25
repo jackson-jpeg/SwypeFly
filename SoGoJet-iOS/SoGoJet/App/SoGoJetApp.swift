@@ -23,6 +23,9 @@ struct SoGoJetApp: App {
                 .environment(networkMonitor)
                 .preferredColorScheme(.dark)
                 .task {
+                    // Trim disk image cache so we aren't always at capacity
+                    await ImageCache.shared.trimDiskCacheOnStartup()
+
                     // Preload feed immediately on launch so content is
                     // ready (or loading) by the time the user sees the feed tab.
                     if feedStore.allDeals.isEmpty {

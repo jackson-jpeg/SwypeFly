@@ -65,6 +65,9 @@ struct FeedView: View {
             if let index = currentIndex, index >= deals.count {
                 currentIndex = 0
             }
+
+            // Prefetch next images when feed first loads or reloads
+            prefetchImages(around: currentIndex ?? 0)
         }
         .onChange(of: currentIndex) { oldValue, newValue in
             guard let newIdx = newValue, oldValue != newValue else { return }
@@ -98,6 +101,9 @@ struct FeedView: View {
                     argument: "\(deal.destination), \(deal.priceFormatted)"
                 )
             }
+
+            // Prefetch images for the next 2 cards so swiping feels instant
+            prefetchImages(around: newIdx)
         }
         .onChange(of: router.scrollToTopTrigger) { _, _ in
             guard router.activeTab == .feed else { return }
@@ -429,6 +435,21 @@ struct FeedView: View {
         HapticEngine.medium()
         feedStore.recordSwipe(dealId: deal.id, action: "viewed")
         router.startBooking(deal)
+    }
+
+    // MARK: - Prefetching
+
+    /// Prefetch images for cards adjacent to the current index.
+    /// This warms the memory cache so the next swipe shows the photo instantly.
+    private func prefetchImages(around index: Int) {
+        let deals = feedStore.deals
+        for offset in 1...2 {
+            let i = index + offset
+            guard i < deals.count, let url = deals[i].imageUrl else { continue }
+            Task {
+                await ImageCache.shared.prefetch(url)
+            }
+        }
     }
 
     // MARK: - Helpers

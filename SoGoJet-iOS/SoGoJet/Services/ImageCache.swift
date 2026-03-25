@@ -104,6 +104,86 @@ actor ImageCache {
         }
     }
 
+    /// Prefetch an image into cache without returning it.
+    /// Fires and forgets — used to warm the cache for upcoming cards.
+    func prefetch(_ urlString: String) async {
+        let key = cacheKey(for: urlString)
+
+        // Already in memory — nothing to do
+        if memoryCache.object(forKey: key as NSString) != nil { return }
+
+        // Already on disk — promote to memory
+        let diskPath = diskDirectory.appendingPathComponent(key)
+        if FileManager.default.fileExists(atPath: diskPath.path) {
+            if let img = downsampledImage(at: diskPath) {
+                let cost = imageCost(img)
+                memoryCache.setObject(img, forKey: key as NSString, cost: cost)
+                touch(fileURL: diskPath)
+            }
+            return
+        }
+
+        // Fetch from network
+        guard let url = URL(string: urlString) else { return }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode) else { return }
+            try? data.write(to: diskPath, options: .atomic)
+            touch(fileURL: diskPath)
+            enforceDiskLimit()
+
+            if let img = downsampledImage(at: diskPath) {
+                let cost = imageCost(img)
+                memoryCache.setObject(img, forKey: key as NSString, cost: cost)
+            }
+        } catch {
+            // Prefetch is best-effort — silently ignore failures
+        }
+    }
+
+    /// Trim disk cache on startup. Call once at app launch.
+    /// If cache exceeds the high-water mark, trim down to the low-water mark
+    /// so we aren't constantly at capacity.
+    func trimDiskCacheOnStartup() {
+        let highWater = maxDiskBytes * 80 / 100  // 80 MB
+        let lowWater  = maxDiskBytes * 60 / 100  // 60 MB
+
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: diskDirectory,
+            includingPropertiesForKeys: Array(keys)
+        ) else { return }
+
+        var files: [(url: URL, size: Int, modified: Date)] = []
+        var totalSize = 0
+
+        for case let url as URL in enumerator {
+            guard let values = try? url.resourceValues(forKeys: keys),
+                  values.isRegularFile == true,
+                  let size = values.fileSize else { continue }
+            let modified = values.contentModificationDate ?? .distantPast
+            files.append((url, size, modified))
+            totalSize += size
+        }
+
+        guard totalSize > highWater else { return }
+
+        #if DEBUG
+        print("[ImageCache] Startup trim: \(totalSize / 1024 / 1024)MB > \(highWater / 1024 / 1024)MB threshold")
+        #endif
+
+        for file in files.sorted(by: { $0.modified < $1.modified }) {
+            try? FileManager.default.removeItem(at: file.url)
+            totalSize -= file.size
+            if totalSize <= lowWater { break }
+        }
+
+        #if DEBUG
+        print("[ImageCache] Trimmed to \(totalSize / 1024 / 1024)MB")
+        #endif
+    }
+
     /// Remove all cached images.
     func clearAll() {
         memoryCache.removeAllObjects()
