@@ -19,6 +19,20 @@ struct BookingSearchSnapshot: Hashable, Sendable {
     let searchedAt: Date
 }
 
+// MARK: - Recent Search
+
+struct RecentSearch: Codable, Identifiable, Hashable, Sendable {
+    var id: String { "\(origin)-\(destination)-\(departureDate)" }
+    let origin: String
+    let destination: String
+    let destinationCity: String
+    let departureDate: String
+    let returnDate: String?
+    let bestPrice: Double?
+    let offerCount: Int
+    let searchedAt: Date
+}
+
 struct PriceDiscrepancy: Codable, Hashable, Sendable {
     let tier: String
     let message: String

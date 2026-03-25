@@ -156,6 +156,48 @@ extension Deal {
         (dealTier ?? .fair).color
     }
 
+    /// Price trend direction based on priceDirection field or previousPrice comparison
+    var priceTrend: PriceTrend {
+        if let direction = priceDirection?.lowercased() {
+            if direction.contains("down") || direction.contains("drop") { return .down }
+            if direction.contains("up") || direction.contains("rise") { return .up }
+        }
+        if let prev = previousPrice, let curr = displayPrice, prev > 0 {
+            let change = (curr - prev) / prev
+            if change < -0.03 { return .down }
+            if change > 0.03 { return .up }
+        }
+        return .stable
+    }
+
+    enum PriceTrend {
+        case up, down, stable
+
+        var icon: String {
+            switch self {
+            case .up: "arrow.up.right"
+            case .down: "arrow.down.right"
+            case .stable: ""
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .up: Color.sgRed
+            case .down: Color.sgDealAmazing
+            case .stable: Color.sgMuted
+            }
+        }
+
+        var label: String {
+            switch self {
+            case .up: "Price rising"
+            case .down: "Price dropping"
+            case .stable: "Price stable"
+            }
+        }
+    }
+
     /// Human-readable stops label
     var stopsLabel: String {
         if isNonstop == true { return "Nonstop" }

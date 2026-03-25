@@ -42,9 +42,15 @@ final class BookingStore {
     private(set) var lastTripOptions: [TripOption] = []
     var paymentError: String?
 
+    /// Recent booking searches, persisted to UserDefaults.
+    private(set) var recentSearches: [RecentSearch] = []
+
     @ObservationIgnored private var activeSearchRequestID = UUID()
     @ObservationIgnored private var activeOfferRequestID = UUID()
     @ObservationIgnored private var activeCheckoutRequestID = UUID()
+
+    private static let recentSearchesKey = "SGRecentSearches"
+    private static let maxRecentSearches = 8
 
     // MARK: Derived
 
@@ -60,6 +66,12 @@ final class BookingStore {
             total += seatPrice
         }
         return total
+    }
+
+    // MARK: Init
+
+    init() {
+        loadRecentSearches()
     }
 
     // MARK: Actions
@@ -143,6 +155,17 @@ final class BookingStore {
             } else {
                 lastTripOptions = offers
                 step = .trip(options: offers)
+
+                // Record this as a recent search
+                recordRecentSearch(
+                    origin: origin,
+                    destination: destination,
+                    destinationCity: deal?.city ?? destination,
+                    departureDate: departureDate,
+                    returnDate: returnDate,
+                    bestPrice: offers.first?.price,
+                    offerCount: offers.count
+                )
             }
         } catch {
             guard activeSearchRequestID == requestID else { return }
@@ -454,6 +477,40 @@ final class BookingStore {
         activeSearchRequestID = UUID()
         activeOfferRequestID = UUID()
         activeCheckoutRequestID = UUID()
+    }
+
+    // MARK: - Recent Searches
+
+    private func recordRecentSearch(
+        origin: String, destination: String, destinationCity: String,
+        departureDate: String, returnDate: String?,
+        bestPrice: Double?, offerCount: Int
+    ) {
+        let search = RecentSearch(
+            origin: origin, destination: destination,
+            destinationCity: destinationCity, departureDate: departureDate,
+            returnDate: returnDate, bestPrice: bestPrice,
+            offerCount: offerCount, searchedAt: Date()
+        )
+        // Remove duplicate routes, keep latest
+        recentSearches.removeAll { $0.origin == origin && $0.destination == destination }
+        recentSearches.insert(search, at: 0)
+        if recentSearches.count > Self.maxRecentSearches {
+            recentSearches = Array(recentSearches.prefix(Self.maxRecentSearches))
+        }
+        saveRecentSearches()
+    }
+
+    private func loadRecentSearches() {
+        guard let data = UserDefaults.standard.data(forKey: Self.recentSearchesKey),
+              let searches = try? JSONDecoder().decode([RecentSearch].self, from: data)
+        else { return }
+        recentSearches = searches
+    }
+
+    private func saveRecentSearches() {
+        guard let data = try? JSONEncoder().encode(recentSearches) else { return }
+        UserDefaults.standard.set(data, forKey: Self.recentSearchesKey)
     }
 }
 

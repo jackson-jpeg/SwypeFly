@@ -197,6 +197,11 @@ struct TripView: View {
                 } else {
                     searchButton
                 }
+
+                // Recent searches from previous booking sessions
+                if !store.recentSearches.isEmpty && !isSearching {
+                    recentSearchesSection
+                }
             }
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.xl)
@@ -535,6 +540,78 @@ struct TripView: View {
             .background(Color.sgYellow)
             .clipShape(RoundedRectangle(cornerRadius: Radius.md))
         }
+    }
+
+    // MARK: - Recent Searches
+
+    private var recentSearchesSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("RECENT SEARCHES")
+                .font(SGFont.bodyBold(size: 11))
+                .foregroundStyle(Color.sgMuted)
+                .tracking(1.4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(store.recentSearches.prefix(4).enumerated()), id: \.element.id) { index, search in
+                    Button {
+                        HapticEngine.light()
+                        applyRecentSearch(search)
+                    } label: {
+                        HStack(spacing: Spacing.sm) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(search.origin) → \(search.destinationCity)")
+                                    .font(SGFont.bodyBold(size: 14))
+                                    .foregroundStyle(Color.sgWhite)
+                                Text("\(search.departureDate.shortDate) · \(search.offerCount) fares found")
+                                    .font(SGFont.body(size: 12))
+                                    .foregroundStyle(Color.sgMuted)
+                            }
+                            Spacer()
+                            if let price = search.bestPrice, price > 0 {
+                                Text("$\(Int(price))")
+                                    .font(SGFont.bodyBold(size: 15))
+                                    .foregroundStyle(Color.sgYellow)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.sgMuted)
+                        }
+                        .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+
+                    if index < min(store.recentSearches.count, 4) - 1 {
+                        Rectangle()
+                            .fill(Color.sgBorder)
+                            .frame(height: 1)
+                    }
+                }
+            }
+            .padding(Spacing.md)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md)
+                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+            )
+        }
+    }
+
+    private func applyRecentSearch(_ search: RecentSearch) {
+        // Re-run the search with the same dates
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withFullDate]
+        let ymd = DateFormatter()
+        ymd.dateFormat = "yyyy-MM-dd"
+
+        if let depDate = fmt.date(from: search.departureDate) ?? ymd.date(from: search.departureDate) {
+            departureDate = depDate
+        }
+        if let ret = search.returnDate,
+           let retDate = fmt.date(from: ret) ?? ymd.date(from: ret) {
+            returnDate = retDate
+        }
+        performSearch()
     }
 
     private var missionControlTitle: String {

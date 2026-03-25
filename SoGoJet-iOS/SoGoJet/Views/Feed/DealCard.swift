@@ -13,6 +13,7 @@ struct DealCard: View {
     var onShare: () -> Void = {}
     var onBook: () -> Void = {}
     var onTap: () -> Void = {}
+    var onVibeFilter: (String) -> Void = { _ in }
 
     @State private var heartBounce: Bool = false
     @State private var showSwipeHint: Bool = false
@@ -58,7 +59,7 @@ struct DealCard: View {
 
                     Spacer()
 
-                    // Bottom: city name + flight teaser above, price badge below-right
+                    // Bottom: city + vibes + flight teaser + price
                     VStack(alignment: .leading, spacing: 6) {
                         SplitFlapRow(
                             text: deal.city.uppercased(),
@@ -70,6 +71,27 @@ struct DealCard: View {
                             startDelay: 0.1,
                             staggerMs: 50
                         )
+
+                        // Tappable vibe tags
+                        if !deal.safeVibeTags.isEmpty {
+                            HStack(spacing: 6) {
+                                ForEach(deal.safeVibeTags.prefix(3), id: \.self) { tag in
+                                    Button {
+                                        HapticEngine.light()
+                                        onVibeFilter(tag)
+                                    } label: {
+                                        Text(tag.lowercased())
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundStyle(Color.sgYellow)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 3)
+                                            .background(Color.sgYellow.opacity(0.15))
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
 
                         HStack {
                             flightTeaser
@@ -184,16 +206,25 @@ struct DealCard: View {
     }
 
     private var priceBadge: some View {
-        SplitFlapRow(
-            text: deal.priceFormatted,
-            maxLength: 6,
-            size: .sm,
-            color: Color.sgWhite,
-            alignment: .trailing,
-            animate: animate,
-            startDelay: 0.3,
-            staggerMs: 60
-        )
+        HStack(spacing: 4) {
+            // Price trend arrow
+            if deal.priceTrend != .stable {
+                Image(systemName: deal.priceTrend.icon)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(deal.priceTrend == .down ? Color.sgDealAmazing : Color.sgRed)
+            }
+
+            SplitFlapRow(
+                text: deal.priceFormatted,
+                maxLength: 6,
+                size: .sm,
+                color: Color.sgWhite,
+                alignment: .trailing,
+                animate: animate,
+                startDelay: 0.3,
+                staggerMs: 60
+            )
+        }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(deal.tierColor)

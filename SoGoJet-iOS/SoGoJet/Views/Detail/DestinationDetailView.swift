@@ -21,7 +21,10 @@ struct DestinationDetailView: View {
                 VStack(spacing: 0) {
                     heroSection
                     flightInfoSection
+                    vibeTagsSection
                     travelGuideSection
+                    itinerarySection
+                    restaurantsSection
                     similarDealsSection
                 }
                 .padding(.bottom, 100)
@@ -184,6 +187,143 @@ struct DestinationDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding(.horizontal, 16)
             .padding(.top, 8)
+        }
+    }
+
+    // MARK: - Vibe Tags
+
+    @ViewBuilder
+    private var vibeTagsSection: some View {
+        if !deal.safeVibeTags.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(deal.safeVibeTags, id: \.self) { tag in
+                        Text(tag)
+                            .font(SGFont.bodyBold(size: 12))
+                            .foregroundStyle(Color.sgYellow)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.sgYellow.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    // MARK: - Itinerary
+
+    @ViewBuilder
+    private var itinerarySection: some View {
+        if let itinerary = deal.itinerary, !itinerary.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("THINGS TO DO")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
+
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(Array(itinerary.enumerated()), id: \.offset) { index, day in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 8) {
+                                Text("Day \(day.day)")
+                                    .font(SGFont.bodyBold(size: 14))
+                                    .foregroundStyle(Color.sgYellow)
+                                    .frame(width: 48, alignment: .leading)
+
+                                Rectangle()
+                                    .fill(Color.sgBorder)
+                                    .frame(height: 1)
+                            }
+
+                            ForEach(day.activities, id: \.self) { activity in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Image(systemName: "mappin.circle.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color.sgGreen)
+                                        .frame(width: 20)
+                                    Text(activity)
+                                        .font(SGFont.body(size: 14))
+                                        .foregroundStyle(Color.sgWhiteDim)
+                                        .lineSpacing(2)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+        }
+    }
+
+    // MARK: - Restaurants
+
+    @ViewBuilder
+    private var restaurantsSection: some View {
+        if let restaurants = deal.restaurants, !restaurants.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("WHERE TO EAT")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
+
+                VStack(spacing: 0) {
+                    ForEach(Array(restaurants.enumerated()), id: \.offset) { index, restaurant in
+                        HStack(spacing: 12) {
+                            // Restaurant icon
+                            Image(systemName: "fork.knife")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.sgOrange)
+                                .frame(width: 32, height: 32)
+                                .background(Color.sgOrange.opacity(0.12))
+                                .clipShape(Circle())
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(restaurant.name)
+                                    .font(SGFont.bodyBold(size: 14))
+                                    .foregroundStyle(Color.sgWhite)
+                                Text(restaurant.type)
+                                    .font(SGFont.body(size: 12))
+                                    .foregroundStyle(Color.sgMuted)
+                            }
+
+                            Spacer()
+
+                            // Star rating
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.sgYellow)
+                                Text(String(format: "%.1f", restaurant.rating))
+                                    .font(SGFont.bodyBold(size: 13))
+                                    .foregroundStyle(Color.sgWhite)
+                            }
+                        }
+                        .padding(.vertical, 10)
+
+                        if index < restaurants.count - 1 {
+                            Rectangle()
+                                .fill(Color.sgBorder)
+                                .frame(height: 1)
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
         }
     }
 

@@ -145,7 +145,8 @@ struct FeedView: View {
                         onSave: { saveDeal(deal) },
                         onShare: { shareDeal(deal) },
                         onBook: { bookDeal(deal) },
-                        onTap: { openDeal(deal) }
+                        onTap: { openDeal(deal) },
+                        onVibeFilter: { vibe in filterByVibe(vibe) }
                     )
                     .containerRelativeFrame([.horizontal, .vertical])
                     .id(index)
@@ -435,6 +436,28 @@ struct FeedView: View {
         HapticEngine.medium()
         feedStore.recordSwipe(dealId: deal.id, action: "viewed")
         router.startBooking(deal)
+    }
+
+    private func filterByVibe(_ vibe: String) {
+        // Toggle the vibe filter and scroll back to top
+        if feedStore.selectedVibes.contains(vibe) {
+            feedStore.selectedVibes.removeAll { $0 == vibe }
+        } else {
+            feedStore.selectedVibes = [vibe] // Single vibe filter for quick discovery
+        }
+        currentIndex = 0
+        swipeCount = 0
+
+        toastManager.show(
+            message: feedStore.selectedVibes.isEmpty ? "Showing all deals" : "Filtered: \(vibe.lowercased())",
+            type: .info,
+            duration: 1.5
+        )
+
+        // Reload with the vibe filter
+        Task {
+            await feedStore.fetchDeals(origin: settingsStore.departureCode)
+        }
     }
 
     // MARK: - Prefetching
