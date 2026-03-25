@@ -381,7 +381,7 @@ final class BookingStore {
                 seatMap = refreshed.seatMap
                 selectedSeatId = nil
                 lastPriceDiscrepancy = PriceDiscrepancy(
-                    tier: percentDiff >= 50 ? "deal_expired" : "moderate_increase",
+                    tier: percentDiff >= 50 ? "significant_increase" : "moderate_increase",
                     message: payload.error,
                     feedPrice: oldPrice,
                     bookingPrice: newPrice,

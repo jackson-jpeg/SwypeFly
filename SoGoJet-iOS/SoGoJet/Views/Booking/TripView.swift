@@ -1042,32 +1042,17 @@ struct TripView: View {
                 searchMissionControlCard
 
                 if let best = options.first {
-                    if store.lastPriceDiscrepancy?.tier == "deal_expired",
-                       let feedPrice = deal.displayPrice {
-                        DealExpiredView(
-                            feedPrice: feedPrice,
-                            livePrice: best.price,
-                            onSetAlert: {
-                                presentEmailAlertSignup()
-                            },
-                            onBackToDeals: {
-                                store.reset()
-                                router.dismissFullScreen()
-                            }
-                        )
-                    } else {
-                        if let discrepancy = store.lastPriceDiscrepancy {
-                            priceDiscrepancyBanner(discrepancy)
-                        }
-
-                        bestOfferCard(best)
-
-                        if options.count > 1 {
-                            alternativesSection(Array(options.dropFirst()))
-                        }
-
-                        continueButton(best)
+                    if let discrepancy = store.lastPriceDiscrepancy {
+                        priceDiscrepancyBanner(discrepancy)
                     }
+
+                    bestOfferCard(best)
+
+                    if options.count > 1 {
+                        alternativesSection(Array(options.dropFirst()))
+                    }
+
+                    continueButton(best)
                 }
             }
             .padding(.horizontal, Spacing.md)
