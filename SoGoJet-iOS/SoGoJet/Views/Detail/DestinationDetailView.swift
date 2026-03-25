@@ -76,7 +76,9 @@ struct DestinationDetailView: View {
                 .padding(16)
             }
         }
-        .frame(height: UIScreen.main.bounds.height * 0.4)
+        .frame(height: (UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.screen.bounds.height ?? 800) * 0.4)
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — hero overlay text
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(deal.city), \(deal.country), \(deal.priceFormatted)")

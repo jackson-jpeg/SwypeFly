@@ -24,7 +24,9 @@ actor ImageCache {
         // Each cached image is downsampled so this is generous.
         memoryCache.totalCostLimit = 120 * 1024 * 1024
 
-        let screen = UIScreen.main
+        let screen = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.screen ?? UIScreen.main
         maxPixelSize = max(screen.bounds.width, screen.bounds.height) * screen.scale
 
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
