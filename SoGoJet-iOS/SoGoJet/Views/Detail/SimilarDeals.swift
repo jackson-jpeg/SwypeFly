@@ -24,11 +24,15 @@ struct SimilarDeals: View {
     var body: some View {
         if !similarDeals.isEmpty {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                VintageTerminalCollectionHeader(
-                    title: "Related Routes",
-                    subtitle: "More destinations carrying a similar mood to the route you are reading now.",
-                    tone: .amber
-                )
+                // Clean section header
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("Similar Destinations")
+                        .font(SGFont.sectionHead)
+                        .foregroundStyle(Color.sgWhite)
+                    Text("More places with a similar vibe")
+                        .font(SGFont.bodySmall)
+                        .foregroundStyle(Color.sgMuted)
+                }
                 .padding(.horizontal, Spacing.md)
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -40,7 +44,7 @@ struct SimilarDeals: View {
                                 card(for: deal)
                             }
                             .buttonStyle(.plain)
-                            .frame(width: 280)
+                            .frame(width: 220)
                         }
                     }
                     .padding(.horizontal, Spacing.md)
@@ -50,51 +54,57 @@ struct SimilarDeals: View {
     }
 
     private func card(for deal: Deal) -> some View {
-        VintageTravelTicket(tone: .amber) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    VintageTerminalSectionLabel(text: deal.country, tone: .amber)
-                    Text(deal.destination)
-                        .font(SGFont.display(size: 28))
-                        .foregroundStyle(Color.sgWhite)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                }
-
-                Spacer(minLength: 0)
-
-                Text(deal.priceFormatted)
-                    .font(SGFont.display(size: 28))
-                    .foregroundStyle(Color.sgYellow)
-            }
-        } content: {
-            VStack(alignment: .leading, spacing: Spacing.md) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Photo with price overlay
+            ZStack(alignment: .bottomLeading) {
                 CachedAsyncImage(url: deal.imageUrl) {
                     Color.sgSurface
                 }
-                .frame(height: 148)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.md)
-                        .strokeBorder(Color.sgBorder, lineWidth: 1)
-                )
+                .frame(height: 140)
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: Radius.md, topTrailingRadius: Radius.md))
 
-                Text(deal.tagline.isEmpty ? "Another board-worthy route with a related travel mood." : deal.tagline)
-                    .font(SGFont.body(size: 12))
-                    .foregroundStyle(Color.sgWhiteDim)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Price badge
+                Text(deal.priceFormatted)
+                    .font(SGFont.bodyBold(size: 14))
+                    .foregroundStyle(Color.sgBg)
+                    .padding(.horizontal, Spacing.sm + 2)
+                    .padding(.vertical, Spacing.xs)
+                    .background(Color.sgYellow, in: Capsule())
+                    .padding(Spacing.sm)
+            }
+
+            // Info area
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(deal.destination)
+                    .font(SGFont.bodyBold(size: 16))
+                    .foregroundStyle(Color.sgWhite)
+                    .lineLimit(1)
+
+                Text(deal.country)
+                    .font(SGFont.body(size: 13))
+                    .foregroundStyle(Color.sgMuted)
 
                 if !deal.safeVibeTags.isEmpty {
-                    VintageTerminalTagCloud(tags: Array(deal.safeVibeTags.prefix(3)), tone: .amber)
+                    HStack(spacing: Spacing.xs) {
+                        ForEach(deal.safeVibeTags.prefix(2), id: \.self) { tag in
+                            Text(tag.capitalized)
+                                .font(SGFont.body(size: 11))
+                                .foregroundStyle(Color.sgWhiteDim)
+                                .padding(.horizontal, Spacing.sm)
+                                .padding(.vertical, 3)
+                                .background(Color.sgBorder.opacity(0.5), in: Capsule())
+                        }
+                    }
+                    .padding(.top, 2)
                 }
             }
-        } footer: {
-            HStack(alignment: .top) {
-                VintageTerminalCaptionBlock(title: "IATA", value: deal.iataCode, tone: .amber)
-                Spacer()
-                VintageTerminalCaptionBlock(title: "Duration", value: deal.safeFlightDuration, tone: .ivory, alignment: .trailing)
-            }
+            .padding(Spacing.sm + 2)
         }
+        .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md)
+                .strokeBorder(Color.sgBorder, lineWidth: 1)
+        )
     }
 }
 
