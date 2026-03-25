@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import CoreSpotlight
 
 // MARK: - App Delegate (Quick Actions)
 
@@ -67,6 +68,20 @@ struct SoGoJetApp: App {
                 }
                 .onOpenURL { url in
                     router.handleDeepLink(url, feedStore: feedStore)
+                }
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    // Handle Spotlight search result tap
+                    guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+                          identifier.hasPrefix("sogojet-deal-") else { return }
+                    let dealId = String(identifier.dropFirst("sogojet-deal-".count))
+                    // Try to find in saved deals first, then feed
+                    if let deal = savedStore.savedDeals.first(where: { $0.id == dealId }) {
+                        router.showDeal(deal)
+                    } else if let deal = feedStore.allDeals.first(where: { $0.id == dealId }) {
+                        router.showDeal(deal)
+                    } else {
+                        router.pendingDeepLinkId = dealId
+                    }
                 }
                 .onChange(of: feedStore.allDeals.count) { _, _ in
                     // Resolve any pending deep link once the feed has loaded
