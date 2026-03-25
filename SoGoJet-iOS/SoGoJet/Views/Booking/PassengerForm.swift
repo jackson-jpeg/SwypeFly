@@ -294,15 +294,13 @@ struct PassengerForm: View {
             .disabled(!isValid)
 
             VintageTerminalSecondaryButton(
-                title: "Refresh Live Fares",
-                subtitle: "Search for updated prices.",
-                icon: "arrow.clockwise",
+                title: "Back to Flight Selection",
+                subtitle: "Choose a different fare or adjust dates.",
+                icon: "chevron.left",
                 tone: .ivory,
                 fillsWidth: true
             ) {
-                Task {
-                    await store.retryLastSearch()
-                }
+                store.goBack()
             }
         }
     }

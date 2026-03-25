@@ -39,6 +39,8 @@ final class BookingStore {
     var lastSearchStartedAt: Date?
     var lastSearchCompletedAt: Date?
     var lastSearchErrorMessage: String?
+    private(set) var lastTripOptions: [TripOption] = []
+    var paymentError: String?
 
     @ObservationIgnored private var activeSearchRequestID = UUID()
     @ObservationIgnored private var activeOfferRequestID = UUID()
@@ -73,12 +75,14 @@ final class BookingStore {
         selectedSeatId = nil
         bookingOrder = nil
         lastPriceDiscrepancy = nil
+        paymentError = nil
         passengerCount = 1
         searchOrigin = nil
         searchDestination = nil
         searchDepartureDate = nil
         searchReturnDate = nil
         searchCabinClass = .economy
+        lastTripOptions = []
         lastSearchSnapshot = nil
         lastSearchStartedAt = nil
         lastSearchCompletedAt = nil
@@ -137,6 +141,7 @@ final class BookingStore {
                 lastSearchErrorMessage = "No live fares were found for this route right now."
                 step = .failed(message: "No live fares were found for this route right now.")
             } else {
+                lastTripOptions = offers
                 step = .trip(options: offers)
             }
         } catch {
@@ -212,6 +217,7 @@ final class BookingStore {
         let requestID = UUID()
         activeCheckoutRequestID = requestID
         step = .paying
+        paymentError = nil
 
         do {
             let amountInCents = Int((totalPrice * 100).rounded())
@@ -269,8 +275,34 @@ final class BookingStore {
             if await recoverFromOrderFailure(error) {
                 return
             }
-            step = .failed(message: userFacingMessage(for: error))
+            paymentError = userFacingMessage(for: error)
+            step = .review
             HapticEngine.error()
+        }
+    }
+
+    /// Navigate back one step in the booking flow.
+    func goBack() {
+        switch step {
+        case .passengers:
+            if lastTripOptions.isEmpty {
+                step = .idle
+            } else {
+                step = .trip(options: lastTripOptions)
+            }
+            selectedOffer = nil
+        case .seats:
+            step = .passengers
+        case .review:
+            step = seatMap == nil ? .passengers : .seats
+        case .failed:
+            if lastTripOptions.isEmpty {
+                step = .idle
+            } else {
+                step = .trip(options: lastTripOptions)
+            }
+        default:
+            break
         }
     }
 
@@ -285,12 +317,14 @@ final class BookingStore {
         selectedSeatId = nil
         bookingOrder = nil
         lastPriceDiscrepancy = nil
+        paymentError = nil
         passengerCount = 1
         searchOrigin = nil
         searchDestination = nil
         searchDepartureDate = nil
         searchReturnDate = nil
         searchCabinClass = .economy
+        lastTripOptions = []
         lastSearchSnapshot = nil
         lastSearchStartedAt = nil
         lastSearchCompletedAt = nil
@@ -353,6 +387,7 @@ final class BookingStore {
                     bookingPrice: newPrice,
                     percentDiff: percentDiff
                 )
+                lastTripOptions = [refreshed.offer]
                 step = .trip(options: [refreshed.offer])
                 HapticEngine.warning()
                 return true

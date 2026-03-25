@@ -23,6 +23,10 @@ struct ReviewView: View {
                 header
                 checkoutTicket
 
+                if let paymentError = store.paymentError {
+                    paymentErrorBanner(paymentError)
+                }
+
                 if let discrepancy = store.lastPriceDiscrepancy {
                     discrepancyDeck(discrepancy)
                 }
@@ -127,6 +131,34 @@ struct ReviewView: View {
                 VintageTerminalCaptionBlock(title: "Seat", value: selectedSeatLabel, tone: .moss, alignment: .trailing)
             }
         }
+    }
+
+    private func paymentErrorBanner(_ message: String) -> some View {
+        VStack(spacing: Spacing.sm) {
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.sgOrange)
+                Text("Payment Failed")
+                    .font(SGFont.bodyBold(size: 14))
+                    .foregroundStyle(Color.sgOrange)
+                Spacer()
+            }
+            Text(message)
+                .font(SGFont.bodyDefault)
+                .foregroundStyle(Color.sgMuted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text("Your card was not charged. You can try again or go back to change your flight.")
+                .font(SGFont.caption)
+                .foregroundStyle(Color.sgFaint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(Spacing.md)
+        .background(Color.sgOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: Radius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md)
+                .strokeBorder(Color.sgOrange.opacity(0.3), lineWidth: 1)
+        )
     }
 
     private func discrepancyDeck(_ discrepancy: PriceDiscrepancy) -> some View {
@@ -279,7 +311,7 @@ struct ReviewView: View {
                 tone: .ivory,
                 fillsWidth: true
             ) {
-                store.step = store.seatMap == nil ? .passengers : .seats
+                store.goBack()
             }
         }
     }

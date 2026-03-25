@@ -673,17 +673,17 @@ struct SeatMapView: View {
                     ) {
                         store.selectSeat(recommendedSeat.id)
                     }
-                } else {
-                    VintageTerminalSecondaryButton(
-                        title: "Back",
-                        subtitle: "Edit passenger details",
-                        icon: "chevron.left",
-                        tone: .neutral,
-                        fillsWidth: true
-                    ) {
-                        store.step = .passengers
-                    }
                 }
+            }
+
+            VintageTerminalSecondaryButton(
+                title: "Back",
+                subtitle: "Edit passenger details",
+                icon: "chevron.left",
+                tone: .neutral,
+                fillsWidth: true
+            ) {
+                store.goBack()
             }
         }
     }
