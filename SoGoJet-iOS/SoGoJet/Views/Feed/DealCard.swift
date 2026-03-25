@@ -49,7 +49,7 @@ struct DealCard: View {
                                 .padding(.vertical, 4)
                         }
                     }
-                    .padding(.top, 8)
+                    .padding(.top, geo.safeAreaInsets.top + 56)
                     .padding(.horizontal, 16)
 
                     Spacer()

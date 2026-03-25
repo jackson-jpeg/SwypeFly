@@ -90,6 +90,10 @@ struct ContentView: View {
                 .environment(settings)
                 .environment(router)
                 .environment(toastManager)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(Color.sgBg)
+                .presentationCornerRadius(20)
         case .search:
             SearchView()
                 .environment(feedStore)

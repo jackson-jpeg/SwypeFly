@@ -101,7 +101,7 @@ struct FeedView: View {
         .onDisappear {
             headerHideTask?.cancel()
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
+        .overlay(alignment: .top) {
             if headerVisible && !feedStore.deals.isEmpty {
                 headerOverlay
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -133,6 +133,7 @@ struct FeedView: View {
         }
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $currentIndex)
+        .ignoresSafeArea()
         .refreshable {
             await feedStore.fetchDeals(origin: settingsStore.departureCode)
         }
@@ -142,17 +143,20 @@ struct FeedView: View {
     // MARK: - Header Overlay
 
     private var headerOverlay: some View {
-        headerControls
-            .padding(.horizontal, Spacing.md)
-            .padding(.top, Spacing.sm)
-            .padding(.bottom, Spacing.sm)
-            .background(Color.sgBg.opacity(0.84))
-            .background(.ultraThinMaterial)
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(Color.sgBorder.opacity(0.45))
-                    .frame(height: 1)
-            }
+        VStack(spacing: 0) {
+            Spacer().frame(height: 0)
+            headerControls
+                .padding(.horizontal, Spacing.md)
+                .padding(.top, Spacing.sm)
+                .padding(.bottom, Spacing.sm)
+        }
+        .background(Color.sgBg.opacity(0.84))
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.sgBorder.opacity(0.45))
+                .frame(height: 1)
+        }
     }
 
     private var headerControls: some View {
