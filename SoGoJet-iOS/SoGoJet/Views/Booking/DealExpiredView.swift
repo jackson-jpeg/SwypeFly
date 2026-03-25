@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Deal Expired View
-// Shown when the live Duffel price exceeds the feed price by more than 50%.
+// Shown when the live price has increased significantly from the feed price.
 
 struct DealExpiredView: View {
     let feedPrice: Double
@@ -18,23 +18,23 @@ struct DealExpiredView: View {
         VStack(spacing: Spacing.lg) {
             Spacer()
 
-            // Timer icon
-            Image(systemName: "timer")
-                .font(.system(size: 64))
-                .foregroundStyle(Color.sgRed)
+            // Icon
+            Image(systemName: "tag.slash.fill")
+                .font(.system(size: 56))
+                .foregroundStyle(Color.sgRed.opacity(0.85))
 
             // Title
-            Text("Deal Expired")
-                .font(SGFont.display(size: 40))
+            Text("Price Changed")
+                .font(SGFont.display(size: 36))
                 .foregroundStyle(Color.sgWhite)
 
             // Explanation
             VStack(spacing: Spacing.sm) {
-                Text("The price went from $\(Int(feedPrice)) to $\(Int(livePrice))")
+                Text("This flight jumped from $\(Int(feedPrice)) to $\(Int(livePrice))")
                     .font(SGFont.bodyDefault)
                     .foregroundStyle(Color.sgWhiteDim)
 
-                Text("That's a \(increasePercent)% increase. Flight deals move fast — this one's no longer available at the original price.")
+                Text("That's \(increasePercent)% more. Flight prices change constantly — we'll let you know if it drops back down.")
                     .font(SGFont.bodySmall)
                     .foregroundStyle(Color.sgMuted)
                     .multilineTextAlignment(.center)
@@ -43,7 +43,7 @@ struct DealExpiredView: View {
 
             Spacer()
 
-            // Set Price Alert
+            // Notify me when it drops
             Button {
                 onSetAlert()
                 HapticEngine.success()
@@ -51,7 +51,7 @@ struct DealExpiredView: View {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "bell.fill")
                         .font(.system(size: 14))
-                    Text("Set Price Alert")
+                    Text("Notify Me When It Drops")
                         .font(SGFont.bodyBold(size: 16))
                 }
                 .foregroundStyle(Color.sgBg)
@@ -62,11 +62,11 @@ struct DealExpiredView: View {
             }
             .padding(.horizontal, Spacing.md)
 
-            // Back to deals link
+            // Search again
             Button {
                 onBackToDeals()
             } label: {
-                Text("Back to deals")
+                Text("Search other flights")
                     .font(SGFont.bodyDefault)
                     .foregroundStyle(Color.sgMuted)
                     .underline()
