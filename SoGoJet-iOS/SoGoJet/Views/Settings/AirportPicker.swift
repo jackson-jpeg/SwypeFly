@@ -174,7 +174,7 @@ struct AirportPicker: View {
 
     private var resultsPanel: some View {
         VintageTerminalManifestCard(
-            title: searchText.isEmpty ? "Airport Manifest" : "Search Results",
+            title: searchText.isEmpty ? "All Airports" : "Search Results",
             subtitle: resultsSubtitle,
             tone: .ivory
         ) {

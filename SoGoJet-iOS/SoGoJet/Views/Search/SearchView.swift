@@ -120,7 +120,7 @@ struct SearchView: View {
             VintageTravelTicket(tone: .amber) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: Spacing.xs) {
-                        VintageTerminalSectionLabel(text: "Search Console", tone: .amber)
+                        VintageTerminalSectionLabel(text: "Search", tone: .amber)
                         SplitFlapRow(
                             text: trimmedQuery.isEmpty ? "POPULAR" : trimmedQuery.uppercased(),
                             maxLength: 8,
@@ -196,8 +196,8 @@ struct SearchView: View {
             }
         } else {
             VintageTerminalPanel(
-                title: "Search Telemetry",
-                subtitle: "A quick read on what the archive and live feed are each contributing.",
+                title: "Search Results",
+                subtitle: "",
                 stamp: isSearching ? "Searching" : "Synced",
                 tone: .moss
             ) {
