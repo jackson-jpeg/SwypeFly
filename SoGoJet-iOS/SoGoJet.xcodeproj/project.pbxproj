@@ -70,6 +70,7 @@
 		F3D138CE2009D3A9E09200BA /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98C552C4DAAA2703852D6E9 /* Colors.swift */; };
 		F4892DAAA2C0C21D26E5ABB5 /* SplitFlapRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED8FD386433B5D295222C68 /* SplitFlapRow.swift */; };
 		FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB866D9B233B25ABE980F3 /* HapticEngine.swift */; };
+		D5E6F7A8B9C0D1E2F3A4B5C6 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -142,6 +143,7 @@
 		B2E252AF3479003C4AEEB610 /* DepartureRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureRow.swift; sourceTree = "<group>"; };
 		B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		B618C73022C992B057112952 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
+		A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
 		B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureBoardView.swift; sourceTree = "<group>"; };
 		B905E64CC3B094A6DD5EC65C /* SavedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedCard.swift; sourceTree = "<group>"; };
 		C004CCABD52B0D675FDC49BD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -238,6 +240,7 @@
 				15EB866D9B233B25ABE980F3 /* HapticEngine.swift */,
 				B618C73022C992B057112952 /* ImageCache.swift */,
 				F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */,
+				A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */,
 				B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */,
 			);
 			path = Services;
@@ -589,6 +592,7 @@
 				38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */,
 				147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */,
 				A3B4C5D6E7F80920314A5B6D /* SharedDefaults.swift in Sources */,
+				D5E6F7A8B9C0D1E2F3A4B5C6 /* ShareCardRenderer.swift in Sources */,
 				9B90FD58377C44FB5A40B515 /* SettingsView.swift in Sources */,
 				8EFFDD228E5BB7CD0338E0CE /* SoGoJetApp.swift in Sources */,
 				B5B1CA9671DA7794DC4C2996 /* Spacing.swift in Sources */,

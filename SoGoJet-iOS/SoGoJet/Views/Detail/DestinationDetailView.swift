@@ -400,7 +400,10 @@ struct DestinationDetailView: View {
 
             Button {
                 HapticEngine.light()
-                shareItem = DetailShareDealItem(deal: deal)
+                Task {
+                    let image = await ShareCardRenderer.render(deal: deal, size: .story)
+                    shareItem = DetailShareDealItem(deal: deal, cardImage: image)
+                }
             } label: {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 18))
@@ -445,9 +448,14 @@ struct DestinationDetailView: View {
 private struct DetailShareDealItem: Identifiable {
     let id = UUID()
     let deal: Deal
+    let cardImage: UIImage?
 
     var activityItems: [Any] {
-        var items: [Any] = [deal.shareText]
+        var items: [Any] = []
+        if let image = cardImage {
+            items.append(image)
+        }
+        items.append(deal.shareText)
         if let url = deal.shareURL {
             items.append(url)
         }

@@ -584,7 +584,10 @@ struct FeedView: View {
 
     private func shareDeal(_ deal: Deal) {
         HapticEngine.light()
-        shareItem = SharedDealItem(deal: deal)
+        Task {
+            let image = await ShareCardRenderer.render(deal: deal, size: .story)
+            shareItem = SharedDealItem(deal: deal, cardImage: image)
+        }
     }
 
     private func openDeal(_ deal: Deal) {
@@ -721,9 +724,14 @@ private struct NearbyAirportButton: View {
 private struct SharedDealItem: Identifiable {
     let id = UUID()
     let deal: Deal
+    let cardImage: UIImage?
 
     var activityItems: [Any] {
-        var items: [Any] = [deal.shareText]
+        var items: [Any] = []
+        if let image = cardImage {
+            items.append(image)
+        }
+        items.append(deal.shareText)
         if let url = deal.shareURL {
             items.append(url)
         }
