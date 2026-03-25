@@ -8,16 +8,20 @@
 
 /* Begin PBXBuildFile section */
 		05F7DF22220DB265402C6C0F /* DepartureRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E252AF3479003C4AEEB610 /* DepartureRow.swift */; };
+		067472D0DCEABBEF2A81ECAE /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEFB51AD3D165D42F043068 /* WidgetViews.swift */; };
 		0DEE3F28B43A25859CA87BAA /* BookingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */; };
 		0FF6FAFB4044541CB3E0527D /* Fonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A79039C721A4E068A129336 /* Fonts.swift */; };
 		147351F0DF9D4C9DA446EF78 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A389ABB1A418871FD1196D90 /* SettingsStore.swift */; };
 		186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */; };
+		2142C1B9F778DA6E1229A8D3 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */; };
 		238AFE49E080789B4A349D58 /* PlayfairDisplay-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */; };
+		2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */; };
 		325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 105C4B165D8E99F29DACC00B /* Assets.xcassets */; };
 		3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */; };
 		38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D680A370273663B3CD6E753 /* SeatMapView.swift */; };
 		3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CC0F70008C6C01B861DABF /* DealCard.swift */; };
 		44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */; };
+		49A8722EEA92DFC2EFF3AB59 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C004CCABD52B0D675FDC49BD /* SwiftUI.framework */; };
 		4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */; };
 		5002C9215848904D881FE29E /* BookingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C46CA93B008D3D761A2E79 /* BookingStore.swift */; };
 		53483EF17FE30C880A54DB70 /* PriceAlertCTA.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */; };
@@ -26,10 +30,13 @@
 		59E824E8F3A6549F845C7F33 /* AirportPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16BFE848CB96BAF94AC32178 /* AirportPicker.swift */; };
 		5F92F77382FDE7D64262B58B /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DC8B9447F998A5DDECD34B35 /* Inter-SemiBold.ttf */; };
 		5FEDAFDF99473573571B1194 /* FilterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9445CC8160636D040B7643A6 /* FilterSheet.swift */; };
+		60805764BCEC45BE4F563F9E /* SoGoJetWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED335D8717153C9C30C0BBF /* SoGoJetWidgetBundle.swift */; };
 		67DCDEC854E4520A41258D4B /* DealBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E16299CD23179DBDA9EB1BE /* DealBadge.swift */; };
+		783DB1B61297F83C2D6B340F /* WidgetAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 354C5BCFFB698ADB127A0E69 /* WidgetAPIClient.swift */; };
 		78A0FF068D0BA718BBEA06D3 /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0462DA9750B48F6D57FEE257 /* Inter-Regular.ttf */; };
 		7C25A63FB40E066F28957B06 /* Date+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15845A1828ED10D7538A074A /* Date+Formatting.swift */; };
 		7C6DDB40DD657B3C82381D4D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */; };
+		7E28294784B2E6F2AFC718D5 /* FlightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B005B3E34958EE89A4FDA7B /* FlightEntry.swift */; };
 		8D529374476E8130BF35AFF5 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B5B2939A8FD86EA37A140D /* Router.swift */; };
 		8EFFDD228E5BB7CD0338E0CE /* SoGoJetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */; };
 		90AEFDFE22FA857641A033E9 /* PriceSparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */; };
@@ -38,15 +45,18 @@
 		A18BBEE887522B62B698C5D3 /* DealTier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* BookingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F405162738495A6B7C /* BookingFlowView.swift */; };
 		A2B3C4D5E6F70819203A4B5C /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */; };
+		A3B4C5D6E7F80920314A5B6D /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */; };
 		A50C5B5AFC67E28B71499678 /* SplitFlapChar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */; };
 		A8CA094A592BA377A3EAE40B /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74190F28733D8C3D21B157F7 /* FeedView.swift */; };
 		A9121D696E506F66D466885F /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BB98540188B677B6BA65C8 /* APIClient.swift */; };
 		AE61DBEB8BEF551B185DAFD0 /* DestinationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */; };
+		B02712F484E7D3A1A40C6D0F /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F407BD1805C70ABB402B7C8 /* SharedDefaults.swift */; };
 		B1C2D3E4F5061728394A5B6C /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F30415263748596A7B8C /* SearchView.swift */; };
 		B5B1CA9671DA7794DC4C2996 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26A3648EF4C6E3292D0A4A8 /* Spacing.swift */; };
 		C0554430BCEE61A587A3B01E /* FeedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */; };
 		C7EF657FE86372D58E0D469A /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852DCAC63412CB4B4FB1291C /* ToastView.swift */; };
 		C997FC98E346CCB10C0DFCD4 /* PassengerForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1547ACCFAAACEFCCA028901 /* PassengerForm.swift */; };
+		CA52EA19F69F5ED6F93BE888 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 37A502F1B6077B0E63A48EB6 /* Foundation.framework */; };
 		CFDCAE512ADD3A26FFFE6FAA /* TripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C1F35A4778E539A8BFE69F /* TripView.swift */; };
 		DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B905E64CC3B094A6DD5EC65C /* SavedCard.swift */; };
 		DEC62E0D0B58D36DBD56A1B1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E239452DD558CBC5AAC6EB99 /* ContentView.swift */; };
@@ -55,11 +65,35 @@
 		E8BE30C939BF890644F26213 /* DepartureBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */; };
 		EB682CF09A002D1E66EE834E /* BoardingPassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9260F42534404374D49FA21 /* BoardingPassView.swift */; };
 		F1E2D3C4B5A6978877665544 /* VintageTerminalKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6071827364554 /* VintageTerminalKit.swift */; };
-		A3B4C5D6E7F80920314A5B6D /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */; };
+		F38598866952BC720DE457D9 /* SoGoJetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27FF07F009DE3FAB0F64FF9C /* SoGoJetWidget.swift */; };
 		F3D138CE2009D3A9E09200BA /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98C552C4DAAA2703852D6E9 /* Colors.swift */; };
 		F4892DAAA2C0C21D26E5ABB5 /* SplitFlapRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED8FD386433B5D295222C68 /* SplitFlapRow.swift */; };
 		FE7A39B2ED5D2EA8CCDD73E4 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB866D9B233B25ABE980F3 /* HapticEngine.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		24E159D377CF89C2A45E5E42 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 06EAFFCD7049ECE2F9F4C1E2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 69760285ADB2D9D8A6BBEF30;
+			remoteInfo = SoGoJetWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		39A31622C48E414133ABA809 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0072285B0E6EC21F1FA4410E /* SoGoJet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoGoJet.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -72,20 +106,30 @@
 		15845A1828ED10D7538A074A /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
 		15EB866D9B233B25ABE980F3 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
 		16BFE848CB96BAF94AC32178 /* AirportPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirportPicker.swift; sourceTree = "<group>"; };
+		1C12788850DB43FBA624BD7C /* SoGoJetWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; name = SoGoJetWidget.entitlements; path = SoGoJetWidget.entitlements; sourceTree = "<group>"; };
+		223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SoGoJetWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		27FF07F009DE3FAB0F64FF9C /* SoGoJetWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SoGoJetWidget.swift; path = SoGoJetWidget.swift; sourceTree = "<group>"; };
+		354C5BCFFB698ADB127A0E69 /* WidgetAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetAPIClient.swift; path = WidgetAPIClient.swift; sourceTree = "<group>"; };
+		37A502F1B6077B0E63A48EB6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		3A8A2B0D38E7959567B28E54 /* PriceAlertCTA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAlertCTA.swift; sourceTree = "<group>"; };
 		3E16299CD23179DBDA9EB1BE /* DealBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealBadge.swift; sourceTree = "<group>"; };
 		42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceSparkline.swift; sourceTree = "<group>"; };
 		49888397D14E02F727A4C21F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4C5452CDA36D6D93F24AAFB2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4D65B575FB3FC80F5E47388E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoGoJetApp.swift; sourceTree = "<group>"; };
 		5A79039C721A4E068A129336 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
+		5B005B3E34958EE89A4FDA7B /* FlightEntry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FlightEntry.swift; path = FlightEntry.swift; sourceTree = "<group>"; };
 		5B3D90ABB9744258D6621AC9 /* SavedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedView.swift; sourceTree = "<group>"; };
 		61C46CA93B008D3D761A2E79 /* BookingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingStore.swift; sourceTree = "<group>"; };
 		6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic.ttf"; sourceTree = "<group>"; };
+		6F407BD1805C70ABB402B7C8 /* SharedDefaults.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedDefaults.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationDetailView.swift; sourceTree = "<group>"; };
 		74190F28733D8C3D21B157F7 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
+		7ED335D8717153C9C30C0BBF /* SoGoJetWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SoGoJetWidgetBundle.swift; path = SoGoJetWidgetBundle.swift; sourceTree = "<group>"; };
 		852DCAC63412CB4B4FB1291C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		92B5B2939A8FD86EA37A140D /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
 		9445CC8160636D040B7643A6 /* FilterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterSheet.swift; sourceTree = "<group>"; };
 		9D680A370273663B3CD6E753 /* SeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeatMapView.swift; sourceTree = "<group>"; };
@@ -94,9 +138,11 @@
 		A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Accessibility.swift"; sourceTree = "<group>"; };
 		A7CC0F70008C6C01B861DABF /* DealCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealCard.swift; sourceTree = "<group>"; };
 		B2E252AF3479003C4AEEB610 /* DepartureRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureRow.swift; sourceTree = "<group>"; };
+		B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		B618C73022C992B057112952 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		B80CE93B945D019E68BF1893 /* DepartureBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepartureBoardView.swift; sourceTree = "<group>"; };
 		B905E64CC3B094A6DD5EC65C /* SavedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedCard.swift; sourceTree = "<group>"; };
+		C004CCABD52B0D675FDC49BD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		C1BB98540188B677B6BA65C8 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		C1D2E3F405162738495A6B7C /* BookingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingFlowView.swift; sourceTree = "<group>"; };
 		C26A3648EF4C6E3292D0A4A8 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
@@ -111,12 +157,25 @@
 		E239452DD558CBC5AAC6EB99 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E9260F42534404374D49FA21 /* BoardingPassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardingPassView.swift; sourceTree = "<group>"; };
 		E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsBanner.swift; sourceTree = "<group>"; };
+		EAEFB51AD3D165D42F043068 /* WidgetViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetViews.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
 		EC38304020B7F7008C2C8F84 /* SplitFlapChar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapChar.swift; sourceTree = "<group>"; };
 		EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealTier.swift; sourceTree = "<group>"; };
 		F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
-		B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		FED8FD386433B5D295222C68 /* SplitFlapRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlapRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		416603A8F0A831841927E857 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CA52EA19F69F5ED6F93BE888 /* Foundation.framework in Frameworks */,
+				2142C1B9F778DA6E1229A8D3 /* WidgetKit.framework in Frameworks */,
+				49A8722EEA92DFC2EFF3AB59 /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		09104DA889212709A4E3AA49 /* Feed */ = {
@@ -237,6 +296,8 @@
 			children = (
 				B0588F7DD75723DA78CAA9DE /* SoGoJet */,
 				D20AAC9A14677F25F1AC6985 /* Products */,
+				FE0871C508D0B8590242DEEA /* Frameworks */,
+				C38A8685ED1D49573CE30426 /* SoGoJetWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -291,10 +352,35 @@
 			path = SoGoJet;
 			sourceTree = "<group>";
 		};
+		B4C5D76E1CB99246E73C7216 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				37A502F1B6077B0E63A48EB6 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		C38A8685ED1D49573CE30426 /* SoGoJetWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7ED335D8717153C9C30C0BBF /* SoGoJetWidgetBundle.swift */,
+				27FF07F009DE3FAB0F64FF9C /* SoGoJetWidget.swift */,
+				5B005B3E34958EE89A4FDA7B /* FlightEntry.swift */,
+				EAEFB51AD3D165D42F043068 /* WidgetViews.swift */,
+				354C5BCFFB698ADB127A0E69 /* WidgetAPIClient.swift */,
+				6F407BD1805C70ABB402B7C8 /* SharedDefaults.swift */,
+				4D65B575FB3FC80F5E47388E /* Info.plist */,
+				1C12788850DB43FBA624BD7C /* SoGoJetWidget.entitlements */,
+			);
+			name = SoGoJetWidget;
+			path = SoGoJetWidget;
+			sourceTree = "<group>";
+		};
 		D20AAC9A14677F25F1AC6985 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				0072285B0E6EC21F1FA4410E /* SoGoJet.app */,
+				223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -330,6 +416,16 @@
 			path = Fonts;
 			sourceTree = "<group>";
 		};
+		FE0871C508D0B8590242DEEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B4C5D76E1CB99246E73C7216 /* iOS */,
+				8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */,
+				C004CCABD52B0D675FDC49BD /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		FE57EA2FBFD1B2EDE66D18DD /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -342,20 +438,37 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		69760285ADB2D9D8A6BBEF30 /* SoGoJetWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 88D4A6A7D08CAECC49DE86D2 /* Build configuration list for PBXNativeTarget "SoGoJetWidgetExtension" */;
+			buildPhases = (
+				0665549A1651D1CDAE253F98 /* Sources */,
+				416603A8F0A831841927E857 /* Frameworks */,
+				E29748DD497BB80E67F10A43 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SoGoJetWidgetExtension;
+			productName = SoGoJetWidgetExtension;
+			productReference = 223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		CDA186B03F0A61442A47D80C /* SoGoJet */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2EE78636BAFDA6C5CEFBF292 /* Build configuration list for PBXNativeTarget "SoGoJet" */;
 			buildPhases = (
 				3E452D97E5F3A71F04CF6ABA /* Sources */,
 				B275C3D2FE848D8516140C56 /* Resources */,
+				39A31622C48E414133ABA809 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				72A1DBBBD4714C60FE5132A1 /* PBXTargetDependency */,
 			);
 			name = SoGoJet;
-			packageProductDependencies = (
-			);
 			productName = SoGoJet;
 			productReference = 0072285B0E6EC21F1FA4410E /* SoGoJet.app */;
 			productType = "com.apple.product-type.application";
@@ -389,6 +502,7 @@
 			projectRoot = "";
 			targets = (
 				CDA186B03F0A61442A47D80C /* SoGoJet */,
+				69760285ADB2D9D8A6BBEF30 /* SoGoJetWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -406,9 +520,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E29748DD497BB80E67F10A43 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0665549A1651D1CDAE253F98 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				60805764BCEC45BE4F563F9E /* SoGoJetWidgetBundle.swift in Sources */,
+				F38598866952BC720DE457D9 /* SoGoJetWidget.swift in Sources */,
+				7E28294784B2E6F2AFC718D5 /* FlightEntry.swift in Sources */,
+				067472D0DCEABBEF2A81ECAE /* WidgetViews.swift in Sources */,
+				783DB1B61297F83C2D6B340F /* WidgetAPIClient.swift in Sources */,
+				B02712F484E7D3A1A40C6D0F /* SharedDefaults.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3E452D97E5F3A71F04CF6ABA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -464,6 +598,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		72A1DBBBD4714C60FE5132A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = SoGoJetWidgetExtension;
+			target = 69760285ADB2D9D8A6BBEF30 /* SoGoJetWidgetExtension */;
+			targetProxy = 24E159D377CF89C2A45E5E42 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2D1C6030EF809074958EBA81 /* Debug */ = {
@@ -609,10 +752,34 @@
 			};
 			name = Release;
 		};
+		355F9CCD1E30CAFA45BDBF58 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = SoGoJetWidget/SoGoJetWidget.entitlements;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				INFOPLIST_FILE = SoGoJetWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sogojet.app.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		A95A2935020D862063BE4330 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SoGoJet/SoGoJet.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -632,10 +799,35 @@
 			};
 			name = Debug;
 		};
+		BE8C98940CF06534E916D543 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = SoGoJetWidget/SoGoJetWidget.entitlements;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				INFOPLIST_FILE = SoGoJetWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sogojet.app.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		E26D555D3FAE7E87644DBE34 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SoGoJet/SoGoJet.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -675,6 +867,15 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
+		};
+		88D4A6A7D08CAECC49DE86D2 /* Build configuration list for PBXNativeTarget "SoGoJetWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE8C98940CF06534E916D543 /* Release */,
+				355F9CCD1E30CAFA45BDBF58 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
