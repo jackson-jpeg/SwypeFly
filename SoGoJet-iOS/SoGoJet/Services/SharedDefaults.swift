@@ -31,7 +31,9 @@ enum SharedDefaults {
     }
 
     /// Write departure info from the main app so the widget can read it.
+    /// Silently fails if the App Group isn't provisioned yet.
     static func syncDeparture(code: String, city: String) {
+        guard UserDefaults(suiteName: suiteName) != nil else { return }
         departureCode = code
         departureCity = city
     }
