@@ -50,13 +50,20 @@ struct SavedCard: View {
                     Spacer()
 
                     // Price badge
-                    Text(deal.priceFormatted)
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.sgWhite)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(deal.tierColor)
-                        .clipShape(Capsule())
+                    VStack(alignment: .trailing, spacing: 1) {
+                        if deal.isEstimatedPrice {
+                            Text("from")
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundStyle(Color.sgWhite.opacity(0.6))
+                        }
+                        Text(deal.priceFormatted)
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.sgWhite)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(deal.tierColor)
+                            .clipShape(Capsule())
+                    }
                 }
                 .padding(.bottom, 6)
 

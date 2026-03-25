@@ -336,37 +336,45 @@ struct DestinationDetailView: View {
 
                 VStack(spacing: 0) {
                     ForEach(Array(restaurants.enumerated()), id: \.offset) { index, restaurant in
-                        HStack(spacing: 12) {
-                            // Restaurant icon
-                            Image(systemName: "fork.knife")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color.sgOrange)
-                                .frame(width: 32, height: 32)
-                                .background(Color.sgOrange.opacity(0.12))
-                                .clipShape(Circle())
+                        Button {
+                            openInMaps(restaurant.name, city: deal.city)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "fork.knife")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.sgOrange)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color.sgOrange.opacity(0.12))
+                                    .clipShape(Circle())
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(restaurant.name)
-                                    .font(SGFont.bodyBold(size: 14))
-                                    .foregroundStyle(Color.sgWhite)
-                                Text(restaurant.type)
-                                    .font(SGFont.body(size: 12))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(restaurant.name)
+                                        .font(SGFont.bodyBold(size: 14))
+                                        .foregroundStyle(Color.sgWhite)
+                                    Text(restaurant.type)
+                                        .font(SGFont.body(size: 12))
+                                        .foregroundStyle(Color.sgMuted)
+                                }
+
+                                Spacer()
+
+                                HStack(spacing: 2) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.sgYellow)
+                                    Text(String(format: "%.1f", restaurant.rating))
+                                        .font(SGFont.bodyBold(size: 13))
+                                        .foregroundStyle(Color.sgWhite)
+                                }
+
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.system(size: 11))
                                     .foregroundStyle(Color.sgMuted)
                             }
-
-                            Spacer()
-
-                            // Star rating
-                            HStack(spacing: 2) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.sgYellow)
-                                Text(String(format: "%.1f", restaurant.rating))
-                                    .font(SGFont.bodyBold(size: 13))
-                                    .foregroundStyle(Color.sgWhite)
-                            }
                         }
+                        .buttonStyle(.plain)
                         .padding(.vertical, 10)
+                        .accessibilityLabel("Open \(restaurant.name) in Maps")
 
                         if index < restaurants.count - 1 {
                             Rectangle()
