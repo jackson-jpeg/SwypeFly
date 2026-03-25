@@ -135,6 +135,18 @@ struct DestinationDetailView: View {
                     .font(SGFont.body(size: 15))
                     .foregroundStyle(Color.sgMuted)
             }
+            // Price freshness indicator
+            if let freshnessLabel = deal.priceFreshnessLabel, let freshness = deal.priceFreshness {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(freshnessColor(freshness))
+                        .frame(width: 6, height: 6)
+                    Text(freshnessLabel)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(freshnessColor(freshness))
+                }
+                .padding(.top, 2)
+            }
             // Price transparency disclaimer for estimated prices
             if deal.isEstimatedPrice {
                 HStack(spacing: 4) {
@@ -171,6 +183,14 @@ struct DestinationDetailView: View {
         }
         if deal.tripDays > 0 { parts.append("\(deal.tripDays) days") }
         return parts.joined(separator: " \u{00B7} ")
+    }
+
+    private func freshnessColor(_ freshness: Deal.PriceFreshness) -> Color {
+        switch freshness {
+        case .fresh: return Color.sgDealAmazing
+        case .stale: return Color.sgYellow
+        case .old:   return Color.sgRed
+        }
     }
 
     // MARK: - Photo Gallery

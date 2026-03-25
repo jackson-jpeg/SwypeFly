@@ -93,7 +93,8 @@ struct FeedView: View {
             guard let newIdx = newValue, oldValue != newValue else { return }
             let oldIdx = oldValue ?? 0
             swipeCount += 1
-            HapticEngine.light()
+            let deal = newIdx < feedStore.deals.count ? feedStore.deals[newIdx] : nil
+            HapticEngine.forTier(deal?.dealTier)
 
             if swipeCount >= 2 && headerVisible {
                 withAnimation(.easeOut(duration: 0.4)) {
@@ -639,7 +640,7 @@ struct FeedView: View {
     }
 
     private func saveDeal(_ deal: Deal) {
-        HapticEngine.medium()
+        HapticEngine.forTier(deal.dealTier)
         let nowSaved = savedStore.toggle(deal: deal)
         feedStore.recordSwipe(dealId: deal.id, action: nowSaved ? "saved" : "unsaved")
         toastManager.show(

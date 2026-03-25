@@ -52,4 +52,18 @@ enum HapticEngine {
         generator.prepare()
         generator.selectionChanged()
     }
+
+    /// Tier-appropriate haptic — stronger feedback for better deals.
+    static func forTier(_ tier: DealTier?) {
+        switch tier {
+        case .amazing:
+            success()
+        case .great:
+            medium()
+        case .good:
+            light()
+        case .fair, .none:
+            selection()
+        }
+    }
 }

@@ -282,6 +282,50 @@ extension Deal {
         return "—"
     }
 
+    /// How long ago the price was fetched, as a human-readable string.
+    /// Returns nil when priceFetchedAt is missing or unparseable.
+    var priceFreshnessLabel: String? {
+        guard let raw = priceFetchedAt, !raw.isEmpty else { return nil }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = iso.date(from: raw)
+        if date == nil {
+            iso.formatOptions = [.withInternetDateTime]
+            date = iso.date(from: raw)
+        }
+        guard let fetched = date else { return nil }
+        let seconds = Date().timeIntervalSince(fetched)
+        guard seconds >= 0 else { return nil }
+        let minutes = Int(seconds) / 60
+        let hours = minutes / 60
+        let days = hours / 24
+        if days >= 1 { return "Price updated \(days)d ago" }
+        if hours >= 1 { return "Price updated \(hours)h ago" }
+        if minutes >= 1 { return "Price updated \(minutes)m ago" }
+        return "Price updated just now"
+    }
+
+    /// Freshness category for coloring the price-updated label.
+    enum PriceFreshness {
+        case fresh, stale, old
+    }
+
+    var priceFreshness: PriceFreshness? {
+        guard let raw = priceFetchedAt, !raw.isEmpty else { return nil }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = iso.date(from: raw)
+        if date == nil {
+            iso.formatOptions = [.withInternetDateTime]
+            date = iso.date(from: raw)
+        }
+        guard let fetched = date else { return nil }
+        let hours = Date().timeIntervalSince(fetched) / 3600
+        if hours < 12 { return .fresh }
+        if hours < 48 { return .stale }
+        return .old
+    }
+
     /// Canonical SoGoJet share URL for this destination.
     var shareURL: URL? {
         URL(string: "https://sogojet.com/destination/\(id)")
