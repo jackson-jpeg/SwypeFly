@@ -21,16 +21,10 @@ struct DealCard: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // Full-bleed photo — contentMode .fill can offset the image
-                // so we must pin it inside a fixed-size container and clip.
-                Color.clear
-                    .overlay {
-                        CachedAsyncImage(url: deal.imageUrl) {
-                            fallbackBackground
-                        }
-                    }
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .clipped()
+                // Full-bleed photo — CachedAsyncImage handles frame + clip internally
+                CachedAsyncImage(url: deal.imageUrl) {
+                    fallbackBackground
+                }
 
                 // Bottom gradient for text legibility
                 VStack {

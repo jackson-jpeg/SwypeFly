@@ -318,15 +318,20 @@ struct CachedAsyncImage<Placeholder: View>: View {
     }
 
     var body: some View {
-        Group {
-            if let uiImage {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .transition(.opacity)
-            } else {
-                placeholder()
-                    .transition(.opacity)
+        GeometryReader { geo in
+            Group {
+                if let uiImage {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                        .transition(.opacity)
+                } else {
+                    placeholder()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .transition(.opacity)
+                }
             }
         }
         .animation(.easeIn(duration: fromCache ? 0 : 0.3), value: uiImage != nil)
