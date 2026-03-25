@@ -19,9 +19,9 @@ struct SavedView: View {
             case .recent:
                 return "Newest saves first"
             case .priceUp:
-                return "Cheapest archive at top"
+                return "Cheapest first"
             case .priceDown:
-                return "Premium fares first"
+                return "Most expensive first"
             }
         }
     }
@@ -82,17 +82,17 @@ struct SavedView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack(alignment: .top) {
                 VintageTerminalHeroLockup(
-                    eyebrow: "Travel Archive",
+                    eyebrow: "Saved Trips",
                     title: "Saved Routes",
-                    subtitle: "A warm ledger of destinations worth boarding when the fare is right.",
+                    subtitle: "Your saved destinations.",
                     accent: .amber
                 )
 
                 Spacer(minLength: 0)
 
                 VintageTerminalPassportStamp(
-                    title: "Archive",
-                    subtitle: "\(savedStore.count) retained",
+                    title: "Saved",
+                    subtitle: "\(savedStore.count) saved",
                     tone: .ember
                 )
             }
@@ -108,22 +108,22 @@ struct SavedView: View {
 
     private var travelLedger: some View {
         VintageTerminalPanel(
-            title: "Travel Ledger",
-            subtitle: "Your watchlist at a glance, with a little more soul than a plain grid.",
-            stamp: "Archive",
+            title: "Overview",
+            subtitle: "",
+            stamp: "Overview",
             tone: .amber
         ) {
             VintageTerminalMetricDeck(metrics: [
                 .init(
                     title: "Saved Routes",
                     value: "\(savedStore.count)",
-                    footnote: "Trips waiting in the hangar",
+                    footnote: "Saved trips",
                     tone: .amber
                 ),
                 .init(
                     title: "Tracked Savings",
                     value: savedStore.totalSavings == 0 ? "No delta" : "$\(Int(savedStore.totalSavings))",
-                    footnote: strongestSavingsDeal.map { "Best lift: \($0.destination)" } ?? "Waiting on the next drop",
+                    footnote: strongestSavingsDeal.map { "Best deal: \($0.destination)" } ?? "Waiting on the next drop",
                     tone: .moss
                 ),
                 .init(
@@ -146,14 +146,14 @@ struct SavedView: View {
 
     private var archiveManifest: some View {
         VintageTerminalManifestCard(
-            title: "Archive Manifest",
-            subtitle: "The strongest routes in your collection, surfaced like a departure ledger.",
+            title: "Top Picks",
+            subtitle: "Your best saved deals.",
             tone: .ember
         ) {
             ForEach(Array(sortedDeals.prefix(3).enumerated()), id: \.element.id) { index, deal in
                 VStack(spacing: 0) {
                     VintageTerminalManifestRow(
-                        prefix: "File \(index + 1)",
+                        prefix: "\(index + 1)",
                         title: deal.iataCode,
                         value: "\(deal.destination), \(deal.country)",
                         subtitle: "\(deal.priceFormatted) roundtrip · \(deal.safeFlightDuration)",
@@ -173,9 +173,9 @@ struct SavedView: View {
 
     private var sortDeck: some View {
         VintageTerminalPanel(
-            title: "Sort Deck",
+            title: "Sort",
             subtitle: sortMode.subtitle,
-            stamp: "Control",
+            stamp: "Sort",
             tone: .neutral
         ) {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -200,14 +200,14 @@ struct SavedView: View {
     private func featuredTicket(for deal: Deal) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             VintageTerminalCollectionHeader(
-                title: "Featured Stub",
-                subtitle: "One route from the archive surfaced as a boarding ticket."
+                title: "Featured",
+                subtitle: "A highlight from your saved trips."
             )
 
             VintageTravelTicket(tone: .amber) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
-                        VintageTerminalSectionLabel(text: "Boarding Stub", tone: .amber)
+                        VintageTerminalSectionLabel(text: "Featured Trip", tone: .amber)
                         Text(deal.destination.uppercased())
                             .font(SGFont.display(size: 34))
                             .foregroundStyle(Color.sgWhite)
@@ -244,7 +244,7 @@ struct SavedView: View {
                 HStack(spacing: Spacing.sm) {
                     VintageTerminalSecondaryButton(
                         title: "Remove",
-                        subtitle: "Clear from archive",
+                        subtitle: "Remove",
                         icon: "heart.slash",
                         tone: .ember,
                         fillsWidth: true
@@ -271,7 +271,7 @@ struct SavedView: View {
     private var collectionSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             VintageTerminalCollectionHeader(
-                title: "Route Archive",
+                title: "All Saved",
                 subtitle: "Every saved card stays bookable from here."
             )
 
@@ -294,26 +294,26 @@ struct SavedView: View {
             VintageTerminalPoster(
                 imageURL: Deal.preview.imageUrl,
                 title: "Start Your Archive",
-                subtitle: "Save routes you want to revisit and this space becomes your private terminal ledger.",
+                subtitle: "Save destinations to find them here.",
                 eyebrow: "Saved Routes",
                 tone: .amber
             )
 
             VintageTerminalPanel(
                 title: "What happens here",
-                subtitle: "A saved route becomes a quick-return boarding stub with booking right at hand.",
+                subtitle: "Easily book your saved destinations.",
                 stamp: "Empty",
                 tone: .neutral
             ) {
                 VStack(alignment: .leading, spacing: Spacing.md) {
                     VintageTerminalChecklistItem(
                         title: "Save from the feed",
-                        detail: "Use the heart on any destination card to pin it to this archive.",
+                        detail: "Use the heart on any destination card to save it here.",
                         tone: .amber
                     )
                     VintageTerminalChecklistItem(
                         title: "Track price drops",
-                        detail: "When savings data exists, the archive highlights the strongest lift.",
+                        detail: "When savings data exists, we highlight the best deals.",
                         tone: .moss
                     )
                     VintageTerminalChecklistItem(
@@ -337,7 +337,7 @@ struct SavedView: View {
             } secondary: {
                 VintageTerminalSecondaryButton(
                     title: "Saved space is empty",
-                    subtitle: "Nothing has been archived yet",
+                    subtitle: "Nothing saved yet",
                     icon: "heart",
                     tone: .neutral,
                     fillsWidth: true

@@ -168,7 +168,7 @@ struct SeatMapView: View {
 
     private var header: some View {
         VintageTerminalHeroLockup(
-            eyebrow: "Cabin Atlas",
+            eyebrow: "Seat Map",
             title: "Seat Selection",
             subtitle: "Pick a place in the cabin now, or leave it open and let the carrier assign one later.",
             accent: .amber
@@ -189,8 +189,8 @@ struct SeatMapView: View {
 
     private var cabinTelemetry: some View {
         VintageTerminalPanel(
-            title: "Cabin Telemetry",
-            subtitle: "A quick read on what this aircraft returned before you start tapping around the map.",
+            title: "Cabin Overview",
+            subtitle: "Here's what's available on this flight.",
             stamp: routeLabel,
             tone: .ivory
         ) {
@@ -201,7 +201,7 @@ struct SeatMapView: View {
     private var cabinLegend: some View {
         VintageTerminalPanel(
             title: "Seat Key",
-            subtitle: "The warm colors read like a departure board, but the meaning is practical.",
+            subtitle: "",
             stamp: "Guide",
             tone: .amber
         ) {
@@ -222,7 +222,7 @@ struct SeatMapView: View {
 
                 SeatLegendBadge(
                     title: "Selected",
-                    subtitle: "Locked on this order",
+                    subtitle: "Selected",
                     fill: Color.sgYellow,
                     stroke: Color.sgYellow,
                     indicator: nil
@@ -254,7 +254,7 @@ struct SeatMapView: View {
             HStack(alignment: .top, spacing: Spacing.md) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     VintageTerminalSectionLabel(
-                        text: selectedSeat == nil ? "Seat Desk" : "Seat Locked",
+                        text: selectedSeat == nil ? "Seat Selection" : "Seat Selected",
                         tone: selectedSeat == nil ? .ivory : .amber
                     )
                     SplitFlapRow(
@@ -282,7 +282,7 @@ struct SeatMapView: View {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 if let selectedSeat {
                     seatFocusRow(
-                        title: "\(selectedSeat.label) is attached to the order",
+                        title: "\(selectedSeat.label) is included in your booking",
                         detail: seatNarrative(for: selectedSeat),
                         tone: .amber
                     )
@@ -351,8 +351,8 @@ struct SeatMapView: View {
 
     private func cabinAtlas(_ seatMap: SeatMap) -> some View {
         VintageTerminalPanel(
-            title: "Cabin Atlas",
-            subtitle: "The live carrier map arranged as a departure-board-style cabin grid.",
+            title: "Seat Map",
+            subtitle: "Choose your preferred seat.",
             stamp: cabinLayoutLabel,
             tone: .amber
         ) {
@@ -504,12 +504,12 @@ struct SeatMapView: View {
 
     private func seatFallbackList(_ seatMap: SeatMap) -> some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            VintageTerminalDividerLabel(text: "Fallback Manifest", tone: .ivory)
+            VintageTerminalDividerLabel(text: "Available Seats", tone: .ivory)
 
             ForEach(seatMap.rows, id: \.rowNumber) { row in
                 VintageTerminalManifestCard(
                     title: "Row \(row.rowNumber)",
-                    subtitle: "Carrier returned seats without a board-shaped layout. We can still book them from this manifest.",
+                    subtitle: "Seats shown in list view.",
                     tone: .ivory
                 ) {
                     ForEach(Array(row.seats.enumerated()), id: \.element.id) { index, seat in
@@ -584,8 +584,8 @@ struct SeatMapView: View {
 
     private var travelerNotes: some View {
         VintageTerminalPanel(
-            title: "Traveler Notes",
-            subtitle: "A couple of calm reminders before you continue into final review.",
+            title: "Seat Info",
+            subtitle: "",
             stamp: "Ready",
             tone: .moss
         ) {
@@ -631,7 +631,7 @@ struct SeatMapView: View {
                     .init(title: "Route", value: routeLabel, footnote: travelWindowLabel, tone: .amber),
                     .init(title: "Status", value: "Continue", footnote: "Seat map missing but booking stays open", tone: .moss),
                     .init(title: "Traveler", value: "\(store.passengerCount)", footnote: "Lead traveler on this order", tone: .ivory),
-                    .init(title: "Desk", value: "Seat atlas offline", footnote: "Carrier did not publish an interactive map", tone: .ember),
+                    .init(title: "Desk", value: "Seat map unavailable", footnote: "Seat selection not available for this flight", tone: .ember),
                 ])
             }
         }
@@ -654,7 +654,7 @@ struct SeatMapView: View {
             HStack(spacing: Spacing.sm) {
                 VintageTerminalSecondaryButton(
                     title: "Skip Seat",
-                    subtitle: "Let the carrier assign later",
+                    subtitle: "Skip seat selection",
                     icon: "forward.fill",
                     tone: .ivory,
                     fillsWidth: true
@@ -675,8 +675,8 @@ struct SeatMapView: View {
                     }
                 } else {
                     VintageTerminalSecondaryButton(
-                        title: "Back to Traveler",
-                        subtitle: "Edit traveler record",
+                        title: "Back",
+                        subtitle: "Edit passenger details",
                         icon: "chevron.left",
                         tone: .neutral,
                         fillsWidth: true

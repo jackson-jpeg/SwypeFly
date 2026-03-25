@@ -27,9 +27,9 @@ struct BoardingPassView: View {
                 VintageTerminalHeroLockup(
                     eyebrow: "Issued",
                     title: "Boarding Pass",
-                    subtitle: "The route is confirmed, archived, and ready to share like a real travel stub."
+                    subtitle: "Your trip is booked!"
                 )
-                VintageTerminalSectionLabel(text: "Confirmation Terminal", tone: .moss)
+                VintageTerminalSectionLabel(text: "Booking Confirmed", tone: .moss)
             }
 
             Spacer(minLength: 0)
@@ -93,8 +93,8 @@ struct BoardingPassView: View {
 
     private var travelerArchive: some View {
         VintageTerminalManifestCard(
-            title: "Trip Archive",
-            subtitle: "Everything the desk can hand back to the traveler in one glance.",
+            title: "Trip Details",
+            subtitle: "Your booking at a glance.",
             tone: .amber
         ) {
             VintageTerminalManifestRow(
@@ -107,7 +107,7 @@ struct BoardingPassView: View {
             manifestDivider
             VintageTerminalManifestRow(
                 prefix: "FLY",
-                title: store.selectedOffer?.airline ?? store.deal?.airlineName ?? "Carrier pending",
+                title: store.selectedOffer?.airline ?? store.deal?.airlineName ?? "Airline TBD",
                 value: store.selectedOffer?.flightNumber ?? "Flight number pending",
                 subtitle: store.selectedOffer?.duration ?? store.deal?.safeFlightDuration,
                 tone: .ivory
@@ -126,7 +126,7 @@ struct BoardingPassView: View {
     private var travelNotes: some View {
         VintageTerminalPanel(
             title: "Travel Notes",
-            subtitle: "A vintage stub should still tell you what to do next.",
+            subtitle: "",
             stamp: "Ready",
             tone: .ember
         ) {
@@ -143,7 +143,7 @@ struct BoardingPassView: View {
                 )
                 VintageTerminalChecklistItem(
                     title: "Share this trip with one tap",
-                    detail: "The booking flow now exposes a working share action instead of a dead button.",
+                    detail: "Send your booking details to a friend or save them for later.",
                     tone: .moss
                 )
             }
@@ -214,7 +214,7 @@ struct BoardingPassView: View {
         let pieces = [store.passenger.title, store.passenger.firstName, store.passenger.lastName]
             .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         let combined = pieces.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-        return combined.isEmpty ? "Traveler pending" : combined
+        return combined.isEmpty ? "Passenger" : combined
     }
 
     private var seatLabel: String {

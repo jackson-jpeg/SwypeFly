@@ -183,11 +183,11 @@ struct DepartureBoardView: View {
     }
 
     private var terminalStampTitle: String {
-        "\(visibleDeals.count) LIVE ROWS"
+        "\(visibleDeals.count) flights"
     }
 
     private var terminalStampSubtitle: String {
-        canAdvance ? "Swipe for next departure" : "End of current board"
+        canAdvance ? "Swipe for more" : "All caught up"
     }
 
     private var topBar: some View {
@@ -436,7 +436,7 @@ struct DepartureBoardView: View {
                     .multilineTextAlignment(.center)
 
                 if feedStore.hasActiveFilters {
-                    Text("No rows match your current filters.")
+                    Text("No flights match your filters.")
                         .font(SGFont.body(size: 13))
                         .foregroundStyle(Color.sgFaint)
                         .multilineTextAlignment(.center)

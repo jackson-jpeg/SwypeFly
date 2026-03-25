@@ -15,7 +15,7 @@ struct BookingFlowView: View {
     }
 
     private var flowSteps: [String] {
-        ["Search", "Traveler", "Seats", "Review", "Issued"]
+        ["Search", "Traveler", "Seats", "Review", "Confirmed"]
     }
 
     private var currentStepIndex: Int {
@@ -36,15 +36,15 @@ struct BookingFlowView: View {
     private var chromeTitle: String {
         switch store.step {
         case .idle, .searching, .trip, .failed:
-            return "Flight Desk"
+            return "Your Trip"
         case .passengers:
-            return "Traveler Record"
+            return "Passenger Details"
         case .seats:
             return "Cabin Map"
         case .review, .paying:
             return "Final Review"
         case .confirmed:
-            return "Issued Ticket"
+            return "Confirmed"
         }
     }
 
@@ -57,15 +57,15 @@ struct BookingFlowView: View {
         case .failed:
             return "The live route needs another scan. Adjust the window or try the search again."
         case .passengers:
-            return "Capture the lead traveler exactly as it should appear on the booking record."
+            return "Enter passenger details as shown on their ID."
         case .seats:
             return "Pick a cabin position or skip ahead if you want the provider to assign it later."
         case .review:
-            return "Confirm the route, traveler, seats, and fare ledger before issuing payment."
+            return "Review your trip details before paying."
         case .paying:
-            return "Payment is in motion. Keep this terminal open while the order is being issued."
+            return "Processing your payment..."
         case .confirmed:
-            return "Your booking is archived and ready to share or return to the board."
+            return "Your trip is confirmed!"
         }
     }
 

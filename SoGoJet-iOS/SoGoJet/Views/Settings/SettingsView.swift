@@ -23,7 +23,7 @@ struct SettingsView: View {
         .init(
             id: "list",
             title: "Terminal Board",
-            subtitle: "Mechanical rows tuned for the vintage departure-board mood.",
+            subtitle: "Compact rows in a departure-board layout.",
             stamp: "Board",
             tone: .ivory
         ),
@@ -62,9 +62,9 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack(alignment: .top, spacing: Spacing.md) {
                 VintageTerminalHeroLockup(
-                    eyebrow: "Operations Lounge",
+                    eyebrow: "Settings",
                     title: "Settings",
-                    subtitle: "Tune the departure city, board mode, and alert behavior from one warm control room.",
+                    subtitle: "",
                     accent: .amber
                 )
 
@@ -89,15 +89,15 @@ struct SettingsView: View {
 
     private var operationsLounge: some View {
         VintageTerminalPanel(
-            title: "Departure Console",
-            subtitle: "The home airport drives every feed, booking search, and nearby market scan in the app.",
+            title: "Departure",
+            subtitle: "Change your home airport.",
             stamp: "Origin",
             tone: .amber
         ) {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 HStack(alignment: .top, spacing: Spacing.md) {
                     VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text("Current Gate")
+                        Text("Airport")
                             .font(SGFont.bodyBold(size: 10))
                             .foregroundStyle(Color.sgMuted)
                             .tracking(1.4)
@@ -133,8 +133,8 @@ struct SettingsView: View {
                 VintageTerminalRouteDisplay(
                     originCode: settings.departureCode,
                     originLabel: settings.departureCity,
-                    destinationCode: settings.preferredView == "list" ? "BRD" : "SWP",
-                    destinationLabel: settings.preferredView == "list" ? "Terminal board mode" : "Swipe feed mode",
+                    destinationCode: settings.preferredView == "list" ? "LST" : "CRD",
+                    destinationLabel: settings.preferredView == "list" ? "Board view" : "Card view",
                     detail: "Change the origin once here and the rest of the app follows.",
                     tone: .amber
                 )
@@ -169,8 +169,8 @@ struct SettingsView: View {
 
     private var displayDeck: some View {
         VintageTerminalPanel(
-            title: "Display Program",
-            subtitle: "Switch between the cinematic feed and the mechanical terminal board without leaving the lounge.",
+            title: "Display",
+            subtitle: "",
             stamp: "View",
             tone: .ivory
         ) {
@@ -242,8 +242,8 @@ struct SettingsView: View {
 
     private var alertDeck: some View {
         VintageTerminalPanel(
-            title: "Alerts and Signals",
-            subtitle: "Control push permissions and the fallback email system while direct native route alerts finish shipping.",
+            title: "Notifications",
+            subtitle: "Manage your notification preferences.",
             stamp: "Alerts",
             tone: .moss
         ) {
@@ -281,8 +281,8 @@ struct SettingsView: View {
 
     private var archiveDeck: some View {
         VintageTerminalPanel(
-            title: "Archive Intelligence",
-            subtitle: "A quick ledger of what your saved routes are worth right now.",
+            title: "Saved Stats",
+            subtitle: "",
             stamp: "Saved",
             tone: .ember
         ) {
@@ -291,25 +291,25 @@ struct SettingsView: View {
                     VintageTerminalMetric(
                         title: "Saved Routes",
                         value: "\(savedStore.count)",
-                        footnote: savedStore.count == 0 ? "No routes archived yet" : "Routes stored for fast return",
+                        footnote: savedStore.count == 0 ? "No trips saved yet" : "Trips saved for quick access",
                         tone: .amber
                     ),
                     VintageTerminalMetric(
                         title: "Tracked Savings",
                         value: savedStore.totalSavings == 0 ? "$0" : "$\(Int(savedStore.totalSavings))",
-                        footnote: savedStore.totalSavings == 0 ? "Waiting on the next fare drop" : "Aggregate delta across saved routes",
+                        footnote: savedStore.totalSavings == 0 ? "Waiting on the next fare drop" : "Total savings across saved trips",
                         tone: .moss
                     ),
                     VintageTerminalMetric(
                         title: "Archive Value",
                         value: savedStore.totalValue == 0 ? "$0" : "$\(Int(savedStore.totalValue))",
-                        footnote: "Combined visible fare value of the archive",
+                        footnote: "Combined fare value of saved trips",
                         tone: .ivory
                     ),
                     VintageTerminalMetric(
-                        title: "Collection Mood",
+                        title: "Collection",
                         value: savedStore.count >= 6 ? "Stacked" : savedStore.count >= 1 ? "Growing" : "Empty",
-                        footnote: savedStore.count >= 6 ? "Your watchlist is ready for triage" : "A few more saves will make this useful",
+                        footnote: savedStore.count >= 6 ? "Your collection status" : "A few more saves will make this useful",
                         tone: .ember
                     ),
                 ])
@@ -317,7 +317,7 @@ struct SettingsView: View {
                 VintageTerminalActionCluster {
                     VintageTerminalActionButton(
                         title: "Open Saved Archive",
-                        subtitle: "Review every retained route",
+                        subtitle: "Review your saved trips",
                         icon: "heart.fill",
                         tone: .ember,
                         fillsWidth: true
@@ -327,7 +327,7 @@ struct SettingsView: View {
                 } secondary: {
                     VintageTerminalSecondaryButton(
                         title: "Clear Saved Flights",
-                        subtitle: savedStore.count == 0 ? "Archive is already empty" : "Remove every saved route",
+                        subtitle: savedStore.count == 0 ? "Nothing saved yet" : "Remove all saved trips",
                         icon: "trash",
                         tone: .neutral,
                         fillsWidth: true
@@ -344,8 +344,8 @@ struct SettingsView: View {
 
     private var aboutDeck: some View {
         VintageTerminalPanel(
-            title: "Desk Services",
-            subtitle: "The legal and support links every production app still needs, dressed like a travel concierge desk.",
+            title: "About",
+            subtitle: "",
             stamp: "Info",
             tone: .neutral
         ) {
@@ -384,8 +384,8 @@ struct SettingsView: View {
 
     private var diagnosticsDeck: some View {
         VintageTerminalPanel(
-            title: "Flight Deck Notes",
-            subtitle: "Explain the current app wiring in plain language so the settings screen doubles as a product truth panel.",
+            title: "App Info",
+            subtitle: "",
             stamp: diagnosticsExpanded ? "Expanded" : "Summary",
             tone: .ivory
         ) {
@@ -428,7 +428,7 @@ struct SettingsView: View {
                         )
                         VintageTerminalChecklistItem(
                             title: "Alerts",
-                            detail: "Email alerts are the active production fallback while fully native route alert creation is still being wired end to end.",
+                            detail: "Email alerts are active. Native push alerts coming soon.",
                             tone: .moss
                         )
                     }
@@ -443,7 +443,7 @@ struct SettingsView: View {
         VintageTerminalActionCluster {
             VintageTerminalActionButton(
                 title: "Return to Explore",
-                subtitle: "Leave the lounge and go browse fares",
+                subtitle: "Browse deals",
                 icon: "airplane.departure",
                 tone: .amber,
                 fillsWidth: true
@@ -488,7 +488,7 @@ struct SettingsView: View {
 
     private var currentModeExplanation: String {
         settings.preferredView == "list"
-            ? "The explore tab opens on the vintage departure board with mechanical rows and compact deal context."
+            ? "The explore tab opens on the departure board with compact deal rows."
             : "The explore tab opens on full-bleed destination cards with vertical paging and richer imagery."
     }
 
@@ -507,7 +507,7 @@ struct SettingsView: View {
             return "Set up a destination alert from a detail screen or booking flow and the email appears here."
         }
 
-        return "Email fallbacks are active for this inbox until native route alerts are fully live."
+        return "Email notifications are enabled."
     }
 
     private var activeTags: [String] {

@@ -51,8 +51,8 @@ struct PassengerForm: View {
 
     private var header: some View {
         VintageTerminalCollectionHeader(
-            title: "Traveler Record",
-            subtitle: "Capture the lead passenger exactly as the desk should issue the booking."
+            title: "Passenger Details",
+            subtitle: "Enter details as they appear on your passport or ID."
         )
         .padding(.top, Spacing.sm)
     }
@@ -61,7 +61,7 @@ struct PassengerForm: View {
         VintageTravelTicket(tone: .amber) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    VintageTerminalSectionLabel(text: "Lead Passenger", tone: .amber)
+                    VintageTerminalSectionLabel(text: "Passenger", tone: .amber)
                     Text(routeTitle)
                         .font(SGFont.display(size: 30))
                         .foregroundStyle(Color.sgWhite)
@@ -93,8 +93,8 @@ struct PassengerForm: View {
 
     private var identityDeck: some View {
         VintageTerminalPanel(
-            title: "Identity Desk",
-            subtitle: "These fields should match the traveler exactly, not a nickname.",
+            title: "Personal Info",
+            subtitle: "Enter your name exactly as it appears on your ID.",
             stamp: "Identity",
             tone: .amber
         ) {
@@ -119,7 +119,7 @@ struct PassengerForm: View {
                         .foregroundStyle(Color.sgWhite)
                 }
 
-                fieldShell(label: "Family name", hint: "Surname exactly as the carrier should see it.") {
+                fieldShell(label: "Family name", hint: "Last name as shown on your ID.") {
                     TextField("", text: $familyName, prompt: Text("Morgan").foregroundStyle(Color.sgMuted))
                         .textContentType(.familyName)
                         .autocorrectionDisabled()
@@ -167,8 +167,8 @@ struct PassengerForm: View {
 
     private var documentsDeck: some View {
         VintageTerminalPanel(
-            title: "Document Notes",
-            subtitle: "Optional for now, but useful once this route graduates to fuller traveler profiles.",
+            title: "Travel Documents",
+            subtitle: "Optional — may be required for international flights.",
             stamp: "Docs",
             tone: .ivory
         ) {
@@ -211,8 +211,8 @@ struct PassengerForm: View {
 
     private var contactDeck: some View {
         VintageTerminalPanel(
-            title: "Contact Channel",
-            subtitle: "This is where live updates and order issues will reach the traveler.",
+            title: "Contact Info",
+            subtitle: "We'll send booking updates here.",
             stamp: "Reach",
             tone: .moss
         ) {
@@ -238,25 +238,25 @@ struct PassengerForm: View {
 
     private var reassuranceDeck: some View {
         VintageTerminalPanel(
-            title: "Desk Notes",
-            subtitle: "A good vintage desk is calming. These are the guardrails.",
+            title: "Good to Know",
+            subtitle: "",
             stamp: "Ready",
             tone: .ember
         ) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 VintageTerminalChecklistItem(
-                    title: "Traveler details stay local to the booking flow",
+                    title: "Your details are only used for this booking",
                     detail: "Nothing is issued until you confirm on the review screen.",
                     tone: .amber
                 )
                 VintageTerminalChecklistItem(
                     title: "You can still change seats after this step",
-                    detail: "If the carrier returns a seat map, you will see it before checkout.",
+                    detail: "You can choose seats in the next step.",
                     tone: .ivory
                 )
                 VintageTerminalChecklistItem(
-                    title: "Direct route alerts are still maturing",
-                    detail: "We can still reach the traveler through email if the route changes while you are booking.",
+                    title: "Route alerts coming soon",
+                    detail: "We'll email you if anything changes.",
                     tone: .moss
                 )
             }
@@ -295,7 +295,7 @@ struct PassengerForm: View {
 
             VintageTerminalSecondaryButton(
                 title: "Refresh Live Fares",
-                subtitle: "Go back to the route search if you want a fresh market scan first.",
+                subtitle: "Search for updated prices.",
                 icon: "arrow.clockwise",
                 tone: .ivory,
                 fillsWidth: true

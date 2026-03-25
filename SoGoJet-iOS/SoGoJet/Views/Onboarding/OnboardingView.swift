@@ -69,7 +69,7 @@ struct OnboardingView: View {
     private var departureHallHero: some View {
         VintageTerminalPanel(
             title: "Live Deal Board",
-            subtitle: "The split-flap is the signature gesture in the app, so onboarding starts by showing it like a departure hall centerpiece.",
+            subtitle: "",
             stamp: currentShowcase.vibe,
             tone: .amber
         ) {
@@ -152,7 +152,7 @@ struct OnboardingView: View {
     private var promiseDeck: some View {
         VintageTerminalPanel(
             title: "What you get",
-            subtitle: "The first-run pitch, expressed like an airline lounge operations board instead of a generic checklist.",
+            subtitle: "",
             stamp: "Benefits",
             tone: .ivory
         ) {
@@ -167,13 +167,13 @@ struct OnboardingView: View {
                     VintageTerminalMetric(
                         title: "Save",
                         value: "Archive",
-                        footnote: "Saved routes become boarding stubs you can revisit without losing the vibe of the app.",
+                        footnote: "Save trips you love and book them anytime.",
                         tone: .ember
                     ),
                     VintageTerminalMetric(
                         title: "Board",
                         value: "Vintage",
-                        footnote: "Terminal mode leans into the tactile split-flap aesthetic you asked for.",
+                        footnote: "A departure-board view for quick scanning.",
                         tone: .ivory
                     ),
                     VintageTerminalMetric(
@@ -189,12 +189,12 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     VintageTerminalChecklistItem(
                         title: "The split-flap is the signature motion",
-                        detail: "We use it when a route changes, not on every idle card, so it still feels special and mechanical.",
+                        detail: "Animated transitions bring the board to life when new deals appear.",
                         tone: .amber
                     )
                     VintageTerminalChecklistItem(
                         title: "The palette stays warm and terminal-like",
-                        detail: "This app should feel like old travel hardware lit by amber gate displays, not anonymous dark mode.",
+                        detail: "Warm colors and vintage-inspired design make browsing feel special.",
                         tone: .ivory
                     )
                     VintageTerminalChecklistItem(
@@ -292,8 +292,8 @@ struct OnboardingView: View {
                 VintageTerminalInfoRow(
                     icon: "heart.circle.fill",
                     title: "Saved routes",
-                    value: "Anything you heart becomes an archive card you can reopen and book from later.",
-                    detail: "The saved tab now leans fully into the paper-ticket archive idea.",
+                    value: "Anything you heart gets saved so you can come back and book it later.",
+                    detail: "Find all your saved trips in the Saved tab.",
                     tone: .ember
                 )
 

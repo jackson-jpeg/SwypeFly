@@ -41,9 +41,9 @@ struct ReviewView: View {
     private var payingContent: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             VintageTerminalHeroLockup(
-                eyebrow: "Payment Desk",
-                title: "Issuing Ticket",
-                subtitle: "Hold the terminal steady while the carrier confirms the fare and writes the order."
+                eyebrow: "Review & Pay",
+                title: "Confirming Booking",
+                subtitle: "Confirming your booking..."
             )
             .padding(.horizontal, Spacing.md)
             .padding(.top, Spacing.lg)
@@ -71,7 +71,7 @@ struct ReviewView: View {
                     .fixedSize(horizontal: false, vertical: true)
             } footer: {
                 HStack {
-                    VintageTerminalCaptionBlock(title: "Status", value: "Payment in flight", tone: .amber)
+                    VintageTerminalCaptionBlock(title: "Status", value: "Processing payment", tone: .amber)
                     Spacer()
                     VintageTerminalCaptionBlock(title: "Route", value: routeLabel, tone: .ivory, alignment: .trailing)
                 }
@@ -86,8 +86,8 @@ struct ReviewView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             VintageTerminalCollectionHeader(
-                title: "Checkout Ledger",
-                subtitle: "This is the last desk before the order is issued. Check the route, traveler, and extras one more time."
+                title: "Order Summary",
+                subtitle: "Review everything before you pay."
             )
             .padding(.top, Spacing.sm)
         }
@@ -138,7 +138,7 @@ struct ReviewView: View {
         ) {
             HStack(spacing: Spacing.sm) {
                 VintageTerminalMetricDeck(metrics: [
-                    .init(title: "Feed fare", value: "$\(Int(discrepancy.feedPrice.rounded()))", footnote: "Earlier board value", tone: .ivory),
+                    .init(title: "Feed fare", value: "$\(Int(discrepancy.feedPrice.rounded()))", footnote: "Original price", tone: .ivory),
                     .init(title: "Booking fare", value: "$\(Int(discrepancy.bookingPrice.rounded()))", footnote: "Current live rate", tone: .amber),
                 ])
             }
@@ -147,8 +147,8 @@ struct ReviewView: View {
 
     private var flightManifest: some View {
         VintageTerminalManifestCard(
-            title: "Flight Manifest",
-            subtitle: "Slices and aircraft currently attached to this live offer.",
+            title: "Flight Details",
+            subtitle: "Your selected flights.",
             tone: .ivory
         ) {
             if let outbound = offer?.outboundSlice {
@@ -163,7 +163,7 @@ struct ReviewView: View {
             if let offer {
                 manifestDivider
                 VintageTerminalManifestRow(
-                    prefix: "META",
+                    prefix: "FLT",
                     title: offer.airline,
                     value: "\(offer.flightNumber)  |  \(offer.duration)",
                     subtitle: offer.stops == 0 ? "Nonstop live fare" : "\(offer.stops) stop live fare",
@@ -175,12 +175,12 @@ struct ReviewView: View {
 
     private var travelerManifest: some View {
         VintageTerminalManifestCard(
-            title: "Traveler Manifest",
-            subtitle: "The exact person and extras attached to the order.",
+            title: "Passenger",
+            subtitle: "Your booking details.",
             tone: .moss
         ) {
             VintageTerminalManifestRow(
-                prefix: "PAX",
+                prefix: "Name",
                 title: travelerName,
                 value: store.passenger.email,
                 subtitle: store.passenger.phone,
@@ -188,7 +188,7 @@ struct ReviewView: View {
             )
             manifestDivider
             VintageTerminalManifestRow(
-                prefix: "DOC",
+                prefix: "ID",
                 title: store.passenger.passportNumber.isEmpty ? "Passport to be added later" : store.passenger.passportNumber,
                 value: store.passenger.nationality.isEmpty ? "US" : store.passenger.nationality,
                 subtitle: store.passenger.passportExpiry.isEmpty ? "Expiry not captured yet" : "Expires \(store.passenger.passportExpiry.shortDate)",
@@ -199,7 +199,7 @@ struct ReviewView: View {
 
     private var fareLedger: some View {
         VintageTerminalPanel(
-            title: "Fare Ledger",
+            title: "Price Breakdown",
             subtitle: "What you are about to pay right now.",
             stamp: totalLabel,
             tone: .amber
@@ -222,15 +222,15 @@ struct ReviewView: View {
 
     private var confirmationNotes: some View {
         VintageTerminalPanel(
-            title: "Before We Issue",
-            subtitle: "A calm final check helps the whole thing feel intentional.",
+            title: "Before You Pay",
+            subtitle: "",
             stamp: "Ready",
             tone: .ember
         ) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 VintageTerminalChecklistItem(
                     title: "Live provider price is already reflected above",
-                    detail: "If the route changed again, the booking store will refresh the fare instead of issuing stale pricing.",
+                    detail: "If the route changed again, we'll check for the latest price.",
                     tone: .amber
                 )
                 VintageTerminalChecklistItem(
@@ -345,7 +345,7 @@ struct ReviewView: View {
         let pieces = [store.passenger.title, store.passenger.firstName, store.passenger.lastName]
             .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         let combined = pieces.joined(separator: " ")
-        return combined.isEmpty ? "Traveler pending" : combined
+        return combined.isEmpty ? "Passenger" : combined
     }
 
     private var routeLabel: String {
