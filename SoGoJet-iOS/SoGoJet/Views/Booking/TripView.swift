@@ -537,14 +537,47 @@ struct TripView: View {
         }
     }
 
+    private var missionControlTitle: String {
+        switch store.step {
+        case .searching:
+            return "Searching..."
+        case .trip(let options):
+            let count = options.count
+            return count == 1 ? "1 Fare Found" : "\(count) Fares Found"
+        case .failed:
+            return "No Fares Found"
+        default:
+            if store.lastSearchSnapshot != nil {
+                return "Search Complete"
+            }
+            return "Flight Search"
+        }
+    }
+
+    private var missionControlSubtitle: String {
+        switch store.step {
+        case .searching:
+            return "Scanning live fares for this route."
+        case .trip:
+            return "Live fares ready. Pick one to continue."
+        case .failed:
+            return "Try different dates or check back later."
+        default:
+            if store.lastSearchSnapshot != nil {
+                return "Previous results shown below."
+            }
+            return "Tap search to find live fares."
+        }
+    }
+
     private var searchMissionControlCard: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Searching...")
+                    Text(missionControlTitle)
                         .font(SGFont.sectionHead)
                         .foregroundStyle(Color.sgWhite)
-                    Text("Live booking engine status for this route.")
+                    Text(missionControlSubtitle)
                         .font(SGFont.body(size: 12))
                         .foregroundStyle(Color.sgMuted)
                 }
