@@ -1168,8 +1168,11 @@ function toFrontend(d: ScoredDest, origin?: string) {
     airlineLogoUrl: d.live_airline
       ? `https://pics.avs.io/200/80/${d.live_airline}.png`
       : undefined,
-    cheapestDate: d.cheapest_date || undefined,
-    cheapestReturnDate: d.cheapest_return_date || undefined,
+    // cheapestDate/cheapestReturnDate removed — they came from Travelpayouts
+    // calendar and caused date mismatch with Duffel prices. The iOS app falls
+    // back to departureDate/returnDate which match the actual price shown.
+    cheapestDate: undefined,
+    cheapestReturnDate: undefined,
     affiliateUrl:
       d.price_source === 'travelpayouts' && origin
         ? generateAviasalesLink(origin, d.iata_code, d.departure_date, d.return_date)
