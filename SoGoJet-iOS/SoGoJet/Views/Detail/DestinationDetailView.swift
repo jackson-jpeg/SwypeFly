@@ -1181,7 +1181,7 @@ struct DestinationDetailView: View {
         // Vibe-based
         if vibes.contains("beach") {
             items.append(PackingItem(icon: "figure.pool.swim", text: "Swimwear"))
-            items.append(PackingItem(icon: "sandal", text: "Flip flops"))
+            items.append(PackingItem(icon: "shoeprints.fill", text: "Flip flops"))
         }
         if vibes.contains("adventure") || vibes.contains("nature") {
             items.append(PackingItem(icon: "shoe", text: "Hiking shoes"))

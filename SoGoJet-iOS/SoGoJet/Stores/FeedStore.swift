@@ -218,7 +218,7 @@ final class FeedStore {
     /// Update a deal's live price after booking search returns real data.
     /// This ensures the feed card reflects the actual price, not the stale estimate.
     func updateLivePrice(dealId: String, livePrice: Double) {
-        if let index = loadedDeals.firstIndex(where: { $0.id == dealId }) {
+        if loadedDeals.contains(where: { $0.id == dealId }) {
             // Deal is a struct — we need to create a new one with the updated price
             // Since Deal is Codable, we encode/decode with the new price injected
             // Simpler approach: just track overrides separately

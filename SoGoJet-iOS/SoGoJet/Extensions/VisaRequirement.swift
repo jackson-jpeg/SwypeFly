@@ -21,7 +21,7 @@ enum VisaStatus {
 
     var icon: String {
         switch self {
-        case .visaFree:      return "shield.checkmark.fill"
+        case .visaFree:      return "checkmark.shield.fill"
         case .visaOnArrival: return "shield.fill"
         case .visaRequired:  return "shield.slash.fill"
         case .unknown:       return ""
