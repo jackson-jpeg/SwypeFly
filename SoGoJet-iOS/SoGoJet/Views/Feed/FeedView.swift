@@ -349,7 +349,13 @@ struct FeedView: View {
             headerControls
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.sm)
+                .padding(.bottom, Spacing.xs)
+
+            if !feedStore.deals.isEmpty {
+                statsRow
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.bottom, Spacing.sm)
+            }
         }
         .background(Color.sgBg.opacity(0.84))
         .background(.ultraThinMaterial)
@@ -359,6 +365,36 @@ struct FeedView: View {
                 .fill(Color.sgBorder.opacity(0.45))
                 .frame(height: 1)
         }
+    }
+
+    private var statsRow: some View {
+        let deals = feedStore.deals
+        let cheapest = deals.compactMap(\.displayPrice).filter { $0 > 0 }.min()
+        let nonstopCount = deals.filter { $0.isNonstop == true }.count
+
+        return HStack(spacing: Spacing.sm) {
+            if let cheapest {
+                statPill(label: "$\(Int(cheapest))", detail: "cheapest")
+            }
+            statPill(label: "\(deals.count)", detail: deals.count == 1 ? "deal" : "deals")
+            if nonstopCount > 0 {
+                statPill(label: "\(nonstopCount)", detail: "direct")
+            }
+        }
+    }
+
+    private func statPill(label: String, detail: String) -> some View {
+        HStack(spacing: 3) {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundStyle(Color.sgWhite)
+            Text(detail)
+                .font(SGFont.body(size: 11))
+                .foregroundStyle(Color.sgWhiteDim)
+        }
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, 3)
+        .background(Color.sgWhite.opacity(0.06), in: Capsule())
     }
 
     private var headerControls: some View {
