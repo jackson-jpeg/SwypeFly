@@ -13,6 +13,7 @@ struct DestinationDetailView: View {
     @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
 
     @State private var shareItem: DetailShareDealItem?
+    @State private var travelers: Int = 1
 
     private var isSaved: Bool {
         savedStore.isSaved(id: deal.id)
@@ -747,15 +748,23 @@ struct DestinationDetailView: View {
     @ViewBuilder
     private var tripBudgetSection: some View {
         let days = deal.tripDays
-        let flightCost = deal.displayPrice ?? 0
+        let flightCostPP = deal.displayPrice ?? 0
         let hotelNight = deal.hotelPricePerNight ?? deal.liveHotelPrice
-        let hasData = flightCost > 0 && days > 0
+        let hasData = flightCostPP > 0 && days > 0
 
         if hasData {
-            let hotelTotal = (hotelNight ?? 0) * Double(max(days - 1, 1)) // nights = days - 1
-            let dailySpend: Double = estimateDailySpend() // food + transport + activities
-            let dailyTotal = dailySpend * Double(days)
-            let grandTotal = flightCost + hotelTotal + dailyTotal
+            let nights = max(days - 1, 1)
+            // Flights: per person
+            let flightTotal = flightCostPP * Double(travelers)
+            // Hotel: shared room for 1-2, double rooms for 3+
+            let roomCount = travelers <= 2 ? 1 : Int(ceil(Double(travelers) / 2.0))
+            let hotelPerNight = hotelNight ?? 0
+            let hotelTotal = hotelPerNight * Double(nights) * Double(roomCount)
+            // Daily spend: per person
+            let dailySpendPP: Double = estimateDailySpend()
+            let dailyTotal = dailySpendPP * Double(days) * Double(travelers)
+            let grandTotal = flightTotal + hotelTotal + dailyTotal
+            let perPerson = travelers > 1 ? grandTotal / Double(travelers) : 0.0
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
@@ -770,20 +779,68 @@ struct DestinationDetailView: View {
                         .foregroundStyle(Color.sgYellow)
                 }
 
+                // Travelers stepper
+                HStack(spacing: 0) {
+                    Image(systemName: "person.2")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                        .frame(width: 20)
+                    Text("Travelers")
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgWhite)
+                        .padding(.leading, 8)
+                    Spacer()
+                    HStack(spacing: 0) {
+                        Button {
+                            if travelers > 1 { travelers -= 1 }
+                        } label: {
+                            Text("-")
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .foregroundStyle(travelers > 1 ? Color.sgWhite : Color.sgMuted)
+                                .frame(width: 32, height: 28)
+                                .background(Color.sgBorder.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .disabled(travelers <= 1)
+
+                        Text("\(travelers)")
+                            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(Color.sgYellow)
+                            .frame(width: 32)
+
+                        Button {
+                            if travelers < 6 { travelers += 1 }
+                        } label: {
+                            Text("+")
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .foregroundStyle(travelers < 6 ? Color.sgWhite : Color.sgMuted)
+                                .frame(width: 32, height: 28)
+                                .background(Color.sgBorder.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .disabled(travelers >= 6)
+                    }
+                }
+                .padding(.bottom, 4)
+
                 // Line items
                 VStack(spacing: 8) {
                     budgetRow(
                         icon: "airplane",
-                        label: "Flights (round trip)",
-                        amount: flightCost,
+                        label: travelers > 1
+                            ? "Flights (\(travelers) x $\(Int(flightCostPP)))"
+                            : "Flights (round trip)",
+                        amount: flightTotal,
                         color: Color.sgWhite,
                         isEstimate: deal.isEstimatedPrice
                     )
 
-                    if let hotelNight, hotelNight > 0 {
+                    if hotelPerNight > 0 {
                         budgetRow(
                             icon: "bed.double",
-                            label: "Hotel (\(max(days - 1, 1)) nights × $\(Int(hotelNight)))",
+                            label: roomCount > 1
+                                ? "Hotel (\(nights) nights x \(roomCount) rooms)"
+                                : "Hotel (\(nights) nights x $\(Int(hotelPerNight)))",
                             amount: hotelTotal,
                             color: Color.sgWhite
                         )
@@ -791,7 +848,9 @@ struct DestinationDetailView: View {
 
                     budgetRow(
                         icon: "fork.knife",
-                        label: "Food & activities (~$\(Int(dailySpend))/day)",
+                        label: travelers > 1
+                            ? "Food & activities (\(travelers) x ~$\(Int(dailySpendPP))/day)"
+                            : "Food & activities (~$\(Int(dailySpendPP))/day)",
                         amount: dailyTotal,
                         color: Color.sgWhiteDim
                     )
@@ -812,7 +871,11 @@ struct DestinationDetailView: View {
                             .foregroundStyle(Color.sgYellow)
                     }
 
-                    if grandTotal > 0 {
+                    if travelers > 1 && perPerson > 0 {
+                        Text("~$\(Int(perPerson)) per person")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.sgMuted)
+                    } else if grandTotal > 0 {
                         Text("~$\(Int(grandTotal / Double(days)))/day per person")
                             .font(.system(size: 11))
                             .foregroundStyle(Color.sgMuted)
