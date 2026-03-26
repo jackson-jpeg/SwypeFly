@@ -274,14 +274,16 @@ struct TripView: View {
                     )
                 }
 
-                HStack(spacing: Spacing.sm) {
-                    statChip(label: "Stay", value: "\(tripLengthDays) days", color: Color.sgWhiteDim)
-                    statChip(label: "Route", value: routeSummary, color: Color.sgWhiteDim)
-                    if usingAlternateOrigin {
-                        statChip(label: "Market", value: "Nearby \(effectiveOriginCode)", color: Color.sgYellow)
-                    }
-                    if deal.bestDepartureDate == nil || deal.bestReturnDate == nil {
-                        statChip(label: "Mode", value: "Flexible seed", color: Color.sgOrange)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Spacing.sm) {
+                        statChip(label: "Stay", value: "\(tripLengthDays) days", color: Color.sgWhiteDim)
+                        statChip(label: "Route", value: routeSummary, color: Color.sgWhiteDim)
+                        if usingAlternateOrigin {
+                            statChip(label: "Market", value: "Nearby \(effectiveOriginCode)", color: Color.sgYellow)
+                        }
+                        if deal.bestDepartureDate == nil || deal.bestReturnDate == nil {
+                            statChip(label: "Mode", value: "Flexible seed", color: Color.sgOrange)
+                        }
                     }
                 }
             }
@@ -618,47 +620,49 @@ struct TripView: View {
                 .textCase(.uppercase)
                 .tracking(1)
 
-            HStack(spacing: Spacing.xs) {
-                routeExperimentChip(
-                    title: "Earlier",
-                    subtitle: "-7d",
-                    isActive: false
-                ) {
-                    shiftTrip(by: -7)
-                }
-
-                routeExperimentChip(
-                    title: "Later",
-                    subtitle: "+7d",
-                    isActive: false
-                ) {
-                    shiftTrip(by: 7)
-                }
-
-                routeExperimentChip(
-                    title: "Weekend",
-                    subtitle: "reset",
-                    isActive: false
-                ) {
-                    applyNextWeekend()
-                }
-
-                routeExperimentChip(
-                    title: "Recommended",
-                    subtitle: "deal seed",
-                    isActive: isUsingRecommendedWindow
-                ) {
-                    applyDealRecommendedWindow()
-                }
-
-                if let cheapestMonth = monthlyIntel?.cheapestMonth {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.xs) {
                     routeExperimentChip(
-                        title: "Cheapest",
-                        subtitle: cheapestMonth.monthDisplayShort,
-                        isActive: cheapestMonth == departureMonthKey
+                        title: "Earlier",
+                        subtitle: "-7d",
+                        isActive: false
                     ) {
-                        if let month = monthlyIntel?.months.first(where: { $0.month == cheapestMonth }) {
-                            applyMonthlySuggestion(month)
+                        shiftTrip(by: -7)
+                    }
+
+                    routeExperimentChip(
+                        title: "Later",
+                        subtitle: "+7d",
+                        isActive: false
+                    ) {
+                        shiftTrip(by: 7)
+                    }
+
+                    routeExperimentChip(
+                        title: "Weekend",
+                        subtitle: "reset",
+                        isActive: false
+                    ) {
+                        applyNextWeekend()
+                    }
+
+                    routeExperimentChip(
+                        title: "Recommended",
+                        subtitle: "deal seed",
+                        isActive: isUsingRecommendedWindow
+                    ) {
+                        applyDealRecommendedWindow()
+                    }
+
+                    if let cheapestMonth = monthlyIntel?.cheapestMonth {
+                        routeExperimentChip(
+                            title: "Cheapest",
+                            subtitle: cheapestMonth.monthDisplayShort,
+                            isActive: cheapestMonth == departureMonthKey
+                        ) {
+                            if let month = monthlyIntel?.months.first(where: { $0.month == cheapestMonth }) {
+                                applyMonthlySuggestion(month)
+                            }
                         }
                     }
                 }
