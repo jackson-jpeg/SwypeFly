@@ -159,6 +159,17 @@ struct TripView: View {
                 returnDate = minimumReturn
             }
         }
+        .onChange(of: selectedCabinClass) { oldValue, newValue in
+            guard oldValue != newValue else { return }
+            // Only auto-re-search if we've already performed at least one search
+            guard !autoSearchedRouteKey.isEmpty else { return }
+            toastManager.show(
+                message: "Searching \(newValue.displayName) class...",
+                type: .info,
+                duration: 2.0
+            )
+            performSearch()
+        }
         .alert("Price Changed", isPresented: $showPriceAlert) {
             Button("Continue Anyway") {
                 if let option = priceAlertOption {
