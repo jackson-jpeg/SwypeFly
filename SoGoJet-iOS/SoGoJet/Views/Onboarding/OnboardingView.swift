@@ -4,19 +4,25 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(SettingsStore.self) private var settings
+    @Environment(FeedStore.self) private var feedStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var currentDestinationIndex = 0
     @State private var animateFlap = false
     @State private var cyclingTask: Task<Void, Never>?
+    @State private var liveShowcases: [OnboardingShowcase]?
 
-    private let showcases: [OnboardingShowcase] = [
+    private static let fallbackShowcases: [OnboardingShowcase] = [
         .init(code: "BCN", city: "BARCELONA", country: "Spain", price: "$287", vibe: "Culture"),
         .init(code: "HND", city: "TOKYO", country: "Japan", price: "$412", vibe: "Nightlife"),
         .init(code: "DPS", city: "BALI", country: "Indonesia", price: "$389", vibe: "Beach"),
         .init(code: "CDG", city: "PARIS", country: "France", price: "$310", vibe: "Romance"),
         .init(code: "JTR", city: "SANTORINI", country: "Greece", price: "$345", vibe: "Island"),
     ]
+
+    private var showcases: [OnboardingShowcase] {
+        liveShowcases ?? Self.fallbackShowcases
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -52,6 +58,22 @@ struct OnboardingView: View {
         .onDisappear {
             stopCycling()
         }
+        .task {
+            // Fetch real deals for the onboarding preview
+            await feedStore.fetchDeals(origin: settings.departureCode)
+            let topDeals = Array(feedStore.deals.prefix(5))
+            if !topDeals.isEmpty {
+                liveShowcases = topDeals.map { deal in
+                    OnboardingShowcase(
+                        code: deal.iataCode ?? "---",
+                        city: deal.city.uppercased(),
+                        country: deal.country,
+                        price: deal.priceFormatted,
+                        vibe: deal.safeVibeTags.first ?? "Travel"
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - Welcome Header
@@ -80,7 +102,7 @@ struct OnboardingView: View {
 
     private var dealPreview: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("LIVE DEALS")
+            Text(liveShowcases != nil ? "LIVE DEALS" : "SAMPLE DEALS")
                 .font(SGFont.bodyBold(size: 11))
                 .foregroundStyle(Color.sgMuted)
                 .tracking(1.4)

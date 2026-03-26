@@ -1428,7 +1428,7 @@ struct DestinationDetailView: View {
             router.showDeal(otherDeal)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(otherDeal.city), \(otherDeal.isEstimatedPrice ? "from " : "")\(otherDeal.priceFormatted)")
+        .accessibilityLabel("\(otherDeal.city), \(otherDeal.isEstimatedPrice ? "seen at " : "")\(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
         .accessibilityAddTraits(.isButton)
     }
@@ -1515,7 +1515,7 @@ struct DestinationDetailView: View {
             router.showDeal(otherDeal)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(otherDeal.city), \(distanceKm) kilometers away, \(otherDeal.isEstimatedPrice ? "from " : "")\(otherDeal.priceFormatted)")
+        .accessibilityLabel("\(otherDeal.city), \(distanceKm) kilometers away, \(otherDeal.isEstimatedPrice ? "seen at " : "")\(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
         .accessibilityAddTraits(.isButton)
     }

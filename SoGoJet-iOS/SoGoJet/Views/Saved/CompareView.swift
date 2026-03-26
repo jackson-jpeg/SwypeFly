@@ -100,8 +100,8 @@ struct CompareView: View {
 
         return metricRow(
             label: "Price",
-            leftValue: dealA.hasPrice ? (dealA.isEstimatedPrice ? "from " : "") + dealA.priceFormatted : "--",
-            rightValue: dealB.hasPrice ? (dealB.isEstimatedPrice ? "from " : "") + dealB.priceFormatted : "--",
+            leftValue: dealA.hasPrice ? (dealA.isEstimatedPrice ? "seen at " : "") + dealA.priceFormatted : "--",
+            rightValue: dealB.hasPrice ? (dealB.isEstimatedPrice ? "seen at " : "") + dealB.priceFormatted : "--",
             leftWins: winA,
             rightWins: winB
         )

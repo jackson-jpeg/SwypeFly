@@ -182,7 +182,7 @@ struct DealCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(deal.city)
                         .font(.headline)
-                    Text("\(deal.country) \(deal.hasPrice ? "-- \(deal.isEstimatedPrice ? "from " : "")\(deal.priceFormatted)" : "")")
+                    Text("\(deal.country) \(deal.hasPrice ? "-- \(deal.isEstimatedPrice ? "seen at " : "")\(deal.priceFormatted)" : "")")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

@@ -177,7 +177,7 @@ struct TripPlanPDFRenderer {
         // Price (right-aligned)
         let priceText: String
         if let price = deal.displayPrice, price > 0 {
-            priceText = deal.isEstimatedPrice ? "from $\(Int(price))" : "$\(Int(price))"
+            priceText = deal.isEstimatedPrice ? "seen at $\(Int(price))" : "$\(Int(price))"
         } else {
             priceText = "Check price"
         }
