@@ -34,12 +34,21 @@ function getFeedSearchDates(): { departureDate: string; returnDate: string } {
 }
 
 // In-memory cache for on-demand prices (avoids re-searching within the same lambda)
-const onDemandPriceCache = new Map<string, { price: number; airline: string; duration: string; fetchedAt: string } | null>();
+interface OnDemandPrice {
+  price: number;
+  airline: string;
+  duration: string;
+  fetchedAt: string;
+  departureDate: string;
+  returnDate: string;
+}
+
+const onDemandPriceCache = new Map<string, OnDemandPrice | null>();
 
 async function fetchLivePriceForDest(
   origin: string,
   destIata: string,
-): Promise<{ price: number; airline: string; duration: string; fetchedAt: string } | null> {
+): Promise<OnDemandPrice | null> {
   const cacheKey = `${origin}-${destIata}`;
   if (onDemandPriceCache.has(cacheKey)) return onDemandPriceCache.get(cacheKey) ?? null;
 
@@ -75,7 +84,7 @@ async function fetchLivePriceForDest(
     }
 
     const fetchedAt = new Date().toISOString();
-    const priceData = { price, airline, duration, fetchedAt };
+    const priceData: OnDemandPrice = { price, airline, duration, fetchedAt, departureDate, returnDate };
     onDemandPriceCache.set(cacheKey, priceData);
 
     // Write to cached_prices in the background so future requests are instant
@@ -150,6 +159,9 @@ async function fillMissingPrices(
       priceFetchedAt: live.fetchedAt,
       airline: live.airline || d.airline,
       flightDuration: live.duration || d.flightDuration,
+      departureDate: live.departureDate,
+      returnDate: live.returnDate,
+      tripDurationDays: 7,
     };
   });
 }
@@ -1065,11 +1077,12 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       live_duration: lp?.duration ?? '',
       price_source: lp?.source ?? undefined,
       price_fetched_at: lp?.fetched_at ?? undefined,
-      departure_date: cp?.date ?? lp?.departure_date,
-      return_date: cp?.return_date ?? lp?.return_date,
-      trip_duration_days: cp?.trip_days ?? lp?.trip_duration_days,
-      cheapest_date: cp?.date || undefined,
-      cheapest_return_date: cp?.return_date || undefined,
+      // Prefer Duffel dates (match the price shown) over calendar dates
+      departure_date: lp?.departure_date ?? cp?.date,
+      return_date: lp?.return_date ?? cp?.return_date,
+      trip_duration_days: lp?.trip_duration_days ?? cp?.trip_days,
+      cheapest_date: lp?.departure_date ?? cp?.date ?? undefined,
+      cheapest_return_date: lp?.return_date ?? cp?.return_date ?? undefined,
       previous_price: lp?.previous_price,
       price_direction: lp?.price_direction,
       offer_json: lp?.offer_json,
