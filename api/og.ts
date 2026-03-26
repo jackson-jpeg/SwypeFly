@@ -2,7 +2,7 @@
 // Usage: /api/og?id=<destination_id> (fetches from Appwrite)
 //    or: /api/og?city=Paris&country=France&price=64&image=https://...
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 
 function escapeHtml(str: string): string {
@@ -37,26 +37,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (id) {
     try {
-      const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, String(id));
-      cityStr = escapeHtml(dest.city || cityStr);
-      countryStr = escapeHtml(dest.country || '');
-      tagline = escapeHtml(dest.tagline || '');
-      imageUrl = encodeURI(dest.image_url || imageUrl);
-      const effectivePrice = dest.live_price ?? dest.flight_price;
-      priceStr = effectivePrice ? `$${effectivePrice}` : '';
-      flightDuration = dest.flight_duration || '';
-      const hotelPrice = dest.hotel_price_per_night || 0;
-      costLevel = hotelPrice <= 60 ? '$' : hotelPrice <= 120 ? '$$' : hotelPrice <= 200 ? '$$$' : '$$$$';
+      const { data: dest } = await supabase
+        .from(TABLES.destinations)
+        .select('*')
+        .eq('id', String(id))
+        .single();
+      if (dest) {
+        cityStr = escapeHtml(dest.city || cityStr);
+        countryStr = escapeHtml(dest.country || '');
+        tagline = escapeHtml(dest.tagline || '');
+        imageUrl = encodeURI(dest.image_url || imageUrl);
+        const effectivePrice = dest.live_price ?? dest.flight_price;
+        priceStr = effectivePrice ? `$${effectivePrice}` : '';
+        flightDuration = dest.flight_duration || '';
+        const hotelPrice = dest.hotel_price_per_night || 0;
+        costLevel = hotelPrice <= 60 ? '$' : hotelPrice <= 120 ? '$$' : hotelPrice <= 200 ? '$$$' : '$$$$';
+      }
 
       // Fetch deal quality from price_calendar
       try {
-        const calendarData = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
-          Query.equal('destination_id', String(id)),
-          Query.orderDesc('deal_score'),
-          Query.limit(1),
-        ]);
-        if (calendarData.documents.length > 0) {
-          const pd = calendarData.documents[0];
+        const { data: calendarRows } = await supabase
+          .from(TABLES.priceCalendar)
+          .select('deal_tier, savings_percent')
+          .eq('destination_id', String(id))
+          .order('deal_score', { ascending: false })
+          .limit(1);
+        if (calendarRows && calendarRows.length > 0) {
+          const pd = calendarRows[0];
           dealTier = (pd.deal_tier as string) || '';
           savingsPercent = (pd.savings_percent as number) || 0;
         }

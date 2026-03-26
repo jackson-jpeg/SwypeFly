@@ -2,7 +2,7 @@
 // Usage: /api/share-card?id=<destination_id>&format=instagram|twitter
 //        /api/share-card?top=5  — "Top 5 Deals" board card (Instagram format)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 
 function escapeHtml(str: string): string {
@@ -171,16 +171,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Board mode — top N deals
     if (topN > 0) {
-      const entries = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
-        Query.greaterThan('deal_score', 50),
-        Query.orderDesc('deal_score'),
-        Query.limit(topN * 2),
-      ]);
+      const { data: entriesData, error: entriesError } = await supabase
+        .from(TABLES.priceCalendar)
+        .select('*')
+        .gt('deal_score', 50)
+        .order('deal_score', { ascending: false })
+        .limit(topN * 2);
+
+      if (entriesError) throw entriesError;
+      const entries = entriesData ?? [];
 
       const seen = new Set<string>();
       const deals: Array<{ origin: string; city: string; price: number; savingsPercent: number | null; dealTier: string; isNonstop: boolean }> = [];
 
-      for (const doc of entries.documents) {
+      for (const doc of entries) {
         const key = doc.destination_iata || doc.city;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -206,7 +210,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Provide ?id=<destination_id> or ?top=N' });
     }
 
-    const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, destId);
+    const { data: dest, error: destError } = await supabase
+      .from(TABLES.destinations)
+      .select('*')
+      .eq('id', destId)
+      .single();
+
+    if (destError) throw destError;
 
     // Try to get price calendar data for deal context
     let dealTier = 'fair';
@@ -215,13 +225,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let isNonstop = false;
 
     try {
-      const priceData = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
-        Query.equal('destination_id', destId),
-        Query.orderDesc('deal_score'),
-        Query.limit(1),
-      ]);
-      if (priceData.documents.length > 0) {
-        const pd = priceData.documents[0];
+      const { data: priceData } = await supabase
+        .from(TABLES.priceCalendar)
+        .select('*')
+        .eq('destination_id', destId)
+        .order('deal_score', { ascending: false })
+        .limit(1);
+      if (priceData && priceData.length > 0) {
+        const pd = priceData[0];
         dealTier = pd.deal_tier || 'fair';
         savingsPercent = pd.savings_percent || null;
         usualPrice = pd.usual_price || null;

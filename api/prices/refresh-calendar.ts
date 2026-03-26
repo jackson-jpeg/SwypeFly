@@ -1,11 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  serverDatabases,
-  DATABASE_ID,
-  COLLECTIONS,
-  Query,
-} from '../../services/appwriteServer';
-import { ID } from 'node-appwrite';
+import { supabase, TABLES } from '../../services/supabaseServer';
 import { fetchAllCheapPrices } from '../../services/travelpayouts';
 import { logApiError } from '../../utils/apiLogger';
 import { evaluateDealQuality, US_AIRPORTS } from '../../utils/dealQuality';
@@ -57,12 +51,12 @@ function addDays(dateStr: string, days: number): string {
 async function getActiveOrigins(): Promise<string[]> {
   const origins = new Set(DEFAULT_ORIGINS);
   try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.userPreferences,
-      [Query.limit(500)],
-    );
-    for (const doc of result.documents) {
+    const { data, error } = await supabase
+      .from(TABLES.userPreferences)
+      .select('departure_code')
+      .limit(500);
+    if (error) throw error;
+    for (const doc of data ?? []) {
       if (doc.departure_code) origins.add(doc.departure_code as string);
     }
   } catch {
@@ -76,12 +70,13 @@ async function pickNextOrigins(count: number): Promise<string[]> {
 
   let statusDocs: Array<Record<string, unknown>> = [];
   try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.priceCalendar,
-      [Query.orderAsc('fetched_at'), Query.limit(500)],
-    );
-    statusDocs = result.documents;
+    const { data, error } = await supabase
+      .from(TABLES.priceCalendar)
+      .select('origin, fetched_at')
+      .order('fetched_at', { ascending: true })
+      .limit(500);
+    if (error) throw error;
+    statusDocs = data ?? [];
   } catch {
     // No calendar data yet
   }
@@ -121,12 +116,13 @@ async function getDestMeta(): Promise<Map<string, DestMeta>> {
   if (destMetaCache) return destMetaCache;
   destMetaCache = new Map();
   try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.destinations,
-      [Query.equal('is_active', true), Query.limit(500)],
-    );
-    for (const doc of result.documents) {
+    const { data, error } = await supabase
+      .from(TABLES.destinations)
+      .select('iata_code, country, popularity_score, best_months')
+      .eq('is_active', true)
+      .limit(500);
+    if (error) throw error;
+    for (const doc of data ?? []) {
       destMetaCache.set(doc.iata_code as string, {
         country: (doc.country as string) || '',
         popularityScore: (doc.popularity_score as number) || 0,
@@ -203,40 +199,13 @@ async function upsertCalendarEntry(
   };
 
   try {
-    // Try create first (faster path for new entries)
-    await serverDatabases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.priceCalendar,
-      ID.unique(),
-      data,
-    );
+    const { error } = await supabase
+      .from(TABLES.priceCalendar)
+      .upsert(data, { onConflict: 'origin,destination_iata,date' });
+    if (error) throw error;
     return 'created';
-  } catch (createErr) {
-    // If duplicate, find and update
-    try {
-      const existing = await serverDatabases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.priceCalendar,
-        [
-          Query.equal('origin', origin),
-          Query.equal('destination_iata', destIata),
-          Query.equal('date', date),
-          Query.limit(1),
-        ],
-      );
-      if (existing.documents.length > 0) {
-        await serverDatabases.updateDocument(
-          DATABASE_ID,
-          COLLECTIONS.priceCalendar,
-          existing.documents[0].$id,
-          data,
-        );
-        return 'updated';
-      }
-      return `err:create=${(createErr as Error).message?.slice(0, 80)}`;
-    } catch (err) {
-      return `err:${(err as Error).message?.slice(0, 80)}|create=${(createErr as Error).message?.slice(0, 40)}`;
-    }
+  } catch (err) {
+    return `err:${(err as Error).message?.slice(0, 80)}`;
   }
 }
 
@@ -280,12 +249,13 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
   // Get our destination IATA codes so we can prioritize matching routes
   let ourDestCodes = new Set<string>();
   try {
-    const destResult = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.destinations,
-      [Query.equal('is_active', true), Query.limit(500)],
-    );
-    ourDestCodes = new Set(destResult.documents.map((d) => d.iata_code as string));
+    const { data, error } = await supabase
+      .from(TABLES.destinations)
+      .select('iata_code')
+      .eq('is_active', true)
+      .limit(500);
+    if (error) throw error;
+    ourDestCodes = new Set((data ?? []).map((d) => d.iata_code as string));
   } catch {
     // Non-fatal — just won't prioritize
   }

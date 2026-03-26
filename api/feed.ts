@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { feedQuerySchema, budgetDiscoveryQuerySchema, detectOriginQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { generateAviasalesLink } from '../utils/affiliateLinks';
@@ -451,15 +451,17 @@ async function fetchUserPrefs(userId: string): Promise<UserPrefs | null> {
   if (cached && Date.now() - cached.ts < PREF_CACHE_TTL) return cached.data;
 
   try {
-    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
-      Query.equal('user_id', userId),
-      Query.limit(1),
-    ]);
-    if (result.documents.length === 0) {
+    const { data, error } = await supabase
+      .from(TABLES.userPreferences)
+      .select('*')
+      .eq('user_id', userId)
+      .limit(1);
+    if (error) throw error;
+    if (!data || data.length === 0) {
       prefCache.set(userId, { data: null, ts: Date.now() });
       return null;
     }
-    const doc = result.documents[0];
+    const doc = data[0];
     const prefs: UserPrefs = {
       beach: (doc.pref_beach as number) ?? 0.5,
       city: (doc.pref_city as number) ?? 0.5,
@@ -610,30 +612,55 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   const cached = destCache.get(origin);
   if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data;
 
-  // Fetch destinations from Appwrite
-  const destResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
-    Query.equal('is_active', true),
-    Query.limit(500),
-  ]);
+  // Fetch destinations from Supabase
+  const { data: destData, error: destError } = await supabase
+    .from(TABLES.destinations)
+    .select('*')
+    .eq('is_active', true)
+    .limit(500);
+  if (destError) throw destError;
+  const destResult = { documents: destData ?? [] };
 
   // Fetch calendar prices, cached prices, hotel prices, images, and route stats in parallel
   const [calendarResult, priceResult, hotelPriceResult, imageResult, routeStatsMap] = await Promise.all([
-    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
-      Query.equal('origin', origin),
-      Query.limit(2000),
-    ]).catch((err) => {
-      console.error('[feed] price_calendar query FAILED:', (err as Error)?.message || err);
-      return { documents: [] };
-    }),
-    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.equal('origin', origin), Query.orderAsc('price'), Query.limit(500),
-    ]).catch(() => ({ documents: [] })),
-    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedHotelPrices, [
-      Query.limit(500),
-    ]).catch(() => ({ documents: [] })),
-    serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
-      Query.limit(2500),
-    ]).catch(() => ({ documents: [] })),
+    supabase
+      .from(TABLES.priceCalendar)
+      .select('*')
+      .eq('origin', origin)
+      .limit(2000)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[feed] price_calendar query FAILED:', error.message);
+          return { documents: [] };
+        }
+        return { documents: data ?? [] };
+      }),
+    supabase
+      .from(TABLES.cachedPrices)
+      .select('*')
+      .eq('origin', origin)
+      .order('price', { ascending: true })
+      .limit(500)
+      .then(({ data, error }) => {
+        if (error) return { documents: [] };
+        return { documents: data ?? [] };
+      }),
+    supabase
+      .from(TABLES.cachedHotelPrices)
+      .select('*')
+      .limit(500)
+      .then(({ data, error }) => {
+        if (error) return { documents: [] };
+        return { documents: data ?? [] };
+      }),
+    supabase
+      .from(TABLES.destinationImages)
+      .select('*')
+      .limit(2500)
+      .then(({ data, error }) => {
+        if (error) return { documents: [] };
+        return { documents: data ?? [] };
+      }),
     bulkGetRouteStats(origin),
   ]);
 
@@ -767,7 +794,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   for (const hp of hotelPriceResult.documents) {
     let hotels: any[] | undefined;
     try {
-      hotels = hp.hotels_json ? JSON.parse(hp.hotels_json as string) : undefined;
+      hotels = hp.hotels_json
+        ? (typeof hp.hotels_json === 'string' ? JSON.parse(hp.hotels_json) : hp.hotels_json)
+        : undefined;
     } catch {
       hotels = undefined;
     }
@@ -810,16 +839,20 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     const cp = calendarPriceMap.get(d.iata_code as string);
     const lp = priceMap.get(d.iata_code as string);
 
-    // Parse JSON fields stored as strings in Appwrite
+    // Parse JSON fields — Supabase JSONB columns return objects directly; text columns return strings
     let itinerary: ScoredDest['itinerary'];
     let restaurants: ScoredDest['restaurants'];
     try {
-      itinerary = d.itinerary_json ? JSON.parse(d.itinerary_json as string) : undefined;
+      if (d.itinerary_json) {
+        itinerary = typeof d.itinerary_json === 'string' ? JSON.parse(d.itinerary_json) : d.itinerary_json;
+      }
     } catch {
       itinerary = undefined;
     }
     try {
-      restaurants = d.restaurants_json ? JSON.parse(d.restaurants_json as string) : undefined;
+      if (d.restaurants_json) {
+        restaurants = typeof d.restaurants_json === 'string' ? JSON.parse(d.restaurants_json) : d.restaurants_json;
+      }
     } catch {
       restaurants = undefined;
     }
@@ -851,7 +884,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     }
 
     return {
-      id: d.$id,
+      id: d.id,
       iata_code: d.iata_code as string,
       city: d.city as string,
       country: d.country as string,
@@ -860,8 +893,8 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       description: (d.description as string) || '',
       // Prefer Unsplash images (destination_images collection) — they load reliably in browsers.
       // Google Places photo URLs (d.image_url) expire and return HTML instead of images.
-      image_url: imageMap.get(d.$id)?.url || (d.image_url as string) || '',
-      image_urls: imageMap.get(d.$id)?.urls?.length ? imageMap.get(d.$id)!.urls : (d.image_urls as string[]) || [],
+      image_url: imageMap.get(d.id)?.url || (d.image_url as string) || '',
+      image_urls: imageMap.get(d.id)?.urls?.length ? imageMap.get(d.id)!.urls : (d.image_urls as string[]) || [],
       flight_price: d.flight_price as number,
       hotel_price_per_night: (d.hotel_price_per_night as number) || 0,
       currency: (d.currency as string) || 'USD',

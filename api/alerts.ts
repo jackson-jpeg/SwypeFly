@@ -1,7 +1,6 @@
 // Consolidated alerts API — dispatches on ?action=create|check|list|delete
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Query, ID } from 'node-appwrite';
-import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { priceAlertBodySchema, priceAlertDeleteSchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
@@ -31,13 +30,17 @@ async function getPriceHistory(
   try {
     // Query ai_cache for price_history entries matching this destination
     // The key format is `${origin}-${destination_iata}`, so we match the suffix
-    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.aiCache, [
-      Query.equal('type', 'price_history'),
-      Query.greaterThan('created_at', cutoff),
-      Query.limit(500),
-    ]);
+    const { data: rows, error } = await supabase
+      .from(TABLES.aiCache)
+      .select('*')
+      .eq('type', 'price_history')
+      .gt('created_at', cutoff)
+      .limit(500);
 
-    for (const doc of result.documents) {
+    if (error) throw error;
+    const result = rows ?? [];
+
+    for (const doc of result) {
       const key = doc.key as string;
       // Match any origin for this destination (key ends with -IATA)
       if (key.endsWith(`-${destinationIata}`)) {
@@ -87,29 +90,41 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
   const { destination_id, target_price, email } = v.data;
 
   try {
-    const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
-      Query.equal('user_id', userId),
-      Query.equal('destination_id', destination_id),
-      Query.equal('is_active', true),
-    ]);
+    const { data: existingRows, error: listErr } = await supabase
+      .from(TABLES.priceAlerts)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('destination_id', destination_id)
+      .eq('is_active', true)
+      .limit(1);
+    if (listErr) throw listErr;
 
-    if (existing.total > 0) {
-      const doc = existing.documents[0];
-      const updated = await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.priceAlerts, doc.$id, {
-        target_price,
-      });
+    if (existingRows && existingRows.length > 0) {
+      const doc = existingRows[0];
+      const { data: updated, error: updateErr } = await supabase
+        .from(TABLES.priceAlerts)
+        .update({ target_price })
+        .eq('id', doc.id)
+        .select()
+        .single();
+      if (updateErr) throw updateErr;
       return res.json({ alert: updated, updated: true });
     }
 
-    const alert = await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.priceAlerts, ID.unique(), {
-      user_id: userId,
-      email: email || null,
-      destination_id,
-      target_price,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      triggered_at: null,
-    });
+    const { data: alert, error: insertErr } = await supabase
+      .from(TABLES.priceAlerts)
+      .insert({
+        user_id: userId,
+        email: email || null,
+        destination_id,
+        target_price,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        triggered_at: null,
+      })
+      .select()
+      .single();
+    if (insertErr) throw insertErr;
 
     res.json({ alert, created: true });
   } catch (err: unknown) {
@@ -129,8 +144,12 @@ async function sendAlertEmail(
 ): Promise<void> {
   let destName = destinationId;
   try {
-    const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, destinationId);
-    destName = `${dest.city}, ${dest.country}`;
+    const { data: dest } = await supabase
+      .from(TABLES.destinations)
+      .select('city, country')
+      .eq('id', destinationId)
+      .single();
+    if (dest) destName = `${dest.city}, ${dest.country}`;
   } catch {
     // Use ID as fallback
   }
@@ -149,19 +168,21 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
   if (secret !== cronSecret) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    // Paginate through all active alerts (Appwrite max 100 per query)
+    // Paginate through all active alerts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let allAlerts: any[] = [];
     let offset = 0;
     const BATCH = 100;
     while (true) {
-      const batch = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
-        Query.equal('is_active', true),
-        Query.limit(BATCH),
-        ...(offset > 0 ? [Query.offset(offset)] : []),
-      ]);
-      allAlerts = allAlerts.concat(batch.documents);
-      if (batch.documents.length < BATCH) break;
+      const { data: batch, error: batchErr } = await supabase
+        .from(TABLES.priceAlerts)
+        .select('*')
+        .eq('is_active', true)
+        .limit(BATCH)
+        .range(offset, offset + BATCH - 1);
+      if (batchErr) throw batchErr;
+      allAlerts = allAlerts.concat(batch ?? []);
+      if (!batch || batch.length < BATCH) break;
       offset += BATCH;
     }
 
@@ -171,22 +192,24 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
     for (const alert of allAlerts) {
       checked++;
       try {
-        // Look up destination to get IATA code (alert.destination_id is an Appwrite doc ID)
-        let dest;
-        try {
-          dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, alert.destination_id as string);
-        } catch {
-          // Destination not found — skip this alert
-          continue;
-        }
+        // Look up destination to get IATA code
+        const { data: dest, error: destErr } = await supabase
+          .from(TABLES.destinations)
+          .select('iata_code, flight_price')
+          .eq('id', alert.destination_id as string)
+          .single();
+        if (destErr || !dest) continue;
 
         const iataCode = dest.iata_code as string;
 
-        const priceResults = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-          Query.equal('destination_iata', iataCode),
-          Query.orderAsc('price'),
-          Query.limit(1),
-        ]);
+        const { data: priceRows, error: priceErr } = await supabase
+          .from(TABLES.cachedPrices)
+          .select('price, source')
+          .eq('destination_iata', iataCode)
+          .order('price', { ascending: true })
+          .limit(1);
+        const priceResults = { documents: priceRows ?? [] };
+        if (priceErr) throw priceErr;
 
         let currentPrice: number | null = null;
         let priceSource = 'estimate';
@@ -194,7 +217,7 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
           currentPrice = priceResults.documents[0].price as number;
           priceSource = (priceResults.documents[0].source as string) || 'cached';
         } else {
-          currentPrice = (dest.flight_price as number) || null;
+          currentPrice = (dest.flight_price as number) ?? null;
         }
 
         // Check trigger conditions:
@@ -219,16 +242,20 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
           const dropPercent = alert.target_price > 0
             ? Math.round(((alert.target_price as number) - (currentPrice as number)) / (alert.target_price as number) * 100)
             : 0;
-          await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.priceAlerts, alert.$id, {
-            is_active: false,
-            triggered_at: new Date().toISOString(),
-            triggered_price: currentPrice,
-            price_source: priceSource,
-            drop_percent: dropPercent,
-            rolling_avg: rollingAvg ?? 0,
-            drop_from_avg_percent: dropFromAvgPercent,
-            trigger_reason: belowTarget ? 'target_price' : 'rolling_avg_drop',
-          });
+          const { error: triggerErr } = await supabase
+            .from(TABLES.priceAlerts)
+            .update({
+              is_active: false,
+              triggered_at: new Date().toISOString(),
+              triggered_price: currentPrice,
+              price_source: priceSource,
+              drop_percent: dropPercent,
+              rolling_avg: rollingAvg ?? 0,
+              drop_from_avg_percent: dropFromAvgPercent,
+              trigger_reason: belowTarget ? 'target_price' : 'rolling_avg_drop',
+            })
+            .eq('id', alert.id);
+          if (triggerErr) throw triggerErr;
           triggered++;
 
           if (alert.email) {
@@ -240,12 +267,12 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
                 alert.target_price as number,
               );
             } catch (emailErr) {
-              console.error(`[alerts/check] Email send failed for ${alert.$id}:`, emailErr);
+              console.error(`[alerts/check] Email send failed for ${alert.id}:`, emailErr);
             }
           }
         }
       } catch (err) {
-        logApiError(`api/alerts/check/${alert.$id}`, err);
+        logApiError(`api/alerts/check/${alert.id}`, err);
       }
     }
 
@@ -268,14 +295,16 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
   const userId = authResult.userId;
 
   try {
-    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceAlerts, [
-      Query.equal('user_id', userId),
-      Query.orderDesc('created_at'),
-      Query.limit(50),
-    ]);
+    const { data: rows, error: listErr, count } = await supabase
+      .from(TABLES.priceAlerts)
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (listErr) throw listErr;
 
-    const alerts = result.documents.map((doc) => ({
-      id: doc.$id,
+    const alerts = (rows ?? []).map((doc) => ({
+      id: doc.id,
       destinationId: doc.destination_id,
       targetPrice: doc.target_price,
       isActive: doc.is_active,
@@ -284,7 +313,7 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
       triggeredPrice: doc.triggered_price || null,
     }));
 
-    res.json({ alerts, total: result.total });
+    res.json({ alerts, total: count ?? alerts.length });
   } catch (err: unknown) {
     logApiError('api/alerts/list', err);
     const message = err instanceof Error ? err.message : 'Failed to list alerts';
@@ -310,12 +339,21 @@ async function handleDelete(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Fetch the alert first to verify ownership
-    const doc = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.priceAlerts, alertId);
+    const { data: doc, error: fetchErr } = await supabase
+      .from(TABLES.priceAlerts)
+      .select('user_id')
+      .eq('id', alertId)
+      .single();
+    if (fetchErr || !doc) return res.status(404).json({ error: 'Alert not found' });
     if (doc.user_id !== userId) {
       return res.status(403).json({ error: 'Not authorized to delete this alert' });
     }
 
-    await serverDatabases.deleteDocument(DATABASE_ID, COLLECTIONS.priceAlerts, alertId);
+    const { error: deleteErr } = await supabase
+      .from(TABLES.priceAlerts)
+      .delete()
+      .eq('id', alertId);
+    if (deleteErr) throw deleteErr;
     res.json({ deleted: true, alertId });
   } catch (err: unknown) {
     logApiError('api/alerts/delete', err);

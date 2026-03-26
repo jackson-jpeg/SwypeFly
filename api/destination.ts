@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { destinationQuerySchema, priceCalendarQuerySchema, weekMatrixQuerySchema, priceHistoryQuerySchema, validateRequest } from '../utils/validation';
 import { fetchPriceCalendar, fetchMonthlyPrices, fetchWeekMatrix } from '../services/travelpayouts';
 import { logApiError } from '../utils/apiLogger';
@@ -17,25 +17,23 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
     const today = new Date().toISOString().split('T')[0];
 
     // Try price_calendar collection first (cached by cron)
-    let calendarDocs;
+    let calendarDocs: any[] = [];
     try {
-      calendarDocs = await serverDatabases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.priceCalendar,
-        [
-          Query.equal('origin', origin),
-          Query.equal('destination_iata', destination),
-          Query.greaterThanEqual('date', today),
-          Query.orderAsc('date'),
-          Query.limit(90),
-        ],
-      );
+      const { data } = await supabase
+        .from(TABLES.priceCalendar)
+        .select('*')
+        .eq('origin', origin)
+        .eq('destination_iata', destination)
+        .gte('date', today)
+        .order('date', { ascending: true })
+        .limit(90);
+      calendarDocs = data ?? [];
     } catch {
-      calendarDocs = { documents: [] };
+      calendarDocs = [];
     }
 
     // Filter to requested month
-    const monthDocs = calendarDocs.documents.filter(
+    const monthDocs = calendarDocs.filter(
       (d) => (d.date as string).startsWith(datePrefix),
     );
 
@@ -150,35 +148,33 @@ async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Query ai_cache for price_history documents matching this destination
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.aiCache,
-      [
-        Query.equal('type', 'price_history'),
-        Query.search('key', destination),
-        Query.orderAsc('created_at'),
-        Query.limit(100),
-      ],
-    );
+    const { data: aiCacheData } = await supabase
+      .from(TABLES.aiCache)
+      .select('*')
+      .eq('type', 'price_history')
+      .ilike('key', '%' + destination + '%')
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    const result = aiCacheData ?? [];
 
     // Also pull current cached_prices for this route
-    const currentPriceResult = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.cachedPrices,
-      [
-        Query.equal('origin', origin),
-        Query.equal('destination_iata', destination),
-        Query.orderAsc('price'),
-        Query.limit(1),
-      ],
-    ).catch(() => ({ documents: [] }));
+    const { data: currentPriceData } = await Promise.resolve(
+      supabase
+        .from(TABLES.cachedPrices)
+        .select('*')
+        .eq('origin', origin)
+        .eq('destination_iata', destination)
+        .order('price', { ascending: true })
+        .limit(1)
+    ).catch(() => ({ data: [] as any[] }));
 
-    const currentPriceDoc = currentPriceResult.documents[0];
+    const currentPriceDoc = (currentPriceData ?? [])[0];
     const currentPrice = (currentPriceDoc?.price as number) ?? null;
 
     // Parse history entries
     const history: { date: string; price: number; source: string; airline: string }[] = [];
-    for (const doc of result.documents) {
+    for (const doc of result) {
       try {
         // Filter: key must end with the destination code
         const key = doc.key as string;
@@ -263,29 +259,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id, origin } = v.data;
 
   try {
-    // Fetch destination from Appwrite (getDocument throws on 404)
-    let dest;
-    try {
-      dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, id);
-    } catch {
+    // Fetch destination from Supabase
+    let dest: any;
+    const { data: destData, error: destError } = await supabase
+      .from(TABLES.destinations)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (destError || !destData) {
       return res.status(404).json({ error: 'Destination not found' });
     }
+    dest = destData;
 
     // Fetch cached prices for this origin + destination
     let price: Record<string, unknown> | null = null;
     try {
-      const priceResult = await serverDatabases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.cachedPrices,
-        [
-          Query.equal('origin', origin),
-          Query.equal('destination_iata', dest.iata_code as string),
-          Query.orderAsc('price'),
-          Query.limit(1),
-        ],
-      );
-      if (priceResult.documents.length > 0) {
-        price = priceResult.documents[0];
+      const { data: priceData } = await supabase
+        .from(TABLES.cachedPrices)
+        .select('*')
+        .eq('origin', origin)
+        .eq('destination_iata', dest.iata_code as string)
+        .order('price', { ascending: true })
+        .limit(1);
+      if (priceData && priceData.length > 0) {
+        price = priceData[0];
       }
     } catch {
       // No cached prices
@@ -293,33 +291,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Fetch other prices, hotel price, refreshed images, and similar destinations in parallel
     const [allPricesResult, hotelPriceResult, imageResult, similarResult] = await Promise.all([
-      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-        Query.equal('destination_iata', dest.iata_code as string),
-        Query.limit(20),
-      ]).catch(() => ({ documents: [] })),
-      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedHotelPrices, [
-        Query.equal('destination_iata', dest.iata_code as string),
-        Query.limit(1),
-      ]).catch(() => ({ documents: [] })),
-      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinationImages, [
-        Query.equal('destination_id', id),
-        Query.equal('is_primary', true),
-        Query.limit(1),
-      ]).catch(() => ({ documents: [] })),
-      serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
-        Query.equal('country', dest.country as string),
-        Query.notEqual('$id', id),
-        Query.limit(3),
-      ]).catch(() => ({ documents: [] })),
+      Promise.resolve(
+        supabase.from(TABLES.cachedPrices).select('*').eq('destination_iata', dest.iata_code as string).limit(20)
+      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
+      Promise.resolve(
+        supabase.from(TABLES.cachedHotelPrices).select('*').eq('destination_iata', dest.iata_code as string).limit(1)
+      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
+      Promise.resolve(
+        supabase.from(TABLES.destinationImages).select('*').eq('destination_id', id).eq('is_primary', true).limit(1)
+      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
+      Promise.resolve(
+        supabase.from(TABLES.destinations).select('*').eq('country', dest.country as string).neq('id', id).limit(3)
+      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
     ]);
 
-    const otherPrices = allPricesResult.documents
+    const otherPrices = allPricesResult
       .filter((p) => p.origin !== origin)
       .map((p) => ({ origin: p.origin as string, price: p.price as number, source: p.source as string }))
       .sort((a, b) => a.price - b.price)
       .slice(0, 5);
 
-    const hotelPriceDoc = hotelPriceResult.documents[0];
+    const hotelPriceDoc = hotelPriceResult[0];
     const hotelPrice = hotelPriceDoc;
 
     // Parse hotels_json from cached hotel prices
@@ -329,10 +321,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch {
       hotels = undefined;
     }
-    const refreshedImage = imageResult.documents[0];
+    const refreshedImage = imageResult[0];
 
-    const similarDestinations = similarResult.documents.map((d) => ({
-      id: d.$id as string,
+    const similarDestinations = similarResult.map((d) => ({
+      id: d.id as string,
       city: d.city as string,
       flightPrice: (d.flight_price as number) ?? 0,
       imageUrl: (d.image_url as string) ?? '',
@@ -353,7 +345,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const result = {
-      id: dest.$id,
+      id: dest.id,
       iataCode: dest.iata_code,
       city: dest.city,
       country: dest.country,

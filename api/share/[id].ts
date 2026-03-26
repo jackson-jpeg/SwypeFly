@@ -1,7 +1,7 @@
 // Dynamic OG share page — returns HTML with meta tags for social crawlers,
 // redirects real users to the SPA destination page.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../../services/appwriteServer';
+import { supabase, TABLES } from '../../services/supabaseServer';
 import { cors } from '../_cors.js';
 
 function escapeHtml(str: string): string {
@@ -21,7 +21,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const dest = await serverDatabases.getDocument(DATABASE_ID, COLLECTIONS.destinations, destId);
+    const { data: dest, error } = await supabase
+      .from(TABLES.destinations)
+      .select('city, country, tagline, flight_price')
+      .eq('id', destId)
+      .single();
+    if (error || !dest) throw error ?? new Error('Not found');
     const city = escapeHtml(dest.city || 'Amazing Destination');
     const country = escapeHtml(dest.country || '');
     const tagline = escapeHtml(dest.tagline || 'Discover cheap flights');

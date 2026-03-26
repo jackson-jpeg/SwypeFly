@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
-import { ID } from 'node-appwrite';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { searchFlights } from '../services/duffel';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { searchQuerySchema, validateRequest } from '../utils/validation';
@@ -127,22 +126,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Check cache for fresh Duffel result
-    const cached = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.equal('origin', origin),
-      Query.equal('destination_iata', destination),
-      Query.equal('source', 'duffel'),
-      Query.orderAsc('price'),
-      Query.limit(1),
-    ]);
+    const { data: cachedDocs, error: cacheError } = await supabase
+      .from(TABLES.cachedPrices)
+      .select('*')
+      .eq('origin', origin)
+      .eq('destination_iata', destination)
+      .eq('source', 'duffel')
+      .order('price', { ascending: true })
+      .limit(1);
+    if (cacheError) throw cacheError;
 
-    if (cached.documents.length > 0 && isFreshCache(cached.documents[0])) {
-      return res.status(200).json(buildResponse(cached.documents[0], true));
+    if ((cachedDocs ?? []).length > 0 && isFreshCache(cachedDocs![0])) {
+      return res.status(200).json(buildResponse(cachedDocs![0], true));
     }
 
     // If we have any cached data (even stale), return it when Duffel is unavailable
     if (STUB_MODE) {
-      if (cached.documents.length > 0) {
-        return res.status(200).json(buildResponse(cached.documents[0], true));
+      if ((cachedDocs ?? []).length > 0) {
+        return res.status(200).json(buildResponse(cachedDocs![0], true));
       }
       return res.status(404).json({ error: 'No flights found (search unavailable)' });
     }
@@ -192,26 +193,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     // Check for existing doc to update
-    const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.equal('origin', origin),
-      Query.equal('destination_iata', destination),
-      Query.limit(1),
-    ]);
+    const { data: existing, error: existingError } = await supabase
+      .from(TABLES.cachedPrices)
+      .select('*')
+      .eq('origin', origin)
+      .eq('destination_iata', destination)
+      .limit(1);
+    if (existingError) throw existingError;
 
-    if (existing.documents.length > 0) {
-      await serverDatabases.updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.cachedPrices,
-        existing.documents[0].$id as string,
-        docData,
-      );
+    if ((existing ?? []).length > 0) {
+      const { error } = await supabase
+        .from(TABLES.cachedPrices)
+        .update(docData)
+        .eq('id', existing![0].id);
+      if (error) throw error;
     } else {
-      await serverDatabases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.cachedPrices,
-        ID.unique(),
-        docData,
-      );
+      const { error } = await supabase.from(TABLES.cachedPrices).insert(docData);
+      if (error) throw error;
     }
 
     // Build response from the fresh data

@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
-import { ID } from 'node-appwrite';
+import { supabase, TABLES } from '../../services/supabaseServer';
 import { searchFlights } from '../../services/duffel';
 import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
@@ -27,13 +26,14 @@ async function recordPriceSnapshot(
   airline: string,
 ): Promise<void> {
   try {
-    await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.aiCache, ID.unique(), {
+    const { error } = await supabase.from(TABLES.aiCache).insert({
       type: 'price_history',
       key: `${origin}-${destinationIata}`,
       content: JSON.stringify({ price, source, airline, timestamp: new Date().toISOString() }),
       created_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     });
+    if (error) throw error;
   } catch (err) {
     // Non-critical — don't fail the refresh if snapshot recording fails
     console.warn(`[refresh] Price snapshot failed for ${origin}->${destinationIata}:`, err);
@@ -54,12 +54,13 @@ async function getDestMeta(): Promise<Map<string, DestMeta>> {
   if (destMetaCache) return destMetaCache;
   destMetaCache = new Map();
   try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.destinations,
-      [Query.equal('is_active', true), Query.limit(500)],
-    );
-    for (const doc of result.documents) {
+    const { data, error } = await supabase
+      .from(TABLES.destinations)
+      .select('iata_code, country, popularity_score, best_months')
+      .eq('is_active', true)
+      .limit(500);
+    if (error) throw error;
+    for (const doc of data ?? []) {
       destMetaCache.set(doc.iata_code as string, {
         country: (doc.country as string) || '',
         popularityScore: (doc.popularity_score as number) || 0,
@@ -92,10 +93,12 @@ const DEFAULT_ORIGINS = ['TPA', 'LAX', 'JFK', 'ORD', 'ATL', 'SFO', 'MIA', 'DFW',
 async function getActiveOrigins(): Promise<string[]> {
   const origins = new Set(DEFAULT_ORIGINS);
   try {
-    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
-      Query.limit(500),
-    ]);
-    for (const doc of result.documents) {
+    const { data, error } = await supabase
+      .from(TABLES.userPreferences)
+      .select('departure_code')
+      .limit(500);
+    if (error) throw error;
+    for (const doc of data ?? []) {
       if (doc.departure_code) origins.add(doc.departure_code as string);
     }
   } catch {
@@ -111,11 +114,13 @@ async function pickNextOrigins(count: number): Promise<string[]> {
 
   let statusDocs: Array<Record<string, unknown>> = [];
   try {
-    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.orderAsc('fetched_at'),
-      Query.limit(500),
-    ]);
-    statusDocs = result.documents;
+    const { data, error } = await supabase
+      .from(TABLES.cachedPrices)
+      .select('origin, fetched_at')
+      .order('fetched_at', { ascending: true })
+      .limit(500);
+    if (error) throw error;
+    statusDocs = data ?? [];
   } catch {
     // No cached prices yet
   }
@@ -338,9 +343,14 @@ async function refreshOneDest(
 
   try {
     if (existing) {
-      await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.cachedPrices, existing.docId, data);
+      const { error } = await supabase
+        .from(TABLES.cachedPrices)
+        .update(data)
+        .eq('id', existing.docId);
+      if (error) throw error;
     } else {
-      await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.cachedPrices, ID.unique(), data);
+      const { error } = await supabase.from(TABLES.cachedPrices).insert(data);
+      if (error) throw error;
     }
   } catch (err) {
     console.error(`[refresh] Upsert error for ${origin}->${dest}:`, err);
@@ -396,14 +406,16 @@ async function pickStalestDestinations(
   const currentPriceMap = new Map<string, { price: number; docId: string }>();
 
   try {
-    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.equal('origin', origin),
-      Query.limit(500),
-    ]);
-    for (const doc of result.documents) {
+    const { data, error } = await supabase
+      .from(TABLES.cachedPrices)
+      .select('id, destination_iata, price')
+      .eq('origin', origin)
+      .limit(500);
+    if (error) throw error;
+    for (const doc of data ?? []) {
       currentPriceMap.set(doc.destination_iata as string, {
         price: doc.price as number,
-        docId: doc.$id,
+        docId: doc.id,
       });
     }
   } catch {
@@ -413,12 +425,14 @@ async function pickStalestDestinations(
   // Build staleness map: iata -> fetched_at timestamp
   const fetchedAtMap = new Map<string, string>();
   try {
-    const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedPrices, [
-      Query.equal('origin', origin),
-      Query.orderAsc('fetched_at'),
-      Query.limit(500),
-    ]);
-    for (const doc of result.documents) {
+    const { data, error } = await supabase
+      .from(TABLES.cachedPrices)
+      .select('destination_iata, fetched_at')
+      .eq('origin', origin)
+      .order('fetched_at', { ascending: true })
+      .limit(500);
+    if (error) throw error;
+    for (const doc of data ?? []) {
       fetchedAtMap.set(doc.destination_iata as string, doc.fetched_at as string);
     }
   } catch {
@@ -463,13 +477,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     clearStatsCache();
     destMetaCache = null;
 
-    // Get all active destination IATA codes from Appwrite
-    const destResult = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
-      Query.equal('is_active', true),
-      Query.limit(500),
-    ]);
+    // Get all active destination IATA codes from Supabase
+    const { data: destData, error: destError } = await supabase
+      .from(TABLES.destinations)
+      .select('iata_code')
+      .eq('is_active', true)
+      .limit(500);
+    if (destError) throw destError;
 
-    const allIatasList = destResult.documents.map((d) => d.iata_code as string);
+    const allIatasList = (destData ?? []).map((d) => d.iata_code as string);
 
     // Determine which origin to refresh
     let origins: string[];

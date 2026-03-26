@@ -2,8 +2,7 @@
 // POST /api/subscribe { email: string }
 // GET /api/subscribe?action=unsubscribe&email=...&token=...
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
-import { ID } from 'node-appwrite';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { z } from 'zod';
 
@@ -37,17 +36,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!email) return res.status(400).json({ error: 'Email required' });
 
     try {
-      const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.subscribers, [
-        Query.equal('email', email),
-        Query.limit(1),
-      ]);
-      if (existing.documents.length > 0) {
-        await serverDatabases.updateDocument(
-          DATABASE_ID,
-          COLLECTIONS.subscribers,
-          existing.documents[0].$id,
-          { active: false, unsubscribed_at: new Date().toISOString() },
-        );
+      const { data: existing } = await supabase
+        .from(TABLES.subscribers)
+        .select('id')
+        .eq('email', email)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        await supabase
+          .from(TABLES.subscribers)
+          .update({ active: false, unsubscribed_at: new Date().toISOString() })
+          .eq('id', existing[0].id);
       }
       // Return friendly HTML
       res.setHeader('Content-Type', 'text/html');
@@ -86,31 +84,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Check for existing subscriber
-    const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.subscribers, [
-      Query.equal('email', email),
-      Query.limit(1),
-    ]);
+    const { data: existingRows } = await supabase
+      .from(TABLES.subscribers)
+      .select('*')
+      .eq('email', email)
+      .limit(1);
 
-    if (existing.documents.length > 0) {
-      const doc = existing.documents[0];
+    if (existingRows && existingRows.length > 0) {
+      const doc = existingRows[0];
       if (doc.active) {
         return res.status(200).json({ message: 'Already subscribed!', subscribed: true });
       }
       // Re-activate
-      await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.subscribers, doc.$id, {
-        active: true,
-        resubscribed_at: new Date().toISOString(),
-      });
+      await supabase
+        .from(TABLES.subscribers)
+        .update({ active: true, resubscribed_at: new Date().toISOString() })
+        .eq('id', doc.id);
       return res.status(200).json({ message: 'Welcome back! You\'re resubscribed.', subscribed: true });
     }
 
     // Create new subscriber
-    await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.subscribers, ID.unique(), {
-      email,
-      active: true,
-      subscribed_at: new Date().toISOString(),
-      source: 'web',
-    });
+    const { error: insertErr } = await supabase
+      .from(TABLES.subscribers)
+      .insert({
+        email,
+        active: true,
+        subscribed_at: new Date().toISOString(),
+        source: 'web',
+      });
+    if (insertErr) throw insertErr;
 
     return res.status(201).json({
       message: 'You\'re in! Watch your inbox for the best flight deals.',

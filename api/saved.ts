@@ -1,46 +1,56 @@
 // User data API — dispatches on ?action=list|save|unsave|get-prefs|save-prefs
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Query, ID } from 'node-appwrite';
-import { serverDatabases, DATABASE_ID, COLLECTIONS } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
 
 async function handleList(userId: string, res: VercelResponse) {
-  const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
-    Query.equal('user_id', userId),
-    Query.limit(100),
-  ]);
-  const ids = result.documents.map((d) => d['destination_id'] as string);
+  const { data, error } = await supabase
+    .from(TABLES.savedTrips)
+    .select('*')
+    .eq('user_id', userId)
+    .limit(100);
+  if (error) throw error;
+  const ids = (data ?? []).map((d) => d['destination_id'] as string);
   return res.json({ savedIds: ids });
 }
 
 async function handleSave(userId: string, destinationId: string, res: VercelResponse) {
   // Deduplication: check if already saved
-  const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
-    Query.equal('user_id', userId),
-    Query.equal('destination_id', destinationId),
-    Query.limit(1),
-  ]);
-  if (existing.documents.length > 0) return res.json({ ok: true });
+  const { data: existing, error: existingError } = await supabase
+    .from(TABLES.savedTrips)
+    .select('*')
+    .eq('user_id', userId)
+    .eq('destination_id', destinationId)
+    .limit(1);
+  if (existingError) throw existingError;
+  if ((existing ?? []).length > 0) return res.json({ ok: true });
 
-  await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.savedTrips, ID.unique(), {
+  const { error } = await supabase.from(TABLES.savedTrips).insert({
     user_id: userId,
     destination_id: destinationId,
     saved_at: new Date().toISOString(),
   });
+  if (error) throw error;
   return res.json({ ok: true });
 }
 
 async function handleUnsave(userId: string, destinationId: string, res: VercelResponse) {
-  const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.savedTrips, [
-    Query.equal('user_id', userId),
-    Query.equal('destination_id', destinationId),
-    Query.limit(1),
-  ]);
-  if (result.documents[0]) {
-    await serverDatabases.deleteDocument(DATABASE_ID, COLLECTIONS.savedTrips, result.documents[0].$id);
+  const { data: result, error: findError } = await supabase
+    .from(TABLES.savedTrips)
+    .select('*')
+    .eq('user_id', userId)
+    .eq('destination_id', destinationId)
+    .limit(1);
+  if (findError) throw findError;
+  if (result?.[0]) {
+    const { error } = await supabase
+      .from(TABLES.savedTrips)
+      .delete()
+      .eq('id', result[0].id);
+    if (error) throw error;
   }
   return res.json({ ok: true });
 }
@@ -48,14 +58,16 @@ async function handleUnsave(userId: string, destinationId: string, res: VercelRe
 // ─── User preferences ────────────────────────────────────────────────
 
 async function handleGetPrefs(userId: string, res: VercelResponse) {
-  const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
-    Query.equal('user_id', userId),
-    Query.limit(1),
-  ]);
-  if (result.documents.length === 0) {
+  const { data, error } = await supabase
+    .from(TABLES.userPreferences)
+    .select('*')
+    .eq('user_id', userId)
+    .limit(1);
+  if (error) throw error;
+  if (!data || data.length === 0) {
     return res.json({ preferences: null });
   }
-  const doc = result.documents[0];
+  const doc = data[0];
   return res.json({
     preferences: {
       departure_city: doc.departure_city,
@@ -75,18 +87,25 @@ async function handleSavePrefs(userId: string, body: Record<string, unknown>, re
     return res.status(400).json({ error: 'No valid fields to update' });
   }
 
-  const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
-    Query.equal('user_id', userId),
-    Query.limit(1),
-  ]);
+  const { data: existing, error: findError } = await supabase
+    .from(TABLES.userPreferences)
+    .select('*')
+    .eq('user_id', userId)
+    .limit(1);
+  if (findError) throw findError;
 
-  if (existing.documents.length > 0) {
-    await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.userPreferences, existing.documents[0].$id, updates);
+  if ((existing ?? []).length > 0) {
+    const { error } = await supabase
+      .from(TABLES.userPreferences)
+      .update(updates)
+      .eq('id', existing![0].id);
+    if (error) throw error;
   } else {
-    await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.userPreferences, ID.unique(), {
+    const { error } = await supabase.from(TABLES.userPreferences).insert({
       user_id: userId,
       ...updates,
     });
+    if (error) throw error;
   }
   return res.json({ ok: true });
 }

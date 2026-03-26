@@ -1,18 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client, Databases, Query, ID } from 'node-appwrite';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { swipeBodySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
-
-const DATABASE_ID = 'sogojet';
-
-const COLLECTIONS = {
-  destinations: 'destinations',
-  swipeHistory: 'swipe_history',
-  userPreferences: 'user_preferences',
-} as const;
 
 // ─── Learning rates per swipe action ────────────────────────────────
 
@@ -64,31 +56,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const user = { $id: authResult.userId };
+    const userId = authResult.userId;
 
     const v = validateRequest(swipeBodySchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
     const { destination_id, action, time_spent_ms, price_shown } = v.data;
 
-    // Use admin client for database writes
-    const adminClient = new Client()
-      .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
-      .setProject(
-        process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '',
-      )
-      .setKey(process.env.APPWRITE_API_KEY ?? '');
-
-    const db = new Databases(adminClient);
-
     // 1. Insert swipe history
     try {
-      await db.createDocument(DATABASE_ID, COLLECTIONS.swipeHistory, ID.unique(), {
-        user_id: user.$id,
+      const { error } = await supabase.from(TABLES.swipeHistory).insert({
+        user_id: userId,
         destination_id,
         action,
         time_spent_ms: time_spent_ms ?? 0,
         price_shown: price_shown ?? 0,
       });
+      if (error) throw error;
     } catch (err) {
       logApiError('api/swipe/history', err);
     }
@@ -98,27 +81,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (lr !== undefined && lr !== 0) {
       try {
         // Fetch destination feature vector
-        const dest = await db.getDocument(DATABASE_ID, COLLECTIONS.destinations, destination_id);
+        const { data: dest, error: destError } = await supabase
+          .from(TABLES.destinations)
+          .select('*')
+          .eq('id', destination_id)
+          .single();
+        if (destError) throw destError;
 
         // Fetch current user prefs
-        const prefsResult = await db.listDocuments(DATABASE_ID, COLLECTIONS.userPreferences, [
-          Query.equal('user_id', user.$id),
-          Query.limit(1),
-        ]);
+        const { data: prefsRows, error: prefsError } = await supabase
+          .from(TABLES.userPreferences)
+          .select('*')
+          .eq('user_id', userId)
+          .limit(1);
+        if (prefsError) throw prefsError;
 
         if (dest) {
-          let prefs = prefsResult.documents[0];
+          let prefs = prefsRows?.[0] ?? null;
 
           if (!prefs) {
             // Create default preferences for new user
-            const defaults: Record<string, unknown> = { user_id: user.$id };
+            const defaults: Record<string, unknown> = { user_id: userId };
             for (const key of PREF_KEYS) defaults[key] = 0.5;
-            prefs = await db.createDocument(
-              DATABASE_ID,
-              COLLECTIONS.userPreferences,
-              ID.unique(),
-              defaults,
-            );
+            const { data: newPrefs, error: createError } = await supabase
+              .from(TABLES.userPreferences)
+              .insert(defaults)
+              .select()
+              .single();
+            if (createError) throw createError;
+            prefs = newPrefs;
           }
 
           const updates: Record<string, number> = {};
@@ -130,7 +121,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             updates[PREF_KEYS[i]] = Math.round(newPref * 1000) / 1000;
           }
 
-          await db.updateDocument(DATABASE_ID, COLLECTIONS.userPreferences, prefs.$id, updates);
+          const { error: updateError } = await supabase
+            .from(TABLES.userPreferences)
+            .update(updates)
+            .eq('id', prefs.id);
+          if (updateError) throw updateError;
         }
       } catch (err) {
         logApiError('api/swipe/pref-update', err);

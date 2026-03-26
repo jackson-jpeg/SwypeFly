@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../../services/appwriteServer';
-import { ID } from 'node-appwrite';
+import { supabase, TABLES } from '../../services/supabaseServer';
 import { searchStays } from '../../services/duffel';
 import { hotelPricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
@@ -46,18 +45,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }>;
 
     if (destParam) {
-      const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
-        Query.equal('iata_code', destParam),
-        Query.equal('is_active', true),
-        Query.limit(1),
-      ]);
-      if (result.documents.length === 0) {
+      const { data, error } = await supabase
+        .from(TABLES.destinations)
+        .select('id, iata_code, city, latitude, longitude')
+        .eq('iata_code', destParam)
+        .eq('is_active', true)
+        .limit(1);
+      if (error) throw error;
+      if (!data || data.length === 0) {
         return res.status(404).json({ error: 'Destination not found' });
       }
-      destinations = result.documents
+      destinations = data
         .filter((d) => d.latitude != null && d.longitude != null)
         .map((d) => ({
-          id: d.$id,
+          id: d.id,
           iata_code: d.iata_code as string,
           city: d.city as string,
           latitude: d.latitude as number,
@@ -67,14 +68,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Destination missing lat/lng — run seed-destination-coords first' });
       }
     } else {
-      const result = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.destinations, [
-        Query.equal('is_active', true),
-        Query.limit(500),
-      ]);
-      destinations = result.documents
+      const { data, error } = await supabase
+        .from(TABLES.destinations)
+        .select('id, iata_code, city, latitude, longitude')
+        .eq('is_active', true)
+        .limit(500);
+      if (error) throw error;
+      destinations = (data ?? [])
         .filter((d) => d.latitude != null && d.longitude != null)
         .map((d) => ({
-          id: d.$id,
+          id: d.id,
           iata_code: d.iata_code as string,
           city: d.city as string,
           latitude: d.latitude as number,
@@ -93,11 +96,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get existing hotel price docs for upsert
     const existingMap = new Map<string, string>();
     try {
-      const existing = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.cachedHotelPrices, [
-        Query.limit(500),
-      ]);
-      for (const doc of existing.documents) {
-        existingMap.set(doc.destination_iata as string, doc.$id);
+      const { data, error } = await supabase
+        .from(TABLES.cachedHotelPrices)
+        .select('id, destination_iata')
+        .limit(500);
+      if (error) throw error;
+      for (const doc of data ?? []) {
+        existingMap.set(doc.destination_iata as string, doc.id);
       }
     } catch {
       // Collection may be empty
@@ -176,9 +181,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try {
           const existingId = existingMap.get(dest.iata_code);
           if (existingId) {
-            await serverDatabases.updateDocument(DATABASE_ID, COLLECTIONS.cachedHotelPrices, existingId, data);
+            const { error } = await supabase
+              .from(TABLES.cachedHotelPrices)
+              .update(data)
+              .eq('id', existingId);
+            if (error) throw error;
           } else {
-            await serverDatabases.createDocument(DATABASE_ID, COLLECTIONS.cachedHotelPrices, ID.unique(), data);
+            const { error } = await supabase.from(TABLES.cachedHotelPrices).insert(data);
+            if (error) throw error;
           }
         } catch (err) {
           console.error(`[refresh-hotels] Upsert error for ${dest.iata_code}:`, err);

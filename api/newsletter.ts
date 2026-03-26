@@ -1,7 +1,7 @@
 // Weekly deal newsletter — pulls top deals and sends branded email via Resend.
 // Triggered as a Vercel cron: GET /api/newsletter?secret=CRON_SECRET
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { Resend } from 'resend';
 
@@ -44,17 +44,21 @@ interface DealRow {
 
 async function getTopDeals(limit: number): Promise<DealRow[]> {
   // Get top-scoring calendar entries across all origins
-  const entries = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.priceCalendar, [
-    Query.greaterThan('deal_score', 60),
-    Query.orderDesc('deal_score'),
-    Query.limit(limit * 3), // over-fetch to deduplicate by destination
-  ]);
+  const { data: rows, error } = await supabase
+    .from(TABLES.priceCalendar)
+    .select('*')
+    .gt('deal_score', 60)
+    .order('deal_score', { ascending: false })
+    .limit(limit * 3); // over-fetch to deduplicate by destination
+
+  if (error) throw error;
+  const entries = rows ?? [];
 
   // Deduplicate by destination (keep best deal per city)
   const seen = new Set<string>();
   const deals: DealRow[] = [];
 
-  for (const doc of entries.documents) {
+  for (const doc of entries) {
     const destId = doc.destination_id;
     if (seen.has(destId)) continue;
     seen.add(destId);
@@ -83,11 +87,13 @@ async function getTopDeals(limit: number): Promise<DealRow[]> {
 // ─── Get all subscriber emails ───────────────────────────────────────
 
 async function getSubscribers(): Promise<string[]> {
-  const docs = await serverDatabases.listDocuments(DATABASE_ID, COLLECTIONS.subscribers, [
-    Query.equal('active', true),
-    Query.limit(500),
-  ]);
-  return docs.documents.map((d) => d.email as string).filter(Boolean);
+  const { data: rows, error } = await supabase
+    .from(TABLES.subscribers)
+    .select('email')
+    .eq('active', true)
+    .limit(500);
+  if (error) throw error;
+  return (rows ?? []).map((d) => d.email as string).filter(Boolean);
 }
 
 // ─── Build email HTML ────────────────────────────────────────────────

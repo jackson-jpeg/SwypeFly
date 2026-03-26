@@ -2,7 +2,7 @@
 // No auth required. Powers landing page hero, social content, and widget embeds.
 // GET /api/top-deals?limit=10&origin=JFK
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { serverDatabases, DATABASE_ID, COLLECTIONS, Query } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -13,32 +13,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = req.query.origin ? String(req.query.origin).toUpperCase() : undefined;
 
   try {
-    const queries = [
-      Query.greaterThan('deal_score', 50),
-      Query.orderDesc('deal_score'),
-      Query.limit(limit * 3), // over-fetch to deduplicate
-    ];
+    let query = supabase
+      .from(TABLES.priceCalendar)
+      .select('*')
+      .gt('deal_score', 50)
+      .order('deal_score', { ascending: false })
+      .limit(limit * 3); // over-fetch to deduplicate
+
     if (origin) {
-      queries.unshift(Query.equal('origin', origin));
+      query = query.eq('origin', origin);
     }
 
-    const entries = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.priceCalendar,
-      queries,
-    );
+    const { data: rows, error } = await query;
+    if (error) throw error;
+    const entries = rows ?? [];
 
     // Deduplicate by destination
     const seen = new Set<string>();
     const deals: Array<Record<string, unknown>> = [];
 
-    for (const doc of entries.documents) {
+    for (const doc of entries) {
       const destKey = (doc.destination_iata as string) || (doc.city as string);
       if (seen.has(destKey)) continue;
       seen.add(destKey);
 
       deals.push({
-        id: doc.destination_id || doc.$id,
+        id: doc.destination_id || doc.id,
         city: doc.city || 'Unknown',
         country: doc.country || '',
         iata: doc.destination_iata || '',

@@ -1,7 +1,6 @@
 // Consolidated booking API — dispatches on ?action= parameter
 // Actions: search, offer, payment-intent, create-order, order, webhook
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client, Databases, ID, Permission, Role, Query } from 'node-appwrite';
 import {
   bookingSearchSchema,
   bookingOfferSchema,
@@ -15,11 +14,10 @@ import {
 } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
-import { COLLECTIONS } from '../services/appwriteServer';
+import { supabase, TABLES } from '../services/supabaseServer';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
 
-const DATABASE_ID = 'sogojet';
 const STUB_MODE = !process.env.DUFFEL_API_KEY;
 const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
 
@@ -35,14 +33,6 @@ async function verifyUser(jwt: string) {
   const result = await verifyClerkToken(`Bearer ${jwt}`);
   if (!result) throw new Error('Invalid token');
   return { $id: result.userId };
-}
-
-function getServerDatabases() {
-  const serverClient = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT ?? process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? '')
-    .setProject(process.env.APPWRITE_PROJECT_ID ?? process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '')
-    .setKey(process.env.APPWRITE_API_KEY ?? '');
-  return new Databases(serverClient);
 }
 
 // ─── Stub data for when Duffel/Stripe keys are not configured ───────────────
@@ -670,8 +660,6 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       paymentCurrency,
     });
 
-    const databases = getServerDatabases();
-
     // Extract flight details for booking record
     const firstSlice = duffelOrder.slices?.[0];
     const firstSeg = firstSlice?.segments?.[0];
@@ -679,17 +667,9 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     const airlineName = firstSeg?.operating_carrier?.name ?? '';
     const bookingRef = duffelOrder.booking_reference ?? '';
 
-    // Permissions: auth'd users get user-scoped; guests get any-read (server manages access)
-    const permissions =
-      userId !== 'guest'
-        ? [Permission.read(Role.user(userId)), Permission.delete(Role.user(userId))]
-        : [Permission.read(Role.any())];
-
-    const booking = await databases.createDocument(
-      DATABASE_ID,
-      'bookings',
-      ID.unique(),
-      {
+    const { data: booking, error: bookingInsertErr } = await supabase
+      .from(TABLES.bookings)
+      .insert({
         user_id: userId,
         duffel_order_id: duffelOrder.id,
         status: 'confirmed',
@@ -705,20 +685,16 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
         return_date: v.data.returnDate ?? (lastSlice?.segments?.[0]?.departing_at?.split('T')[0] ?? ''),
         airline: airlineName,
         booking_reference: bookingRef,
-      },
-      permissions,
-    );
-
-    const passengerPermissions =
-      userId !== 'guest' ? [Permission.read(Role.user(userId))] : [Permission.read(Role.any())];
+      })
+      .select()
+      .single();
+    if (bookingInsertErr) throw bookingInsertErr;
 
     for (const passenger of v.data.passengers) {
-      await databases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.bookingPassengers,
-        ID.unique(),
-        {
-          booking_id: booking.$id,
+      const { error: paxErr } = await supabase
+        .from(TABLES.bookingPassengers)
+        .insert({
+          booking_id: booking.id,
           given_name: passenger.given_name,
           family_name: passenger.family_name,
           born_on: passenger.born_on,
@@ -726,9 +702,8 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
           title: passenger.title,
           email: passenger.email,
           phone_number: passenger.phone_number,
-        },
-        passengerPermissions,
-      );
+        });
+      if (paxErr) throw paxErr;
     }
 
     // Send confirmation email (non-blocking)
@@ -755,7 +730,7 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     }
 
     const responseData = {
-      orderId: booking.$id,
+      orderId: booking.id,
       bookingReference: bookingRef,
       status: 'confirmed' as const,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -854,20 +829,21 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
 
     const { constructWebhookEvent } = await import('../services/stripe.js');
     const event = constructWebhookEvent(rawBody, signature);
-    const databases = getServerDatabases();
 
     switch (event.type) {
       case 'payment_intent.succeeded':
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
-        const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
-          Query.equal('stripe_payment_intent_id', paymentIntent.id),
-          Query.limit(1),
-        ]);
-        if (bookings.documents.length > 0) {
-          await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, bookings.documents[0].$id, {
-            status: event.type === 'payment_intent.succeeded' ? 'confirmed' : 'failed',
-          });
+        const { data: bookingRows } = await supabase
+          .from(TABLES.bookings)
+          .select('id')
+          .eq('stripe_payment_intent_id', paymentIntent.id)
+          .limit(1);
+        if (bookingRows && bookingRows.length > 0) {
+          await supabase
+            .from(TABLES.bookings)
+            .update({ status: event.type === 'payment_intent.succeeded' ? 'confirmed' : 'failed' })
+            .eq('id', bookingRows[0].id);
         }
         break;
       }
@@ -909,7 +885,6 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
   try {
     const event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const eventType = event?.type || event?.data?.type || '';
-    const databases = getServerDatabases();
 
     console.log(`[booking/duffel-webhook] Received event: ${eventType}`);
 
@@ -918,14 +893,16 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
         // Confirm booking if we received a 202 earlier
         const orderId = event?.data?.id;
         if (orderId) {
-          const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
-            Query.equal('duffel_order_id', orderId),
-            Query.limit(1),
-          ]);
-          if (bookings.documents.length > 0) {
-            await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, bookings.documents[0].$id, {
-              status: 'confirmed',
-            });
+          const { data: bookingRows } = await supabase
+            .from(TABLES.bookings)
+            .select('id')
+            .eq('duffel_order_id', orderId)
+            .limit(1);
+          if (bookingRows && bookingRows.length > 0) {
+            await supabase
+              .from(TABLES.bookings)
+              .update({ status: 'confirmed' })
+              .eq('id', bookingRows[0].id);
             console.log(`[booking/duffel-webhook] Order ${orderId} confirmed`);
           }
         }
@@ -937,25 +914,28 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
         const orderId = event?.data?.order_id || event?.data?.id;
         const changes = event?.data?.changes || [];
         if (orderId) {
-          const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
-            Query.equal('duffel_order_id', orderId),
-            Query.limit(1),
-          ]);
-          if (bookings.documents.length > 0) {
-            const booking = bookings.documents[0];
-            await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, booking.$id, {
-              status: 'schedule_changed',
-            });
+          const { data: bookingRows } = await supabase
+            .from(TABLES.bookings)
+            .select('id, booking_reference')
+            .eq('duffel_order_id', orderId)
+            .limit(1);
+          if (bookingRows && bookingRows.length > 0) {
+            const booking = bookingRows[0];
+            await supabase
+              .from(TABLES.bookings)
+              .update({ status: 'schedule_changed' })
+              .eq('id', booking.id);
             console.log(`[booking/duffel-webhook] Schedule change detected for order ${orderId}: ${changes.length} changes`);
 
             // Attempt to send notification email
             try {
-              const passengers = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookingPassengers, [
-                Query.equal('booking_id', booking.$id),
-                Query.limit(1),
-              ]);
-              if (passengers.documents.length > 0) {
-                const email = passengers.documents[0].email as string;
+              const { data: paxRows } = await supabase
+                .from(TABLES.bookingPassengers)
+                .select('email')
+                .eq('booking_id', booking.id)
+                .limit(1);
+              if (paxRows && paxRows.length > 0) {
+                const email = paxRows[0].email as string;
                 if (email) {
                   console.log(`[booking/duffel-webhook] Would notify ${email} about schedule change for ${booking.booking_reference}`);
                   // TODO: Send actual email when email service is configured
@@ -972,14 +952,16 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
       case 'order_cancellation.confirmed': {
         const orderId = event?.data?.order_id;
         if (orderId) {
-          const bookings = await databases.listDocuments(DATABASE_ID, COLLECTIONS.bookings, [
-            Query.equal('duffel_order_id', orderId),
-            Query.limit(1),
-          ]);
-          if (bookings.documents.length > 0) {
-            await databases.updateDocument(DATABASE_ID, COLLECTIONS.bookings, bookings.documents[0].$id, {
-              status: 'cancelled',
-            });
+          const { data: bookingRows } = await supabase
+            .from(TABLES.bookings)
+            .select('id')
+            .eq('duffel_order_id', orderId)
+            .limit(1);
+          if (bookingRows && bookingRows.length > 0) {
+            await supabase
+              .from(TABLES.bookings)
+              .update({ status: 'cancelled' })
+              .eq('id', bookingRows[0].id);
             console.log(`[booking/duffel-webhook] Order ${orderId} cancelled`);
           }
         }
@@ -1007,28 +989,24 @@ async function handleHistory(req: VercelRequest, res: VercelResponse) {
 
   try {
     const user = await verifyUser(jwt);
-    const databases = getServerDatabases();
 
-    const { documents: bookingDocs } = await databases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.bookings,
-      [
-        Query.equal('user_id', user.$id),
-        Query.orderDesc('created_at'),
-        Query.limit(50),
-      ],
-    );
+    const { data: bookingDocs, error: historyErr } = await supabase
+      .from(TABLES.bookings)
+      .select('*')
+      .eq('user_id', user.$id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (historyErr) throw historyErr;
 
     const bookings = await Promise.all(
-      bookingDocs.map(async (doc) => {
+      (bookingDocs ?? []).map(async (doc) => {
         let passengers: { givenName: string; familyName: string; email: string }[] = [];
         try {
-          const { documents: paxDocs } = await databases.listDocuments(
-            DATABASE_ID,
-            COLLECTIONS.bookingPassengers,
-            [Query.equal('booking_id', doc.$id)],
-          );
-          passengers = paxDocs.map((p) => ({
+          const { data: paxDocs } = await supabase
+            .from(TABLES.bookingPassengers)
+            .select('given_name, family_name, email')
+            .eq('booking_id', doc.id);
+          passengers = (paxDocs ?? []).map((p) => ({
             givenName: (p.given_name as string) ?? '',
             familyName: (p.family_name as string) ?? '',
             email: (p.email as string) ?? '',
@@ -1038,7 +1016,7 @@ async function handleHistory(req: VercelRequest, res: VercelResponse) {
         }
 
         return {
-          id: doc.$id,
+          id: doc.id,
           duffelOrderId: (doc.duffel_order_id as string) ?? '',
           status: (doc.status as string) ?? '',
           totalAmount: (doc.total_amount as number) ?? 0,
@@ -1231,13 +1209,10 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
       paymentCurrency: paymentIntent.currency.toUpperCase(),
     });
 
-    // Save booking record to Appwrite
-    const databases = getServerDatabases();
-    await databases.createDocument(
-      DATABASE_ID,
-      'bookings',
-      ID.unique(),
-      {
+    // Save booking record to Supabase
+    const { error: hotelInsertErr } = await supabase
+      .from(TABLES.bookings)
+      .insert({
         user_id: user.$id,
         duffel_order_id: booking.bookingId,
         status: booking.status,
@@ -1251,9 +1226,8 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
         return_date: booking.checkOut,
         booking_reference: booking.confirmationReference,
         booking_type: 'hotel',
-      },
-      [Permission.read(Role.user(user.$id)), Permission.delete(Role.user(user.$id))],
-    );
+      });
+    if (hotelInsertErr) throw hotelInsertErr;
 
     return res.status(200).json(booking);
   } catch (err: any) {
