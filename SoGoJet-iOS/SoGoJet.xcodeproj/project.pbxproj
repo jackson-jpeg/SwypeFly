@@ -17,6 +17,7 @@
 		186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FD38F513CB35D1ED6BB5 /* ReviewView.swift */; };
 		2142C1B9F778DA6E1229A8D3 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C440C8CAEBF97FCC1D14B07 /* WidgetKit.framework */; };
 		22091ED92838265DEC1262C6 /* FareDropMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D057DFC84E8B9B1125CCB22 /* FareDropMonitor.swift */; };
+		AA1B2C3D4E5F6A7B8C9D0E1F /* ReviewPrompter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2C3D4E5F6A7B8C9D0E1F2A /* ReviewPrompter.swift */; };
 		238AFE49E080789B4A349D58 /* PlayfairDisplay-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */; };
 		2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */; };
 		325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 105C4B165D8E99F29DACC00B /* Assets.xcassets */; };
@@ -141,6 +142,7 @@
 		61C46CA93B008D3D761A2E79 /* BookingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingStore.swift; sourceTree = "<group>"; };
 		6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic.ttf"; sourceTree = "<group>"; };
 		6D057DFC84E8B9B1125CCB22 /* FareDropMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FareDropMonitor.swift; path = SoGoJet/Services/FareDropMonitor.swift; sourceTree = "<group>"; };
+		BB2C3D4E5F6A7B8C9D0E1F2A /* ReviewPrompter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPrompter.swift; sourceTree = "<group>"; };
 		6F407BD1805C70ABB402B7C8 /* SharedDefaults.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		73ECE97BBEB282F94A84DB58 /* DestinationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationDetailView.swift; sourceTree = "<group>"; };
 		74190F28733D8C3D21B157F7 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
@@ -261,6 +263,7 @@
 				15EB866D9B233B25ABE980F3 /* HapticEngine.swift */,
 				B618C73022C992B057112952 /* ImageCache.swift */,
 				F2E3D4C5B6A70819203A4B5C /* NetworkMonitor.swift */,
+				BB2C3D4E5F6A7B8C9D0E1F2A /* ReviewPrompter.swift */,
 				A4B5C6D7E8F90A1B2C3D4E5F /* ShareCardRenderer.swift */,
 				B3C4D5E6F7081920314A5B6D /* SharedDefaults.swift */,
 			);
@@ -642,6 +645,7 @@
 				150C44A52C23D89A7EE8B379 /* AuthView.swift in Sources */,
 				14E68176ADDAB3D2E442586E /* SiriShortcuts.swift in Sources */,
 				22091ED92838265DEC1262C6 /* FareDropMonitor.swift in Sources */,
+				AA1B2C3D4E5F6A7B8C9D0E1F /* ReviewPrompter.swift in Sources */,
 				8D919AEAB371A27AD22F9D2B /* ExploreMapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

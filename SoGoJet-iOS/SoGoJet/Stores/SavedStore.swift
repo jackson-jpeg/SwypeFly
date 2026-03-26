@@ -53,6 +53,7 @@ final class SavedStore {
             saveToDisk()
             indexInSpotlight(deal)
             HapticEngine.success()
+            ReviewPrompter.shared.recordSave(totalSavedCount: savedDeals.count)
             return true
         }
     }

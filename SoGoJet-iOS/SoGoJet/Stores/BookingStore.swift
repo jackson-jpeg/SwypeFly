@@ -315,6 +315,7 @@ final class BookingStore {
             bookingOrder = order
             step = .confirmed(reference: order.bookingReference)
             HapticEngine.success()
+            ReviewPrompter.shared.recordBookingCompleted()
         } catch {
             guard activeCheckoutRequestID == requestID else { return }
             if await recoverFromOrderFailure(error) {

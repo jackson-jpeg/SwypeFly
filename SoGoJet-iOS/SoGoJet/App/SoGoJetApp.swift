@@ -48,6 +48,9 @@ struct SoGoJetApp: App {
                 .environment(authStore)
                 .preferredColorScheme(.dark)
                 .task {
+                    // Track distinct usage days for review prompt eligibility
+                    ReviewPrompter.shared.recordAppOpen()
+
                     // Sync departure airport to shared App Group for the widget
                     settingsStore.syncToWidget()
 
