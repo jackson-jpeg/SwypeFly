@@ -2,10 +2,14 @@ import SwiftUI
 import UIKit
 import CoreSpotlight
 import UserNotifications
+import MetricKit
+import os
 
-// MARK: - App Delegate (Quick Actions + Notification Handling)
+// MARK: - App Delegate (Quick Actions + Notification Handling + Crash Reporting)
 
-class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+private let logger = Logger(subsystem: "com.sogojet.app", category: "diagnostics")
+
+class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MXMetricManagerSubscriber {
     /// Stores the shortcut action type when the app is launched from a quick action.
     static var pendingShortcutType: String?
 
@@ -17,7 +21,25 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+
+        // Subscribe to MetricKit for crash diagnostics
+        MXMetricManager.shared.add(self)
+
         return true
+    }
+
+    // MARK: - MetricKit (Crash Reporting)
+
+    func didReceive(_ payloads: [MXMetricPayload]) {
+        for payload in payloads {
+            logger.info("[MetricKit] Metric payload received: \(payload.jsonRepresentation().count) bytes")
+        }
+    }
+
+    func didReceive(_ payloads: [MXDiagnosticPayload]) {
+        for payload in payloads {
+            logger.error("[MetricKit] Diagnostic (crash/hang): \(String(data: payload.jsonRepresentation(), encoding: .utf8) ?? "unreadable")")
+        }
     }
 
     func application(
