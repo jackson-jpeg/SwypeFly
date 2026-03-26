@@ -1130,26 +1130,12 @@ struct TripView: View {
     }
 
     private var searchingCard: some View {
-        VStack(spacing: Spacing.md) {
-            ProgressView()
-                .progressViewStyle(.circular)
-                .tint(Color.sgYellow)
-                .scaleEffect(1.15)
-
-            Text("Searching \(selectedCabinClass.displayName.lowercased()) fares...")
-                .font(SGFont.bodyBold(size: 15))
-                .foregroundStyle(Color.sgWhite)
-
-            Text("\(departureDateString.shortDate) to \(returnDateString.shortDate) · \(routeSummary)")
-                .font(SGFont.body(size: 12))
-                .foregroundStyle(Color.sgMuted)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(Spacing.lg)
-        .background(Color.sgCell, in: RoundedRectangle(cornerRadius: Radius.lg))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg)
-                .strokeBorder(Color.sgBorder, lineWidth: 1)
+        SearchingFlightsView(
+            origin: effectiveOriginCode,
+            destination: deal.iataCode,
+            destinationCity: deal.city,
+            dateRange: "\(departureDateString.shortDate) – \(returnDateString.shortDate)",
+            cabinClass: selectedCabinClass.displayName
         )
     }
 
