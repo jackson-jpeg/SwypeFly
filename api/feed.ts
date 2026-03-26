@@ -5,11 +5,154 @@ import { logApiError } from '../utils/apiLogger';
 import { generateAviasalesLink } from '../utils/affiliateLinks';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
+import { searchFlights } from '../services/duffel';
 import { cors } from './_cors.js';
 import { bulkGetRouteStats } from '../utils/priceStats';
 import { nearbyAirports } from '../data/airports';
 
 const PAGE_SIZE = 10;
+
+// On-demand pricing may need up to ~30s for 10 destinations (5 concurrent × 2-3s each)
+export const maxDuration = 60;
+
+// ─── On-demand Duffel pricing for feed destinations ─────────────────
+// When a destination on the current page has no cached Duffel price,
+// search Duffel live, cache the result, and return the real fare.
+// This ensures every card in the feed shows a real bookable price.
+
+function getFeedSearchDates(): { departureDate: string; returnDate: string } {
+  const now = new Date();
+  const twoWeeksOut = new Date(now.getTime() + 14 * 86400000);
+  const dayOfWeek = twoWeeksOut.getDay();
+  const daysUntilWed = (3 - dayOfWeek + 7) % 7 || 7;
+  const departure = new Date(twoWeeksOut.getTime() + daysUntilWed * 86400000);
+  const returnDate = new Date(departure.getTime() + 7 * 86400000);
+  return {
+    departureDate: departure.toISOString().split('T')[0],
+    returnDate: returnDate.toISOString().split('T')[0],
+  };
+}
+
+// In-memory cache for on-demand prices (avoids re-searching within the same lambda)
+const onDemandPriceCache = new Map<string, { price: number; airline: string; duration: string; fetchedAt: string } | null>();
+
+async function fetchLivePriceForDest(
+  origin: string,
+  destIata: string,
+): Promise<{ price: number; airline: string; duration: string; fetchedAt: string } | null> {
+  const cacheKey = `${origin}-${destIata}`;
+  if (onDemandPriceCache.has(cacheKey)) return onDemandPriceCache.get(cacheKey) ?? null;
+
+  try {
+    const { departureDate, returnDate } = getFeedSearchDates();
+    const result = await searchFlights({
+      origin,
+      destination: destIata,
+      departureDate,
+      returnDate,
+      passengers: [{ type: 'adult' }],
+      cabinClass: 'economy',
+    });
+
+    const offers = (result as any).offers as any[] | undefined;
+    if (!offers || offers.length === 0) {
+      onDemandPriceCache.set(cacheKey, null);
+      return null;
+    }
+
+    offers.sort((a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount));
+    const cheapest = offers[0];
+    const price = Math.round(parseFloat(cheapest.total_amount));
+    const firstSeg = cheapest.slices?.[0]?.segments?.[0];
+    const airline = firstSeg?.operating_carrier?.name || firstSeg?.operating_carrier?.iata_code || '';
+
+    // Calculate total duration from segments
+    let duration = '';
+    const outSlice = cheapest.slices?.[0];
+    if (outSlice?.duration) {
+      const match = outSlice.duration.match(/PT(\d+)H(\d+)?M?/);
+      if (match) duration = `${match[1]}h ${match[2] || '0'}m`;
+    }
+
+    const fetchedAt = new Date().toISOString();
+    const priceData = { price, airline, duration, fetchedAt };
+    onDemandPriceCache.set(cacheKey, priceData);
+
+    // Write to cached_prices in the background so future requests are instant
+    supabase
+      .from(TABLES.cachedPrices)
+      .upsert(
+        {
+          origin,
+          destination_iata: destIata,
+          price,
+          currency: 'USD',
+          airline,
+          duration,
+          source: 'duffel',
+          fetched_at: fetchedAt,
+          departure_date: departureDate,
+          return_date: returnDate,
+          trip_duration_days: 7,
+        },
+        { onConflict: 'origin,destination_iata' },
+      )
+      .then(() => {})
+      .catch(() => {});
+
+    return priceData;
+  } catch (err) {
+    console.warn(`[feed] On-demand Duffel search failed for ${origin}->${destIata}:`, err instanceof Error ? err.message : err);
+    onDemandPriceCache.set(cacheKey, null);
+    return null;
+  }
+}
+
+const ON_DEMAND_CONCURRENCY = 5;
+
+async function fillMissingPrices(
+  page: ReturnType<typeof toFrontend>[],
+  origin: string,
+): Promise<ReturnType<typeof toFrontend>[]> {
+  const missing = page.filter((d) => !d.flightPrice || d.flightPrice <= 0);
+  if (missing.length === 0) return page;
+
+  // Search missing destinations in parallel, capped at ON_DEMAND_CONCURRENCY
+  const chunks: typeof missing[] = [];
+  for (let i = 0; i < missing.length; i += ON_DEMAND_CONCURRENCY) {
+    chunks.push(missing.slice(i, i + ON_DEMAND_CONCURRENCY));
+  }
+
+  const priceResults = new Map<string, { price: number; airline: string; duration: string; fetchedAt: string }>();
+  for (const chunk of chunks) {
+    const results = await Promise.allSettled(
+      chunk.map(async (d) => {
+        const result = await fetchLivePriceForDest(origin, d.iataCode);
+        if (result) priceResults.set(d.iataCode, result);
+      }),
+    );
+    // Brief pause between chunks to respect Duffel rate limits
+    if (chunks.indexOf(chunk) < chunks.length - 1) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+
+  // Merge live prices into the page
+  return page.map((d) => {
+    if (d.flightPrice && d.flightPrice > 0) return d;
+    const live = priceResults.get(d.iataCode);
+    if (!live) return d; // Duffel had no results for this route
+    return {
+      ...d,
+      flightPrice: live.price,
+      livePrice: live.price,
+      priceSource: 'duffel' as const,
+      priceFetchedAt: live.fetchedAt,
+      airline: live.airline || d.airline,
+      flightDuration: live.duration || d.flightDuration,
+    };
+  });
+}
 
 // ─── Seeded PRNG (consistent within a day, fresh next day) ──────────
 
@@ -1305,8 +1448,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       scored = softShuffle(scored, rand, 5);
     }
 
-    const page = scored.slice(cursor, cursor + PAGE_SIZE).map((d) => toFrontend(d, origin));
+    let page = scored.slice(cursor, cursor + PAGE_SIZE).map((d) => toFrontend(d, origin));
     const nextCursor = cursor + PAGE_SIZE < scored.length ? String(cursor + PAGE_SIZE) : null;
+
+    // On-demand pricing: fill any cards missing a live Duffel price.
+    // This ensures every card in the feed shows a real bookable fare.
+    page = await fillMissingPrices(page, origin);
+
+    // Filter out destinations where Duffel had no results at all
+    // (route not served, etc.) — don't show a card with no price
+    page = page.filter((d) => d.flightPrice && d.flightPrice > 0);
 
     const cacheTime = sessionId ? 0 : 60;
     res.setHeader(
