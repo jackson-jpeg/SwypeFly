@@ -73,6 +73,44 @@ final class SavedStore {
         deindexFromSpotlight(id)
     }
 
+    /// Update the price for a saved deal when a live price is discovered.
+    /// Re-creates the deal with the updated livePrice so the saved card reflects reality.
+    func updatePrice(dealId: String, livePrice: Double) {
+        guard let idx = savedDeals.firstIndex(where: { $0.id == dealId }) else { return }
+        let old = savedDeals[idx]
+        // Only update if the price actually changed
+        guard old.livePrice != livePrice else { return }
+        let updated = Deal(
+            id: old.id, iataCode: old.iataCode, city: old.city, country: old.country,
+            tagline: old.tagline, description: old.description,
+            imageUrl: old.imageUrl, imageUrls: old.imageUrls,
+            flightPrice: old.flightPrice, hotelPricePerNight: old.hotelPricePerNight,
+            currency: old.currency, vibeTags: old.vibeTags, bestMonths: old.bestMonths,
+            averageTemp: old.averageTemp, flightDuration: old.flightDuration,
+            livePrice: livePrice, priceSource: old.priceSource,
+            priceFetchedAt: old.priceFetchedAt, liveHotelPrice: old.liveHotelPrice,
+            hotelPriceSource: old.hotelPriceSource,
+            availableFlightDays: old.availableFlightDays,
+            latitude: old.latitude, longitude: old.longitude,
+            itinerary: old.itinerary, restaurants: old.restaurants,
+            departureDate: old.departureDate, returnDate: old.returnDate,
+            tripDurationDays: old.tripDurationDays, airline: old.airline,
+            priceDirection: old.priceDirection, previousPrice: old.previousPrice,
+            priceDropPercent: old.priceDropPercent, offerJson: old.offerJson,
+            offerExpiresAt: old.offerExpiresAt, airlineLogoUrl: old.airlineLogoUrl,
+            cheapestDate: old.cheapestDate, cheapestReturnDate: old.cheapestReturnDate,
+            affiliateUrl: old.affiliateUrl, priceHistory: old.priceHistory,
+            dealScore: old.dealScore, dealTier: old.dealTier,
+            qualityScore: old.qualityScore, pricePercentile: old.pricePercentile,
+            isNonstop: old.isNonstop, totalStops: old.totalStops,
+            maxLayoverMinutes: old.maxLayoverMinutes, usualPrice: old.usualPrice,
+            savingsAmount: old.savingsAmount, savingsPercent: old.savingsPercent,
+            nearbyOrigin: old.nearbyOrigin, nearbyOriginLabel: old.nearbyOriginLabel
+        )
+        savedDeals[idx] = updated
+        saveToDisk()
+    }
+
     /// Remove all saved deals.
     func clear() {
         savedDeals.removeAll()

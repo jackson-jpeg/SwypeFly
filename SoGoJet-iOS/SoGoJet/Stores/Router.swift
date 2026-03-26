@@ -284,6 +284,26 @@ final class Router {
         }
     }
 
+    // MARK: - Notification Handling
+
+    /// Handle a deal ID from a notification tap (fare drop or deal of the day).
+    /// Switches to the feed tab and shows the deal detail.
+    @MainActor func handleNotificationDealId(_ dealId: String, feedStore: FeedStore, savedStore: SavedStore) {
+        activeTab = .feed
+
+        if let deal = savedStore.savedDeals.first(where: { $0.id == dealId }) {
+            showDeal(deal)
+        } else if let deal = feedStore.allDeals.first(where: { $0.id == dealId }) {
+            showDeal(deal)
+        } else {
+            pendingDeepLinkId = dealId
+            // If the feed is already loaded, try to resolve immediately
+            if !feedStore.isLoading && !feedStore.allDeals.isEmpty {
+                resolvePendingDeepLink(feedStore: feedStore, savedStore: savedStore)
+            }
+        }
+    }
+
     // MARK: - Quick Actions (Home Screen Shortcuts)
 
     func handleQuickAction(_ type: String) {

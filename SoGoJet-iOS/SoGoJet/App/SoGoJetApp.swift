@@ -1,12 +1,24 @@
 import SwiftUI
 import UIKit
 import CoreSpotlight
+import UserNotifications
 
-// MARK: - App Delegate (Quick Actions)
+// MARK: - App Delegate (Quick Actions + Notification Handling)
 
-class SoGoJetAppDelegate: NSObject, UIApplicationDelegate {
+class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     /// Stores the shortcut action type when the app is launched from a quick action.
     static var pendingShortcutType: String?
+
+    /// Stores the deal ID from a notification tap when the app is cold-launched.
+    static var pendingNotificationDealId: String?
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
 
     func application(
         _ application: UIApplication,
@@ -20,6 +32,40 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate {
         let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
         return config
     }
+
+    // MARK: - UNUserNotificationCenterDelegate
+
+    /// Handle notification tap when the app is in the foreground or background.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        if let dealId = userInfo["dealId"] as? String {
+            Self.pendingNotificationDealId = dealId
+            // Post notification so the SwiftUI app can pick it up immediately
+            NotificationCenter.default.post(
+                name: .sogojetNotificationTapped,
+                object: nil,
+                userInfo: ["dealId": dealId]
+            )
+        }
+        completionHandler()
+    }
+
+    /// Show notifications even when app is in the foreground.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
+    }
+}
+
+extension Notification.Name {
+    static let sogojetNotificationTapped = Notification.Name("sogojetNotificationTapped")
 }
 
 @main
@@ -50,9 +96,10 @@ struct SoGoJetApp: App {
                 .environment(recentlyViewedStore)
                 .preferredColorScheme(.dark)
                 .onAppear {
-                    // Wire booking store to push live prices back to feed
+                    // Wire booking store to push live prices back to feed and saved deals
                     bookingStore.onLivePriceFound = { dealId, livePrice in
                         feedStore.updateLivePrice(dealId: dealId, livePrice: livePrice)
+                        savedStore.updatePrice(dealId: dealId, livePrice: livePrice)
                     }
                 }
                 .task {
@@ -134,6 +181,18 @@ struct SoGoJetApp: App {
                             SoGoJetAppDelegate.pendingShortcutType = nil
                             router.handleQuickAction(shortcutType)
                         }
+
+                        // Handle notification tap from cold launch
+                        if let dealId = SoGoJetAppDelegate.pendingNotificationDealId {
+                            SoGoJetAppDelegate.pendingNotificationDealId = nil
+                            router.handleNotificationDealId(dealId, feedStore: feedStore, savedStore: savedStore)
+                        }
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .sogojetNotificationTapped)) { notification in
+                    if let dealId = notification.userInfo?["dealId"] as? String {
+                        SoGoJetAppDelegate.pendingNotificationDealId = nil
+                        router.handleNotificationDealId(dealId, feedStore: feedStore, savedStore: savedStore)
                     }
                 }
                 .onContinueUserActivity("com.sogojet.search") { _ in

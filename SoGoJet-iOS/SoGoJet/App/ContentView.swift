@@ -9,6 +9,7 @@ struct ContentView: View {
     @Environment(ToastManager.self) private var toastManager
     @Environment(NetworkMonitor.self) private var network
     @Environment(AuthStore.self) private var auth
+    @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
 
     var body: some View {
         ZStack {
@@ -127,6 +128,7 @@ struct ContentView: View {
                 .environment(settings)
                 .environment(router)
                 .environment(toastManager)
+                .environment(recentlyViewedStore)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(Color.sgBg)
@@ -134,8 +136,11 @@ struct ContentView: View {
         case .search:
             SearchView()
                 .environment(feedStore)
+                .environment(savedStore)
                 .environment(settings)
                 .environment(router)
+                .environment(toastManager)
+                .environment(recentlyViewedStore)
         case .departurePicker:
             NavigationStack {
                 AirportPicker(selectedCode: departureCodeBinding)

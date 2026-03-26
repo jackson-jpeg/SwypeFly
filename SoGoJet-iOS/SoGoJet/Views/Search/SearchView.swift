@@ -2,9 +2,11 @@ import SwiftUI
 
 struct SearchView: View {
     @Environment(FeedStore.self) private var feedStore
+    @Environment(SavedStore.self) private var savedStore
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
     @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
+    @Environment(ToastManager.self) private var toastManager
 
     @State private var query = ""
     @State private var remoteResults: [Deal] = []
@@ -400,6 +402,19 @@ struct SearchView: View {
                 Spacer(minLength: 0)
 
                 VStack(alignment: .trailing, spacing: 4) {
+                    // Save button
+                    Button {
+                        toggleSave(deal)
+                    } label: {
+                        Image(systemName: savedStore.isSaved(id: deal.id) ? "heart.fill" : "heart")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(savedStore.isSaved(id: deal.id) ? Color.sgYellow : Color.sgMuted)
+                            .frame(width: 28, height: 28)
+                            .background(Color.sgCell, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(savedStore.isSaved(id: deal.id) ? "Unsave \(deal.city)" : "Save \(deal.city)")
+
                     Text(deal.priceFormatted)
                         .font(SGFont.display(size: 22))
                         .foregroundStyle(Color.sgYellow)
@@ -423,8 +438,35 @@ struct SearchView: View {
             )
         }
         .buttonStyle(SearchCardButtonStyle())
+        .contextMenu {
+            Button {
+                toggleSave(deal)
+            } label: {
+                Label(
+                    savedStore.isSaved(id: deal.id) ? "Unsave" : "Save",
+                    systemImage: savedStore.isSaved(id: deal.id) ? "heart.slash" : "heart"
+                )
+            }
+
+            Button {
+                HapticEngine.medium()
+                router.startBooking(deal)
+            } label: {
+                Label("Search Flights", systemImage: "airplane.departure")
+            }
+        }
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")
         .accessibilityHint("Open deal details")
+    }
+
+    private func toggleSave(_ deal: Deal) {
+        HapticEngine.medium()
+        let nowSaved = savedStore.toggle(deal: deal)
+        toastManager.show(
+            message: nowSaved ? "\(deal.city) saved!" : "\(deal.city) removed",
+            type: nowSaved ? .success : .info,
+            duration: 1.5
+        )
     }
 
     // MARK: - Helpers
@@ -533,7 +575,9 @@ private struct SearchCardButtonStyle: ButtonStyle {
 #Preview("Search") {
     SearchView()
         .environment(FeedStore())
+        .environment(SavedStore())
         .environment(SettingsStore())
         .environment(Router())
         .environment(RecentlyViewedStore())
+        .environment(ToastManager())
 }
