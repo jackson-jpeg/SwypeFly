@@ -969,7 +969,10 @@ function toFrontend(d: ScoredDest, origin?: string) {
     // image_url already prioritizes Unsplash over Google Places (set in merge above)
     imageUrl: d.image_url || d.image_urls?.[0],
     imageUrls: d.image_urls,
-    flightPrice: d.live_price ?? d.flight_price,
+    // Only send prices we can trust:
+    // - live_price (from Duffel cached_prices or Travelpayouts calendar) = good
+    // - flight_price (from destinations table, possibly months old) = unreliable, omit
+    flightPrice: d.live_price ?? null,
     hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
     currency: d.currency,
     vibeTags: d.vibe_tags,
@@ -980,7 +983,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
     priceSource: d.live_price != null
       ? (d.price_source as 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate')
       : 'estimate',
-    priceFetchedAt: d.price_fetched_at || undefined,
+    priceFetchedAt: d.price_fetched_at || d.tp_found_at || undefined,
     liveHotelPrice: d.live_hotel_price ?? null,
     hotelPriceSource: d.live_hotel_price != null
       ? (d.hotel_price_source as 'duffel' | 'liteapi' | 'estimate')
@@ -1231,7 +1234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Nearby airport fallback — when origin has < 5 quality deals, supplement
     const MIN_DEALS_THRESHOLD = 5;
-    const dealsWithPrice = destinations.filter((d) => (d.live_price ?? d.flight_price) > 0);
+    const dealsWithPrice = destinations.filter((d) => d.live_price != null && d.live_price > 0);
     if (dealsWithPrice.length < MIN_DEALS_THRESHOLD && !search) {
       const nearby = nearbyAirports[origin];
       if (nearby && nearby.length > 0) {
