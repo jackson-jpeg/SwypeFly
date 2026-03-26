@@ -438,7 +438,7 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
 
     // Price discrepancy context: compare cheapest offer to the priceHint from feed
     let priceDiscrepancy: {
-      tier: 'cheaper' | 'similar' | 'moderate_increase' | 'significant_increase' | 'deal_expired';
+      tier: 'cheaper' | 'similar' | 'moderate_increase' | 'significant_increase';
       message: string;
       feedPrice: number;
       bookingPrice: number;
@@ -466,13 +466,13 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
       } else if (percentDiff <= 50) {
         priceDiscrepancy = {
           tier: 'moderate_increase',
-          message: `Price has increased ${percentDiff}%. Still want to proceed?`,
+          message: `Live fares are ${percentDiff}% higher than when this deal was spotted.`,
           feedPrice, bookingPrice: cheapest, percentDiff,
         };
       } else {
         priceDiscrepancy = {
-          tier: 'deal_expired',
-          message: 'This deal has expired. Set an alert to catch the next one.',
+          tier: 'significant_increase',
+          message: `Fares have jumped ${percentDiff}% since this deal was spotted. Prices change fast — these are today's live rates.`,
           feedPrice, bookingPrice: cheapest, percentDiff,
         };
       }

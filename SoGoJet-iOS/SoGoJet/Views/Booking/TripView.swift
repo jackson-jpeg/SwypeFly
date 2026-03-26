@@ -1799,7 +1799,7 @@ struct TripView: View {
             Color.sgWhiteDim
         case "moderate_increase":
             Color.sgOrange
-        case "significant_increase", "deal_expired":
+        case "significant_increase":
             Color.sgRed
         default:
             Color.sgYellow
@@ -1812,7 +1812,7 @@ struct TripView: View {
             "equal.circle.fill"
         case "moderate_increase":
             "arrow.up.circle.fill"
-        case "significant_increase", "deal_expired":
+        case "significant_increase":
             "exclamationmark.triangle.fill"
         default:
             "info.circle.fill"
