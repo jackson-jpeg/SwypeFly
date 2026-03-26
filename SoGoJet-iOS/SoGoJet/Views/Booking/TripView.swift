@@ -28,6 +28,8 @@ struct TripView: View {
     @State private var switchingSimilarDestinationID: String?
     @State private var seededRouteKey = ""
     @State private var autoSearchedRouteKey = ""
+    @State private var flexibleDates = false
+    @State private var activeDateChip: DateSuggestionChip?
 
     private var effectiveOriginCode: String {
         selectedOriginCode.isEmpty ? settingsStore.departureCode : selectedOriginCode
@@ -244,6 +246,8 @@ struct TripView: View {
                     .textCase(.uppercase)
                     .tracking(1)
 
+                smartDateChips
+
                 HStack(spacing: Spacing.sm) {
                     dateControl(
                         title: "Depart",
@@ -311,6 +315,284 @@ struct TripView: View {
             RoundedRectangle(cornerRadius: Radius.lg)
                 .strokeBorder(Color.sgBorder, lineWidth: 1)
         )
+    }
+
+    // MARK: - Smart Date Suggestions
+
+    private enum DateSuggestionChip: Hashable {
+        case cheapest
+        case thisWeekend
+        case nextWeekend
+        case seasonal(String)
+        case flexible
+    }
+
+    private var availableDateChips: [DateSuggestionChip] {
+        var chips: [DateSuggestionChip] = []
+
+        // "Cheapest" — only if the deal has cheapest date data
+        if deal.cheapestDate != nil, deal.cheapestDate?.parsedISODate != nil {
+            chips.append(.cheapest)
+        }
+
+        // "This Weekend" — only if today is Mon-Thu (still time to book)
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        if weekday >= 2 && weekday <= 5 {
+            chips.append(.thisWeekend)
+        }
+
+        // "Next Weekend" — always relevant
+        chips.append(.nextWeekend)
+
+        // Seasonal — based on bestMonths. Pick the next upcoming best month.
+        if let seasonLabel = nextSeasonalSuggestion {
+            chips.append(.seasonal(seasonLabel))
+        }
+
+        // "Flexible" — always available as a toggle
+        chips.append(.flexible)
+
+        // Cap at 4 chips max (excluding flexible toggle)
+        let nonFlexible = chips.filter { if case .flexible = $0 { return false } else { return true } }
+        let capped = Array(nonFlexible.prefix(3))
+        return capped + [.flexible]
+    }
+
+    /// Determines the next seasonal suggestion based on the deal's bestMonths.
+    /// Returns a label like "Spring" or "Jun" if a best month is upcoming.
+    private var nextSeasonalSuggestion: String? {
+        guard let months = deal.bestMonths, !months.isEmpty else { return nil }
+
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: Date())
+
+        let monthMap: [String: Int] = [
+            "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+            "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            "january": 1, "february": 2, "march": 3, "april": 4, "june": 6,
+            "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
+        ]
+
+        let shortNames = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+        // Find the nearest upcoming best month
+        var bestMonthNumbers: [Int] = months.compactMap { monthMap[$0.lowercased()] }
+        bestMonthNumbers.sort()
+
+        // Find next upcoming month (wrap around year)
+        let upcoming = bestMonthNumbers.first(where: { $0 >= currentMonth })
+            ?? bestMonthNumbers.first
+
+        guard let targetMonth = upcoming, targetMonth > 0 && targetMonth <= 12 else { return nil }
+
+        // Don't show if the current month IS a best month (user is already in season)
+        if targetMonth == currentMonth { return nil }
+
+        // Map seasonal ranges to labels
+        if [6, 7, 8].contains(targetMonth) && Set(bestMonthNumbers).isSuperset(of: [6, 7, 8]) {
+            return "Summer"
+        }
+        if [3, 4].contains(targetMonth) && Set(bestMonthNumbers).intersection([3, 4]).count >= 1 {
+            return "Spring"
+        }
+
+        return shortNames[targetMonth]
+    }
+
+    private var smartDateChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.xs) {
+                ForEach(availableDateChips, id: \.self) { chip in
+                    dateSuggestionButton(for: chip)
+                }
+            }
+        }
+    }
+
+    private func dateSuggestionButton(for chip: DateSuggestionChip) -> some View {
+        let isActive: Bool = {
+            if case .flexible = chip { return flexibleDates }
+            return activeDateChip == chip
+        }()
+
+        let title: String = {
+            switch chip {
+            case .cheapest: return "Cheapest"
+            case .thisWeekend: return "This Wknd"
+            case .nextWeekend: return "Next Wknd"
+            case .seasonal(let label): return label
+            case .flexible: return "Flexible"
+            }
+        }()
+
+        let subtitle: String = {
+            switch chip {
+            case .cheapest:
+                if let dateStr = deal.cheapestDate, let date = dateStr.parsedISODate {
+                    let fmt = DateFormatter()
+                    fmt.dateFormat = "MMM d"
+                    return fmt.string(from: date)
+                }
+                return "best price"
+            case .thisWeekend:
+                return thisWeekendLabel
+            case .nextWeekend:
+                return nextWeekendLabel
+            case .seasonal:
+                return "best time"
+            case .flexible:
+                return "+/- 3 days"
+            }
+        }()
+
+        let icon: String = {
+            switch chip {
+            case .cheapest: return "tag"
+            case .thisWeekend: return "calendar"
+            case .nextWeekend: return "calendar.badge.clock"
+            case .seasonal: return "sun.max"
+            case .flexible: return "arrow.left.and.right"
+            }
+        }()
+
+        return Button {
+            applyDateSuggestion(chip)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .semibold))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(SGFont.bodyBold(size: 11))
+                    Text(subtitle.uppercased())
+                        .font(SGFont.bodyBold(size: 8))
+                        .tracking(0.5)
+                        .opacity(0.7)
+                }
+            }
+            .foregroundStyle(isActive ? Color.sgBg : Color.sgWhite)
+            .padding(.horizontal, Spacing.sm)
+            .padding(.vertical, 6)
+            .background(
+                isActive ? Color.sgYellow : Color.sgSurface,
+                in: Capsule()
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(isActive ? Color.sgYellow : Color.sgBorder, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var thisWeekendLabel: String {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let friday = calendar.nextDate(
+            after: today,
+            matching: DateComponents(weekday: 6),
+            matchingPolicy: .nextTimePreservingSmallerComponents
+        ) else { return "Fri-Sun" }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        return fmt.string(from: friday)
+    }
+
+    private var nextWeekendLabel: String {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let thisFriday = calendar.nextDate(
+            after: today,
+            matching: DateComponents(weekday: 6),
+            matchingPolicy: .nextTimePreservingSmallerComponents
+        ) else { return "Fri-Sun" }
+        let nextFriday = calendar.date(byAdding: .weekOfYear, value: 1, to: thisFriday) ?? thisFriday
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        return fmt.string(from: nextFriday)
+    }
+
+    private func applyDateSuggestion(_ chip: DateSuggestionChip) {
+        let calendar = Calendar.current
+
+        switch chip {
+        case .cheapest:
+            guard let depStr = deal.cheapestDate, let dep = depStr.parsedISODate else { return }
+            let ret: Date
+            if let retStr = deal.cheapestReturnDate, let retDate = retStr.parsedISODate {
+                ret = retDate
+            } else {
+                ret = calendar.date(byAdding: .day, value: max(deal.tripDays, 7), to: dep) ?? dep
+            }
+            departureDate = calendar.startOfDay(for: dep)
+            returnDate = calendar.startOfDay(for: ret)
+            activeDateChip = chip
+
+        case .thisWeekend:
+            let today = calendar.startOfDay(for: Date())
+            guard let friday = calendar.nextDate(
+                after: today,
+                matching: DateComponents(weekday: 6),
+                matchingPolicy: .nextTimePreservingSmallerComponents
+            ) else { return }
+            let sunday = calendar.date(byAdding: .day, value: 2, to: friday) ?? friday
+            departureDate = friday
+            returnDate = sunday
+            activeDateChip = chip
+
+        case .nextWeekend:
+            let today = calendar.startOfDay(for: Date())
+            guard let thisFriday = calendar.nextDate(
+                after: today,
+                matching: DateComponents(weekday: 6),
+                matchingPolicy: .nextTimePreservingSmallerComponents
+            ) else { return }
+            let nextFriday = calendar.date(byAdding: .weekOfYear, value: 1, to: thisFriday) ?? thisFriday
+            let nextSunday = calendar.date(byAdding: .day, value: 2, to: nextFriday) ?? nextFriday
+            departureDate = nextFriday
+            returnDate = nextSunday
+            activeDateChip = chip
+
+        case .seasonal(let label):
+            let targetMonth = seasonalTargetMonth(for: label)
+            guard targetMonth > 0 else { return }
+            let year = calendar.component(.year, from: Date())
+            let currentMonth = calendar.component(.month, from: Date())
+            let targetYear = targetMonth <= currentMonth ? year + 1 : year
+            var components = DateComponents()
+            components.year = targetYear
+            components.month = targetMonth
+            components.day = 15
+            guard let dep = calendar.date(from: components) else { return }
+            let ret = calendar.date(byAdding: .day, value: max(deal.tripDays, 7), to: dep) ?? dep
+            departureDate = dep
+            returnDate = ret
+            activeDateChip = chip
+
+        case .flexible:
+            flexibleDates.toggle()
+            if flexibleDates {
+                // Widen the window by shifting departure 3 days earlier and return 3 days later
+                let today = calendar.startOfDay(for: Date())
+                let newDep = calendar.date(byAdding: .day, value: -3, to: departureDate) ?? departureDate
+                departureDate = max(newDep, today)
+                returnDate = calendar.date(byAdding: .day, value: 3, to: returnDate) ?? returnDate
+            }
+            // No activeDateChip change for flexible — it uses its own toggle
+        }
+
+        HapticEngine.selection()
+        performSearch()
+    }
+
+    private func seasonalTargetMonth(for label: String) -> Int {
+        let seasonMap: [String: Int] = [
+            "Spring": 4, "Summer": 7,
+            "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+            "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
+        ]
+        return seasonMap[label] ?? 0
     }
 
     private var quickSearchControls: some View {
