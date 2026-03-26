@@ -180,6 +180,9 @@ struct DestinationDetailView: View {
                 .padding(.top, 2)
             }
 
+            // Visa requirement indicator
+            visaIndicator
+
             // Watch Price button — saves the deal so FareDropMonitor tracks it
             priceWatchButton
         }
@@ -214,6 +217,29 @@ struct DestinationDetailView: View {
         case .fresh: return Color.sgDealAmazing
         case .stale: return Color.sgYellow
         case .old:   return Color.sgRed
+        }
+    }
+
+    // MARK: - Visa Indicator
+
+    @ViewBuilder
+    private var visaIndicator: some View {
+        let status = VisaRequirement.status(for: deal.country)
+        if status != .unknown {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: status.icon)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(status.color)
+                    Text(status.label)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(status.color)
+                }
+                Text("Check travel.state.gov for current requirements")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.sgMuted.opacity(0.6))
+            }
+            .padding(.top, 4)
         }
     }
 
