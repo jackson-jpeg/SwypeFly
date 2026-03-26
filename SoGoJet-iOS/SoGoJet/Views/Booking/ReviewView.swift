@@ -3,6 +3,9 @@ import LocalAuthentication
 
 struct ReviewView: View {
     @Environment(BookingStore.self) private var store
+    @Environment(AuthStore.self) private var auth
+
+    @State private var showSignInRequired = false
 
     private var offer: TripOption? {
         store.selectedOffer
@@ -15,6 +18,11 @@ struct ReviewView: View {
             } else {
                 reviewContent
             }
+        }
+        .alert("Sign In Required", isPresented: $showSignInRequired) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("You need to sign in before completing a purchase. Go back to the main screen and sign in first.")
         }
     }
 
@@ -282,6 +290,12 @@ struct ReviewView: View {
 
     /// Authenticate with Face ID / Touch ID / passcode before confirming payment.
     private func authenticateAndPay() {
+        // Guest users must sign in before payment
+        guard auth.isAuthenticated else {
+            showSignInRequired = true
+            return
+        }
+
         let context = LAContext()
         var error: NSError?
 

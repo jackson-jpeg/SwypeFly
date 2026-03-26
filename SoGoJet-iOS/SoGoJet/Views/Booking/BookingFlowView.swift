@@ -4,14 +4,33 @@ import UIKit
 struct BookingFlowView: View {
     @Environment(BookingStore.self) private var store
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(SavedStore.self) private var savedStore
     @Environment(Router.self) private var router
+    @Environment(AuthStore.self) private var auth
+    @Environment(NetworkMonitor.self) private var network
 
     let deal: Deal
 
     @State private var shareItem: BookingShareItem?
+    @State private var showSignInPrompt = false
 
     private var currentDeal: Deal {
         store.deal ?? deal
+    }
+
+    /// Simplified step name for onChange tracking (avoids associated-value comparison).
+    private var bookingStepName: String {
+        switch store.step {
+        case .idle: return "idle"
+        case .searching: return "searching"
+        case .trip: return "trip"
+        case .passengers: return "passengers"
+        case .seats: return "seats"
+        case .review: return "review"
+        case .paying: return "paying"
+        case .confirmed: return "confirmed"
+        case .failed: return "failed"
+        }
     }
 
     private var flowSteps: [String] {
@@ -92,6 +111,23 @@ struct BookingFlowView: View {
                 store.reset()
             }
         }
+        .onChange(of: bookingStepName) { _, newStep in
+            // Auto-save the deal when booking is confirmed
+            if newStep == "confirmed" {
+                if !savedStore.isSaved(id: currentDeal.id) {
+                    savedStore.add(deal: currentDeal)
+                }
+            }
+        }
+        .alert("Sign In Required", isPresented: $showSignInPrompt) {
+            Button("Sign In") {
+                router.dismissFullScreen()
+                // Let the user sign in from the main app
+            }
+            Button("Continue Browsing", role: .cancel) {}
+        } message: {
+            Text("Create an account to complete your booking. You can browse flights and compare prices without signing in.")
+        }
     }
 
     @ViewBuilder
@@ -128,8 +164,11 @@ struct BookingFlowView: View {
                     HapticEngine.light()
                     router.dismissFullScreen()
                 },
-                trailingIcon: nil,
-                trailingAction: nil
+                trailingIcon: savedStore.isSaved(id: currentDeal.id) ? "heart.fill" : "heart",
+                trailingAction: {
+                    HapticEngine.medium()
+                    savedStore.toggle(deal: currentDeal)
+                }
             )
 
             VintageTerminalProgressRail(
@@ -237,6 +276,9 @@ private struct BookingFlowShareSheet: UIViewControllerRepresentable {
     BookingFlowView(deal: .preview)
         .environment(BookingStore())
         .environment(SettingsStore())
+        .environment(SavedStore())
         .environment(Router())
         .environment(ToastManager())
+        .environment(AuthStore())
+        .environment(NetworkMonitor())
 }

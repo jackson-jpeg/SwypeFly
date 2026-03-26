@@ -9,6 +9,7 @@ struct TripView: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
+    @Environment(NetworkMonitor.self) private var network
 
     let deal: Deal
 
@@ -1554,6 +1555,13 @@ struct TripView: View {
     // MARK: - Actions
 
     private func performSearch() {
+        guard network.isConnected else {
+            toastManager.show(
+                message: "No internet connection. Connect to Wi-Fi or cellular data and try again.",
+                type: .error
+            )
+            return
+        }
         Task {
             await store.searchFlights(
                 origin: effectiveOriginCode,
@@ -1630,6 +1638,7 @@ struct TripView: View {
 
     @MainActor
     private func autoSearchIfNeeded() async {
+        guard network.isConnected else { return }
         guard autoSearchedRouteKey != activeSearchKey else { return }
 
         let existingSearchMatches =

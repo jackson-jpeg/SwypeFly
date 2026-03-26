@@ -119,8 +119,9 @@ struct SoGoJetApp: App {
                     }
                 }
                 .onChange(of: feedStore.allDeals.count) { _, _ in
-                    // Resolve any pending deep link once the feed has loaded
-                    router.resolvePendingDeepLink(feedStore: feedStore)
+                    // Resolve any pending deep link once the feed has loaded.
+                    // Also checks saved deals and falls back to an API fetch.
+                    router.resolvePendingDeepLink(feedStore: feedStore, savedStore: savedStore)
                 }
                 .onChange(of: scenePhase) { oldPhase, newPhase in
                     if oldPhase != .active && newPhase == .active {

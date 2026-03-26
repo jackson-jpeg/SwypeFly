@@ -244,11 +244,43 @@ final class Router {
     var pendingDeepLinkId: String?
 
     /// Try to resolve a pending deep link against the current feed.
-    @MainActor func resolvePendingDeepLink(feedStore: FeedStore) {
+    /// If the deal is not in the feed (e.g., different origin or paginated out),
+    /// fetch it directly from the API.
+    @MainActor func resolvePendingDeepLink(feedStore: FeedStore, savedStore: SavedStore? = nil) {
         guard let id = pendingDeepLinkId else { return }
         if let deal = feedStore.allDeals.first(where: { $0.id == id }) {
             pendingDeepLinkId = nil
             showDeal(deal)
+            return
+        }
+        // Also check saved deals
+        if let deal = savedStore?.savedDeals.first(where: { $0.id == id }) {
+            pendingDeepLinkId = nil
+            showDeal(deal)
+            return
+        }
+        // If the feed is still loading, wait for it
+        guard !feedStore.isLoading else { return }
+        // Feed loaded but deal not found -- fetch it from the API
+        pendingDeepLinkId = nil
+        Task { @MainActor in
+            await fetchAndShowDeal(id: id)
+        }
+    }
+
+    /// Fetch a single destination by searching for it and show the detail sheet.
+    @MainActor private func fetchAndShowDeal(id: String, origin: String = "JFK") async {
+        do {
+            let response: FeedResponse = try await APIClient.shared.fetch(
+                .feed(origin: origin, page: 1, vibes: [], search: id)
+            )
+            if let deal = response.destinations.first(where: { $0.id == id }) {
+                showDeal(deal)
+            }
+        } catch {
+            #if DEBUG
+            print("[Router] Failed to fetch deal for deep link \(id): \(error)")
+            #endif
         }
     }
 

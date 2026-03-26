@@ -155,8 +155,11 @@ struct ContentView: View {
             BookingFlowView(deal: deal)
                 .environment(bookingStore)
                 .environment(settings)
+                .environment(savedStore)
                 .environment(router)
                 .environment(toastManager)
+                .environment(auth)
+                .environment(network)
         case .onboarding:
             OnboardingView()
                 .environment(settings)
