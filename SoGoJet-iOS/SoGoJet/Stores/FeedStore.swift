@@ -30,6 +30,11 @@ final class FeedStore {
     var selectedVibes: [String] = []
     var selectedRegions: [String] = []
 
+    /// Quick price ceiling filter from the bottom pill bar (e.g. 200, 500, 1000).
+    /// When set, only deals at or below this price are shown.
+    /// Takes precedence over selectedPrices when non-nil.
+    var maxPriceFilter: Int?
+
     // MARK: Derived
     var deals: [Deal] {
         loadedDeals.filter(matchesActiveFilters)
@@ -40,11 +45,11 @@ final class FeedStore {
     }
 
     var hasActiveFilters: Bool {
-        !selectedPrices.isEmpty || !selectedVibes.isEmpty || !selectedRegions.isEmpty
+        !selectedPrices.isEmpty || !selectedVibes.isEmpty || !selectedRegions.isEmpty || maxPriceFilter != nil
     }
 
     var activeFilterCount: Int {
-        selectedPrices.count + selectedVibes.count + selectedRegions.count
+        selectedPrices.count + selectedVibes.count + selectedRegions.count + (maxPriceFilter != nil ? 1 : 0)
     }
 
     var isEmpty: Bool { deals.isEmpty && !isLoading }
@@ -146,6 +151,7 @@ final class FeedStore {
         selectedPrices.removeAll()
         selectedVibes.removeAll()
         selectedRegions.removeAll()
+        maxPriceFilter = nil
         await fetchDeals(origin: origin)
     }
 
@@ -175,6 +181,12 @@ final class FeedStore {
     }
 
     private func matchesPriceFilter(_ deal: Deal) -> Bool {
+        // Quick price ceiling filter takes precedence
+        if let maxPrice = maxPriceFilter {
+            guard let price = deal.displayPrice else { return false }
+            return price <= Double(maxPrice)
+        }
+
         guard !selectedPrices.isEmpty else { return true }
         guard let price = deal.displayPrice else { return false }
 

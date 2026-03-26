@@ -166,6 +166,13 @@ struct FeedView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .overlay(alignment: .bottom) {
+            if !feedStore.allDeals.isEmpty {
+                PriceFilterBar(feedStore: feedStore, toastManager: toastManager)
+                    .padding(.bottom, 90) // above the tab bar
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
     }
 
     // MARK: - Swipe Feed Content (Card Stack)
@@ -870,6 +877,93 @@ private struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Price Filter Bar
+
+private struct PriceFilterBar: View {
+    var feedStore: FeedStore
+    let toastManager: ToastManager
+
+    private struct Tier: Identifiable {
+        let id: String   // internal key
+        let label: String // pill text
+        let maxPrice: Int? // nil = show all
+    }
+
+    private let tiers: [Tier] = [
+        Tier(id: "all",  label: "All",    maxPrice: nil),
+        Tier(id: "200",  label: "$200",   maxPrice: 200),
+        Tier(id: "500",  label: "$500",   maxPrice: 500),
+        Tier(id: "1000", label: "$1K",    maxPrice: 1000),
+    ]
+
+    private func isActive(_ tier: Tier) -> Bool {
+        feedStore.maxPriceFilter == tier.maxPrice
+    }
+
+    private func select(_ tier: Tier) {
+        HapticEngine.light()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            feedStore.maxPriceFilter = tier.maxPrice
+        }
+
+        let message: String
+        if let max = tier.maxPrice {
+            let formatted = max >= 1000 ? "$\(max / 1000),000" : "$\(max)"
+            message = "Showing deals under \(formatted)"
+        } else {
+            message = "Showing all deals"
+        }
+        toastManager.show(message: message, type: .info, duration: 1.2)
+    }
+
+    var body: some View {
+        HStack(spacing: Spacing.sm) {
+            ForEach(tiers) { tier in
+                Button {
+                    select(tier)
+                } label: {
+                    HStack(spacing: 4) {
+                        if tier.maxPrice == nil {
+                            Image(systemName: "line.3.horizontal.decrease")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        Text(tier.label)
+                            .font(SGFont.bodyBold(size: 12))
+                    }
+                    .foregroundStyle(isActive(tier) ? Color.sgBg : Color.sgWhiteDim)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.sm)
+                    .background(
+                        isActive(tier) ? Color.sgYellow : Color.sgSurface.opacity(0.9),
+                        in: Capsule()
+                    )
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(
+                                isActive(tier) ? Color.sgYellow.opacity(0.5) : Color.sgBorder,
+                                lineWidth: 1
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    tier.maxPrice == nil
+                        ? "Show all deals"
+                        : "Filter to deals under \(tier.label)"
+                )
+            }
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .background(
+            Capsule()
+                .fill(Color.sgBg.opacity(0.8))
+                .background(.ultraThinMaterial, in: Capsule())
+        )
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
 }
 
 // MARK: - Preview
