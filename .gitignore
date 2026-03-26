@@ -48,3 +48,22 @@ coverage/
 
 # worktrees
 .worktrees/
+
+# debug logs
+firebase-debug.log
+
+# archived / legacy
+_archive/
+supabase/
+
+# test & export artifacts
+dogfood-output/
+paper-exports/
+
+# agent caches
+.serena/
+
+# stale planning docs (kept locally)
+BUILD_PLAN.md
+ROADMAP.md
+APPSTORE.md

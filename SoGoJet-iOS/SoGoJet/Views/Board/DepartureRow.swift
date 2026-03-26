@@ -46,7 +46,8 @@ struct DepartureBoardSlot: Identifiable, Equatable {
         guard let deal else {
             return "Empty departure board row"
         }
-        var parts = [deal.city, deal.country, deal.priceFormatted]
+        let priceText = isEstimatedPrice ? "from \(deal.priceFormatted)" : deal.priceFormatted
+        var parts = [deal.city, deal.country, priceText]
         if deal.airlineName != "—" {
             parts.append(deal.airlineName)
         }
@@ -78,6 +79,10 @@ struct DepartureRow: View {
     private var priceColor: Color {
         if slot.isBlank {
             return Color.sgFaint.opacity(0.45)
+        }
+        // Estimated prices are slightly dimmer to signal they're not confirmed
+        if slot.isEstimatedPrice {
+            return Color.sgWhiteDim
         }
         return slot.deal?.hasPrice == true ? Color.sgWhite : Color.sgFaint
     }
