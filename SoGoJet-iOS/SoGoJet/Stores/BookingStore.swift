@@ -56,6 +56,7 @@ final class BookingStore {
     var onLivePriceFound: ((String, Double) -> Void)?
 
     private static let recentSearchesKey = "SGRecentSearches"
+    private static let lastPassengerKey = "SGLastPassengerData"
     private static let maxRecentSearches = 8
 
     // MARK: Derived
@@ -95,7 +96,7 @@ final class BookingStore {
         self.deal = deal
         step = .idle
         selectedOffer = nil
-        passenger = PassengerData()
+        passenger = loadLastPassenger() ?? PassengerData()
         seatMap = nil
         selectedSeatId = nil
         bookingOrder = nil
@@ -222,6 +223,7 @@ final class BookingStore {
     /// Move to seat selection and fetch seat map.
     func proceedToSeats() async {
         guard let offer = selectedOffer else { return }
+        saveLastPassenger()
         let requestID = UUID()
         activeOfferRequestID = requestID
         step = .seats
@@ -617,6 +619,56 @@ final class BookingStore {
         guard let data = try? JSONEncoder().encode(recentSearches) else { return }
         UserDefaults.standard.set(data, forKey: Self.recentSearchesKey)
     }
+
+    // MARK: - Passenger Data Persistence
+
+    /// Persists non-sensitive passenger fields so returning users don't re-type their info.
+    /// Passport number, passport expiry, and nationality are intentionally excluded.
+    private func saveLastPassenger() {
+        let safe = SavedPassengerData(
+            title: passenger.title,
+            firstName: passenger.firstName,
+            lastName: passenger.lastName,
+            email: passenger.email,
+            phone: passenger.phone,
+            dateOfBirth: passenger.dateOfBirth,
+            gender: passenger.gender
+        )
+        guard let data = try? JSONEncoder().encode(safe) else { return }
+        UserDefaults.standard.set(data, forKey: Self.lastPassengerKey)
+    }
+
+    /// Restores the last-used passenger data (non-sensitive fields only).
+    private func loadLastPassenger() -> PassengerData? {
+        guard let data = UserDefaults.standard.data(forKey: Self.lastPassengerKey),
+              let saved = try? JSONDecoder().decode(SavedPassengerData.self, from: data)
+        else { return nil }
+
+        // Only restore if there is meaningful data (at least a name).
+        guard !saved.firstName.isEmpty, !saved.lastName.isEmpty else { return nil }
+
+        return PassengerData(
+            title: saved.title,
+            firstName: saved.firstName,
+            lastName: saved.lastName,
+            email: saved.email,
+            phone: saved.phone,
+            dateOfBirth: saved.dateOfBirth,
+            gender: saved.gender
+        )
+    }
+}
+
+/// Non-sensitive subset of passenger data persisted to UserDefaults.
+/// Passport numbers and expiry dates are intentionally omitted.
+private struct SavedPassengerData: Codable {
+    let title: String
+    let firstName: String
+    let lastName: String
+    let email: String
+    let phone: String
+    let dateOfBirth: String
+    let gender: PassengerData.Gender
 }
 
 private struct BookingErrorPayload: Decodable {
