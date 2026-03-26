@@ -102,7 +102,7 @@ struct DepartureBoardWidget: Widget {
                 .containerBackground(Color(red: 0.039, green: 0.039, blue: 0.039), for: .widget)
         }
         .configurationDisplayName("Flight Deals")
-        .description("Live departure board showing the cheapest flight deals from your airport.")
+        .description("Departure board showing estimated flight deals from your airport. Tap to see confirmed prices.")
         .supportedFamilies([.systemMedium, .systemLarge])
         .contentMarginsDisabled()
     }

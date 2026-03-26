@@ -69,13 +69,20 @@ struct ExploreMapView: View {
         } label: {
             VStack(spacing: 2) {
                 // Price bubble
-                Text(deal.priceFormatted)
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.sgBg)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(deal.tierColor)
-                    .clipShape(Capsule())
+                VStack(spacing: 0) {
+                    if deal.isEstimatedPrice {
+                        Text("from")
+                            .font(.system(size: 7, weight: .medium))
+                            .foregroundStyle(Color.sgBg.opacity(0.7))
+                    }
+                    Text(deal.priceFormatted)
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.sgBg)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(deal.tierColor)
+                .clipShape(Capsule())
 
                 // Pin point
                 Image(systemName: "arrowtriangle.down.fill")

@@ -96,9 +96,12 @@ struct DestinationDetailView: View {
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
                         if deal.isEstimatedPrice {
-                            Text("from")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(Color.sgWhite.opacity(0.7))
+                            HStack(spacing: 3) {
+                                Text("from")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(Color.sgWhite.opacity(0.7))
+                                PriceInfoButton()
+                            }
                         }
                         Text(deal.priceFormatted)
                             .font(SGFont.bodyBold(size: 24))
@@ -375,13 +378,20 @@ struct DestinationDetailView: View {
                     // Destination pin (price badge)
                     Annotation(deal.city, coordinate: destCoord) {
                         VStack(spacing: 2) {
-                            Text(deal.priceFormatted)
-                                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                .foregroundStyle(Color.sgBg)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(Color.sgYellow)
-                                .clipShape(Capsule())
+                            VStack(spacing: 0) {
+                                if deal.isEstimatedPrice {
+                                    Text("from")
+                                        .font(.system(size: 7, weight: .medium))
+                                        .foregroundStyle(Color.sgBg.opacity(0.7))
+                                }
+                                Text(deal.priceFormatted)
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(Color.sgBg)
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.sgYellow)
+                            .clipShape(Capsule())
                             Image(systemName: "arrowtriangle.down.fill")
                                 .font(.system(size: 6))
                                 .foregroundStyle(Color.sgYellow)
@@ -1212,9 +1222,16 @@ struct DestinationDetailView: View {
                 .font(SGFont.bodyBold(size: 14))
                 .foregroundStyle(Color.sgWhite)
                 .lineLimit(1)
-            Text(otherDeal.priceFormatted)
-                .font(SGFont.bodyBold(size: 13))
-                .foregroundStyle(Color.sgYellow)
+            HStack(spacing: 2) {
+                if otherDeal.isEstimatedPrice {
+                    Text("from")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(Color.sgMuted)
+                }
+                Text(otherDeal.priceFormatted)
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgYellow)
+            }
         }
         .frame(width: 140)
         .contentShape(Rectangle())
@@ -1223,7 +1240,7 @@ struct DestinationDetailView: View {
             router.showDeal(otherDeal)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(otherDeal.city), \(otherDeal.priceFormatted)")
+        .accessibilityLabel("\(otherDeal.city), \(otherDeal.isEstimatedPrice ? "from " : "")\(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
         .accessibilityAddTraits(.isButton)
     }
@@ -1292,9 +1309,16 @@ struct DestinationDetailView: View {
                 .font(SGFont.bodyBold(size: 14))
                 .foregroundStyle(Color.sgWhite)
                 .lineLimit(1)
-            Text(otherDeal.priceFormatted)
-                .font(SGFont.bodyBold(size: 13))
-                .foregroundStyle(Color.sgYellow)
+            HStack(spacing: 2) {
+                if otherDeal.isEstimatedPrice {
+                    Text("from")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(Color.sgMuted)
+                }
+                Text(otherDeal.priceFormatted)
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgYellow)
+            }
         }
         .frame(width: 140)
         .contentShape(Rectangle())
@@ -1303,7 +1327,7 @@ struct DestinationDetailView: View {
             router.showDeal(otherDeal)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(otherDeal.city), \(distanceKm) kilometers away, \(otherDeal.priceFormatted)")
+        .accessibilityLabel("\(otherDeal.city), \(distanceKm) kilometers away, \(otherDeal.isEstimatedPrice ? "from " : "")\(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
         .accessibilityAddTraits(.isButton)
     }

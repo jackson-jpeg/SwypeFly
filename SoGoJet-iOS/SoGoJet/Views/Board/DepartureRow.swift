@@ -11,6 +11,7 @@ struct DepartureBoardSlot: Identifiable, Equatable {
     let price: String
     let airlineName: String
     let country: String
+    var isEstimatedPrice: Bool = false
 
     var isBlank: Bool {
         deal == nil
@@ -36,7 +37,8 @@ struct DepartureBoardSlot: Identifiable, Equatable {
             destination: deal.city.uppercased(),
             price: deal.priceFormatted,
             airlineName: deal.airlineName,
-            country: deal.country
+            country: deal.country,
+            isEstimatedPrice: deal.isEstimatedPrice
         )
     }
 
@@ -140,6 +142,11 @@ struct DepartureRow: View {
             // Country + flight info subtitle
             if !slot.isBlank, let deal = slot.deal {
                 HStack(spacing: 4) {
+                    if slot.isEstimatedPrice {
+                        Text("from")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Color.sgMuted.opacity(0.7))
+                    }
                     Text(slot.country)
                     if let dur = deal.flightDuration, !dur.isEmpty {
                         Text("·").foregroundStyle(Color.sgFaint)

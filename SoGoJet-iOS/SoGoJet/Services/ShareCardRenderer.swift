@@ -380,30 +380,37 @@ struct ShareCardView: View {
     // MARK: - Price Badge
 
     private var priceBadge: some View {
-        HStack(spacing: 6) {
-            if deal.hasPrice {
-                Text(deal.priceFormatted)
-                    .font(.system(size: isStory ? 44 : 36, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color(hex: 0x0A0A0A))
-            } else {
-                Text("Check price")
-                    .font(.system(size: isStory ? 28 : 24, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color(hex: 0x0A0A0A))
+        VStack(spacing: 4) {
+            if deal.hasPrice && deal.isEstimatedPrice {
+                Text("from")
+                    .font(.system(size: isStory ? 16 : 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
             }
-        }
-        .padding(.horizontal, 36)
-        .padding(.vertical, 14)
-        .background(
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [Color(hex: 0xF7E8A0), Color(hex: 0xE8A849)],
-                        startPoint: .leading,
-                        endPoint: .trailing
+            HStack(spacing: 6) {
+                if deal.hasPrice {
+                    Text(deal.priceFormatted)
+                        .font(.system(size: isStory ? 44 : 36, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color(hex: 0x0A0A0A))
+                } else {
+                    Text("Check price")
+                        .font(.system(size: isStory ? 28 : 24, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color(hex: 0x0A0A0A))
+                }
+            }
+            .padding(.horizontal, 36)
+            .padding(.vertical, 14)
+            .background(
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: 0xF7E8A0), Color(hex: 0xE8A849)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
                     )
-                )
-        )
-        .shadow(color: Color(hex: 0xF7E8A0).opacity(0.3), radius: 20, y: 4)
+            )
+            .shadow(color: Color(hex: 0xF7E8A0).opacity(0.3), radius: 20, y: 4)
+        }
     }
 
     // MARK: - Flight Info

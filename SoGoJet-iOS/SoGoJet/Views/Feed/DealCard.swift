@@ -180,7 +180,7 @@ struct DealCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(deal.city)
                         .font(.headline)
-                    Text("\(deal.country) \(deal.hasPrice ? "-- \(deal.priceFormatted)" : "")")
+                    Text("\(deal.country) \(deal.hasPrice ? "-- \(deal.isEstimatedPrice ? "from " : "")\(deal.priceFormatted)" : "")")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -317,9 +317,12 @@ struct DealCard: View {
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Color.sgDealAmazing)
             } else if deal.isEstimatedPrice {
-                Text("from")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(Color.sgWhite.opacity(0.7))
+                HStack(spacing: 3) {
+                    Text("from")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(Color.sgWhite.opacity(0.7))
+                    PriceInfoButton()
+                }
             }
 
             HStack(spacing: 4) {

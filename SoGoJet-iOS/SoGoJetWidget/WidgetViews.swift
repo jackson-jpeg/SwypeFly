@@ -102,6 +102,12 @@ struct FlightRow: View {
 
             Spacer(minLength: 3)
 
+            // "from" label — widget prices are always estimates
+            Text("from")
+                .font(.system(size: max(fs - 5, 6), weight: .medium))
+                .foregroundStyle(WD.muted.opacity(0.6))
+                .padding(.trailing, 2)
+
             // Price
             SplitFlapText(text: "$\(flight.price)", length: 4, color: priceColor, w: cw, h: ch, fs: fs, align: .trailing)
         }

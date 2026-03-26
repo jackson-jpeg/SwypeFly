@@ -318,9 +318,14 @@ struct SearchView: View {
                 Spacer(minLength: 0)
 
                 if let price = item.price, price > 0 {
-                    Text("$\(Int(price))")
-                        .font(SGFont.display(size: 18))
-                        .foregroundStyle(Color.sgYellow)
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("from")
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundStyle(Color.sgMuted)
+                        Text("$\(Int(price))")
+                            .font(SGFont.display(size: 18))
+                            .foregroundStyle(Color.sgYellow)
+                    }
                 }
 
                 Text(item.iataCode)
@@ -415,6 +420,11 @@ struct SearchView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(savedStore.isSaved(id: deal.id) ? "Unsave \(deal.city)" : "Save \(deal.city)")
 
+                    if deal.isEstimatedPrice {
+                        Text("from")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Color.sgMuted)
+                    }
                     Text(deal.priceFormatted)
                         .font(SGFont.display(size: 22))
                         .foregroundStyle(Color.sgYellow)

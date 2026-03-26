@@ -408,9 +408,16 @@ struct ComparePickerView: View {
                 Spacer()
 
                 if deal.hasPrice {
-                    Text(deal.priceFormatted)
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.sgWhite)
+                    VStack(alignment: .trailing, spacing: 1) {
+                        if deal.isEstimatedPrice {
+                            Text("from")
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundStyle(Color.sgMuted)
+                        }
+                        Text(deal.priceFormatted)
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.sgWhite)
+                    }
                 }
 
                 // Selection indicator
