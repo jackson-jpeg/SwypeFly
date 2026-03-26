@@ -130,11 +130,11 @@ extension Deal {
         return flightPrice != nil
     }
 
-    /// Price label for the card — "from $X" for estimates, "$X" for live prices
+    /// Price label for the card — "seen at $X" for estimates, "$X" for live prices
     var cardPriceLabel: String {
         guard let price = displayPrice, price > 0 else { return "Check price" }
         if isEstimatedPrice {
-            return "from $\(Int(price))"
+            return "seen at $\(Int(price))"
         }
         return "$\(Int(price))"
     }
@@ -312,10 +312,10 @@ extension Deal {
         let minutes = Int(seconds) / 60
         let hours = minutes / 60
         let days = hours / 24
-        if days >= 1 { return "Price updated \(days)d ago" }
-        if hours >= 1 { return "Price updated \(hours)h ago" }
-        if minutes >= 1 { return "Price updated \(minutes)m ago" }
-        return "Price updated just now"
+        if days >= 1 { return "Seen \(days)d ago" }
+        if hours >= 1 { return "Seen \(hours)h ago" }
+        if minutes >= 1 { return "Seen \(minutes)m ago" }
+        return "Seen just now"
     }
 
     /// Freshness category for coloring the price-updated label.

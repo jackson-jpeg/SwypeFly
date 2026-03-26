@@ -14,12 +14,8 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if !settings.hasOnboarded {
-                // New users: auth → onboarding → main app
-                if auth.isAuthenticated {
-                    OnboardingView()
-                } else {
-                    AuthView()
-                }
+                // New users: onboarding first, no auth gate
+                OnboardingView()
             } else {
                 mainTabView
             }

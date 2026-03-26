@@ -170,26 +170,7 @@ struct TripView: View {
             )
             performSearch()
         }
-        .alert("Price Changed", isPresented: $showPriceAlert) {
-            Button("Continue Anyway") {
-                if let option = priceAlertOption {
-                    store.selectOffer(option)
-                }
-            }
-            Button("Email Me Deals") {
-                presentEmailAlertSignup()
-            }
-            Button("Back to Deals", role: .cancel) {
-                store.reset()
-                router.dismissFullScreen()
-            }
-        } message: {
-            if let discrepancy = store.lastPriceDiscrepancy {
-                Text(discrepancy.message)
-            } else if let option = priceAlertOption, let feedPrice = deal.displayPrice {
-                Text("The live price is $\(Int(option.price)), up from $\(Int(feedPrice)). Prices change frequently — this is the current best rate.")
-            }
-        }
+        // Price alert removed — replaced with inline price comparison banner in results
         .sheet(isPresented: $showEmailSignup) {
             PriceAlertSignupSheet(destinationName: deal.destination, price: deal.displayPrice)
         }
@@ -1453,8 +1434,12 @@ struct TripView: View {
                 searchMissionControlCard
 
                 if let best = options.first {
+                    // Always show price comparison when we have feed price context
                     if let discrepancy = store.lastPriceDiscrepancy {
                         priceDiscrepancyBanner(discrepancy)
+                    } else if let feedPrice = deal.displayPrice, deal.isEstimatedPrice {
+                        // No discrepancy model but we have a feed price — show simple comparison
+                        priceFeedComparisonBanner(feedPrice: feedPrice, livePrice: best.price)
                     }
 
                     bestOfferCard(best)
@@ -1820,7 +1805,7 @@ struct TripView: View {
                     .font(SGFont.bodyBold(size: 13))
                     .foregroundStyle(Color.sgWhite)
 
-                Text("Feed: $\(Int(discrepancy.feedPrice)) · Live: $\(Int(discrepancy.bookingPrice))")
+                Text("Seen at $\(Int(discrepancy.feedPrice)) · Live from $\(Int(discrepancy.bookingPrice))")
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             }
@@ -1832,6 +1817,39 @@ struct TripView: View {
         .overlay(
             RoundedRectangle(cornerRadius: Radius.sm)
                 .strokeBorder(toneColor.opacity(0.35), lineWidth: 1)
+        )
+    }
+
+    private func priceFeedComparisonBanner(feedPrice: Double, livePrice: Double) -> some View {
+        let dropped = livePrice < feedPrice
+        let color: Color = dropped ? .sgGreen : .sgYellow
+        let icon = dropped ? "arrow.down.circle.fill" : "info.circle.fill"
+        let message = dropped
+            ? "Price dropped! Live fares start below the last seen price."
+            : "Live fares from $\(Int(livePrice))"
+
+        return HStack(alignment: .top, spacing: Spacing.sm) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(color)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(message)
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgWhite)
+
+                Text("Seen at $\(Int(feedPrice)) · Live from $\(Int(livePrice))")
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(Spacing.sm)
+        .background(Color.sgCell, in: RoundedRectangle(cornerRadius: Radius.sm))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.sm)
+                .strokeBorder(color.opacity(0.35), lineWidth: 1)
         )
     }
 
@@ -1868,29 +1886,9 @@ struct TripView: View {
     }
 
     private func handleOfferSelection(_ offer: TripOption) {
-        if let discrepancy = store.lastPriceDiscrepancy {
-            switch discrepancy.tier {
-            case "moderate_increase", "significant_increase", "deal_expired":
-                priceAlertOption = offer
-                showPriceAlert = true
-                return
-            default:
-                break
-            }
-        }
-
-        guard let feedPrice = deal.displayPrice else {
-            store.selectOffer(offer)
-            return
-        }
-
-        let increase = (offer.price - feedPrice) / feedPrice
-        if increase > 0.15 {
-            priceAlertOption = offer
-            showPriceAlert = true
-        } else {
-            store.selectOffer(offer)
-        }
+        // Always proceed — no blocking alert. The inline price comparison
+        // banner already informs the user about any price differences.
+        store.selectOffer(offer)
     }
 
     private func presentEmailAlertSignup() {

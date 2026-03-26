@@ -32,20 +32,20 @@ struct PriceExplainerSheet: View {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 explainerRow(
                     icon: "tag",
-                    title: "\"from\" prices are estimates",
-                    body: "Prices shown as \"from $X\" are based on recent searches and fare data. They represent the lowest recently seen fare for this route."
+                    title: "\"Seen at\" prices are historical",
+                    body: "Prices labeled \"seen at $X\" are based on recent fare data — the lowest price spotted for this route. They show what the fare was, not what it is right now."
                 )
 
                 explainerRow(
                     icon: "arrow.triangle.2.circlepath",
-                    title: "Live prices may differ",
-                    body: "Airlines update fares constantly. The price you see when booking may be higher or lower than the estimate shown."
+                    title: "Live prices may be higher or lower",
+                    body: "Airlines update fares constantly. When you search, you'll see today's actual prices. Sometimes they're lower — we'll celebrate that with you."
                 )
 
                 explainerRow(
                     icon: "airplane.departure",
-                    title: "Tap to see confirmed prices",
-                    body: "Tap \"Search Flights\" to check today's live fares. That price is what you will actually pay."
+                    title: "Search to see real prices",
+                    body: "Tap \"Search Flights\" to check live fares. That's the price you'll actually pay — no surprises."
                 )
             }
 
@@ -57,7 +57,7 @@ struct PriceExplainerSheet: View {
                     .tracking(1)
 
                 HStack(spacing: Spacing.md) {
-                    labelExample(prefix: "from", price: "$287", note: "Estimate")
+                    labelExample(prefix: "seen at", price: "$287", note: "Historical")
                     labelExample(prefix: "live", price: "$312", note: "Confirmed")
                 }
             }
