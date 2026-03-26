@@ -6,10 +6,17 @@ import Foundation
 extension String {
     /// Parse an ISO date string into a Date, or nil if invalid.
     private func parseDate() -> Date? {
-        // Try full ISO 8601 first, then date-only.
+        // Try full ISO 8601 with timezone
         let isoFull = ISO8601DateFormatter()
         if let date = isoFull.date(from: self) { return date }
 
+        // Try ISO 8601 without timezone (Duffel returns "2026-04-15T19:40:00")
+        let isoNoTZ = DateFormatter()
+        isoNoTZ.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        isoNoTZ.locale = Locale(identifier: "en_US_POSIX")
+        if let date = isoNoTZ.date(from: self) { return date }
+
+        // Try date-only
         let dateOnly = DateFormatter()
         dateOnly.dateFormat = "yyyy-MM-dd"
         dateOnly.locale = Locale(identifier: "en_US_POSIX")

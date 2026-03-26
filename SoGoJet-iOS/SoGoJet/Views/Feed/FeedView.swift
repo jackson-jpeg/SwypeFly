@@ -505,17 +505,36 @@ struct FeedView: View {
     // MARK: - Loading State
 
     private var loadingState: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: Spacing.lg) {
             Spacer()
+
+            // Animated split-flap departure code
+            SplitFlapRow(
+                text: settingsStore.departureCode,
+                maxLength: 3,
+                size: .lg,
+                color: Color.sgYellow,
+                alignment: .center,
+                animate: true,
+                staggerMs: 50
+            )
+
+            VStack(spacing: Spacing.sm) {
+                Text("Finding live fares")
+                    .font(SGFont.bodyBold(size: 16))
+                    .foregroundStyle(Color.sgWhite)
+
+                Text("Searching airlines for the best deals from \(settingsStore.departureCode)…")
+                    .font(SGFont.body(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, Spacing.xl)
+            }
 
             ProgressView()
                 .progressViewStyle(.circular)
                 .tint(Color.sgYellow)
-                .scaleEffect(1.3)
-
-            Text("Loading flights from \(settingsStore.departureCode)…")
-                .font(SGFont.body(size: 14))
-                .foregroundStyle(Color.sgWhiteDim)
+                .scaleEffect(1.1)
 
             Spacer()
         }
