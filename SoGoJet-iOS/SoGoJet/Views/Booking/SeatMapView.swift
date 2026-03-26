@@ -144,6 +144,38 @@ struct SeatMapView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 header
+
+                // Prominent skip option for budget travelers
+                Button {
+                    HapticEngine.light()
+                    store.selectedSeatId = nil
+                    store.proceedToReview()
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Skip seat selection")
+                                .font(SGFont.bodyBold(size: 14))
+                            Text("Airline assigns your seat at check-in — most budget travelers skip this")
+                                .font(SGFont.body(size: 11))
+                                .foregroundStyle(Color.sgMuted)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+                    .foregroundStyle(Color.sgWhite)
+                    .padding(Spacing.md)
+                    .background(Color.sgCell, in: RoundedRectangle(cornerRadius: Radius.md))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md)
+                            .strokeBorder(Color.sgBorder, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
                 boardingStub
                 cabinTelemetry
                 cabinLegend

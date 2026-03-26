@@ -30,6 +30,7 @@ struct TripView: View {
     @State private var autoSearchedRouteKey = ""
     @State private var flexibleDates = false
     @State private var activeDateChip: DateSuggestionChip?
+    @State private var showAdvancedSearch = false
 
     private var effectiveOriginCode: String {
         selectedOriginCode.isEmpty ? settingsStore.departureCode : selectedOriginCode
@@ -184,8 +185,6 @@ struct TripView: View {
                 header
                 heroCard
                 searchConsole
-                searchMissionControlCard
-                fareIntelSection
 
                 if isSearching {
                     searchingCard
@@ -193,9 +192,28 @@ struct TripView: View {
                     searchButton
                 }
 
-                // Recent searches from previous booking sessions
-                if !store.recentSearches.isEmpty && !isSearching {
-                    recentSearchesSection
+                // Expandable advanced section
+                if showAdvancedSearch {
+                    searchMissionControlCard
+                    fareIntelSection
+
+                    if !store.recentSearches.isEmpty && !isSearching {
+                        recentSearchesSection
+                    }
+                } else if !isSearching {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showAdvancedSearch = true
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "slider.horizontal.3")
+                            Text("More options")
+                        }
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, Spacing.md)
@@ -270,16 +288,18 @@ struct TripView: View {
 
             quickSearchControls
 
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("Cabin")
-                    .font(SGFont.bodyBold(size: 12))
-                    .foregroundStyle(Color.sgMuted)
-                    .textCase(.uppercase)
-                    .tracking(1)
+            if showAdvancedSearch {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Text("Cabin")
+                        .font(SGFont.bodyBold(size: 12))
+                        .foregroundStyle(Color.sgMuted)
+                        .textCase(.uppercase)
+                        .tracking(1)
 
-                HStack(spacing: Spacing.xs) {
-                    ForEach(BookingCabinClass.allCases, id: \.self) { cabinClass in
-                        cabinChip(for: cabinClass)
+                    HStack(spacing: Spacing.xs) {
+                        ForEach(BookingCabinClass.allCases, id: \.self) { cabinClass in
+                            cabinChip(for: cabinClass)
+                        }
                     }
                 }
             }
@@ -332,6 +352,9 @@ struct TripView: View {
         if weekday >= 2 && weekday <= 5 {
             chips.append(.thisWeekend)
         }
+
+        // Hide "Next Weekend" and other advanced chips behind expanded state
+        guard showAdvancedSearch else { return chips }
 
         // "Next Weekend" — always relevant
         chips.append(.nextWeekend)

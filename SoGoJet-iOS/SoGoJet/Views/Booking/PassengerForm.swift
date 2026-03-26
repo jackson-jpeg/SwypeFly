@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PassengerForm: View {
     @Environment(BookingStore.self) private var store
+    @Environment(AuthStore.self) private var auth
 
     @State private var title: PassengerTitle = .mr
     @State private var givenName = ""
@@ -406,7 +407,12 @@ struct PassengerForm: View {
         }
         givenName = passenger.firstName
         familyName = passenger.lastName
-        email = passenger.email
+        // Pre-fill email from auth if passenger data is empty
+        if passenger.email.isEmpty, let authEmail = auth.userEmail, !authEmail.isEmpty {
+            email = authEmail
+        } else {
+            email = passenger.email
+        }
         phone = passenger.phone
         passportNumber = passenger.passportNumber
         nationality = passenger.nationality.isEmpty ? "US" : passenger.nationality
