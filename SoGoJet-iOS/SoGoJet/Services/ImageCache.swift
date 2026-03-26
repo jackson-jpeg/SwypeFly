@@ -15,14 +15,16 @@ actor ImageCache {
     private let maxDiskBytes = 100 * 1024 * 1024
 
     /// Maximum pixel dimension for downsampled images.
-    /// Defaults to 3x of 430pt (1290px) which covers iPhone Pro Max.
-    /// Updated from main thread on first access if possible.
-    private var maxPixelSize: CGFloat = 1290
+    /// Defaults to 3x of 932pt (2796px) which covers full-screen display
+    /// on iPhone Pro Max. The longest edge (height) matters for full-bleed
+    /// swipe cards, not just width.
+    private var maxPixelSize: CGFloat = 2796
 
     private init() {
-        memoryCache.countLimit = 50
-        // Cap memory cache at ~120 MB of decoded pixel data.
-        memoryCache.totalCostLimit = 120 * 1024 * 1024
+        memoryCache.countLimit = 30
+        // Cap memory cache at ~200 MB of decoded pixel data.
+        // Full-screen images at 2796px are ~30 MB each decoded.
+        memoryCache.totalCostLimit = 200 * 1024 * 1024
 
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         diskDirectory = caches.appendingPathComponent("SGImageCache", isDirectory: true)
@@ -78,8 +80,8 @@ actor ImageCache {
             return img
         }
 
-        // 3. Network
-        guard let url = URL(string: urlString) else { return nil }
+        // 3. Network — optimize Unsplash URLs to request the right size
+        guard let url = URL(string: optimizedURL(urlString)) else { return nil }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             guard let http = response as? HTTPURLResponse,
@@ -126,8 +128,8 @@ actor ImageCache {
             return
         }
 
-        // Fetch from network
-        guard let url = URL(string: urlString) else { return }
+        // Fetch from network — optimize Unsplash URLs
+        guard let url = URL(string: optimizedURL(urlString)) else { return }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             guard let http = response as? HTTPURLResponse,
@@ -192,6 +194,22 @@ actor ImageCache {
         memoryCache.removeAllObjects()
         try? FileManager.default.removeItem(at: diskDirectory)
         try? FileManager.default.createDirectory(at: diskDirectory, withIntermediateDirectories: true)
+    }
+
+    // MARK: - URL Optimization
+
+    /// For Unsplash URLs, request the image at the right size server-side.
+    /// This avoids downloading a 4000px original when we only need ~2800px.
+    private func optimizedURL(_ urlString: String) -> String {
+        guard urlString.contains("images.unsplash.com") else { return urlString }
+        // Strip any existing w= or q= params and set optimal ones
+        guard var components = URLComponents(string: urlString) else { return urlString }
+        var items = (components.queryItems ?? []).filter { $0.name != "w" && $0.name != "q" && $0.name != "fm" }
+        items.append(URLQueryItem(name: "w", value: "\(Int(maxPixelSize))"))
+        items.append(URLQueryItem(name: "q", value: "85"))
+        items.append(URLQueryItem(name: "fm", value: "webp"))
+        components.queryItems = items
+        return components.url?.absoluteString ?? urlString
     }
 
     // MARK: - Downsampling
