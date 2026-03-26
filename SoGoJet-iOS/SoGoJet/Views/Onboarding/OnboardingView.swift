@@ -65,7 +65,7 @@ struct OnboardingView: View {
             if !topDeals.isEmpty {
                 liveShowcases = topDeals.map { deal in
                     OnboardingShowcase(
-                        code: deal.iataCode ?? "---",
+                        code: deal.iataCode,
                         city: deal.city.uppercased(),
                         country: deal.country,
                         price: deal.priceFormatted,
