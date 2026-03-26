@@ -54,6 +54,23 @@ final class FeedStore {
 
     var isEmpty: Bool { deals.isEmpty && !isLoading }
 
+    /// The single best deal in the current feed — cheapest among the highest tier.
+    var topPickDealId: String? {
+        let visible = deals.filter { $0.displayPrice != nil && $0.displayPrice! > 0 }
+        guard !visible.isEmpty else { return nil }
+
+        // Try tiers from best to worst: amazing, great, then any
+        for tier: DealTier in [.amazing, .great] {
+            let tierDeals = visible.filter { $0.dealTier == tier }
+            if let best = tierDeals.min(by: { ($0.displayPrice ?? .infinity) < ($1.displayPrice ?? .infinity) }) {
+                return best.id
+            }
+        }
+
+        // Fallback: overall cheapest
+        return visible.min(by: { ($0.displayPrice ?? .infinity) < ($1.displayPrice ?? .infinity) })?.id
+    }
+
     // MARK: Actions
 
     /// Fetch the first page of deals (replaces current list).

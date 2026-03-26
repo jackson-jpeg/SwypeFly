@@ -8,6 +8,7 @@ struct DealCard: View {
     let deal: Deal
     let isSaved: Bool
     let isFirst: Bool
+    var isTopPick: Bool = false
     var animate: Bool = true
     var animationTrigger: Int = 0 // Changes when this card becomes current, replays flip
     var onSave: () -> Void = {}
@@ -75,6 +76,12 @@ struct DealCard: View {
                     }
                     .padding(.top, geo.safeAreaInsets.top + 56)
                     .padding(.horizontal, 16)
+
+                    // Top Pick badge — centered below the top row
+                    if isTopPick {
+                        topPickBadge
+                            .padding(.top, 6)
+                    }
 
                     Spacer()
 
@@ -272,6 +279,20 @@ struct DealCard: View {
                 .animation(.spring(response: 0.3, dampingFraction: 0.5), value: heartBounce)
         }
         .accessibilityLabel(isSaved ? "Remove from saved" : "Save")
+    }
+
+    private var topPickBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "crown.fill")
+                .font(.system(size: 9, weight: .semibold))
+            Text("TOP PICK")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+        }
+        .foregroundStyle(Color.sgYellow)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(Color.black.opacity(0.55))
+        .clipShape(Capsule())
     }
 
     private var priceBadge: some View {

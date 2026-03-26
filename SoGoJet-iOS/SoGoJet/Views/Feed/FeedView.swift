@@ -318,6 +318,7 @@ struct FeedView: View {
                         deal: deal,
                         isSaved: savedStore.isSaved(id: deal.id),
                         isFirst: index == 0,
+                        isTopPick: deal.id == feedStore.topPickDealId,
                         animate: abs((currentIndex ?? 0) - index) <= 1,
                         animationTrigger: currentIndex ?? 0,
                         onSave: { saveDeal(deal) },
