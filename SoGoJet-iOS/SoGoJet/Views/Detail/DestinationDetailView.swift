@@ -29,6 +29,7 @@ struct DestinationDetailView: View {
                     travelGuideSection
                     weatherSection
                     tripBudgetSection
+                    travelTipsSection
                     itinerarySection
                     restaurantsSection
                     similarDealsSection
@@ -790,6 +791,157 @@ struct DestinationDetailView: View {
         }
         // Default moderate estimate
         return 70
+    }
+
+    // MARK: - Travel Tips
+
+    private struct TravelTip {
+        let icon: String // SF Symbol
+        let text: String
+    }
+
+    /// Parse flight duration string like "9h 30m" or "12h" into total hours.
+    private func flightHours() -> Double? {
+        guard let dur = deal.flightDuration else { return nil }
+        var hours: Double = 0
+        let hPattern = try? NSRegularExpression(pattern: #"(\d+)\s*h"#)
+        let mPattern = try? NSRegularExpression(pattern: #"(\d+)\s*m"#)
+        let range = NSRange(dur.startIndex..., in: dur)
+        if let match = hPattern?.firstMatch(in: dur, range: range),
+           let r = Range(match.range(at: 1), in: dur) {
+            hours += Double(dur[r]) ?? 0
+        }
+        if let match = mPattern?.firstMatch(in: dur, range: range),
+           let r = Range(match.range(at: 1), in: dur) {
+            hours += (Double(dur[r]) ?? 0) / 60.0
+        }
+        return hours > 0 ? hours : nil
+    }
+
+    /// Generate contextual travel tips based on available deal data.
+    /// Returns at most 4 relevant tips.
+    private func generateTips() -> [TravelTip] {
+        var tips: [TravelTip] = []
+
+        // Nonstop flight
+        if deal.isNonstop == true {
+            tips.append(TravelTip(
+                icon: "arrow.right",
+                text: "Direct flight available -- no layovers"
+            ))
+        }
+
+        // Long-haul flight
+        if let h = flightHours(), h > 8 {
+            tips.append(TravelTip(
+                icon: "airplane",
+                text: "Long-haul flight -- consider a neck pillow and noise-canceling headphones"
+            ))
+        }
+
+        // Budget hotels
+        let hotelPrice = deal.hotelPricePerNight ?? deal.liveHotelPrice
+        if let hp = hotelPrice, hp > 0, hp < 80 {
+            tips.append(TravelTip(
+                icon: "bed.double",
+                text: "Budget-friendly hotels available from $\(Int(hp))/night"
+            ))
+        }
+
+        // Good time to visit
+        if deal.isGoodTimeToVisit {
+            tips.append(TravelTip(
+                icon: "sun.max",
+                text: "You're visiting at the perfect time of year"
+            ))
+        }
+
+        // Price trending down
+        if deal.priceTrend == .down {
+            tips.append(TravelTip(
+                icon: "arrow.down.right",
+                text: "Prices are trending down -- good time to book"
+            ))
+        }
+
+        // Exceptional deal
+        if deal.dealTier == .amazing {
+            tips.append(TravelTip(
+                icon: "sparkles",
+                text: "This is an exceptional deal -- prices this low are rare"
+            ))
+        }
+
+        // Extended trip
+        if deal.tripDays > 7 {
+            tips.append(TravelTip(
+                icon: "simcard",
+                text: "Extended trip -- consider a local SIM card for data"
+            ))
+        }
+
+        // Short trip
+        if deal.tripDays > 0, deal.tripDays <= 3 {
+            tips.append(TravelTip(
+                icon: "clock",
+                text: "Short getaway -- pack light and plan ahead to maximize your time"
+            ))
+        }
+
+        // Cold destination
+        if let temp = deal.averageTemp, temp < 10 {
+            tips.append(TravelTip(
+                icon: "snowflake",
+                text: "Pack warm layers -- average temperatures around \(Int(temp))\u{00B0}"
+            ))
+        }
+
+        // Hot destination
+        if let temp = deal.averageTemp, temp >= 32 {
+            tips.append(TravelTip(
+                icon: "sun.max.trianglebadge.exclamationmark",
+                text: "Hot climate -- stay hydrated and bring sun protection"
+            ))
+        }
+
+        return Array(tips.prefix(4))
+    }
+
+    @ViewBuilder
+    private var travelTipsSection: some View {
+        let tips = generateTips()
+        if !tips.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("TRAVEL TIPS")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: tip.icon)
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.sgYellow)
+                                .frame(width: 24, height: 24)
+
+                            Text(tip.text)
+                                .font(SGFont.body(size: 14))
+                                .foregroundStyle(Color.sgWhiteDim)
+                                .lineSpacing(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+        }
     }
 
     // MARK: - Itinerary
