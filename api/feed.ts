@@ -915,10 +915,12 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       nature_score: (d.nature_score as number) || 0,
       food_score: (d.food_score as number) || 0,
       popularity_score: (d.popularity_score as number) || 0,
-      live_price: (cp?.price || lp?.price) || null,
-      live_airline: cp?.airline ?? lp?.airline ?? '',
+      // Only show Duffel prices — these are real live fares that match booking.
+      // Travelpayouts calendar prices are estimates that mislead users.
+      live_price: lp?.price ?? null,
+      live_airline: lp?.airline ?? '',
       live_duration: lp?.duration ?? '',
-      price_source: cp ? cp.source : (lp?.source ?? undefined),
+      price_source: lp?.source ?? undefined,
       price_fetched_at: lp?.fetched_at ?? undefined,
       departure_date: cp?.date ?? lp?.departure_date,
       return_date: cp?.return_date ?? lp?.return_date,
