@@ -229,9 +229,39 @@ struct DestinationDetailView: View {
 
     // MARK: - Mini Map
 
+    /// Look up the departure airport from the shared airport list.
+    private var departureAirport: AirportPicker.Airport? {
+        AirportPicker.airports.first { $0.code == settingsStore.departureCode }
+    }
+
+    /// Build a map region that fits both origin and destination with padding.
+    private func routeRegion(
+        origin: CLLocationCoordinate2D,
+        destination: CLLocationCoordinate2D
+    ) -> MKCoordinateRegion {
+        let midLat = (origin.latitude + destination.latitude) / 2
+        let midLon = (origin.longitude + destination.longitude) / 2
+        let dLat = abs(origin.latitude - destination.latitude)
+        let dLon = abs(origin.longitude - destination.longitude)
+        // Add 40% padding so pins aren't at the very edge
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: midLat, longitude: midLon),
+            span: MKCoordinateSpan(
+                latitudeDelta: max(dLat * 1.4, 0.1),
+                longitudeDelta: max(dLon * 1.4, 0.1)
+            )
+        )
+    }
+
     @ViewBuilder
     private var miniMapSection: some View {
         if let lat = deal.latitude, let lon = deal.longitude {
+            let destCoord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            let originAirport = departureAirport
+            let originCoord = originAirport.map {
+                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("LOCATION")
@@ -242,12 +272,11 @@ struct DestinationDetailView: View {
                     Spacer()
                     // Open in Apple Maps
                     Button {
-                        let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-                        let placemark = MKPlacemark(coordinate: coordinate)
+                        let placemark = MKPlacemark(coordinate: destCoord)
                         let mapItem = MKMapItem(placemark: placemark)
                         mapItem.name = "\(deal.city), \(deal.country)"
                         mapItem.openInMaps(launchOptions: [
-                            MKLaunchOptionsMapCenterKey: NSValue(mkCoordinate: coordinate),
+                            MKLaunchOptionsMapCenterKey: NSValue(mkCoordinate: destCoord),
                             MKLaunchOptionsMapSpanKey: NSValue(mkCoordinateSpan: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05))
                         ])
                     } label: {
@@ -263,12 +292,19 @@ struct DestinationDetailView: View {
                 }
                 .padding(.horizontal, 16)
 
-                let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-                Map(initialPosition: .region(MKCoordinateRegion(
-                    center: coordinate,
-                    span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-                ))) {
-                    Annotation(deal.city, coordinate: coordinate) {
+                let mapRegion: MKCoordinateRegion = {
+                    if let oc = originCoord {
+                        return routeRegion(origin: oc, destination: destCoord)
+                    }
+                    return MKCoordinateRegion(
+                        center: destCoord,
+                        span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+                    )
+                }()
+
+                Map(initialPosition: .region(mapRegion)) {
+                    // Destination pin (price badge)
+                    Annotation(deal.city, coordinate: destCoord) {
                         VStack(spacing: 2) {
                             Text(deal.priceFormatted)
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -283,9 +319,29 @@ struct DestinationDetailView: View {
                                 .offset(y: -2)
                         }
                     }
+
+                    // Origin pin (departure airport code)
+                    if let oc = originCoord, let airport = originAirport {
+                        Annotation(airport.city, coordinate: oc) {
+                            Text(airport.code)
+                                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color.sgBg)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.sgWhiteDim)
+                                .clipShape(Capsule())
+                        }
+
+                        // Route line between origin and destination
+                        MapPolyline(coordinates: [oc, destCoord])
+                            .stroke(Color.sgYellow.opacity(0.7), style: StrokeStyle(
+                                lineWidth: 2,
+                                dash: [8, 6]
+                            ))
+                    }
                 }
                 .mapStyle(.standard(pointsOfInterest: .including([.airport, .beach, .museum, .nationalPark, .restaurant])))
-                .frame(height: 180)
+                .frame(height: 200)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal, 16)
                 .allowsHitTesting(true)
