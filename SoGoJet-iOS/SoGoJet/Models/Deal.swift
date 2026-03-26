@@ -258,6 +258,19 @@ extension Deal {
         }
     }
 
+    /// Approximate time zone difference between user's current location and destination.
+    /// Uses longitude / 15 to estimate the destination's UTC offset, then compares
+    /// with the device's current UTC offset. Returns nil if longitude is unavailable.
+    var timeZoneDifference: String? {
+        guard let lon = longitude else { return nil }
+        let destOffsetHours = Int((lon / 15.0).rounded())
+        let localOffsetHours = TimeZone.current.secondsFromGMT() / 3600
+        let diff = destOffsetHours - localOffsetHours
+        if diff == 0 { return "Same time zone" }
+        if diff > 0 { return "+\(diff)h ahead" }
+        return "\(diff)h behind"
+    }
+
     /// Human-readable stops label
     var stopsLabel: String {
         if isNonstop == true { return "Nonstop" }

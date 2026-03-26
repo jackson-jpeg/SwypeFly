@@ -141,6 +141,17 @@ struct DestinationDetailView: View {
                     .font(SGFont.body(size: 15))
                     .foregroundStyle(Color.sgMuted)
             }
+            // Time zone difference
+            if let tzDiff = deal.timeZoneDifference {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 12))
+                    Text(tzDiff)
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .foregroundStyle(Color.sgMuted)
+                .padding(.top, 2)
+            }
             // Price freshness indicator
             if let freshnessLabel = deal.priceFreshnessLabel, let freshness = deal.priceFreshness {
                 HStack(spacing: 4) {
