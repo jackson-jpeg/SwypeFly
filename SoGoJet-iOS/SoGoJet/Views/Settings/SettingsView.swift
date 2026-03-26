@@ -7,8 +7,10 @@ struct SettingsView: View {
     @Environment(SavedStore.self) private var savedStore
     @Environment(Router.self) private var router
     @Environment(\.openURL) private var openURL
+    @Environment(AuthStore.self) private var auth
 
     @State private var showClearConfirmation = false
+    @State private var showSignOutConfirmation = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -24,6 +26,7 @@ struct SettingsView: View {
                 }
                 .padding(.top, Spacing.lg)
 
+                accountSection
                 departureSection
                 displaySection
                 notificationsSection
@@ -44,6 +47,90 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will remove all \(savedStore.count) saved flights. This cannot be undone.")
+        }
+    }
+
+    // MARK: - Account
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("Account")
+                .font(SGFont.bodyBold(size: 16))
+                .foregroundStyle(Color.sgWhite)
+
+            if auth.isAuthenticated {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    if let name = auth.userName {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(Color.sgYellow)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(name)
+                                    .font(SGFont.bodyBold(size: 15))
+                                    .foregroundStyle(Color.sgWhite)
+                                if let email = auth.userEmail {
+                                    Text(email)
+                                        .font(SGFont.body(size: 12))
+                                        .foregroundStyle(Color.sgMuted)
+                                }
+                            }
+                        }
+                    }
+
+                    Button {
+                        showSignOutConfirmation = true
+                    } label: {
+                        Text("Sign Out")
+                            .font(SGFont.bodyBold(size: 14))
+                            .foregroundStyle(Color.sgRed)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color.sgRed.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.circle")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color.sgMuted)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Guest Mode")
+                            .font(SGFont.bodyBold(size: 15))
+                            .foregroundStyle(Color.sgWhite)
+                        Text("Sign in to save preferences and book flights")
+                            .font(SGFont.body(size: 12))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+                }
+
+                Button {
+                    auth.signInWithApple()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 14))
+                        Text("Sign in with Apple")
+                            .font(SGFont.bodyBold(size: 14))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color.sgWhite)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .alert("Sign Out?", isPresented: $showSignOutConfirmation) {
+            Button("Sign Out", role: .destructive) {
+                auth.signOut()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You can still browse deals as a guest, but you won't be able to book flights.")
         }
     }
 
