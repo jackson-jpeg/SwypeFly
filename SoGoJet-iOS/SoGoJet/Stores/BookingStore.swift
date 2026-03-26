@@ -51,6 +51,10 @@ final class BookingStore {
     @ObservationIgnored private var activeCheckoutRequestID = UUID()
     @ObservationIgnored private var liveActivity: Activity<FlightSearchAttributes>?
 
+    /// Callback to push live prices back to the feed after booking search.
+    /// Set by the presenting view to update the feed card's price.
+    var onLivePriceFound: ((String, Double) -> Void)?
+
     private static let recentSearchesKey = "SGRecentSearches"
     private static let maxRecentSearches = 8
 
@@ -166,6 +170,11 @@ final class BookingStore {
             } else {
                 lastTripOptions = offers
                 step = .trip(options: offers)
+
+                // Push the live price back to the feed so the card updates
+                if let best = offers.first, let dealId = deal?.id {
+                    onLivePriceFound?(dealId, best.price)
+                }
 
                 // Update Live Activity with results
                 let best = offers.first

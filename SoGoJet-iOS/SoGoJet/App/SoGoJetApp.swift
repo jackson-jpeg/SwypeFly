@@ -49,6 +49,12 @@ struct SoGoJetApp: App {
                 .environment(authStore)
                 .environment(recentlyViewedStore)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    // Wire booking store to push live prices back to feed
+                    bookingStore.onLivePriceFound = { dealId, livePrice in
+                        feedStore.updateLivePrice(dealId: dealId, livePrice: livePrice)
+                    }
+                }
                 .task {
                     // Track distinct usage days for review prompt eligibility
                     ReviewPrompter.shared.recordAppOpen()

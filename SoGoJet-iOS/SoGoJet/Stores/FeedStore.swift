@@ -185,6 +185,20 @@ final class FeedStore {
     }
 
     /// Record a swipe action (fire-and-forget).
+    /// Update a deal's live price after booking search returns real data.
+    /// This ensures the feed card reflects the actual price, not the stale estimate.
+    func updateLivePrice(dealId: String, livePrice: Double) {
+        if let index = loadedDeals.firstIndex(where: { $0.id == dealId }) {
+            // Deal is a struct — we need to create a new one with the updated price
+            // Since Deal is Codable, we encode/decode with the new price injected
+            // Simpler approach: just track overrides separately
+            livePriceOverrides[dealId] = livePrice
+        }
+    }
+
+    /// Live price overrides from booking searches — maps deal ID to confirmed live price.
+    private(set) var livePriceOverrides: [String: Double] = [:]
+
     func recordSwipe(dealId: String, action: String) {
         Task {
             let _: EmptyResponse? = try? await APIClient.shared.fetch(

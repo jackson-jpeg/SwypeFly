@@ -9,6 +9,7 @@ struct DealCard: View {
     let isSaved: Bool
     let isFirst: Bool
     var isTopPick: Bool = false
+    var livePriceOverride: Double? = nil // Live price from booking search, replaces estimate
     var animate: Bool = true
     var animationTrigger: Int = 0 // Changes when this card becomes current, replays flip
     var onSave: () -> Void = {}
@@ -295,10 +296,27 @@ struct DealCard: View {
         .clipShape(Capsule())
     }
 
+    /// The price to display — uses live override if available, otherwise deal's price.
+    private var effectivePrice: String {
+        if let live = livePriceOverride, live > 0 {
+            return "$\(Int(live))"
+        }
+        return deal.priceFormatted
+    }
+
+    /// Whether the displayed price is confirmed (live override) or an estimate.
+    private var priceIsConfirmed: Bool {
+        livePriceOverride != nil
+    }
+
     private var priceBadge: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            // "from" label for estimated/cached prices
-            if deal.isEstimatedPrice {
+            // "from" label for estimated prices, "live" for confirmed prices
+            if priceIsConfirmed {
+                Text("live")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Color.sgDealAmazing)
+            } else if deal.isEstimatedPrice {
                 Text("from")
                     .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Color.sgWhite.opacity(0.7))
@@ -313,7 +331,7 @@ struct DealCard: View {
                 }
 
                 SplitFlapRow(
-                    text: deal.priceFormatted,
+                    text: effectivePrice,
                     maxLength: 6,
                     size: .sm,
                     color: Color.sgWhite,
