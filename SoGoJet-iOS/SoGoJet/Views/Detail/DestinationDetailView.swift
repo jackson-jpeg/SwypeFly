@@ -33,6 +33,7 @@ struct DestinationDetailView: View {
                     weatherSection
                     tripBudgetSection
                     travelTipsSection
+                    packingListSection
                     itinerarySection
                     restaurantsSection
                     similarDealsSection
@@ -1109,6 +1110,104 @@ struct DestinationDetailView: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
         }
+    }
+
+    // MARK: - Packing List
+
+    @ViewBuilder
+    private var packingListSection: some View {
+        let items = generatePackingList()
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("PACKING ESSENTIALS")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    ForEach(items, id: \.text) { item in
+                        HStack(spacing: 6) {
+                            Image(systemName: item.icon)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.sgYellow)
+                                .frame(width: 16)
+                            Text(item.text)
+                                .font(SGFont.body(size: 12))
+                                .foregroundStyle(Color.sgWhiteDim)
+                                .lineLimit(1)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+        }
+    }
+
+    private struct PackingItem {
+        let icon: String
+        let text: String
+    }
+
+    private func generatePackingList() -> [PackingItem] {
+        var items: [PackingItem] = []
+        let vibes = Set(deal.safeVibeTags.map { $0.lowercased() })
+        let temp: Double = deal.averageTemp ?? 22
+        let duration = deal.tripDays
+        let flightHrs = flightHours() ?? 0
+
+        // Always pack
+        items.append(PackingItem(icon: "doc.text", text: "Passport"))
+        items.append(PackingItem(icon: "creditcard", text: "Travel card"))
+
+        // Weather-based
+        if temp >= 28 {
+            items.append(PackingItem(icon: "sun.max", text: "Sunscreen"))
+            items.append(PackingItem(icon: "eyeglasses", text: "Sunglasses"))
+            items.append(PackingItem(icon: "drop", text: "Water bottle"))
+        } else if temp <= 12 {
+            items.append(PackingItem(icon: "cloud.snow", text: "Warm layers"))
+            items.append(PackingItem(icon: "hand.raised", text: "Gloves"))
+        } else {
+            items.append(PackingItem(icon: "tshirt", text: "Light layers"))
+        }
+
+        // Vibe-based
+        if vibes.contains("beach") {
+            items.append(PackingItem(icon: "figure.pool.swim", text: "Swimwear"))
+            items.append(PackingItem(icon: "sandal", text: "Flip flops"))
+        }
+        if vibes.contains("adventure") || vibes.contains("nature") {
+            items.append(PackingItem(icon: "shoe", text: "Hiking shoes"))
+            items.append(PackingItem(icon: "binoculars", text: "Binoculars"))
+        }
+        if vibes.contains("nightlife") || vibes.contains("city") {
+            items.append(PackingItem(icon: "tshirt.fill", text: "Smart outfit"))
+        }
+
+        // Long flight
+        if flightHrs >= 6 {
+            items.append(PackingItem(icon: "headphones", text: "Headphones"))
+            items.append(PackingItem(icon: "book", text: "Entertainment"))
+        }
+
+        // Long trip
+        if duration > 5 {
+            items.append(PackingItem(icon: "bag", text: "Laundry bag"))
+        }
+
+        // International
+        if deal.country.lowercased() != "usa" && deal.country.lowercased() != "united states" {
+            items.append(PackingItem(icon: "powerplug", text: "Power adapter"))
+        }
+
+        return Array(items.prefix(10))
     }
 
     // MARK: - Itinerary
