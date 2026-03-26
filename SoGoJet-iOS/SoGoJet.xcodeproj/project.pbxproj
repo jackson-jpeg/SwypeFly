@@ -52,6 +52,7 @@
 		8EFFDD228E5BB7CD0338E0CE /* SoGoJetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9A300C3FB9C5826D671C4E /* SoGoJetApp.swift */; };
 		90AEFDFE22FA857641A033E9 /* PriceSparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E462B5F08CA53A9E78E5DB /* PriceSparkline.swift */; };
 		993EFA650A4598CAFF429893 /* Deal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEF50684FC3E48F9C3A1F6C /* Deal.swift */; };
+		994EFA660A4598CBFF429894 /* RegionMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEF50694FC3E48F9C3A1F6D /* RegionMapper.swift */; };
 		9B90FD58377C44FB5A40B515 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5452CDA36D6D93F24AAFB2 /* SettingsView.swift */; };
 		A18BBEE887522B62B698C5D3 /* DealTier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* BookingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F405162738495A6B7C /* BookingFlowView.swift */; };
@@ -118,6 +119,7 @@
 		08175B3ADD323DC2DDED60E5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		0DD4E47DCFE32BC0D3EA1A66 /* ExploreMapView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExploreMapView.swift; path = SoGoJet/Views/Feed/ExploreMapView.swift; sourceTree = "<group>"; };
 		0EEF50684FC3E48F9C3A1F6C /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
+		0FEF50694FC3E48F9C3A1F6D /* RegionMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionMapper.swift; sourceTree = "<group>"; };
 		105C4B165D8E99F29DACC00B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedStore.swift; sourceTree = "<group>"; };
 		44B8G2C3D5E6F7A819203B4C /* RecentlyViewedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyViewedStore.swift; sourceTree = "<group>"; };
@@ -324,6 +326,7 @@
 				CA4B2A2B8827D2CA2AACC13F /* BookingModels.swift */,
 				0EEF50684FC3E48F9C3A1F6C /* Deal.swift */,
 				EC6A4F8F3DA2FBEBC3C01FA1 /* DealTier.swift */,
+				0FEF50694FC3E48F9C3A1F6D /* RegionMapper.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -606,6 +609,7 @@
 				E7F8A9B0C1D2E3F405162738 /* Airlines.swift in Sources */,
 				7C25A63FB40E066F28957B06 /* Date+Formatting.swift in Sources */,
 				993EFA650A4598CAFF429893 /* Deal.swift in Sources */,
+				994EFA660A4598CBFF429894 /* RegionMapper.swift in Sources */,
 				67DCDEC854E4520A41258D4B /* DealBadge.swift in Sources */,
 				3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */,
 				D1A2B3C4E5F607182930A1B2 /* SwipeableCardStack.swift in Sources */,

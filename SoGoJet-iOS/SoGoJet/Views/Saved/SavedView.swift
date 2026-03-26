@@ -90,6 +90,46 @@ struct SavedView: View {
             Text("Your saved destinations.")
                 .font(SGFont.accent(size: 15))
                 .foregroundStyle(Color.sgMuted)
+
+            if !regionStamps.isEmpty {
+                regionStampRow
+                    .padding(.top, 6)
+            }
+        }
+    }
+
+    // MARK: - Region Stamps
+
+    /// Unique regions derived from saved deals, capped at 5.
+    private var regionStamps: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for deal in savedStore.savedDeals {
+            let region = RegionMapper.region(for: deal.country)
+            if seen.insert(region).inserted {
+                result.append(region)
+                if result.count >= 5 { break }
+            }
+        }
+        return result
+    }
+
+    private var regionStampRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(regionStamps, id: \.self) { region in
+                    Text(region.uppercased())
+                        .font(SGFont.bodyBold(size: 10))
+                        .foregroundStyle(Color.sgMuted)
+                        .tracking(0.8)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.sgFaint, lineWidth: 1)
+                        )
+                }
+            }
         }
     }
 
