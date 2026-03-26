@@ -331,6 +331,12 @@ extension Deal {
         URL(string: "https://sogojet.com/destination/\(id)")
     }
 
+    /// Apple Maps URL for this destination. Nil if coordinates are missing.
+    var mapsURL: URL? {
+        guard let lat = latitude, let lon = longitude else { return nil }
+        return URL(string: "https://maps.apple.com/?ll=\(lat),\(lon)&q=\(city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? city)")
+    }
+
     /// Rich share text including destination, price, and URL.
     var shareText: String {
         let url = shareURL?.absoluteString ?? "https://sogojet.com"

@@ -133,6 +133,55 @@ struct DealCard: View {
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — overlay text must fit on photo
         .contentShape(Rectangle())
         .onTapGesture { onTap() }
+        .contextMenu {
+            Button {
+                onSave()
+            } label: {
+                Label(isSaved ? "Unsave" : "Save", systemImage: isSaved ? "heart.slash" : "heart")
+            }
+
+            Button {
+                onShare()
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+
+            Button {
+                onBook()
+            } label: {
+                Label("Search Flights", systemImage: "airplane.departure")
+            }
+
+            if let url = deal.mapsURL {
+                Link(destination: url) {
+                    Label("Open in Maps", systemImage: "map")
+                }
+            }
+        } preview: {
+            VStack(alignment: .leading, spacing: 8) {
+                if let urlStr = deal.imageUrl, let url = URL(string: urlStr) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle().fill(Color.sgSurface)
+                    }
+                    .frame(width: 300, height: 180)
+                    .clipped()
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(deal.city)
+                        .font(.headline)
+                    Text("\(deal.country) \(deal.hasPrice ? "-- \(deal.priceFormatted)" : "")")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
+            }
+            .frame(width: 300)
+            .background(Color(.systemBackground))
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(dealCardAccessibilityLabel)
         .accessibilityAddTraits(.isButton)

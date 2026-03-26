@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Departure Board View
 // Airport-style departure board showing 5 deal rows at a time with swipe-up navigation.
@@ -6,10 +7,13 @@ import SwiftUI
 
 struct DepartureBoardView: View {
     @Environment(FeedStore.self) private var feedStore
+    @Environment(SavedStore.self) private var savedStore
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
+    @Environment(ToastManager.self) private var toastManager
 
     @State private var boardIndex: Int = 0
+    @State private var shareItem: BoardShareItem?
     @State private var dragOffset: CGFloat = 0
     @State private var animationCycle: Int = 0
     @State private var renderedSlots: [DepartureBoardSlot] = []
@@ -105,6 +109,9 @@ struct DepartureBoardView: View {
         .onChange(of: router.scrollToTopTrigger) { _, _ in
             guard router.activeTab == .feed else { return }
             boardIndex = 0
+        }
+        .sheet(item: $shareItem) { item in
+            BoardShareSheet(activityItems: item.activityItems)
         }
         .onDisappear {
             boardTransitionTask?.cancel()
@@ -308,6 +315,37 @@ struct DepartureBoardView: View {
                 }
                 .buttonStyle(BoardRowButtonStyle())
                 .disabled(slot.isBlank)
+                .contextMenu(slot.isBlank ? nil : ContextMenu {
+                    if let deal = slot.deal {
+                        Button {
+                            toggleSave(deal)
+                        } label: {
+                            Label(
+                                savedStore.isSaved(id: deal.id) ? "Unsave" : "Save",
+                                systemImage: savedStore.isSaved(id: deal.id) ? "heart.slash" : "heart"
+                            )
+                        }
+
+                        Button {
+                            shareBoardDeal(deal)
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+
+                        Button {
+                            HapticEngine.medium()
+                            router.startBooking(deal)
+                        } label: {
+                            Label("Search Flights", systemImage: "airplane.departure")
+                        }
+
+                        if let url = deal.mapsURL {
+                            Link(destination: url) {
+                                Label("Open in Maps", systemImage: "map")
+                            }
+                        }
+                    }
+                })
                 .accessibilityLabel(slot.accessibilityText)
                 .accessibilityHint(
                     slot.isBlank
@@ -711,6 +749,25 @@ struct DepartureBoardView: View {
         (0..<visibleCount).map { .blank(slot: $0) }
     }
 
+    private func toggleSave(_ deal: Deal) {
+        HapticEngine.forTier(deal.dealTier)
+        let nowSaved = savedStore.toggle(deal: deal)
+        feedStore.recordSwipe(dealId: deal.id, action: nowSaved ? "saved" : "unsaved")
+        toastManager.show(
+            message: nowSaved ? "\(deal.city) saved!" : "\(deal.city) removed",
+            type: nowSaved ? .success : .info,
+            duration: 1.5
+        )
+    }
+
+    private func shareBoardDeal(_ deal: Deal) {
+        HapticEngine.light()
+        Task {
+            let image = await ShareCardRenderer.render(deal: deal, size: .story)
+            shareItem = BoardShareItem(deal: deal, cardImage: image)
+        }
+    }
+
     private var nearbyAirports: [String] {
         let nearby: [String: [String]] = [
             "JFK": ["EWR", "LGA", "PHL"],
@@ -744,10 +801,45 @@ private struct BoardRowButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Board Share Item
+
+private struct BoardShareItem: Identifiable {
+    let id = UUID()
+    let deal: Deal
+    let cardImage: UIImage?
+
+    var activityItems: [Any] {
+        var items: [Any] = []
+        if let image = cardImage {
+            items.append(image)
+        }
+        items.append(deal.shareText)
+        if let url = deal.shareURL {
+            items.append(url)
+        }
+        return items
+    }
+}
+
+// MARK: - Board Share Sheet
+
+private struct BoardShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
 // MARK: - Preview
 
 #Preview("Departure Board") {
     DepartureBoardView()
         .environment(FeedStore())
+        .environment(SavedStore())
+        .environment(SettingsStore())
         .environment(Router())
+        .environment(ToastManager())
 }
