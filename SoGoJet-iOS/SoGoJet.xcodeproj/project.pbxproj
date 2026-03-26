@@ -28,6 +28,7 @@
 		43BAE364D487368CD36A6483 /* DealNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1BDF6D6619708FAF3F2870 /* DealNotificationManager.swift */; };
 		44D73DF93DF1B79608C93C71 /* SavingsBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */; };
 		44E8A1B2C7D9F3E50A1B2C3D /* CompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F9B2C3D8E0A4F61B2C3D4E /* CompareView.swift */; };
+		A1B2C3D4E5F60718A9B0C1D2 /* TripPlanPDFRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6071829A0B1C2D3 /* TripPlanPDFRenderer.swift */; };
 		49A8722EEA92DFC2EFF3AB59 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C004CCABD52B0D675FDC49BD /* SwiftUI.framework */; };
 		4E2213F44996BBC662AE20C0 /* View+Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A627447EC59E8FC4C2B27CC2 /* View+Accessibility.swift */; };
 		5002C9215848904D881FE29E /* BookingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C46CA93B008D3D761A2E79 /* BookingStore.swift */; };
@@ -138,6 +139,7 @@
 		5A79039C721A4E068A129336 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
 		5B005B3E34958EE89A4FDA7B /* FlightEntry.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlightEntry.swift; sourceTree = "<group>"; };
 		55F9B2C3D8E0A4F61B2C3D4E /* CompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompareView.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6071829A0B1C2D3 /* TripPlanPDFRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripPlanPDFRenderer.swift; sourceTree = "<group>"; };
 		5B3D90ABB9744258D6621AC9 /* SavedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedView.swift; sourceTree = "<group>"; };
 		61C46CA93B008D3D761A2E79 /* BookingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingStore.swift; sourceTree = "<group>"; };
 		6B4C1D4AF210632086F11C9C /* PlayfairDisplay-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PlayfairDisplay-Italic.ttf"; sourceTree = "<group>"; };
@@ -287,6 +289,7 @@
 				B905E64CC3B094A6DD5EC65C /* SavedCard.swift */,
 				5B3D90ABB9744258D6621AC9 /* SavedView.swift */,
 				E9B4966CF7DF404C60444EEC /* SavingsBanner.swift */,
+				B2C3D4E5F6071829A0B1C2D3 /* TripPlanPDFRenderer.swift */,
 			);
 			path = Saved;
 			sourceTree = "<group>";
@@ -621,6 +624,7 @@
 				186FB5973F9FE63D205C1B38 /* ReviewView.swift in Sources */,
 				8D529374476E8130BF35AFF5 /* Router.swift in Sources */,
 				44E8A1B2C7D9F3E50A1B2C3D /* CompareView.swift in Sources */,
+				A1B2C3D4E5F60718A9B0C1D2 /* TripPlanPDFRenderer.swift in Sources */,
 				DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */,
 				3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */,
 				58545B18C3DCFD18455AE850 /* SavedView.swift in Sources */,

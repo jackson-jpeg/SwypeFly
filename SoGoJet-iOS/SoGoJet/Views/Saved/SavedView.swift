@@ -13,6 +13,8 @@ struct SavedView: View {
     @State private var showCompareView = false
     @State private var compareA: Deal?
     @State private var compareB: Deal?
+    @State private var showExportSheet = false
+    @State private var exportPDFData: Data?
 
     private enum SortMode: String, CaseIterable {
         case recent = "Latest"
@@ -67,6 +69,11 @@ struct SavedView: View {
                     .presentationDragIndicator(.visible)
             }
         }
+        .sheet(isPresented: $showExportSheet) {
+            if let data = exportPDFData {
+                ActivityViewRepresentable(activityItems: [PDFDataItem(data: data)])
+            }
+        }
     }
 
     // MARK: - Header
@@ -119,6 +126,26 @@ struct SavedView: View {
                             sortMode = mode
                         }
                     }
+                }
+            }
+
+            // Export button (1+ saved)
+            if !savedStore.savedDeals.isEmpty {
+                Button {
+                    HapticEngine.selection()
+                    exportTripPlan()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("Export")
+                            .font(SGFont.bodyBold(size: 12))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .padding(.horizontal, Spacing.sm + Spacing.xs)
+                    .padding(.vertical, Spacing.sm)
+                    .background(Color.sgYellow.opacity(0.85))
+                    .clipShape(Capsule())
                 }
             }
 
@@ -213,6 +240,12 @@ struct SavedView: View {
         router.startBooking(deal)
     }
 
+    private func exportTripPlan() {
+        let data = TripPlanPDFRenderer.render(deals: sortedDeals)
+        exportPDFData = data
+        showExportSheet = true
+    }
+
     private func removeDeal(_ deal: Deal) {
         let store = savedStore
 
@@ -234,6 +267,56 @@ struct SavedView: View {
             HapticEngine.success()
         }
     }
+}
+
+// MARK: - PDF Data Item
+// Wraps raw Data as a named PDF file for UIActivityViewController.
+
+private final class PDFDataItem: NSObject, UIActivityItemSource {
+    let data: Data
+
+    init(data: Data) {
+        self.data = data
+        super.init()
+    }
+
+    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
+        data
+    }
+
+    func activityViewController(
+        _ activityViewController: UIActivityViewController,
+        itemForActivityType activityType: UIActivity.ActivityType?
+    ) -> Any? {
+        data
+    }
+
+    func activityViewController(
+        _ activityViewController: UIActivityViewController,
+        dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?
+    ) -> String {
+        "com.adobe.pdf"
+    }
+
+    func activityViewController(
+        _ activityViewController: UIActivityViewController,
+        subjectForActivityType activityType: UIActivity.ActivityType?
+    ) -> String {
+        "SoGoJet Trip Plan"
+    }
+}
+
+// MARK: - Activity View Representable
+// Bridges UIActivityViewController into SwiftUI via a sheet.
+
+private struct ActivityViewRepresentable: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Preview
