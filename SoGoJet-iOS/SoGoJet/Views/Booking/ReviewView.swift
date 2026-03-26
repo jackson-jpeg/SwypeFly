@@ -30,6 +30,7 @@ struct ReviewView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 header
+                offerExpirationBanner
                 checkoutTicket
 
                 if let paymentError = store.paymentError {
@@ -322,28 +323,119 @@ struct ReviewView: View {
         }
     }
 
+    @ViewBuilder
+    private var offerExpirationBanner: some View {
+        if store.isOfferExpired {
+            // Expired state
+            VStack(spacing: Spacing.sm) {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "clock.badge.xmark")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.sgRed)
+                    Text("Offer Expired")
+                        .font(SGFont.bodyBold(size: 14))
+                        .foregroundStyle(Color.sgRed)
+                    Spacer()
+                }
+                Text("This fare has expired. Search again to get a fresh price.")
+                    .font(SGFont.body(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    Task { await store.retryLastSearch() }
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("Search Again")
+                            .font(SGFont.bodyBold(size: 13))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.sm)
+                    .background(Color.sgOrange, in: RoundedRectangle(cornerRadius: Radius.sm))
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(Spacing.md)
+            .background(Color.sgRed.opacity(0.1), in: RoundedRectangle(cornerRadius: Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md)
+                    .strokeBorder(Color.sgRed.opacity(0.3), lineWidth: 1)
+            )
+        } else if let countdown = store.offerCountdownLabel {
+            // Active countdown
+            let isUrgent = (store.offerSecondsRemaining ?? .infinity) <= 300
+            let accentColor = isUrgent ? Color.sgRed : Color.sgYellow
+
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "clock")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(accentColor)
+                Text("Offer expires in")
+                    .font(SGFont.body(size: 13))
+                    .foregroundStyle(Color.sgWhiteDim)
+                Text(countdown)
+                    .font(SGFont.bodyBold(size: 15))
+                    .foregroundStyle(accentColor)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .background(accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: Radius.sm))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.sm)
+                    .strokeBorder(accentColor.opacity(0.25), lineWidth: 1)
+            )
+        }
+    }
+
     private var actionCluster: some View {
         VStack(spacing: Spacing.sm) {
-            Button {
-                authenticateAndPay()
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "faceid")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Pay \(totalLabel)")
-                        .font(SGFont.bodyBold(size: 16))
-                    Spacer()
-                    Text("Secure")
-                        .font(SGFont.bodyBold(size: 11))
+            if store.isOfferExpired {
+                Button {
+                    Task { await store.retryLastSearch() }
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Search Fresh Fares")
+                            .font(SGFont.bodyBold(size: 16))
+                        Spacer()
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.md)
+                    .background(Color.sgOrange, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
-                .foregroundStyle(Color.sgBg)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.md)
-                .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
+                .buttonStyle(.plain)
+            } else {
+                Button {
+                    authenticateAndPay()
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "faceid")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Pay \(totalLabel)")
+                            .font(SGFont.bodyBold(size: 16))
+                        Spacer()
+                        Text("Secure")
+                            .font(SGFont.bodyBold(size: 11))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.md)
+                    .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
+                }
+                .buttonStyle(.plain)
+                .disabled(offer == nil)
             }
-            .buttonStyle(.plain)
-            .disabled(offer == nil)
 
             VintageTerminalSecondaryButton(
                 title: store.seatMap == nil ? "Back to Traveler Details" : "Back to Seat Map",

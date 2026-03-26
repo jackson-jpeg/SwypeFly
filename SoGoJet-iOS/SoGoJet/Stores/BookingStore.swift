@@ -43,6 +43,32 @@ final class BookingStore {
     private(set) var lastTripOptions: [TripOption] = []
     var paymentError: String?
 
+    // MARK: Offer Expiration
+
+    /// Parsed expiration date of the currently selected offer.
+    /// Updated whenever `selectedOffer` changes and has an `expiresAt` value.
+    var offerExpirationDate: Date?
+
+    /// Seconds remaining until the current offer expires. Nil if no expiration is known.
+    var offerSecondsRemaining: TimeInterval?
+
+    /// Whether the current offer has expired.
+    var isOfferExpired: Bool {
+        guard let remaining = offerSecondsRemaining else { return false }
+        return remaining <= 0
+    }
+
+    /// Human-readable countdown string, e.g. "12:34".
+    var offerCountdownLabel: String? {
+        guard let remaining = offerSecondsRemaining else { return nil }
+        let clamped = max(remaining, 0)
+        let minutes = Int(clamped) / 60
+        let seconds = Int(clamped) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    @ObservationIgnored private var expirationTimer: Timer?
+
     /// Recent booking searches, persisted to UserDefaults.
     private(set) var recentSearches: [RecentSearch] = []
 
@@ -87,6 +113,7 @@ final class BookingStore {
     /// Cleans up any lingering state (including Live Activity) from a previous booking.
     func start(deal: Deal) {
         invalidatePendingRequests()
+        stopOfferExpirationTimer()
 
         // End any lingering Live Activity from a previous booking
         if liveActivity != nil {
@@ -96,6 +123,8 @@ final class BookingStore {
         self.deal = deal
         step = .idle
         selectedOffer = nil
+        offerExpirationDate = nil
+        offerSecondsRemaining = nil
         passenger = loadLastPassenger() ?? PassengerData()
         seatMap = nil
         selectedSeatId = nil
@@ -217,6 +246,7 @@ final class BookingStore {
     /// Select a flight offer and move to passengers.
     func selectOffer(_ offer: TripOption) {
         selectedOffer = offer
+        startOfferExpirationTimer(for: offer)
         step = .passengers
     }
 
@@ -241,6 +271,7 @@ final class BookingStore {
             )
             guard activeOfferRequestID == requestID else { return }
             selectedOffer = response.offer
+            startOfferExpirationTimer(for: response.offer)
             seatMap = response.seatMap
             if response.priceChanged == true,
                let oldPrice = response.oldPrice,
@@ -277,6 +308,22 @@ final class BookingStore {
     /// Confirm and place the booking.
     func confirmBooking() async {
         guard let offer = selectedOffer else { return }
+
+        // Pre-flight check: if the offer is expired or about to expire (< 30s),
+        // don't even attempt the API call -- re-search instead.
+        if isOfferExpired {
+            paymentError = "This fare has expired. Searching for fresh options now."
+            stopOfferExpirationTimer()
+            await retryLastSearch()
+            return
+        }
+        if let remaining = offerSecondsRemaining, remaining < 30 {
+            paymentError = "This fare is about to expire. Searching for fresh options now."
+            stopOfferExpirationTimer()
+            await retryLastSearch()
+            return
+        }
+
         let requestID = UUID()
         activeCheckoutRequestID = requestID
         step = .paying
@@ -373,6 +420,7 @@ final class BookingStore {
     /// Reset the entire flow, ending any running Live Activity.
     func reset() {
         invalidatePendingRequests()
+        stopOfferExpirationTimer()
 
         // End any lingering Live Activity so it doesn't stay on the lock screen
         if liveActivity != nil {
@@ -382,6 +430,8 @@ final class BookingStore {
         step = .idle
         deal = nil
         selectedOffer = nil
+        offerExpirationDate = nil
+        offerSecondsRemaining = nil
         passenger = PassengerData()
         seatMap = nil
         selectedSeatId = nil
@@ -524,6 +574,50 @@ final class BookingStore {
         activeSearchRequestID = UUID()
         activeOfferRequestID = UUID()
         activeCheckoutRequestID = UUID()
+    }
+
+    // MARK: - Offer Expiration Timer
+
+    /// Parse the offer's `expiresAt` ISO 8601 string and start a 1-second countdown timer.
+    private func startOfferExpirationTimer(for offer: TripOption) {
+        stopOfferExpirationTimer()
+
+        guard let expiresAtString = offer.expiresAt else {
+            offerExpirationDate = nil
+            offerSecondsRemaining = nil
+            return
+        }
+
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = iso.date(from: expiresAtString)
+        if date == nil {
+            iso.formatOptions = [.withInternetDateTime]
+            date = iso.date(from: expiresAtString)
+        }
+        guard let expirationDate = date else {
+            offerExpirationDate = nil
+            offerSecondsRemaining = nil
+            return
+        }
+
+        offerExpirationDate = expirationDate
+        offerSecondsRemaining = expirationDate.timeIntervalSinceNow
+
+        expirationTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, let expDate = self.offerExpirationDate else { return }
+                self.offerSecondsRemaining = expDate.timeIntervalSinceNow
+                if self.isOfferExpired {
+                    self.stopOfferExpirationTimer()
+                }
+            }
+        }
+    }
+
+    private func stopOfferExpirationTimer() {
+        expirationTimer?.invalidate()
+        expirationTimer = nil
     }
 
     // MARK: - Live Activity
