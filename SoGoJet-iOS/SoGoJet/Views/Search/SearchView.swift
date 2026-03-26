@@ -4,6 +4,7 @@ struct SearchView: View {
     @Environment(FeedStore.self) private var feedStore
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
+    @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
 
     @State private var query = ""
     @State private var remoteResults: [Deal] = []
@@ -188,6 +189,11 @@ struct SearchView: View {
     @ViewBuilder
     private var resultsList: some View {
         if trimmedQuery.isEmpty {
+            // Recently Viewed section
+            if !recentlyViewedStore.isEmpty {
+                recentlyViewedSection
+            }
+
             // Popular section
             if isLoadingPopular && popularDeals.isEmpty {
                 loadingRow(text: "Loading popular destinations...")
@@ -243,6 +249,93 @@ struct SearchView: View {
         if let searchError, combinedResults.isEmpty, !trimmedQuery.isEmpty {
             errorRow(title: "Search unavailable", detail: searchError)
         }
+    }
+
+    // MARK: - Recently Viewed
+
+    private var recentlyViewedSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            sectionHeader("Recently Viewed", subtitle: "Pick up where you left off")
+
+            LazyVStack(spacing: Spacing.xs) {
+                ForEach(recentlyViewedStore.items) { item in
+                    recentItemRow(item)
+                }
+            }
+        }
+    }
+
+    private func recentItemRow(_ item: RecentlyViewedStore.RecentItem) -> some View {
+        Button {
+            HapticEngine.medium()
+            // Try to find the full Deal in the feed store first
+            if let deal = feedStore.allDeals.first(where: { $0.id == item.id }) {
+                router.showDeal(deal)
+            } else {
+                // Build a minimal deal for navigation — detail page will load full data
+                let minimalDeal = Deal(
+                    id: item.id, iataCode: item.iataCode,
+                    city: item.city, country: item.country,
+                    tagline: "", description: "",
+                    imageUrl: nil, imageUrls: nil,
+                    flightPrice: item.price, hotelPricePerNight: nil, currency: "USD",
+                    vibeTags: nil, bestMonths: nil, averageTemp: nil, flightDuration: nil,
+                    livePrice: nil, priceSource: nil, priceFetchedAt: nil,
+                    liveHotelPrice: nil, hotelPriceSource: nil, availableFlightDays: nil,
+                    latitude: nil, longitude: nil, itinerary: nil, restaurants: nil,
+                    departureDate: nil, returnDate: nil, tripDurationDays: nil,
+                    airline: nil, priceDirection: nil, previousPrice: nil, priceDropPercent: nil,
+                    offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
+                    cheapestDate: nil, cheapestReturnDate: nil, affiliateUrl: nil,
+                    priceHistory: nil, dealScore: nil, dealTier: nil, qualityScore: nil,
+                    pricePercentile: nil, isNonstop: nil, totalStops: nil,
+                    maxLayoverMinutes: nil, usualPrice: nil, savingsAmount: nil,
+                    savingsPercent: nil, nearbyOrigin: nil, nearbyOriginLabel: nil
+                )
+                router.showDeal(minimalDeal)
+            }
+        } label: {
+            HStack(spacing: Spacing.md) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.sgMuted)
+                    .frame(width: 28)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.city)
+                        .font(SGFont.bodyBold(size: 15))
+                        .foregroundStyle(Color.sgWhite)
+                        .lineLimit(1)
+
+                    Text(item.country)
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+
+                if let price = item.price, price > 0 {
+                    Text("$\(Int(price))")
+                        .font(SGFont.display(size: 18))
+                        .foregroundStyle(Color.sgYellow)
+                }
+
+                Text(item.iataCode)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.sgMuted)
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 12)
+            .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md)
+                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+            )
+        }
+        .buttonStyle(SearchCardButtonStyle())
+        .accessibilityLabel("\(item.city), \(item.country)")
+        .accessibilityHint("Open recently viewed destination")
     }
 
     // MARK: - Section Header
@@ -442,4 +535,5 @@ private struct SearchCardButtonStyle: ButtonStyle {
         .environment(FeedStore())
         .environment(SettingsStore())
         .environment(Router())
+        .environment(RecentlyViewedStore())
 }

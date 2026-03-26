@@ -22,6 +22,7 @@
 		2EAC43B8AB0BC02A5309B2F8 /* SoGoJetWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 223135F80BF038229E8C2FF3 /* SoGoJetWidgetExtension.appex */; };
 		325D1774D98EF611E6F5686B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 105C4B165D8E99F29DACC00B /* Assets.xcassets */; };
 		3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */; };
+		33A7F1B2C4D5E6F708192A3B /* RecentlyViewedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B8G2C3D5E6F7A819203B4C /* RecentlyViewedStore.swift */; };
 		38B8100CD433CDB9421664BA /* SeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D680A370273663B3CD6E753 /* SeatMapView.swift */; };
 		3F4A539FDDC51689DFC49121 /* DealCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CC0F70008C6C01B861DABF /* DealCard.swift */; };
 		43B5B6854B7A8115E42FFF9C /* FlightSearchActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98B9A555BAADD3DDB97630F /* FlightSearchActivity.swift */; };
@@ -119,6 +120,7 @@
 		0EEF50684FC3E48F9C3A1F6C /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
 		105C4B165D8E99F29DACC00B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedStore.swift; sourceTree = "<group>"; };
+		44B8G2C3D5E6F7A819203B4C /* RecentlyViewedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyViewedStore.swift; sourceTree = "<group>"; };
 		15845A1828ED10D7538A074A /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
 		15EB866D9B233B25ABE980F3 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
 		16BFE848CB96BAF94AC32178 /* AirportPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirportPicker.swift; sourceTree = "<group>"; };
@@ -299,6 +301,7 @@
 			children = (
 				61C46CA93B008D3D761A2E79 /* BookingStore.swift */,
 				07E06C7F9AAD518AEF3B0112 /* FeedStore.swift */,
+				44B8G2C3D5E6F7A819203B4C /* RecentlyViewedStore.swift */,
 				92B5B2939A8FD86EA37A140D /* Router.swift */,
 				12A6CE9EEBDA53D5EAE93469 /* SavedStore.swift */,
 				A389ABB1A418871FD1196D90 /* SettingsStore.swift */,
@@ -626,6 +629,7 @@
 				44E8A1B2C7D9F3E50A1B2C3D /* CompareView.swift in Sources */,
 				A1B2C3D4E5F60718A9B0C1D2 /* TripPlanPDFRenderer.swift in Sources */,
 				DCCE31D6F42F0A79EE23AD58 /* SavedCard.swift in Sources */,
+				33A7F1B2C4D5E6F708192A3B /* RecentlyViewedStore.swift in Sources */,
 				3337E92A20104EE00FB8522F /* SavedStore.swift in Sources */,
 				58545B18C3DCFD18455AE850 /* SavedView.swift in Sources */,
 				B1C2D3E4F5061728394A5B6C /* SearchView.swift in Sources */,

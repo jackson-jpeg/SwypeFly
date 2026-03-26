@@ -33,6 +33,7 @@ struct SoGoJetApp: App {
     @State private var toastManager = ToastManager()
     @State private var networkMonitor = NetworkMonitor()
     @State private var authStore = AuthStore()
+    @State private var recentlyViewedStore = RecentlyViewedStore()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -46,6 +47,7 @@ struct SoGoJetApp: App {
                 .environment(toastManager)
                 .environment(networkMonitor)
                 .environment(authStore)
+                .environment(recentlyViewedStore)
                 .preferredColorScheme(.dark)
                 .task {
                     // Track distinct usage days for review prompt eligibility

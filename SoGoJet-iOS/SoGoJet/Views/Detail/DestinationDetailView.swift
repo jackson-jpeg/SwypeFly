@@ -10,6 +10,7 @@ struct DestinationDetailView: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
+    @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
 
     @State private var shareItem: DetailShareDealItem?
 
@@ -46,6 +47,8 @@ struct DestinationDetailView: View {
         .onAppear {
             // Donate Siri shortcut for this destination
             SiriShortcuts.donateDealView(city: deal.city, dealId: deal.id)
+            // Track in recently viewed
+            recentlyViewedStore.recordView(deal: deal)
         }
         .sheet(item: $shareItem) { item in
             DetailShareSheet(activityItems: item.activityItems)
@@ -1412,4 +1415,5 @@ private struct DetailShareSheet: UIViewControllerRepresentable {
     .environment(SettingsStore())
     .environment(Router())
     .environment(ToastManager())
+    .environment(RecentlyViewedStore())
 }
