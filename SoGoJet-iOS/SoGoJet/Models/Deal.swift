@@ -368,14 +368,55 @@ extension Deal {
     static func distanceKm(from a: Deal, to b: Deal) -> Double? {
         guard let lat1 = a.latitude, let lon1 = a.longitude,
               let lat2 = b.latitude, let lon2 = b.longitude else { return nil }
+        return Self.haversineKm(lat1: lat1, lon1: lon1, lat2: lat2, lon2: lon2)
+    }
+
+    /// Haversine distance in kilometers from arbitrary coordinates to this deal.
+    /// Returns nil if the deal lacks coordinates.
+    func distanceKm(fromLat lat1: Double, lon lon1: Double) -> Double? {
+        guard let lat2 = latitude, let lon2 = longitude else { return nil }
+        return Self.haversineKm(lat1: lat1, lon1: lon1, lat2: lat2, lon2: lon2)
+    }
+
+    /// Core Haversine formula — distance in km between two coordinate pairs.
+    private static func haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
         let R = 6371.0 // Earth radius in km
         let dLat = (lat2 - lat1) * .pi / 180
         let dLon = (lon2 - lon1) * .pi / 180
-        let a1 = sin(dLat / 2) * sin(dLat / 2) +
-                 cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) *
-                 sin(dLon / 2) * sin(dLon / 2)
-        let c = 2 * atan2(sqrt(a1), sqrt(1 - a1))
+        let a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) *
+                sin(dLon / 2) * sin(dLon / 2)
+        let c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return R * c
+    }
+
+    /// Initial bearing (forward azimuth) in degrees from origin coordinates to this deal.
+    /// Returns nil if the deal lacks coordinates.
+    func bearing(fromLat lat1: Double, lon lon1: Double) -> Double? {
+        guard let lat2 = latitude, let lon2 = longitude else { return nil }
+        let lat1r = lat1 * .pi / 180
+        let lat2r = lat2 * .pi / 180
+        let dLon = (lon2 - lon1) * .pi / 180
+        let y = sin(dLon) * cos(lat2r)
+        let x = cos(lat1r) * sin(lat2r) - sin(lat1r) * cos(lat2r) * cos(dLon)
+        let bearing = atan2(y, x) * 180 / .pi
+        return bearing.truncatingRemainder(dividingBy: 360) + (bearing < 0 ? 360 : 0)
+    }
+
+    /// 8-point compass direction (N, NE, E, SE, S, SW, W, NW) from origin to this deal.
+    /// Returns nil if bearing cannot be calculated.
+    func compassDirection(fromLat lat: Double, lon: Double) -> String? {
+        guard let deg = bearing(fromLat: lat, lon: lon) else { return nil }
+        let directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        let index = Int((deg + 22.5).truncatingRemainder(dividingBy: 360) / 45.0)
+        return directions[index]
+    }
+
+    /// Whether this destination is domestic US (used to decide km vs mi display).
+    var isDomesticUS: Bool {
+        let usNames = ["United States", "US", "USA", "U.S.", "U.S.A.", "Puerto Rico", "USVI",
+                       "US Virgin Islands", "Guam", "American Samoa"]
+        return usNames.contains { country.localizedCaseInsensitiveCompare($0) == .orderedSame }
     }
 }
 

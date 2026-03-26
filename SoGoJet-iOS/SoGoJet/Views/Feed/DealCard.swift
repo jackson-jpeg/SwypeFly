@@ -18,6 +18,8 @@ struct DealCard: View {
     var onTap: () -> Void = {}
     var onVibeFilter: (String) -> Void = { _ in }
 
+    @Environment(SettingsStore.self) private var settingsStore
+
     @State private var heartBounce: Bool = false
     @State private var showSwipeHint: Bool = false
     @State private var swipeHintOffset: CGFloat = 0
@@ -378,6 +380,11 @@ struct DealCard: View {
         return parts.joined(separator: ", ")
     }
 
+    /// Look up the departure airport's coordinates from AirportPicker's static list.
+    private var departureAirport: AirportPicker.Airport? {
+        AirportPicker.airports.first { $0.code == settingsStore.departureCode }
+    }
+
     private func buildFlightTeaser() -> String {
         var parts: [String] = []
         if deal.airlineName != "—" {
@@ -390,6 +397,27 @@ struct DealCard: View {
         if !stops.isEmpty {
             parts.append(stops.lowercased())
         }
+
+        // When we have no flight duration, show approximate distance instead
+        if deal.flightDuration == nil || deal.flightDuration?.isEmpty == true {
+            if let airport = departureAirport,
+               let km = deal.distanceKm(fromLat: airport.latitude, lon: airport.longitude) {
+                if deal.isDomesticUS {
+                    let mi = Int((km * 0.621371).rounded())
+                    parts.append("~\(mi.formatted()) mi")
+                } else {
+                    let rounded = Int(km.rounded())
+                    parts.append("~\(rounded.formatted()) km")
+                }
+            }
+        }
+
+        // Compass direction — always show when we can calculate it
+        if let airport = departureAirport,
+           let compass = deal.compassDirection(fromLat: airport.latitude, lon: airport.longitude) {
+            parts.append(compass)
+        }
+
         return parts.joined(separator: " · ")
     }
 }
@@ -403,4 +431,5 @@ struct DealCard: View {
         isFirst: true
     )
     .frame(height: 700)
+    .environment(SettingsStore())
 }
