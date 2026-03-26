@@ -1090,55 +1090,72 @@ struct DestinationDetailView: View {
 
     // MARK: - Sticky Bottom Bar
     private var stickyBottomBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                HapticEngine.medium()
-                savedStore.toggle(deal: deal)
-            } label: {
-                Image(systemName: isSaved ? "heart.fill" : "heart")
-                    .font(.system(size: 20))
-                    .foregroundStyle(isSaved ? Color.sgYellow : Color.sgWhite)
-                    .frame(width: 48, height: 48)
-                    .background(Color.sgSurface)
-                    .clipShape(Circle())
+        VStack(spacing: 6) {
+            HStack(spacing: 12) {
+                Button {
+                    HapticEngine.medium()
+                    savedStore.toggle(deal: deal)
+                } label: {
+                    Image(systemName: isSaved ? "heart.fill" : "heart")
+                        .font(.system(size: 20))
+                        .foregroundStyle(isSaved ? Color.sgYellow : Color.sgWhite)
+                        .frame(width: 48, height: 48)
+                        .background(Color.sgSurface)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isSaved ? "Remove from saved" : "Save \(deal.city)")
+
+                Button {
+                    HapticEngine.light()
+                    Task {
+                        let image = await ShareCardRenderer.render(deal: deal, size: .story)
+                        shareItem = DetailShareDealItem(deal: deal, cardImage: image)
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(width: 48, height: 48)
+                        .background(Color.sgSurface)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Share \(deal.city)")
+
+                Button {
+                    HapticEngine.medium()
+                    router.startBooking(deal)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "airplane.departure")
+                        Text("Search Flights")
+                            .font(SGFont.bodyBold(size: 16))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(Color.sgYellow)
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Search flights to \(deal.city)")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isSaved ? "Remove from saved" : "Save \(deal.city)")
 
             Button {
-                HapticEngine.light()
-                Task {
-                    let image = await ShareCardRenderer.render(deal: deal, size: .story)
-                    shareItem = DetailShareDealItem(deal: deal, cardImage: image)
+                let origin = settingsStore.departureCode
+                let dest = deal.iataCode
+                let query = "flights+from+\(origin)+to+\(dest)"
+                if let url = URL(string: "https://www.google.com/travel/flights?q=\(query)") {
+                    UIApplication.shared.open(url)
                 }
             } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.sgWhite)
-                    .frame(width: 48, height: 48)
-                    .background(Color.sgSurface)
-                    .clipShape(Circle())
+                Text("Compare prices on Google Flights")
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Share \(deal.city)")
-
-            Button {
-                HapticEngine.medium()
-                router.startBooking(deal)
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "airplane.departure")
-                    Text("Search Flights")
-                        .font(SGFont.bodyBold(size: 16))
-                }
-                .foregroundStyle(Color.sgBg)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(Color.sgYellow)
-                .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Search flights to \(deal.city)")
+            .accessibilityLabel("Compare prices on Google Flights for \(deal.city)")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
