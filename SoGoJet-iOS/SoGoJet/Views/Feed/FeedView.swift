@@ -186,6 +186,7 @@ struct FeedView: View {
                 onSave: { deal in swipeSaveDeal(deal) },
                 onSkip: { deal in swipeSkipDeal(deal) },
                 onTap: { deal in openDeal(deal) },
+                onBook: { deal in bookDeal(deal) },
                 onVibeFilter: { vibe in filterByVibe(vibe) },
                 onAdvance: { advanceSwipeIndex() }
             )
@@ -243,6 +244,24 @@ struct FeedView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("View deal details")
+
+            // Book button — jump straight to booking flow
+            Button {
+                guard swipeModeIndex < feedStore.deals.count else { return }
+                bookDeal(feedStore.deals[swipeModeIndex])
+            } label: {
+                Image(systemName: "airplane.departure")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.sgWhite)
+                    .frame(width: 48, height: 48)
+                    .background(Color.sgSurface)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().strokeBorder(Color.sgWhite.opacity(0.3), lineWidth: 1.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Search flights for this deal")
 
             // Save button
             Button {

@@ -12,6 +12,7 @@ struct SwipeableCardStack: View {
     var onSave: (Deal) -> Void = { _ in }
     var onSkip: (Deal) -> Void = { _ in }
     var onTap: (Deal) -> Void = { _ in }
+    var onBook: (Deal) -> Void = { _ in }
     var onVibeFilter: (String) -> Void = { _ in }
     var onAdvance: () -> Void = {}
 

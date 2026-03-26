@@ -25,15 +25,45 @@ final class FeedStore {
         return Date().timeIntervalSince(lastFetch) > Self.stalenessThreshold
     }
 
-    // MARK: Filters
-    var selectedPrices: [String] = []
-    var selectedVibes: [String] = []
-    var selectedRegions: [String] = []
+    // MARK: Filters (persisted to UserDefaults so they survive app restarts)
+
+    private static let pricesKey = "sg_filter_prices"
+    private static let vibesKey = "sg_filter_vibes"
+    private static let regionsKey = "sg_filter_regions"
+    private static let maxPriceKey = "sg_filter_max_price"
+
+    var selectedPrices: [String] {
+        didSet { UserDefaults.standard.set(selectedPrices, forKey: Self.pricesKey) }
+    }
+    var selectedVibes: [String] {
+        didSet { UserDefaults.standard.set(selectedVibes, forKey: Self.vibesKey) }
+    }
+    var selectedRegions: [String] {
+        didSet { UserDefaults.standard.set(selectedRegions, forKey: Self.regionsKey) }
+    }
 
     /// Quick price ceiling filter from the bottom pill bar (e.g. 200, 500, 1000).
     /// When set, only deals at or below this price are shown.
     /// Takes precedence over selectedPrices when non-nil.
-    var maxPriceFilter: Int?
+    var maxPriceFilter: Int? {
+        didSet {
+            if let value = maxPriceFilter {
+                UserDefaults.standard.set(value, forKey: Self.maxPriceKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.maxPriceKey)
+            }
+        }
+    }
+
+    // MARK: Init — restore persisted filters
+
+    init() {
+        self.selectedPrices = UserDefaults.standard.stringArray(forKey: Self.pricesKey) ?? []
+        self.selectedVibes = UserDefaults.standard.stringArray(forKey: Self.vibesKey) ?? []
+        self.selectedRegions = UserDefaults.standard.stringArray(forKey: Self.regionsKey) ?? []
+        let storedMax = UserDefaults.standard.object(forKey: Self.maxPriceKey) as? Int
+        self.maxPriceFilter = storedMax
+    }
 
     // MARK: Derived
     var deals: [Deal] {

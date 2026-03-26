@@ -83,8 +83,15 @@ final class BookingStore {
     // MARK: Actions
 
     /// Start the booking flow for a deal.
+    /// Cleans up any lingering state (including Live Activity) from a previous booking.
     func start(deal: Deal) {
         invalidatePendingRequests()
+
+        // End any lingering Live Activity from a previous booking
+        if liveActivity != nil {
+            endLiveActivity(bestPrice: nil, offerCount: 0, status: .noResults, message: "New search started")
+        }
+
         self.deal = deal
         step = .idle
         selectedOffer = nil
@@ -361,9 +368,15 @@ final class BookingStore {
         }
     }
 
-    /// Reset the entire flow.
+    /// Reset the entire flow, ending any running Live Activity.
     func reset() {
         invalidatePendingRequests()
+
+        // End any lingering Live Activity so it doesn't stay on the lock screen
+        if liveActivity != nil {
+            endLiveActivity(bestPrice: nil, offerCount: 0, status: .noResults, message: "Search cancelled")
+        }
+
         step = .idle
         deal = nil
         selectedOffer = nil
