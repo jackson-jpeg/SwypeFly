@@ -9,6 +9,7 @@ struct DestinationDetailView: View {
     @Environment(SavedStore.self) private var savedStore
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
+    @Environment(ToastManager.self) private var toastManager
 
     @State private var shareItem: DetailShareDealItem?
 
@@ -160,6 +161,9 @@ struct DestinationDetailView: View {
                 .foregroundStyle(Color.sgMuted.opacity(0.7))
                 .padding(.top, 2)
             }
+
+            // Watch Price button — saves the deal so FareDropMonitor tracks it
+            priceWatchButton
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -192,6 +196,56 @@ struct DestinationDetailView: View {
         case .fresh: return Color.sgDealAmazing
         case .stale: return Color.sgYellow
         case .old:   return Color.sgRed
+        }
+    }
+
+    // MARK: - Price Watch
+
+    @ViewBuilder
+    private var priceWatchButton: some View {
+        if deal.hasPrice {
+            Button {
+                HapticEngine.medium()
+                if isSaved {
+                    // Already watching — remove from saved
+                    savedStore.toggle(deal: deal)
+                    toastManager.show(
+                        message: "Price alert removed for \(deal.city)",
+                        type: .info
+                    )
+                } else {
+                    // Save the deal so FareDropMonitor picks it up
+                    savedStore.toggle(deal: deal)
+                    toastManager.show(
+                        message: "Price alert set for \(deal.city)",
+                        type: .success
+                    )
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: isSaved ? "eye.fill" : "bell.badge")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(isSaved ? "Watching" : "Watch Price")
+                        .font(SGFont.bodyBold(size: 13))
+                }
+                .foregroundStyle(isSaved ? Color.sgGreen : Color.sgYellow)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(
+                    (isSaved ? Color.sgGreen : Color.sgYellow).opacity(0.12)
+                )
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(
+                            (isSaved ? Color.sgGreen : Color.sgYellow).opacity(0.3),
+                            lineWidth: 1
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
+            .accessibilityLabel(isSaved ? "Stop watching price for \(deal.city)" : "Watch price for \(deal.city)")
         }
     }
 
