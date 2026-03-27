@@ -54,6 +54,7 @@
       <option value="all">All Destinations</option>
       <option value="no-image">Missing Images</option>
       <option value="has-image">Has Images</option>
+      <option value="needs-review">Needs Review (recently fixed)</option>
     </select>
     <button onclick="saveAllChanges()">💾 Save All Changes</button>
     <button class="btn-outline" onclick="loadData()">🔄 Refresh</button>
@@ -74,6 +75,53 @@ const SUPABASE_KEY = '';
 let destinations = [];
 let images = {};
 let pendingChanges = {};
+
+// Destinations that were recently fixed and need your approval
+const NEEDS_REVIEW = new Set([
+  '106',   // Asheville NC
+  '104',   // Aspen CO
+  '159',   // Clearwater FL
+  'v4-30', // Brisbane AU
+  '52',    // Denver CO
+  '157',   // Destin FL
+  '155',   // Door County WI
+  '158',   // Naples FL
+  '163',   // Providence RI
+  '120',   // Roatán
+  '29',    // San José CR
+  '59',    // Savannah GA
+  '58',    // Scottsdale AZ
+  '162',   // Traverse City MI
+  // New batch 4 destinations
+  'v4-1',  // Mexico City
+  'v4-2',  // Puerto Vallarta
+  'v4-3',  // Cabo San Lucas
+  'v4-4',  // Oaxaca
+  'v4-5',  // Guadalajara
+  'v4-6',  // Merida
+  'v4-7',  // Toronto
+  'v4-8',  // Ottawa
+  'v4-9',  // Halifax
+  'v4-10', // Beijing
+  'v4-11', // Shanghai
+  'v4-14', // Manchester
+  'v4-15', // Birmingham
+  'v4-16', // Belfast
+  'v4-17', // Madrid
+  'v4-21', // Beirut
+  'v4-24', // Mumbai
+  'v4-25', // Udaipur
+  'v4-26', // Windhoek
+  'v4-27', // Kigali
+  'v4-28', // Essaouira
+  'v4-30', // Brisbane
+  'v4-31', // Perth
+  'v4-32', // Christchurch
+  'v4-33', // Bora Bora
+  'v4-34', // Yogyakarta
+  'v4-42', // Memphis
+  'v4-44', // Samarkand
+]);
 
 async function loadData() {
   // Try to get config from URL params or prompt
@@ -237,6 +285,7 @@ function getFilteredDestinations() {
     if (search && !d.city.toLowerCase().includes(search) && !d.country.toLowerCase().includes(search) && !d.iata_code.toLowerCase().includes(search)) return false;
     if (filter === 'no-image' && (d.image_url || images[d.id]?.length)) return false;
     if (filter === 'has-image' && !d.image_url && !images[d.id]?.length) return false;
+    if (filter === 'needs-review' && !NEEDS_REVIEW.has(d.id)) return false;
     return true;
   });
 }
