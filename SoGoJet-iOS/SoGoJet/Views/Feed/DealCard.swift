@@ -28,9 +28,9 @@ struct DealCard: View {
         GeometryReader { geo in
             ZStack {
                 // Full-bleed photo — CachedAsyncImage handles frame + clip internally
-                CachedAsyncImage(url: deal.imageUrl) {
-                    fallbackBackground
-                }
+                // Default ShimmerView placeholder gives smooth animated loading;
+                // fallbackBackground only used in context menu preview now.
+                CachedAsyncImage(url: deal.imageUrl)
 
                 // Bottom gradient for text legibility
                 VStack {
@@ -361,12 +361,22 @@ struct DealCard: View {
 
     @ViewBuilder
     private var flightTeaser: some View {
-        let parts = buildFlightTeaser()
-        if !parts.isEmpty {
-            Text(parts)
-                .font(SGFont.bodySmall)
-                .foregroundStyle(Color.sgWhite.opacity(0.85))
-                .lineLimit(1)
+        let (line1, line2) = buildFlightTeaserLines()
+        if !line1.isEmpty || !line2.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                if !line1.isEmpty {
+                    Text(line1)
+                        .font(SGFont.body(size: 14))
+                        .foregroundStyle(Color.sgWhite.opacity(0.85))
+                        .lineLimit(1)
+                }
+                if !line2.isEmpty {
+                    Text(line2)
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgWhite.opacity(0.6))
+                        .lineLimit(1)
+                }
+            }
         }
     }
 
@@ -390,34 +400,41 @@ struct DealCard: View {
         AirportPicker.airports.first { $0.code == settingsStore.departureCode }
     }
 
-    private func buildFlightTeaser() -> String {
-        var parts: [String] = []
+    /// Returns two lines for the flight teaser:
+    /// Line 1: Airline + duration (primary info)
+    /// Line 2: Stops + distance + compass direction (secondary)
+    private func buildFlightTeaserLines() -> (String, String) {
+        // Line 1: airline name + flight duration
+        var primary: [String] = []
         if deal.airlineName != "—" {
-            parts.append(deal.airlineName)
+            primary.append(deal.airlineName)
         }
         if let duration = deal.flightDuration, !duration.isEmpty {
-            parts.append(duration)
+            primary.append(duration)
         }
+
+        // Line 2: stops + distance (when no duration) + compass direction
+        var secondary: [String] = []
         let stops = deal.stopsLabel
         if !stops.isEmpty {
-            parts.append(stops.lowercased())
+            secondary.append(stops.lowercased())
         }
 
         // When we have no flight duration, show approximate distance instead
         if deal.flightDuration == nil || deal.flightDuration?.isEmpty == true {
             if let airport = departureAirport,
                let km = deal.distanceKm(fromLat: airport.latitude, lon: airport.longitude) {
-                parts.append("~\(Deal.formatDistance(km, metric: settingsStore.usesMetric))")
+                secondary.append("~\(Deal.formatDistance(km, metric: settingsStore.usesMetric))")
             }
         }
 
         // Compass direction — always show when we can calculate it
         if let airport = departureAirport,
            let compass = deal.compassDirection(fromLat: airport.latitude, lon: airport.longitude) {
-            parts.append(compass)
+            secondary.append(compass)
         }
 
-        return parts.joined(separator: " · ")
+        return (primary.joined(separator: " · "), secondary.joined(separator: " · "))
     }
 }
 

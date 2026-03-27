@@ -34,6 +34,10 @@ struct SettingsView: View {
                 notificationsSection
                 savedSection
                 aboutSection
+
+                if auth.isAuthenticated {
+                    dangerZoneSection
+                }
             }
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.xl)
@@ -94,25 +98,6 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Sign out of your account")
 
-                    // Delete Account button (only shown when authenticated)
-                    Button(role: .destructive) {
-                        showDeleteAccountConfirmation = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 14))
-                            Text("Delete Account")
-                                .font(SGFont.bodyBold(size: 14))
-                        }
-                        .foregroundStyle(Color.sgRed)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.sgSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.sgRed.opacity(0.3), lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Delete your account and all data")
                 }
             } else {
                 HStack(spacing: 8) {
@@ -214,14 +199,6 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You can still browse deals as a guest, but you won't be able to book flights.")
-        }
-        .alert("Delete Account?", isPresented: $showDeleteAccountConfirmation) {
-            Button("Delete", role: .destructive) {
-                Task { await deleteAccount() }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will permanently delete your account, saved trips, and all personal data. This cannot be undone.")
         }
     }
 
@@ -510,6 +487,60 @@ struct SettingsView: View {
                     openURL(URL(string: "mailto:hello@sogojet.com")!)
                 }
             }
+        }
+    }
+
+    // MARK: - Danger Zone
+
+    private var dangerZoneSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("DANGER ZONE")
+                .font(SGFont.bodyBold(size: 11))
+                .foregroundStyle(Color.sgRed)
+                .tracking(1.2)
+
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Text("Permanently delete your account, saved trips, and all personal data. This cannot be undone.")
+                    .font(SGFont.body(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+
+                Button(role: .destructive) {
+                    showDeleteAccountConfirmation = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
+                        Text("Delete Account")
+                            .font(SGFont.bodyBold(size: 14))
+                    }
+                    .foregroundStyle(Color.sgRed)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.sgRed.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md)
+                            .strokeBorder(Color.sgRed.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Delete your account and all data")
+            }
+            .padding(Spacing.md)
+            .background(Color.sgRed.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.lg)
+                    .strokeBorder(Color.sgRed.opacity(0.15), lineWidth: 1)
+            )
+        }
+        .padding(.top, Spacing.md)
+        .alert("Delete Account?", isPresented: $showDeleteAccountConfirmation) {
+            Button("Delete", role: .destructive) {
+                Task { await deleteAccount() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete your account, saved trips, and all personal data. This cannot be undone.")
         }
     }
 

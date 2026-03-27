@@ -210,6 +210,17 @@ struct SwipeableCardStack: View {
             )
         }
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        // Directional color overlays — visual feedback during drag
+        .overlay(
+            Color.green.opacity(rightSwipeProgress * 0.3)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .allowsHitTesting(false)
+        )
+        .overlay(
+            Color.red.opacity(leftSwipeProgress * 0.15)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .allowsHitTesting(false)
+        )
         .offset(x: dragOffset.width, y: dragOffset.height * 0.15)
         .rotationEffect(.degrees(dragRotation))
         .scaleEffect(1.0)
