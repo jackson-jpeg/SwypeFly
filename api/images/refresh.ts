@@ -111,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     for (const dest of batch) {
       if (Date.now() - startTime > TIME_BUDGET_MS) {
-        console.log(
+        console.info(
           `[images/refresh] Time budget exceeded after ${results.length} destinations`,
         );
         break;

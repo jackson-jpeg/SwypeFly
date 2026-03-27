@@ -202,7 +202,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const fetched = results.filter((r) => r.price !== null).length;
-    console.log(`[refresh-hotels] Fetched ${fetched}/${destinations.length} hotel prices via Duffel Stays`);
+    console.info(`[refresh-hotels] Fetched ${fetched}/${destinations.length} hotel prices via Duffel Stays`);
 
     return res.status(200).json({
       fetched,

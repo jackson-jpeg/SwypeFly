@@ -492,7 +492,7 @@ async function refreshExpiredOffer(
       return { newOfferId: offerId, priceChanged: false, oldPrice, newPrice: oldPrice };
     } catch {
       // Offer expired or invalid — proceed with re-search
-      console.log(`[booking] Offer ${offerId} expired, attempting re-search: ${origin} → ${destination}`);
+      console.info(`[booking] Offer ${offerId} expired, attempting re-search: ${origin} → ${destination}`);
     }
 
     // Re-search with the same parameters
@@ -643,7 +643,7 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
     const cabinClass = String(req.query.cabinClass || 'economy');
 
     if (origin && destination && departureDate) {
-      console.log(`[booking/offer] Offer ${v.data.offerId} failed, attempting refresh`);
+      console.info(`[booking/offer] Offer ${v.data.offerId} failed, attempting refresh`);
       const refreshed = await refreshExpiredOffer(
         v.data.offerId,
         origin,
@@ -1110,7 +1110,7 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
     const event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const eventType = event?.type || event?.data?.type || '';
 
-    console.log(`[booking/duffel-webhook] Received event: ${eventType}`);
+    console.info(`[booking/duffel-webhook] Received event: ${eventType}`);
 
     switch (eventType) {
       case 'order.created': {
@@ -1127,7 +1127,7 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
               .from(TABLES.bookings)
               .update({ status: 'confirmed' })
               .eq('id', bookingRows[0].id);
-            console.log(`[booking/duffel-webhook] Order ${orderId} confirmed`);
+            console.info(`[booking/duffel-webhook] Order ${orderId} confirmed`);
           }
         }
         break;
@@ -1149,7 +1149,7 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
               .from(TABLES.bookings)
               .update({ status: 'schedule_changed' })
               .eq('id', booking.id);
-            console.log(`[booking/duffel-webhook] Schedule change detected for order ${orderId}: ${changes.length} changes`);
+            console.info(`[booking/duffel-webhook] Schedule change detected for order ${orderId}: ${changes.length} changes`);
 
             // Attempt to send notification email
             try {
@@ -1192,14 +1192,14 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
               .from(TABLES.bookings)
               .update({ status: 'cancelled' })
               .eq('id', bookingRows[0].id);
-            console.log(`[booking/duffel-webhook] Order ${orderId} cancelled`);
+            console.info(`[booking/duffel-webhook] Order ${orderId} cancelled`);
           }
         }
         break;
       }
 
       default:
-        console.log(`[booking/duffel-webhook] Unhandled event type: ${eventType}`);
+        console.info(`[booking/duffel-webhook] Unhandled event type: ${eventType}`);
     }
 
     return res.status(200).json({ received: true });

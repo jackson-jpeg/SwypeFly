@@ -236,7 +236,7 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
   // Step 1: Get bulk cheap prices for all destinations from this origin
   const bulkPrices = await fetchAllCheapPrices(origin);
   result.bulkDestinations = bulkPrices.size;
-  console.log(
+  console.info(
     `[refresh-calendar] ${origin}: ${bulkPrices.size} destinations from bulk prices`,
   );
 
@@ -309,7 +309,7 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
     }
   }
 
-  console.log(
+  console.info(
     `[refresh-calendar] ${origin}: ${result.calendarEntries} entries (${result.created} created, ${result.updated} updated, ${result.errors} errors)`,
   );
 
@@ -343,12 +343,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       origins = [originParam];
     } else {
       origins = await pickNextOrigins(2);
-      console.log(
+      console.info(
         `[refresh-calendar] Round-robin selected origins: ${origins.join(', ')}`,
       );
     }
 
-    console.log(
+    console.info(
       `[refresh-calendar] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`,
     );
 

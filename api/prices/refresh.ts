@@ -307,7 +307,7 @@ async function refreshOneDest(
   });
 
   if (!dealResult.pass) {
-    console.log(`[refresh] Rejected ${origin}->${dest}: ${dealResult.rejectReason}`);
+    console.info(`[refresh] Rejected ${origin}->${dest}: ${dealResult.rejectReason}`);
     return { source: null };
   }
 
@@ -391,7 +391,7 @@ async function refreshBatch(
     }
   }
 
-  console.log(`[refresh] Batch for ${origin}: ${fetched} total (Duffel: ${sourceCounts.duffel})`);
+  console.info(`[refresh] Batch for ${origin}: ${fetched} total (Duffel: ${sourceCounts.duffel})`);
 
   return { origin, fetched, total: batch.length, sources: sourceCounts };
 }
@@ -493,16 +493,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       origins = [originParam];
     } else {
       origins = await pickNextOrigins(1);
-      console.log(`[refresh] Round-robin selected origins: ${origins.join(', ')}`);
+      console.info(`[refresh] Round-robin selected origins: ${origins.join(', ')}`);
     }
 
-    console.log(`[refresh] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`);
+    console.info(`[refresh] Refreshing ${origins.length} origin(s): ${origins.join(', ')}`);
 
     const results = [];
     for (const org of origins) {
       // Pick the stalest BATCH_SIZE destinations for targeted Duffel searches
       const { batch, currentPriceMap } = await pickStalestDestinations(org, allIatasList, BATCH_SIZE);
-      console.log(`[refresh] Duffel batch for ${org}: ${batch.join(', ')}`);
+      console.info(`[refresh] Duffel batch for ${org}: ${batch.join(', ')}`);
 
       const result = await refreshBatch(org, batch, currentPriceMap);
       results.push(result);
