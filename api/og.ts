@@ -79,7 +79,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (city) cityStr = escapeHtml(String(city));
   if (country) countryStr = escapeHtml(String(country));
   if (price) priceStr = `$${escapeHtml(String(price))}`;
-  if (image) imageUrl = encodeURI(String(image));
+  if (image) {
+    try {
+      const parsed = new URL(String(image));
+      if (parsed.protocol === 'https:') imageUrl = encodeURI(String(image));
+    } catch { /* invalid URL — keep default image */ }
+  }
   if (req.query.dealTier) dealTier = String(req.query.dealTier);
   if (req.query.savingsPercent) savingsPercent = parseInt(String(req.query.savingsPercent), 10) || 0;
 

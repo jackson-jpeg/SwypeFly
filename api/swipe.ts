@@ -109,6 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               .select()
               .single();
             if (createError) throw createError;
+            if (!newPrefs) throw new Error('Failed to create user preferences');
             prefs = newPrefs;
           }
 

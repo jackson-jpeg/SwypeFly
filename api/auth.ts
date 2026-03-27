@@ -48,9 +48,12 @@ async function handleAppleSignIn(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!CLERK_SECRET_KEY) {
+      if (process.env.VERCEL_ENV === 'production') {
+        console.error('[auth] CRITICAL: CLERK_SECRET_KEY not set in production');
+        return res.status(503).json({ error: 'Authentication service unavailable' });
+      }
       // DEV ONLY: Fallback when Clerk isn't configured — return a mock session
-      // WARNING: This must not be used in production. Set CLERK_SECRET_KEY in env.
-      console.warn('[auth] CLERK_SECRET_KEY not set, returning mock session (DEV ONLY)');
+      console.warn('[auth] DEV ONLY: CLERK_SECRET_KEY not set, returning mock session');
       return res
         .setHeader('X-Auth-Warning', 'Development mode - no real authentication')
         .status(200)
@@ -90,15 +93,13 @@ async function handleAppleSignIn(req: VercelRequest, res: VercelResponse) {
 
       // Clerk token exchange failed and no user found by email — return error
       console.error('[auth] Clerk token exchange failed and user lookup failed');
-      return res.status(401).json({
-        error: 'Authentication failed. Could not verify Apple identity token.',
-      });
+      return res.status(401).json({ error: 'Authentication failed' });
     }
 
     const ticketData = await ticketResponse.json();
     if (!ticketData.token || !ticketData.user_id) {
       console.error('[auth] Clerk returned incomplete ticket data');
-      return res.status(401).json({ error: 'Authentication failed. Incomplete response from auth provider.' });
+      return res.status(401).json({ error: 'Authentication failed' });
     }
     return res.status(200).json({
       sessionToken: ticketData.token,

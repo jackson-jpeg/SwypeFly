@@ -19,7 +19,11 @@ enum FareDropMonitor {
             using: nil
         ) { task in
             Task { @MainActor in
-                await handleBackgroundCheck(task: task as! BGAppRefreshTask)
+                guard let refreshTask = task as? BGAppRefreshTask else {
+                    task.setTaskCompleted(success: false)
+                    return
+                }
+                await handleBackgroundCheck(task: refreshTask)
             }
         }
     }
@@ -109,17 +113,20 @@ enum FareDropMonitor {
             return
         }
 
+        let workItem = Task {
+            let drops = await checkForFareDrops(savedDeals: deals, origin: origin)
+            if !drops.isEmpty {
+                notifyFareDrops(drops)
+            }
+            task.setTaskCompleted(success: true)
+        }
+
         task.expirationHandler = {
-            // Clean up if we run out of time
+            workItem.cancel()
+            task.setTaskCompleted(success: false)
         }
 
-        let drops = await checkForFareDrops(savedDeals: deals, origin: origin)
-
-        if !drops.isEmpty {
-            notifyFareDrops(drops)
-        }
-
-        task.setTaskCompleted(success: true)
+        await workItem.value
     }
 
     // MARK: - API

@@ -213,7 +213,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Auth — cron secret or preview mode
   const secret = req.query.secret || req.headers['x-cron-secret'];
-  const preview = req.query.preview === 'true';
+  const preview = req.query.preview === 'true' && process.env.VERCEL_ENV !== 'production';
 
   if (!preview) {
     const cronSecret = process.env.CRON_SECRET?.trim();

@@ -106,7 +106,10 @@ async function fetchLivePriceForDest(
         },
         { onConflict: 'origin,destination_iata' },
       )
-      .then(() => {}, () => {});
+      .then(
+        () => {},
+        (err: unknown) => { console.warn('[feed] price cache write failed:', err instanceof Error ? err.message : err); },
+      );
 
     return priceData;
   } catch (err) {

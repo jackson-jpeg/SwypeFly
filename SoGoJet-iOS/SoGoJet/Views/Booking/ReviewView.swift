@@ -496,7 +496,29 @@ struct ReviewView: View {
             return
         }
 
-        // Prepare the Stripe PaymentSheet (creates payment intent on server)
+        // Biometric / passcode verification before payment
+        let context = LAContext()
+        var authError: NSError?
+
+        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authError) {
+            context.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: "Verify your identity to complete this purchase"
+            ) { success, _ in
+                Task { @MainActor in
+                    if success {
+                        self.startPaymentPreparation()
+                    }
+                    // User canceled or failed — don't proceed (no error shown, they can retry)
+                }
+            }
+        } else {
+            // Device has no biometrics or passcode — proceed directly
+            startPaymentPreparation()
+        }
+    }
+
+    private func startPaymentPreparation() {
         isPreparingPayment = true
         Task {
             await store.preparePayment()

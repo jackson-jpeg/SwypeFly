@@ -12,6 +12,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   const { id } = req.query;
   const destId = String(id);
+
+  // Validate destination ID to prevent open redirect
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(destId)) {
+    return res.status(400).json({ error: 'Invalid destination ID' });
+  }
+
   const ua = (req.headers['user-agent'] || '').toLowerCase();
   const isBot = /bot|crawl|spider|facebook|twitter|linkedin|slack|discord|telegram|whatsapp/i.test(ua);
 

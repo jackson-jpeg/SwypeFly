@@ -634,7 +634,7 @@ struct DestinationDetailView: View {
 
     @ViewBuilder
     private var weatherSection: some View {
-        let hasWeather = deal.averageTemp != nil || (deal.bestMonths != nil && !deal.bestMonths!.isEmpty)
+        let hasWeather = deal.averageTemp != nil || !(deal.bestMonths ?? []).isEmpty
         if hasWeather {
             VStack(alignment: .leading, spacing: 12) {
                 Text("WEATHER & BEST TIME")

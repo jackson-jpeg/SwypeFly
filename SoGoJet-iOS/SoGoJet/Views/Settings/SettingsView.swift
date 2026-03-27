@@ -472,19 +472,19 @@ struct SettingsView: View {
         settingsSection("About") {
             VStack(alignment: .leading, spacing: 0) {
                 linkRow(icon: "lock.shield", title: "Privacy Policy") {
-                    openURL(URL(string: "https://sogojet.com/legal/privacy")!)
+                    if let url = URL(string: "https://sogojet.com/legal/privacy") { openURL(url) }
                 }
 
                 Divider().overlay(Color.sgBorder)
 
                 linkRow(icon: "doc.text", title: "Terms of Service") {
-                    openURL(URL(string: "https://sogojet.com/legal/terms")!)
+                    if let url = URL(string: "https://sogojet.com/legal/terms") { openURL(url) }
                 }
 
                 Divider().overlay(Color.sgBorder)
 
                 linkRow(icon: "envelope", title: "Contact Us") {
-                    openURL(URL(string: "mailto:hello@sogojet.com")!)
+                    if let url = URL(string: "mailto:hello@sogojet.com") { openURL(url) }
                 }
             }
         }

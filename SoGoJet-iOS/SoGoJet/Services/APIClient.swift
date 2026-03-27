@@ -317,7 +317,8 @@ actor APIClient {
                     // 429: rate limited — respect Retry-After or wait 5s
                     if code == 429 {
                         if attempt < retries {
-                            try await Task.sleep(nanoseconds: 5_000_000_000)
+                            let jitter = UInt64.random(in: 0...2_000_000_000)
+                            try await Task.sleep(nanoseconds: 5_000_000_000 + jitter)
                         }
                         continue
                     }

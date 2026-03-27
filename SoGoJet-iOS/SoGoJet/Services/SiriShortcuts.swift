@@ -10,9 +10,11 @@ enum SiriShortcuts {
     /// Donate "Search Flights" activity after the user searches.
     static func donateSearch(origin: String, destination: String? = nil) {
         let activity = NSUserActivity(activityType: "com.sogojet.search-flights")
-        activity.title = destination != nil
-            ? "Search flights to \(destination!)"
-            : "Search flights from \(origin)"
+        if let destination {
+            activity.title = "Search flights to \(destination)"
+        } else {
+            activity.title = "Search flights from \(origin)"
+        }
         activity.isEligibleForSearch = true
         activity.isEligibleForPrediction = true
         activity.suggestedInvocationPhrase = "Find cheap flights"

@@ -171,9 +171,13 @@ struct AuthView: View {
                 if showButtons {
                     HStack(spacing: 4) {
                         Text("By continuing, you agree to our")
-                        Link("Terms", destination: URL(string: "https://sogojet.com/legal/terms")!)
+                        if let url = URL(string: "https://sogojet.com/legal/terms") {
+                            Link("Terms", destination: url)
+                        }
                         Text("and")
-                        Link("Privacy Policy", destination: URL(string: "https://sogojet.com/legal/privacy")!)
+                        if let url = URL(string: "https://sogojet.com/legal/privacy") {
+                            Link("Privacy Policy", destination: url)
+                        }
                     }
                     .font(.system(size: 10))
                     .foregroundStyle(Color.sgMuted.opacity(0.5))

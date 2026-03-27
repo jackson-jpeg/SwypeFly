@@ -173,7 +173,8 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
     let allAlerts: any[] = [];
     let offset = 0;
     const BATCH = 100;
-    while (true) {
+    const MAX_ALERTS = 10_000;
+    while (allAlerts.length < MAX_ALERTS) {
       const { data: batch, error: batchErr } = await supabase
         .from(TABLES.priceAlerts)
         .select('*')

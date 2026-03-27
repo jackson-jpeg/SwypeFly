@@ -284,7 +284,7 @@ struct TripPlanPDFRenderer {
 
         // Flight info
         let hasAirline = deal.airlineName != "--" && deal.airlineName != "\u{2014}"
-        let hasDuration = deal.flightDuration != nil && !deal.flightDuration!.isEmpty
+        let hasDuration = deal.flightDuration?.isEmpty == false
         let hasStops = !deal.stopsLabel.isEmpty
         if hasAirline || hasDuration || hasStops {
             height += 18

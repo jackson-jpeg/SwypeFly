@@ -47,11 +47,16 @@ enum DealNotificationManager {
             trigger: trigger
         )
 
-        try? await center.add(request)
-
-        #if DEBUG
-        print("[Notifications] Scheduled daily deal: \(deal.city) from $\(deal.price)")
-        #endif
+        do {
+            try await center.add(request)
+            #if DEBUG
+            print("[Notifications] Scheduled daily deal: \(deal.city) from $\(deal.price)")
+            #endif
+        } catch {
+            #if DEBUG
+            print("[Notifications] Failed to schedule daily deal: \(error.localizedDescription)")
+            #endif
+        }
     }
 
     /// Cancel the daily deal notification.

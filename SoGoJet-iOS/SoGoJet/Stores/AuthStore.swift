@@ -66,7 +66,11 @@ final class AuthStore: NSObject {
         authError = nil
 
         let redirectUri = "\(oauthCallbackScheme)://oauth-callback"
-        let clerkOAuthURL = URL(string: "https://\(clerkDomain)/oauth/authorize?strategy=\(provider)&redirect_url=\(redirectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectUri)")!
+        guard let clerkOAuthURL = URL(string: "https://\(clerkDomain)/oauth/authorize?strategy=\(provider)&redirect_url=\(redirectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectUri)") else {
+            isLoading = false
+            authError = "Sign in failed. Please try again."
+            return
+        }
 
         let session = ASWebAuthenticationSession(
             url: clerkOAuthURL,

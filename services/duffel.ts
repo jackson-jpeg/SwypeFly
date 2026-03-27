@@ -18,6 +18,21 @@ function getClient(): Duffel {
   return _client;
 }
 
+// Timeout wrapper for Duffel API calls to prevent Vercel function hangs
+const DUFFEL_TIMEOUT_MS = 15_000;
+
+async function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Duffel ${label} timed out after ${DUFFEL_TIMEOUT_MS}ms`)), DUFFEL_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface FlightSearchParams {
@@ -72,12 +87,15 @@ export async function searchFlights(params: FlightSearchParams) {
     });
   }
 
-  const response = await client.offerRequests.create({
-    slices: slices as any,
-    passengers: params.passengers as any,
-    cabin_class: params.cabinClass || 'economy',
-    return_offers: true,
-  });
+  const response = await withTimeout(
+    client.offerRequests.create({
+      slices: slices as any,
+      passengers: params.passengers as any,
+      cabin_class: params.cabinClass || 'economy',
+      return_offers: true,
+    }),
+    'searchFlights',
+  );
 
   return response.data;
 }
@@ -86,9 +104,10 @@ export async function searchFlights(params: FlightSearchParams) {
 
 export async function getOffer(offerId: string) {
   const client = getClient();
-  const response = await client.offers.get(offerId, {
-    return_available_services: true,
-  });
+  const response = await withTimeout(
+    client.offers.get(offerId, { return_available_services: true }),
+    'getOffer',
+  );
   return response.data;
 }
 
@@ -96,7 +115,10 @@ export async function getOffer(offerId: string) {
 
 export async function getSeatMap(offerId: string) {
   const client = getClient();
-  const response = await client.seatMaps.get({ offer_id: offerId });
+  const response = await withTimeout(
+    client.seatMaps.get({ offer_id: offerId }),
+    'getSeatMap',
+  );
   return response.data;
 }
 
@@ -105,7 +127,7 @@ export async function getSeatMap(offerId: string) {
 export async function createOrder(params: CreateOrderParams) {
   const client = getClient();
 
-  const response = await client.orders.create({
+  const response = await withTimeout(client.orders.create({
     type: 'instant',
     selected_offers: [params.offerId],
     passengers: params.passengers.map((p) => {
@@ -142,7 +164,7 @@ export async function createOrder(params: CreateOrderParams) {
         currency: params.paymentCurrency,
       },
     ],
-  });
+  }), 'createOrder');
 
   return response.data;
 }
@@ -151,7 +173,10 @@ export async function createOrder(params: CreateOrderParams) {
 
 export async function getOrder(orderId: string) {
   const client = getClient();
-  const response = await client.orders.get(orderId);
+  const response = await withTimeout(
+    client.orders.get(orderId),
+    'getOrder',
+  );
   return response.data;
 }
 

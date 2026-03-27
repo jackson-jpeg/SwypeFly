@@ -139,7 +139,7 @@ async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
   if (!v.success) return res.status(400).json({ error: v.error });
   const { origin, destination } = v.data;
 
-  const cacheKey = `${origin}-${destination}`;
+  const cacheKey = `ph:${origin}:${destination}`;
   const cached = priceHistoryCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');

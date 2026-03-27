@@ -32,7 +32,8 @@ actor ImageCache {
         // Full-screen images at 2796px are ~30 MB each decoded.
         memoryCache.totalCostLimit = 200 * 1024 * 1024
 
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
         diskDirectory = caches.appendingPathComponent("SGImageCache", isDirectory: true)
 
         try? FileManager.default.createDirectory(at: diskDirectory, withIntermediateDirectories: true)

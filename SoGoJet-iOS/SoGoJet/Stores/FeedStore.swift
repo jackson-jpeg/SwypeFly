@@ -102,7 +102,7 @@ final class FeedStore {
 
     /// The single best deal in the current feed — cheapest among the highest tier.
     var topPickDealId: String? {
-        let visible = deals.filter { $0.displayPrice != nil && $0.displayPrice! > 0 }
+        let visible = deals.filter { ($0.displayPrice ?? 0) > 0 }
         guard !visible.isEmpty else { return nil }
 
         // Try tiers from best to worst: amazing, great, then any
