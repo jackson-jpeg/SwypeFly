@@ -1,17 +1,23 @@
 import SwiftUI
 
 // MARK: - PriceAlertCTA
-// Honest fallback while native route-specific alerts are still being wired up.
+// Route-specific price alerts for authenticated users, email fallback for guests.
 
 struct PriceAlertCTA: View {
     let destinationName: String
+    let iataCode: String
     let price: Double?
 
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(AuthStore.self) private var auth
+    @Environment(ToastManager.self) private var toastManager
     @State private var showSignupSheet = false
+    @State private var isCreatingAlert = false
+    @State private var alertCreated = false
+    @State private var alertTask: Task<Void, Never>?
 
     private var alertsEnabled: Bool {
-        settingsStore.priceAlertsEnabled && !trimmedAlertEmail.isEmpty
+        alertCreated || (settingsStore.priceAlertsEnabled && !trimmedAlertEmail.isEmpty)
     }
 
     private var trimmedAlertEmail: String {
@@ -29,7 +35,7 @@ struct PriceAlertCTA: View {
                     .font(.system(size: 18))
                     .foregroundStyle(alertsEnabled ? Color.sgGreen : Color.sgYellow)
 
-                Text(alertsEnabled ? "Deal emails on" : "Track this price")
+                Text(alertsEnabled ? "Price alert active" : "Track this price")
                     .font(SGFont.sectionHead)
                     .foregroundStyle(Color.sgWhite)
             }
@@ -39,7 +45,14 @@ struct PriceAlertCTA: View {
                 .foregroundStyle(Color.sgWhiteDim)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if alertsEnabled {
+            if alertCreated, let priceText {
+                Label("Tracking \(destinationName) below \(priceText)", systemImage: "bell.fill")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgGreen)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.sm)
+                    .background(Color.sgGreen.opacity(0.14), in: Capsule())
+            } else if !alertCreated && alertsEnabled {
                 Label("Sending to \(maskedEmail(trimmedAlertEmail))", systemImage: "envelope.fill")
                     .font(SGFont.bodyBold(size: 13))
                     .foregroundStyle(Color.sgGreen)
@@ -49,12 +62,21 @@ struct PriceAlertCTA: View {
             } else {
                 Button {
                     HapticEngine.medium()
-                    showSignupSheet = true
+                    if auth.isAuthenticated {
+                        createRouteAlert()
+                    } else {
+                        showSignupSheet = true
+                    }
                 } label: {
                     HStack(spacing: Spacing.xs) {
-                        Image(systemName: "envelope.badge.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text("Email Me Deals")
+                        if isCreatingAlert {
+                            ProgressView()
+                                .tint(Color.sgBg)
+                        } else {
+                            Image(systemName: auth.isAuthenticated ? "bell.badge.fill" : "envelope.badge.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        Text(isCreatingAlert ? "Setting up..." : (auth.isAuthenticated ? "Track This Price" : "Email Me Deals"))
                             .font(SGFont.bodyBold(size: 14))
                     }
                     .foregroundStyle(Color.sgBg)
@@ -63,6 +85,7 @@ struct PriceAlertCTA: View {
                     .background(Color.sgYellow)
                     .clipShape(Capsule())
                 }
+                .disabled(isCreatingAlert)
             }
         }
         .padding(Spacing.md)
@@ -75,18 +98,67 @@ struct PriceAlertCTA: View {
         .sheet(isPresented: $showSignupSheet) {
             PriceAlertSignupSheet(destinationName: destinationName, price: price)
         }
+        .onDisappear {
+            alertTask?.cancel()
+        }
     }
 
     private var descriptionText: String {
+        if alertCreated, let priceText {
+            return "We’ll notify you when prices drop below \(priceText) for \(destinationName)."
+        }
+
         if alertsEnabled {
-            return "Direct iPhone route alerts are still shipping, so we’ll keep you posted by email for now."
+            return "You’re getting deal alerts for \(destinationName) by email."
         }
 
         if let priceText {
-            return "If fares around \(priceText) start showing up again, we can email you SoGoJet deal drops while direct route alerts finish shipping."
+            return "Get notified when fares to \(destinationName) drop below \(priceText)."
         }
 
-        return "Leave your email and we’ll send SoGoJet deal drops while direct route alerts finish shipping on iPhone."
+        return "Set up a price alert and we’ll let you know when fares to \(destinationName) drop."
+    }
+
+    private func createRouteAlert() {
+        isCreatingAlert = true
+        alertTask?.cancel()
+
+        alertTask = Task {
+            do {
+                let _: EmptyResponse = try await APIClient.shared.fetch(
+                    .alertCreate(destination: iataCode, maxPrice: Int(price ?? 0))
+                )
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    isCreatingAlert = false
+                    alertCreated = true
+                    HapticEngine.success()
+                    if let priceText {
+                        toastManager.show(
+                            message: "We’ll notify you when prices drop below \(priceText) for \(destinationName).",
+                            type: .success
+                        )
+                    } else {
+                        toastManager.show(
+                            message: "Price alert set for \(destinationName).",
+                            type: .success
+                        )
+                    }
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    isCreatingAlert = false
+                    HapticEngine.error()
+                    toastManager.show(
+                        message: error.localizedDescription,
+                        type: .error
+                    )
+                }
+            }
+        }
     }
 
     private func maskedEmail(_ email: String) -> String {
@@ -233,7 +305,7 @@ struct PriceAlertSignupSheet: View {
                 .font(SGFont.bodyBold(size: 13))
                 .foregroundStyle(Color.sgWhite)
 
-            Text("This signs you up for SoGoJet deal emails while direct route-specific alerts finish shipping on iPhone. You can unsubscribe from any email we send.")
+            Text("This signs you up for SoGoJet deal emails. Sign in to get instant route-specific price alerts instead. You can unsubscribe from any email we send.")
                 .font(SGFont.body(size: 12))
                 .foregroundStyle(Color.sgMuted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -272,10 +344,10 @@ struct PriceAlertSignupSheet: View {
 
     private var introCopy: String {
         if let priceText {
-            return "We spotted a fare around \(priceText) to \(destinationName). Leave your email and we’ll send SoGoJet deal drops while direct iPhone alerts catch up."
+            return "We spotted a fare around \(priceText) to \(destinationName). Sign in for instant route alerts, or leave your email and we’ll send deal drops."
         }
 
-        return "Leave your email and we’ll send SoGoJet deal drops while direct iPhone alerts catch up."
+        return "Sign in for instant route alerts to \(destinationName), or leave your email and we’ll send deal drops."
     }
 
     private func submit() {
@@ -301,7 +373,7 @@ struct PriceAlertSignupSheet: View {
                     isSubmitting = false
                     HapticEngine.success()
                     toastManager.show(
-                        message: "Deal emails enabled. We’ll keep you posted while direct route alerts finish shipping.",
+                        message: "Deal emails enabled for \(destinationName). Sign in for instant route alerts.",
                         type: .success
                     )
                     dismiss()
@@ -332,9 +404,10 @@ private struct SubscribeResponse: Decodable {
 // MARK: - Preview
 
 #Preview {
-    PriceAlertCTA(destinationName: "Bali", price: 450)
+    PriceAlertCTA(destinationName: "Bali", iataCode: "DPS", price: 450)
         .padding()
         .background(Color.sgBg)
         .environment(SettingsStore())
+        .environment(AuthStore())
         .environment(ToastManager())
 }

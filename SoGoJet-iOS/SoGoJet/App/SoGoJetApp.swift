@@ -272,6 +272,7 @@ struct SoGoJetApp: App {
                 .onChange(of: scenePhase) { oldPhase, newPhase in
                     if oldPhase != .active && newPhase == .active {
                         Task {
+                            await feedStore.flushPendingSwipes()
                             await feedStore.refreshIfStale(origin: settingsStore.departureCode)
                         }
 

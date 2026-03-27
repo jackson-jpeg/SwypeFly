@@ -20,6 +20,15 @@ final class FeedStore {
     /// How long before data is considered stale (seconds).
     static let stalenessThreshold: TimeInterval = 300 // 5 minutes
 
+    // MARK: Swipe Retry Queue (persisted to UserDefaults)
+
+    private let pendingSwipesKey = "sg_pending_swipes"
+
+    private var pendingSwipes: [[String: String]] {
+        get { (UserDefaults.standard.array(forKey: pendingSwipesKey) as? [[String: String]]) ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: pendingSwipesKey) }
+    }
+
     /// Whether the current data is stale and should be refreshed.
     var isStale: Bool {
         guard let lastFetch = lastFetchDate else { return true }
@@ -249,11 +258,33 @@ final class FeedStore {
     private(set) var livePriceOverrides: [String: Double] = [:]
 
     func recordSwipe(dealId: String, action: String) {
-        Task {
-            let _: EmptyResponse? = try? await APIClient.shared.fetch(
-                .swipe(dealId: dealId, action: action)
-            )
+        // Add to persistent queue so the swipe survives network failures
+        var queue = pendingSwipes
+        queue.append(["dealId": dealId, "action": action])
+        pendingSwipes = queue
+
+        // Try to flush immediately
+        Task { await flushPendingSwipes() }
+    }
+
+    /// Attempt to send all queued swipes to the server.
+    /// Failed swipes stay in the queue for the next attempt.
+    func flushPendingSwipes() async {
+        let queue = pendingSwipes
+        guard !queue.isEmpty else { return }
+
+        var remaining: [[String: String]] = []
+        for swipe in queue {
+            guard let dealId = swipe["dealId"], let action = swipe["action"] else { continue }
+            do {
+                let _: EmptyResponse = try await APIClient.shared.fetch(
+                    .swipe(dealId: dealId, action: action)
+                )
+            } catch {
+                remaining.append(swipe) // Keep failed ones for next attempt
+            }
         }
+        pendingSwipes = remaining
     }
 
     // MARK: Disk Cache

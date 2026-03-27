@@ -190,6 +190,13 @@ struct DestinationDetailView: View {
 
             // Watch Price button — saves the deal so FareDropMonitor tracks it
             priceWatchButton
+
+            // Server-side price alert — notifies when price drops
+            PriceAlertCTA(
+                destinationName: deal.city,
+                iataCode: deal.iataCode,
+                price: deal.displayPrice
+            )
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -66,18 +66,37 @@ struct OnboardingView: View {
             stopCycling()
         }
         .task {
-            // Fetch real deals for the onboarding preview
-            await feedStore.fetchDeals(origin: settings.departureCode)
-            let topDeals = Array(feedStore.deals.prefix(5))
-            if !topDeals.isEmpty {
-                liveShowcases = topDeals.map { deal in
-                    OnboardingShowcase(
-                        code: deal.iataCode,
-                        city: deal.city.uppercased(),
-                        country: deal.country,
-                        price: deal.priceFormatted,
-                        vibe: deal.safeVibeTags.first ?? "Travel"
-                    )
+            // Fetch curated top deals (sorted by deal_score) instead of
+            // whatever the generic feed returns first.
+            do {
+                let response: TopDealsResponse = try await APIClient.shared.fetch(
+                    .topDeals(origin: settings.departureCode, limit: 5)
+                )
+                if !response.deals.isEmpty {
+                    liveShowcases = response.deals.map { deal in
+                        OnboardingShowcase(
+                            code: deal.iata,
+                            city: deal.city.uppercased(),
+                            country: deal.country,
+                            price: deal.price > 0 ? "$\(Int(deal.price))" : "Check price",
+                            vibe: deal.dealTier.capitalized
+                        )
+                    }
+                }
+            } catch {
+                // Fall back to feed deals if top-deals fails
+                await feedStore.fetchDeals(origin: settings.departureCode)
+                let fallbackDeals = Array(feedStore.deals.prefix(5))
+                if !fallbackDeals.isEmpty {
+                    liveShowcases = fallbackDeals.map { deal in
+                        OnboardingShowcase(
+                            code: deal.iataCode,
+                            city: deal.city.uppercased(),
+                            country: deal.country,
+                            price: deal.priceFormatted,
+                            vibe: deal.safeVibeTags.first ?? "Travel"
+                        )
+                    }
                 }
             }
         }
@@ -384,6 +403,35 @@ private struct OnboardingShowcase {
     let country: String
     let price: String
     let vibe: String
+}
+
+// MARK: - Top Deals API Response
+
+/// Matches the JSON returned by GET /api/top-deals?origin=XXX&limit=N
+/// Fields differ from the feed's Deal model (e.g. `iata` not `iataCode`,
+/// `price` not `flightPrice`), so we decode into a lightweight struct.
+struct TopDealsResponse: Codable, Sendable {
+    let deals: [TopDeal]
+    let total: Int?
+    let generatedAt: String?
+}
+
+struct TopDeal: Codable, Sendable {
+    let id: String
+    let city: String
+    let country: String
+    let iata: String
+    let origin: String
+    let price: Double
+    let dealScore: Double
+    let dealTier: String
+    let savingsPercent: Double?
+    let usualPrice: Double?
+    let isNonstop: Bool?
+    let airline: String?
+    let departureDate: String?
+    let returnDate: String?
+    let tripDays: Int?
 }
 
 // MARK: - Preview
