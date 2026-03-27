@@ -134,6 +134,36 @@ async function main() {
       'Naples Florida pier',
       'Naples Florida Third Street South downtown',
     ]],
+    ['163', 'Providence RI', [
+      'Providence Rhode Island WaterFire',
+      'Providence Rhode Island downtown skyline',
+      'Brown University Providence campus',
+    ]],
+    ['120', 'Roatán Honduras', [
+      'Roatan Honduras Caribbean beach turquoise',
+      'Roatan Honduras coral reef diving',
+      'Roatan Honduras West Bay beach',
+    ]],
+    ['29', 'San José Costa Rica', [
+      'San Jose Costa Rica National Theater',
+      'Costa Rica rainforest cloud forest',
+      'Costa Rica volcano Arenal landscape',
+    ]],
+    ['59', 'Savannah GA', [
+      'Savannah Georgia Forsyth Park fountain oak trees',
+      'Savannah Georgia historic district Spanish moss',
+      'Savannah Georgia River Street cobblestone',
+    ]],
+    ['58', 'Scottsdale AZ', [
+      'Scottsdale Arizona desert Camelback Mountain sunset',
+      'Scottsdale Arizona Old Town',
+      'Scottsdale Arizona Sonoran Desert saguaro cactus',
+    ]],
+    ['162', 'Traverse City MI', [
+      'Traverse City Michigan Sleeping Bear Dunes',
+      'Traverse City Michigan Grand Traverse Bay',
+      'Traverse City Michigan cherry orchards vineyards',
+    ]],
     // Also fix the 5 that were rate-limited earlier
     ['v2-81', 'Hamburg', [
       'Hamburg Germany Speicherstadt warehouse district',
