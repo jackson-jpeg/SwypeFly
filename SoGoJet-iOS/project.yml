@@ -43,18 +43,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app
-        INFOPLIST_KEY_CFBundleDisplayName: SoGoJet
+        INFOPLIST_FILE: SoGoJet/Info.plist
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
-        GENERATE_INFOPLIST_FILE: true
+        GENERATE_INFOPLIST_FILE: false
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.travel"
-    info:
-      path: SoGoJet/Info.plist
-      properties:
-        UIAppFonts:
-          - BebasNeue-Regular.ttf
-          - Inter-Regular.ttf
-          - Inter-SemiBold.ttf
-          - PlayfairDisplay-Italic.ttf
