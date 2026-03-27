@@ -605,16 +605,23 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     const v = validateRequest(createOrderSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
-    // Verify payment intent exists (don't block on status — Stripe Elements not yet wired up)
+    // Verify payment was actually completed before creating a real ticket
     try {
       const { getPaymentIntent } = await import('../services/stripe.js');
       const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
-      // TODO: Once Stripe Elements is integrated, enforce: if (status !== 'succeeded') return 400
       if (paymentIntent.status !== 'succeeded') {
-        console.warn(`[booking/create-order] Payment status: ${paymentIntent.status} — proceeding (Stripe Elements not yet integrated)`);
+        console.warn(`[booking/create-order] Payment not completed: ${paymentIntent.status}`);
+        return res.status(402).json({
+          error: 'Payment required. Please complete payment before booking.',
+          code: 'PAYMENT_REQUIRED',
+        });
       }
     } catch (stripeErr: any) {
-      console.warn(`[booking/create-order] Stripe check failed: ${stripeErr.message} — proceeding with booking`);
+      console.warn(`[booking/create-order] Stripe verification failed: ${stripeErr.message}`);
+      return res.status(402).json({
+        error: 'Could not verify payment. Please try again.',
+        code: 'PAYMENT_VERIFICATION_FAILED',
+      });
     }
 
     // Check if the offer has expired before attempting to create the order
