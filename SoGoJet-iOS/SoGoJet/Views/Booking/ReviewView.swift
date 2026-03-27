@@ -326,8 +326,6 @@ struct ReviewView: View {
         Task {
             await store.preparePayment()
             isPreparingPayment = false
-            // PaymentSheet button will now appear automatically since store.paymentSheet is set
-        }
         }
     }
 
