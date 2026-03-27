@@ -1686,17 +1686,25 @@ struct DestinationDetailView: View {
             Button {
                 let origin = settingsStore.departureCode
                 let dest = deal.iataCode
-                let query = "flights+from+\(origin)+to+\(dest)"
-                if let url = URL(string: "https://www.google.com/travel/flights?q=\(query)") {
+                var targetUrl: URL?
+                if let affiliate = deal.affiliateUrl, !affiliate.isEmpty,
+                   let url = URL(string: affiliate) {
+                    targetUrl = url
+                } else {
+                    let datePart = deal.bestDepartureDate.map { "+on+\($0)" } ?? ""
+                    let query = "flights+from+\(origin)+to+\(dest)\(datePart)"
+                    targetUrl = URL(string: "https://www.google.com/travel/flights?q=\(query)")
+                }
+                if let url = targetUrl {
                     UIApplication.shared.open(url)
                 }
             } label: {
-                Text("Compare prices on Google Flights")
+                Text("Compare Prices")
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Compare prices on Google Flights for \(deal.city)")
+            .accessibilityLabel("Compare prices for flights to \(deal.city)")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

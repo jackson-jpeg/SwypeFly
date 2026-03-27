@@ -378,6 +378,7 @@ struct FeedView: View {
         .scrollPosition(id: $currentIndex)
         .ignoresSafeArea()
         .refreshable {
+            HapticEngine.light()
             await feedStore.fetchDeals(origin: settingsStore.departureCode)
         }
         .accessibilityHint("Swipe up or down to browse flight deals")

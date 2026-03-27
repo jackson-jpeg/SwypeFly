@@ -52,7 +52,12 @@ struct ContentView: View {
         @Bindable var router = router
         let tabBinding = Binding<Router.Tab>(
             get: { router.activeTab },
-            set: { router.tabSelected($0) }
+            set: { newTab in
+                if newTab != router.activeTab {
+                    HapticEngine.selection()
+                }
+                router.tabSelected(newTab)
+            }
         )
         return TabView(selection: tabBinding) {
             feedTab

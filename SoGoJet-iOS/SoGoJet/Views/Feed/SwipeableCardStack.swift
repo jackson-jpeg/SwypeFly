@@ -404,6 +404,10 @@ struct SwipeableCardStack: View {
                 withAnimation(.easeOut(duration: 0.3)) {
                     cardEntrance = false
                 }
+                // Subtle "landing" haptic as the new card reaches full size
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    HapticEngine.light()
+                }
             }
         }
     }

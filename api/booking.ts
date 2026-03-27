@@ -880,6 +880,7 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
           return_date: v.data.returnDate ?? (lastSlice?.segments?.[0]?.departing_at?.split('T')[0] ?? ''),
           airline: airlineName,
           booking_reference: bookingRef,
+          customer_email: v.data.passengers?.[0]?.email || null,
         })
         .select()
         .single();
