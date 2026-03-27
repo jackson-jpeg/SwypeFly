@@ -3,6 +3,7 @@ import UIKit
 import CoreSpotlight
 import UserNotifications
 import MetricKit
+import StripePaymentSheet
 import os
 
 // MARK: - App Delegate (Quick Actions + Notification Handling + Crash Reporting)

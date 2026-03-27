@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import ActivityKit
+import StripePaymentSheet
 
 // MARK: - Booking Step State Machine
 
@@ -80,6 +81,15 @@ final class BookingStore {
     /// Callback to push live prices back to the feed after booking search.
     /// Set by the presenting view to update the feed card's price.
     var onLivePriceFound: ((String, Double) -> Void)?
+
+    /// Stripe PaymentSheet for collecting card details.
+    /// Set after creating a payment intent, presented by ReviewView.
+    var paymentSheet: PaymentSheet?
+
+    /// Client secret for the current payment intent.
+    private var currentClientSecret: String?
+
+    private static let stripePublishableKey = "pk_live_51T6cxRLUI2d6YDhKrt7A8IB5xJOyuHYiS81B35aZQ5tkZqFzpgwUCG8ASqobPkg1MEwsHYTlZbpIaqQgYepRd8Jw00jnVCCaZj"
 
     private static let recentSearchesKey = "SGRecentSearches"
     private static let lastPassengerKey = "SGLastPassengerData"
@@ -305,12 +315,11 @@ final class BookingStore {
         step = .review
     }
 
-    /// Confirm and place the booking.
-    func confirmBooking() async {
+    /// Step 1: Create Stripe payment intent and prepare the PaymentSheet.
+    /// Called when user taps "Pay". After this, ReviewView presents the PaymentSheet.
+    func preparePayment() async {
         guard let offer = selectedOffer else { return }
 
-        // Pre-flight check: if the offer is expired or about to expire (< 30s),
-        // don't even attempt the API call -- re-search instead.
         if isOfferExpired {
             paymentError = "This fare has expired. Searching for fresh options now."
             stopOfferExpirationTimer()
@@ -326,7 +335,6 @@ final class BookingStore {
 
         let requestID = UUID()
         activeCheckoutRequestID = requestID
-        step = .paying
         paymentError = nil
 
         do {
@@ -340,6 +348,44 @@ final class BookingStore {
                 )
             )
             guard activeCheckoutRequestID == requestID else { return }
+            currentClientSecret = paymentIntent.clientSecret
+
+            // Configure Stripe PaymentSheet
+            STPAPIClient.shared.publishableKey = Self.stripePublishableKey
+
+            var config = PaymentSheet.Configuration()
+            config.merchantDisplayName = "SoGoJet"
+            config.allowsDelayedPaymentMethods = false
+            config.appearance.colors.primary = UIColor(red: 0.969, green: 0.910, blue: 0.627, alpha: 1) // sgYellow
+            config.appearance.colors.background = UIColor(red: 0.039, green: 0.039, blue: 0.039, alpha: 1) // sgBg
+            config.appearance.colors.componentBackground = UIColor(red: 0.094, green: 0.094, blue: 0.094, alpha: 1) // sgCell
+            config.appearance.colors.text = .white
+            config.appearance.colors.textSecondary = UIColor(white: 0.6, alpha: 1)
+            config.appearance.cornerRadius = 12
+
+            paymentSheet = PaymentSheet(paymentIntentClientSecret: paymentIntent.clientSecret, configuration: config)
+        } catch {
+            guard activeCheckoutRequestID == requestID else { return }
+            paymentError = userFacingMessage(for: error)
+            HapticEngine.error()
+        }
+    }
+
+    /// Step 2: Called after Stripe PaymentSheet completes successfully.
+    /// Creates the actual Duffel order (real ticket).
+    func completeBookingAfterPayment() async {
+        guard let offer = selectedOffer,
+              let clientSecret = currentClientSecret else { return }
+
+        let requestID = activeCheckoutRequestID
+        step = .paying
+        paymentError = nil
+
+        // Extract payment intent ID from client secret (format: pi_xxx_secret_yyy)
+        let paymentIntentId = String(clientSecret.split(separator: "_secret_").first ?? "")
+
+        do {
+            let amountInCents = Int((totalPrice * 100).rounded())
 
             let selectedServices: [CreateOrderSelectedService]? = {
                 guard let seatId = selectedSeatId,
@@ -363,7 +409,7 @@ final class BookingStore {
                     phoneNumber: passenger.phone
                 )],
                 selectedServices: selectedServices,
-                paymentIntentId: paymentIntent.paymentIntentId,
+                paymentIntentId: paymentIntentId,
                 amount: amountInCents,
                 currency: offer.currency,
                 destinationCity: deal?.destination,
@@ -390,6 +436,11 @@ final class BookingStore {
             step = .review
             HapticEngine.error()
         }
+    }
+
+    /// Legacy — kept for compatibility. Now split into preparePayment + completeBookingAfterPayment.
+    func confirmBooking() async {
+        await preparePayment()
     }
 
     /// Navigate back one step in the booking flow.

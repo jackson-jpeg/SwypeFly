@@ -1,5 +1,6 @@
 import SwiftUI
 import LocalAuthentication
+import StripePaymentSheet
 
 struct ReviewView: View {
     @Environment(BookingStore.self) private var store
@@ -7,6 +8,7 @@ struct ReviewView: View {
 
     @State private var showSignInRequired = false
     @State private var showBookingSoonAlert = false
+    @State private var isPreparingPayment = false
 
     private var offer: TripOption? {
         store.selectedOffer
@@ -296,6 +298,22 @@ struct ReviewView: View {
     }
 
     /// Authenticate with Face ID / Touch ID / passcode before confirming payment.
+    private func handlePaymentResult(_ result: PaymentSheetResult) {
+        switch result {
+        case .completed:
+            HapticEngine.success()
+            Task {
+                await store.completeBookingAfterPayment()
+            }
+        case .canceled:
+            // User dismissed the payment sheet — no action needed
+            break
+        case .failed(let error):
+            HapticEngine.error()
+            store.paymentError = error.localizedDescription
+        }
+    }
+
     private func authenticateAndPay() {
         // Guest users must sign in before payment
         guard auth.isAuthenticated else {
@@ -303,29 +321,13 @@ struct ReviewView: View {
             return
         }
 
-        let context = LAContext()
-        var error: NSError?
-
-        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
-            context.evaluatePolicy(
-                .deviceOwnerAuthentication,
-                localizedReason: "Confirm your \(totalLabel) flight purchase"
-            ) { success, _ in
-                Task { @MainActor in
-                    if success {
-                        HapticEngine.success()
-                        await store.confirmBooking()
-                    } else {
-                        HapticEngine.error()
-                        store.paymentError = "Authentication required to complete purchase."
-                    }
-                }
-            }
-        } else {
-            // Device doesn't support biometrics — proceed without auth
-            Task {
-                await store.confirmBooking()
-            }
+        // Prepare the Stripe PaymentSheet (creates payment intent on server)
+        isPreparingPayment = true
+        Task {
+            await store.preparePayment()
+            isPreparingPayment = false
+            // PaymentSheet button will now appear automatically since store.paymentSheet is set
+        }
         }
     }
 
@@ -425,7 +427,7 @@ struct ReviewView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .tint(Color.sgYellow)
-                    Text("Processing...")
+                    Text("Processing booking...")
                         .font(SGFont.bodyBold(size: 16))
                     Spacer()
                 }
@@ -434,18 +436,56 @@ struct ReviewView: View {
                 .padding(.horizontal, Spacing.md)
                 .padding(.vertical, Spacing.md)
                 .background(Color.sgYellow.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.md))
-            } else {
-                // TestFlight: payment not yet live — show booking interest CTA
-                Button {
-                    showBookingSoonAlert = true
-                } label: {
+            } else if isPreparingPayment {
+                HStack(spacing: Spacing.sm) {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(Color.sgYellow)
+                    Text("Preparing payment...")
+                        .font(SGFont.bodyBold(size: 16))
+                    Spacer()
+                }
+                .foregroundStyle(Color.sgBg)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.md)
+                .background(Color.sgYellow.opacity(0.3), in: RoundedRectangle(cornerRadius: Radius.md))
+            } else if let paymentSheet = store.paymentSheet {
+                // Stripe PaymentSheet button — card collection happens here
+                PaymentSheet.PaymentButton(paymentSheet: paymentSheet, onCompletion: handlePaymentResult) {
                     HStack(spacing: Spacing.sm) {
-                        Image(systemName: "bell.badge")
+                        Image(systemName: "creditcard")
                             .font(.system(size: 14, weight: .semibold))
-                        Text("Reserve \(totalLabel)")
+                        Text("Pay \(totalLabel)")
                             .font(SGFont.bodyBold(size: 16))
                         Spacer()
-                        Text("Coming Soon")
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Secure")
+                            .font(SGFont.bodyBold(size: 11))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.md)
+                    .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
+                }
+                .buttonStyle(.plain)
+                .disabled(offer == nil)
+            } else {
+                // No payment sheet yet — show button to prepare payment
+                Button {
+                    authenticateAndPay()
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "creditcard")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Pay \(totalLabel)")
+                            .font(SGFont.bodyBold(size: 16))
+                        Spacer()
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Secure")
                             .font(SGFont.bodyBold(size: 11))
                     }
                     .foregroundStyle(Color.sgBg)
