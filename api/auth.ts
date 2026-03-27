@@ -21,7 +21,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return handleAppleSignIn(req, res);
   }
 
-  return res.status(400).json({ error: 'Invalid action. Use ?action=apple' });
+  if (action === 'oauth') {
+    return handleOAuthExchange(req, res);
+  }
+
+  return res.status(400).json({ error: 'Invalid action. Use ?action=apple or ?action=oauth' });
 }
 
 async function handleAppleSignIn(req: VercelRequest, res: VercelResponse) {
@@ -92,6 +96,128 @@ async function handleAppleSignIn(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logApiError('api/auth/apple', err);
+    return res.status(500).json({ error: 'Authentication failed' });
+  }
+}
+
+async function handleOAuthExchange(req: VercelRequest, res: VercelResponse) {
+  try {
+    const { code, redirect_uri } = req.body as {
+      code: string;
+      redirect_uri?: string;
+    };
+
+    if (!code) {
+      return res.status(400).json({ error: 'Missing code' });
+    }
+
+    if (!CLERK_SECRET_KEY) {
+      return res.status(500).json({ error: 'Auth not configured' });
+    }
+
+    // The code/token from the iOS app is either:
+    // 1. A Clerk rotating_token from completed OAuth
+    // 2. A Clerk ticket from the OAuth callback
+    // 3. An authorization code to exchange
+
+    // Try to verify the token as a sign-in token first
+    const verifyResponse = await fetch('https://api.clerk.com/v1/clients/verify', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${CLERK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token: code }),
+    });
+
+    if (verifyResponse.ok) {
+      const clientData = await verifyResponse.json();
+      const session = clientData.sessions?.[0];
+      if (session) {
+        // Get user info
+        const userResponse = await fetch(
+          `https://api.clerk.com/v1/users/${session.user_id}`,
+          { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } },
+        );
+
+        let email: string | null = null;
+        let name: string | null = null;
+
+        if (userResponse.ok) {
+          const user = await userResponse.json();
+          email = user.email_addresses?.[0]?.email_address || null;
+          name =
+            [user.first_name, user.last_name].filter(Boolean).join(' ') || null;
+        }
+
+        return res.status(200).json({
+          sessionToken: session.last_active_token?.jwt || code,
+          userId: session.user_id,
+          email,
+          name,
+        });
+      }
+    }
+
+    // If verify didn't work, try exchanging as an OAuth code
+    const tokenResponse = await fetch('https://api.clerk.com/v1/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirect_uri || '',
+        client_id: 'clerk',
+      }).toString(),
+    });
+
+    if (tokenResponse.ok) {
+      const tokenData = await tokenResponse.json();
+
+      // Get user info from the access token
+      const userinfoResponse = await fetch(
+        `https://clerk.sogojet.com/oauth/userinfo`,
+        {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
+        },
+      );
+
+      let email: string | null = null;
+      let name: string | null = null;
+      let userId = 'oauth_user';
+
+      if (userinfoResponse.ok) {
+        const userinfo = await userinfoResponse.json();
+        email = userinfo.email || null;
+        name = userinfo.name || null;
+        userId = userinfo.sub || userId;
+      }
+
+      return res.status(200).json({
+        sessionToken: tokenData.access_token,
+        userId,
+        email,
+        name,
+      });
+    }
+
+    // Last attempt: treat code as a sign-in token and create a session
+    const signInTokenResponse = await fetch(
+      `https://api.clerk.com/v1/sign_in_tokens/${code}/revoke`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` },
+      },
+    );
+
+    console.warn('[auth/oauth] All exchange methods failed');
+    return res.status(401).json({ error: 'OAuth exchange failed' });
+  } catch (err) {
+    logApiError('api/auth/oauth', err);
     return res.status(500).json({ error: 'Authentication failed' });
   }
 }

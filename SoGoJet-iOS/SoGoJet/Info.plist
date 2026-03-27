@@ -81,6 +81,17 @@
 			<string>rectangle.split.3x1</string>
 		</dict>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>sogojet</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.sogojet.app</string>
+		</dict>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>BebasNeue-Regular.ttf</string>

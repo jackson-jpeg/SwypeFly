@@ -77,6 +77,48 @@ struct AuthView: View {
                         .frame(height: 52)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
 
+                        // Sign in with Google
+                        Button {
+                            HapticEngine.light()
+                            auth.signInWithGoogle()
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "g.circle.fill")
+                                    .font(.system(size: 20))
+                                Text("Continue with Google")
+                                    .font(SGFont.bodyBold(size: 16))
+                            }
+                            .foregroundStyle(Color.sgBg)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+
+                        // Sign in with TikTok
+                        Button {
+                            HapticEngine.light()
+                            auth.signInWithTikTok()
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.system(size: 18))
+                                Text("Continue with TikTok")
+                                    .font(SGFont.bodyBold(size: 16))
+                            }
+                            .foregroundStyle(Color.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color(red: 0.07, green: 0.07, blue: 0.07))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+
                         // Continue as guest
                         Button {
                             HapticEngine.light()

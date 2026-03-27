@@ -3,7 +3,8 @@ import Observation
 import AuthenticationServices
 
 // MARK: - Auth Store
-// Manages user authentication state using Sign in with Apple.
+// Manages user authentication via Sign in with Apple, Google, and TikTok.
+// Uses Clerk OAuth for Google/TikTok, direct Apple Sign In for Apple.
 // Persists session to Keychain for secure cross-launch persistence.
 
 @MainActor
@@ -43,6 +44,146 @@ final class AuthStore: NSObject {
         controller.performRequests()
         isLoading = true
         authError = nil
+    }
+
+    // MARK: Sign In with OAuth (Google, TikTok)
+
+    func signInWithGoogle() {
+        startOAuthFlow(provider: "oauth_google")
+    }
+
+    func signInWithTikTok() {
+        startOAuthFlow(provider: "oauth_tiktok")
+    }
+
+    private let clerkDomain = "clerk.sogojet.com"
+    private let oauthCallbackScheme = "sogojet"
+
+    private func startOAuthFlow(provider: String) {
+        isLoading = true
+        authError = nil
+
+        let redirectUri = "\(oauthCallbackScheme)://oauth-callback"
+        let authURL = URL(string: "https://\(clerkDomain)/v1/client/sign_ins?strategy=\(provider)&redirect_url=\(redirectUri)")!
+
+        // Use Clerk's OAuth redirect flow
+        let clerkOAuthURL = URL(string: "https://\(clerkDomain)/oauth/authorize?strategy=\(provider)&redirect_url=\(redirectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectUri)")!
+
+        let session = ASWebAuthenticationSession(
+            url: clerkOAuthURL,
+            callbackURLScheme: oauthCallbackScheme
+        ) { [weak self] callbackURL, error in
+            Task { @MainActor in
+                guard let self else { return }
+
+                if let error {
+                    self.isLoading = false
+                    if (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin {
+                        return // User canceled
+                    }
+                    self.authError = "Sign in failed. Please try again."
+                    #if DEBUG
+                    print("[Auth] OAuth error: \(error.localizedDescription)")
+                    #endif
+                    return
+                }
+
+                guard let callbackURL,
+                      let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false) else {
+                    self.isLoading = false
+                    self.authError = "Sign in failed. Please try again."
+                    return
+                }
+
+                // Extract the rotating_token or code from callback
+                if let token = components.queryItems?.first(where: { $0.name == "__clerk_status" })?.value,
+                   token == "completed",
+                   let sessionToken = components.queryItems?.first(where: { $0.name == "rotating_token" })?.value {
+                    // Clerk completed the OAuth — we have a session token
+                    await self.handleOAuthToken(sessionToken)
+                } else if let code = components.queryItems?.first(where: { $0.name == "code" })?.value {
+                    // Got an authorization code — exchange it via backend
+                    await self.exchangeOAuthCode(code: code, redirectUri: redirectUri)
+                } else if let ticket = components.queryItems?.first(where: { $0.name == "__clerk_ticket" })?.value {
+                    // Got a Clerk ticket — exchange it
+                    await self.handleOAuthToken(ticket)
+                } else {
+                    // Try to extract session from the callback URL
+                    #if DEBUG
+                    print("[Auth] OAuth callback URL: \(callbackURL)")
+                    #endif
+                    self.isLoading = false
+                    self.authError = "Sign in failed. Please try again."
+                }
+            }
+        }
+
+        session.prefersEphemeralWebBrowserSession = false
+        session.start()
+    }
+
+    private func handleOAuthToken(_ token: String) async {
+        do {
+            let response: AuthResponse = try await APIClient.shared.fetch(
+                .authOAuth(code: token, redirectUri: "\(oauthCallbackScheme)://oauth-callback")
+            )
+
+            self.authToken = response.sessionToken
+            self.userId = response.userId
+            self.userName = response.name
+            self.userEmail = response.email
+            self.isAuthenticated = true
+            self.isLoading = false
+
+            saveSession(
+                token: response.sessionToken,
+                userId: response.userId,
+                name: response.name,
+                email: response.email
+            )
+
+            #if DEBUG
+            print("[Auth] OAuth signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email"))")
+            #endif
+        } catch {
+            #if DEBUG
+            print("[Auth] OAuth token exchange failed: \(error.localizedDescription)")
+            #endif
+            self.isLoading = false
+            self.authError = "Sign in failed. Please try again."
+        }
+    }
+
+    private func exchangeOAuthCode(code: String, redirectUri: String) async {
+        do {
+            let response: AuthResponse = try await APIClient.shared.fetch(
+                .authOAuth(code: code, redirectUri: redirectUri)
+            )
+
+            self.authToken = response.sessionToken
+            self.userId = response.userId
+            self.userName = response.name
+            self.userEmail = response.email
+            self.isAuthenticated = true
+            self.isLoading = false
+
+            saveSession(
+                token: response.sessionToken,
+                userId: response.userId,
+                name: response.name,
+                email: response.email
+            )
+
+            #if DEBUG
+            print("[Auth] OAuth signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email"))")
+            #endif
+        } catch {
+            #if DEBUG
+            print("[Auth] OAuth code exchange failed: \(error.localizedDescription)")
+            #endif
+            self.isLoading = false
+            self.authError = "Sign in failed. Please try again."
+        }
     }
 
     // MARK: Sign Out
