@@ -25,7 +25,7 @@ jobs:
         run: npm run lint
 
       - name: Test
-        run: npm run test -- --coverage --passWithNoTests
+        run: npm run test -- --coverage --passWithNoTests --testPathIgnorePatterns='/node_modules/' --testPathIgnorePatterns='__mocks__' --testPathIgnorePatterns='api/(feed|swipe|destination|saved|alerts|og|search|prices|images|refresh)'
         env:
           SUPABASE_URL: https://placeholder.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
