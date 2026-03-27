@@ -109,7 +109,7 @@ export async function createOrder(params: CreateOrderParams) {
     type: 'instant',
     selected_offers: [params.offerId],
     passengers: params.passengers.map((p) => {
-      const base: Record<string, unknown> = {
+      const base: any = {
         id: p.id,
         given_name: p.given_name,
         family_name: p.family_name,
