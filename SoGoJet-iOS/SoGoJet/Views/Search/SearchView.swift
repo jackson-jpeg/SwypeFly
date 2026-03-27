@@ -8,6 +8,7 @@ struct SearchView: View {
     @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
     @Environment(ToastManager.self) private var toastManager
 
+    @FocusState private var isSearchFocused: Bool
     @State private var query = ""
     @State private var remoteResults: [Deal] = []
     @State private var isSearching = false
@@ -77,6 +78,7 @@ struct SearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear {
+                isSearchFocused = true
                 scheduleSearch(for: trimmedQuery)
                 Task {
                     await loadPopularIfNeeded()
@@ -119,6 +121,7 @@ struct SearchView: View {
             TextField("Where to?", text: $query)
                 .font(SGFont.body(size: 16))
                 .foregroundStyle(Color.sgWhite)
+                .focused($isSearchFocused)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .submitLabel(.search)

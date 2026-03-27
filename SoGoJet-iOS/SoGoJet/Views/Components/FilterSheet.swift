@@ -12,9 +12,9 @@ struct FilterSheet: View {
     @State private var selectedVibes: Set<String> = []
     @State private var selectedRegions: Set<String> = []
 
-    private let priceRanges = ["Under $200", "$200-400", "$400-600", "$600+"]
+    private let priceRanges = ["Under $200", "$200-400", "$400-600", "$600-1000", "$1000+"]
     private let vibes = ["beach", "city", "adventure", "culture", "nightlife", "nature", "food"]
-    private let regions = ["Europe", "Asia", "Caribbean", "South America", "Africa", "Middle East"]
+    private let regions = ["North America", "Central America", "South America", "Europe", "Asia", "Caribbean", "Africa", "Middle East", "Oceania"]
 
     private var hasFilters: Bool {
         !selectedPrices.isEmpty || !selectedVibes.isEmpty || !selectedRegions.isEmpty

@@ -39,6 +39,20 @@ struct SavedView: View {
                     if savedStore.savedDeals.isEmpty {
                         emptyState
                     } else {
+                        // Savings banner (2+ deals with savings data)
+                        if savedStore.savedDeals.count >= 2 {
+                            let totalSavings = savedStore.totalSavings
+                            let totalValue = savedStore.savedDeals.compactMap(\.displayPrice).reduce(0, +)
+                            let banner = SavingsBanner(
+                                totalSavings: totalSavings,
+                                totalValue: totalValue,
+                                tripCount: savedStore.count
+                            )
+                            if banner.shouldShow {
+                                banner
+                            }
+                        }
+
                         summaryLine
 
                         if comparableDealsCount >= 2 {

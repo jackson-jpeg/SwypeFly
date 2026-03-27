@@ -46,13 +46,37 @@ struct SavedCard: View {
                             .foregroundStyle(Color.sgWhite.opacity(0.8))
                             .lineLimit(1)
 
+                        // Departure dates
+                        if let dep = deal.bestDepartureDate, let ret = deal.bestReturnDate {
+                            Text("\(dep.shortDate) – \(ret.shortDate)")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Color.sgWhite.opacity(0.55))
+                                .lineLimit(1)
+                        } else if let dep = deal.bestDepartureDate {
+                            Text(dep.shortDate)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Color.sgWhite.opacity(0.55))
+                                .lineLimit(1)
+                        }
+
+                        // Nonstop badge
+                        if deal.isNonstop == true {
+                            Text("Nonstop")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(Color.sgBg)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 2)
+                                .background(Color.sgDealAmazing)
+                                .clipShape(Capsule())
+                        }
+
                         // Trip countdown badge
                         if let countdown = deal.countdownLabel {
                             HStack(spacing: 3) {
                                 Image(systemName: "clock.fill")
-                                    .font(.system(size: 8))
+                                    .font(.system(size: 10))
                                 Text(countdown)
-                                    .font(.system(size: 9, weight: .semibold))
+                                    .font(.system(size: 10, weight: .semibold))
                             }
                             .foregroundStyle(deal.daysUntilDeparture ?? 99 <= 3 ? Color.sgRed : Color.sgYellow)
                             .padding(.horizontal, 6)
@@ -68,7 +92,7 @@ struct SavedCard: View {
                     VStack(alignment: .trailing, spacing: 1) {
                         if deal.isEstimatedPrice {
                             Text("from")
-                                .font(.system(size: 8, weight: .medium))
+                                .font(.system(size: 10, weight: .medium))
                                 .foregroundStyle(Color.sgWhite.opacity(0.6))
                         }
                         Text(deal.priceFormatted)

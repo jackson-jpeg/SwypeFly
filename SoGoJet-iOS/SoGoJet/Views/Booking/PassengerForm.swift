@@ -8,13 +8,15 @@ struct PassengerForm: View {
     @State private var givenName = ""
     @State private var familyName = ""
     @State private var dateOfBirth = Calendar.current.date(byAdding: .year, value: -30, to: Date()) ?? Date()
-    @State private var gender: PassengerData.Gender = .male
+    @State private var dobWasChanged = false
+    @State private var gender: PassengerData.Gender = .notSpecified
     @State private var email = ""
     @State private var phone = ""
     @State private var passportNumber = ""
     @State private var passportExpiry = Calendar.current.date(byAdding: .year, value: 5, to: Date()) ?? Date()
     @State private var nationality = "US"
     @State private var hasSeededState = false
+    @State private var hasAttemptedSubmit = false
     @FocusState private var focusedField: FormField?
 
     private enum FormField: Hashable {
@@ -28,6 +30,33 @@ struct PassengerForm: View {
         && isValidEmail(email)
         && phone.trimmingCharacters(in: .whitespacesAndNewlines).count >= 5
         && dateOfBirth < Date()
+        && dobWasChanged
+        && gender != .notSpecified
+    }
+
+    private var isGivenNameInvalid: Bool {
+        givenName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var isFamilyNameInvalid: Bool {
+        familyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var isEmailInvalid: Bool {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty || !isValidEmail(trimmed)
+    }
+
+    private var isPhoneInvalid: Bool {
+        phone.trimmingCharacters(in: .whitespacesAndNewlines).count < 5
+    }
+
+    private var isDobInvalid: Bool {
+        !dobWasChanged
+    }
+
+    private var isGenderInvalid: Bool {
+        gender == .notSpecified
     }
 
     private var routeTitle: String {
@@ -45,12 +74,17 @@ struct PassengerForm: View {
                 documentsDeck
                 contactDeck
                 reassuranceDeck
-                actionCluster
             }
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.xl)
         }
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            actionCluster
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+                .background(.ultraThinMaterial)
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -139,6 +173,7 @@ struct PassengerForm: View {
                         .submitLabel(.next)
                         .onSubmit { focusedField = .familyName }
                 }
+                validationError("First name is required", show: hasAttemptedSubmit && isGivenNameInvalid)
 
                 fieldShell(label: "Family name", hint: "Last name as shown on your ID.") {
                     TextField("", text: $familyName, prompt: Text("Morgan").foregroundStyle(Color.sgMuted))
@@ -150,10 +185,11 @@ struct PassengerForm: View {
                         .submitLabel(.next)
                         .onSubmit { focusedField = .email }
                 }
+                validationError("Last name is required", show: hasAttemptedSubmit && isFamilyNameInvalid)
 
                 HStack(alignment: .top, spacing: Spacing.md) {
                     VStack(alignment: .leading, spacing: Spacing.sm) {
-                        fieldLabel("Date of birth")
+                        fieldLabel("Date of birth (required)")
                         DatePicker("", selection: $dateOfBirth, in: ...Date(), displayedComponents: .date)
                             .datePickerStyle(.compact)
                             .labelsHidden()
@@ -166,13 +202,17 @@ struct PassengerForm: View {
                                 RoundedRectangle(cornerRadius: Radius.md)
                                     .strokeBorder(Color.sgBorder, lineWidth: 1)
                             )
+                            .onChange(of: dateOfBirth) { _, _ in
+                                dobWasChanged = true
+                            }
+                        validationError("Select your date of birth", show: hasAttemptedSubmit && isDobInvalid)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         fieldLabel("Gender")
                         selectionRow(title: nil, tone: .ivory) {
-                            ForEach(PassengerData.Gender.allCases, id: \.self) { option in
+                            ForEach(PassengerData.Gender.allCases.filter { $0 != .notSpecified }, id: \.self) { option in
                                 VintageTerminalSelectablePill(
                                     title: option.rawValue.capitalized,
                                     isSelected: gender == option,
@@ -182,6 +222,7 @@ struct PassengerForm: View {
                                 }
                             }
                         }
+                        validationError("Select a gender", show: hasAttemptedSubmit && isGenderInvalid)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -258,6 +299,7 @@ struct PassengerForm: View {
                         .submitLabel(.next)
                         .onSubmit { focusedField = .phone }
                 }
+                validationError("Enter a valid email address", show: hasAttemptedSubmit && isEmailInvalid)
 
                 fieldShell(label: "Phone", hint: "A mobile number is best for airline updates.") {
                     TextField("", text: $phone, prompt: Text("+1 555 000 0000").foregroundStyle(Color.sgMuted))
@@ -266,6 +308,7 @@ struct PassengerForm: View {
                         .foregroundStyle(Color.sgWhite)
                         .focused($focusedField, equals: .phone)
                 }
+                validationError("Enter a valid phone number", show: hasAttemptedSubmit && isPhoneInvalid)
             }
         }
     }
@@ -300,9 +343,13 @@ struct PassengerForm: View {
     private var actionCluster: some View {
         VStack(spacing: Spacing.sm) {
             Button {
-                applyToStore()
-                Task {
-                    await store.proceedToSeats()
+                if isValid {
+                    applyToStore()
+                    Task {
+                        await store.proceedToSeats()
+                    }
+                } else {
+                    hasAttemptedSubmit = true
                 }
             } label: {
                 HStack(spacing: Spacing.sm) {
@@ -326,7 +373,6 @@ struct PassengerForm: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Continue to seat map")
-            .disabled(!isValid)
 
             VintageTerminalSecondaryButton(
                 title: "Back to Flight Selection",
@@ -352,6 +398,16 @@ struct PassengerForm: View {
             return store.searchCabinClass.displayName
         }
         return cabinClass.displayName
+    }
+
+    @ViewBuilder
+    private func validationError(_ message: String, show: Bool) -> some View {
+        if show {
+            Text(message)
+                .font(SGFont.body(size: 12))
+                .foregroundStyle(.red)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+        }
     }
 
     private func fieldLabel(_ text: String) -> some View {
@@ -422,6 +478,7 @@ struct PassengerForm: View {
 
         if let parsedBirthDate = Self.storageFormatter.date(from: passenger.dateOfBirth) {
             dateOfBirth = parsedBirthDate
+            dobWasChanged = true
         }
         if let parsedPassportExpiry = Self.storageFormatter.date(from: passenger.passportExpiry) {
             passportExpiry = parsedPassportExpiry

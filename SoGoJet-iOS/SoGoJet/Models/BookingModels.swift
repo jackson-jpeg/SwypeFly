@@ -175,19 +175,20 @@ struct PassengerData: Codable, Hashable, Sendable {
     var email: String = ""
     var phone: String = ""
     var dateOfBirth: String = ""
-    var gender: Gender = .male
+    var gender: Gender = .notSpecified
     var passportNumber: String = ""
     var passportExpiry: String = ""
     var nationality: String = "US"
 
     enum Gender: String, Codable, CaseIterable, Sendable {
+        case notSpecified = "notSpecified"
         case male, female, other
 
         var bookingValue: String {
             switch self {
             case .female:
                 return "f"
-            case .male, .other:
+            case .male, .other, .notSpecified:
                 return "m"
             }
         }

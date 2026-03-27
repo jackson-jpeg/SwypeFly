@@ -275,6 +275,14 @@ struct SeatMapView: View {
                     stroke: Color.sgOrange,
                     indicator: Color.sgOrange
                 )
+
+                SeatLegendBadge(
+                    title: "Unavailable",
+                    subtitle: "Seat taken",
+                    fill: Color.sgSurface.opacity(0.4),
+                    stroke: Color.sgBorder.opacity(0.4),
+                    indicator: nil
+                )
             }
         }
     }
@@ -396,7 +404,7 @@ struct SeatMapView: View {
                 if sectionedColumns.isEmpty {
                     seatFallbackList(seatMap)
                 } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
+                    ScrollView(.horizontal, showsIndicators: true) {
                         VStack(alignment: .leading, spacing: seatSpacing) {
                             cabinColumnHeader
 
@@ -503,6 +511,7 @@ struct SeatMapView: View {
                 .frame(width: aisleSpacing, height: 1)
         }
         .frame(width: aisleSpacing, height: seatSize)
+        .accessibilityHidden(true)
     }
 
     private func cabinSeatButton(_ seat: SeatInfo) -> some View {
@@ -532,6 +541,7 @@ struct SeatMapView: View {
         .buttonStyle(.plain)
         .disabled(!seat.available)
         .accessibilityLabel("\(seat.label), \(seatNarrative(for: seat))")
+        .accessibilityHint(seat.available ? "" : "This seat is taken")
     }
 
     private func seatFallbackList(_ seatMap: SeatMap) -> some View {
@@ -592,6 +602,7 @@ struct SeatMapView: View {
         }
         .buttonStyle(.plain)
         .disabled(!seat.available)
+        .accessibilityHint(seat.available ? "" : "This seat is taken")
     }
 
     private func cabinExitRowStrip(_ exitRows: [Int]) -> some View {
@@ -938,12 +949,12 @@ private struct CabinSeatCell: View {
 
             VStack(spacing: 1) {
                 Text(seat.label)
-                    .font(SGFont.bodyBold(size: 10))
+                    .font(SGFont.bodyBold(size: 12))
                     .foregroundStyle(labelColor)
 
                 if seat.available {
                     Text(seat.price.map { "$\(Int($0.rounded()))" } ?? "INC")
-                        .font(SGFont.bodyBold(size: 6))
+                        .font(SGFont.bodyBold(size: 8))
                         .foregroundStyle(isSelected ? Color.sgBg.opacity(0.8) : Color.sgMuted)
                         .tracking(0.4)
                 }
