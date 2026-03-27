@@ -20,6 +20,12 @@ actor ImageCache {
     /// swipe cards, not just width.
     private var maxPixelSize: CGFloat = 2796
 
+    /// Screen scale factor (1x, 2x, 3x). Used when creating UIImage from
+    /// downsampled CGImage so SwiftUI knows the correct points-to-pixels
+    /// ratio and renders at native sharpness instead of treating everything
+    /// as a blurry 1x image on Retina displays.
+    private var screenScale: CGFloat = 3.0
+
     private init() {
         memoryCache.countLimit = 30
         // Cap memory cache at ~200 MB of decoded pixel data.
@@ -47,9 +53,10 @@ actor ImageCache {
         }
     }
 
-    /// Call from @MainActor context to set the actual screen pixel size.
-    func updateMaxPixelSize(_ size: CGFloat) {
+    /// Call from @MainActor context to set the actual screen pixel size and scale.
+    func updateMaxPixelSize(_ size: CGFloat, scale: CGFloat = 3.0) {
         maxPixelSize = size
+        screenScale = scale
     }
 
     // MARK: Public API
@@ -235,7 +242,7 @@ actor ImageCache {
             return nil
         }
 
-        return UIImage(cgImage: cgImage)
+        return UIImage(cgImage: cgImage, scale: screenScale, orientation: .up)
     }
 
     /// Approximate decoded memory cost in bytes (width * height * 4 bytes per pixel).
@@ -343,6 +350,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
                 if let uiImage {
                     Image(uiImage: uiImage)
                         .resizable()
+                        .interpolation(.high)
                         .aspectRatio(contentMode: .fill)
                         .frame(width: w, height: h)
                         .clipped()

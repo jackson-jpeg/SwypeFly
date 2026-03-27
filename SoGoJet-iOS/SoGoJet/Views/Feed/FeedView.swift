@@ -127,7 +127,7 @@ struct FeedView: View {
                 }
             }
 
-            if newIdx >= feedStore.deals.count - 2 {
+            if newIdx >= feedStore.deals.count - 5 {
                 Task {
                     await feedStore.fetchMore(origin: settingsStore.departureCode)
                 }
@@ -320,8 +320,8 @@ struct FeedView: View {
             prefetchImages(around: swipeModeIndex)
         }
 
-        // Fetch more when approaching end
-        if swipeModeIndex >= feedStore.deals.count - 3 {
+        // Fetch more when approaching end (prefetch early so next batch is ready)
+        if swipeModeIndex >= feedStore.deals.count - 5 {
             Task {
                 await feedStore.fetchMore(origin: settingsStore.departureCode)
             }
@@ -898,15 +898,31 @@ private struct ShareSheet: UIViewControllerRepresentable {
 
 // MARK: - Feed Loading Animation
 
-/// Full-screen departure board loading experience while Duffel searches for live fares.
+/// Full-screen departure board loading with a flying plane that swooshes across the
+/// screen in randomized curved arcs, leaving a gold dashed trail behind it.
 private struct FeedLoadingView: View {
     let departureCode: String
 
+    // Split-flap / status state
     @State private var currentDestIndex = 0
     @State private var animateFlap = false
-    @State private var planeX: CGFloat = -60
     @State private var showSubtext = false
     @State private var statusPhase = 0
+
+    // Flying plane state
+    @State private var planePos: CGPoint = .zero
+    @State private var planeAngle: Double = 0
+    @State private var trail: [CGPoint] = []
+    @State private var containerSize: CGSize = .zero
+
+    // Flight path parameters (regenerated each arc)
+    @State private var flightStart: CGPoint = .zero
+    @State private var flightEnd: CGPoint = .zero
+    @State private var controlA: CGPoint = .zero
+    @State private var controlB: CGPoint = .zero
+    @State private var flightT: CGFloat = 0
+
+    private let planeTimer = Timer.publish(every: 0.025, on: .main, in: .common).autoconnect()
 
     private let destinations = [
         ("BCN", "Barcelona"), ("NRT", "Tokyo"), ("CDG", "Paris"),
@@ -923,141 +939,252 @@ private struct FeedLoadingView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            // Departure board header
-            VStack(spacing: Spacing.xs) {
-                Text("DEPARTURES")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.sgYellow.opacity(0.6))
-                    .tracking(4)
-
-                Rectangle()
-                    .fill(Color.sgYellow.opacity(0.2))
-                    .frame(width: 120, height: 1)
-            }
-
-            Spacer().frame(height: Spacing.lg)
-
-            // Origin code — big and bold
-            SplitFlapRow(
-                text: departureCode,
-                maxLength: 3,
-                size: .lg,
-                color: Color.sgYellow,
-                alignment: .center,
-                animate: animateFlap,
-                staggerMs: 50
-            )
-
-            Spacer().frame(height: Spacing.md)
-
-            // Animated plane flying to cycling destinations
+        GeometryReader { geo in
             ZStack {
-                // Flight path line
-                Rectangle()
-                    .fill(Color.sgBorder)
-                    .frame(height: 1)
-                    .padding(.horizontal, Spacing.xl)
-
-                // Plane
-                Image(systemName: "airplane")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.sgYellow)
-                    .offset(x: planeX)
-
-                // Origin dot
-                HStack {
-                    Circle().fill(Color.sgYellow).frame(width: 6, height: 6)
-                    Spacer()
-                    Circle().fill(Color.sgWhite.opacity(0.4)).frame(width: 6, height: 6)
-                }
-                .padding(.horizontal, Spacing.xl)
-            }
-            .frame(height: 30)
-
-            Spacer().frame(height: Spacing.md)
-
-            // Cycling destination
-            VStack(spacing: 4) {
-                SplitFlapRow(
-                    text: destinations[currentDestIndex].0,
-                    maxLength: 3,
-                    size: .md,
-                    color: Color.sgWhite,
-                    alignment: .center,
-                    animate: animateFlap,
-                    staggerMs: 35,
-                    animationID: currentDestIndex
-                )
-
-                if showSubtext {
-                    Text(destinations[currentDestIndex].1)
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Color.sgMuted)
-                        .transition(.opacity)
-                }
-            }
-
-            Spacer().frame(height: Spacing.xl)
-
-            // Status line with progress
-            VStack(spacing: Spacing.sm) {
-                // Scan line
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.sgYellow.opacity(0), Color.sgYellow.opacity(0.4), Color.sgYellow.opacity(0)],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                // Trail canvas — drawn behind everything
+                Canvas { context, size in
+                    guard trail.count > 1 else { return }
+                    let total = trail.count
+                    // Draw fading trail segments so older parts are dimmer
+                    for i in 1..<total {
+                        let opacity = Double(i) / Double(total) * 0.5
+                        var seg = Path()
+                        seg.move(to: trail[i - 1])
+                        seg.addLine(to: trail[i])
+                        context.stroke(
+                            seg,
+                            with: .color(Color.sgYellow.opacity(opacity)),
+                            style: StrokeStyle(lineWidth: 1.8, dash: [5, 4])
                         )
-                    )
-                    .frame(height: 1)
-                    .padding(.horizontal, Spacing.xl)
-
-                Text(statusLines[min(statusPhase, statusLines.count - 1)].uppercased())
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.sgYellow.opacity(0.7))
-                    .tracking(1.5)
-                    .contentTransition(.numericText())
-                    .animation(.easeInOut(duration: 0.3), value: statusPhase)
-
-                // Progress dots
-                HStack(spacing: 6) {
-                    ForEach(0..<5, id: \.self) { i in
-                        Circle()
-                            .fill(i <= statusPhase ? Color.sgYellow : Color.sgBorder)
-                            .frame(width: 6, height: 6)
-                            .animation(.easeInOut(duration: 0.3).delay(Double(i) * 0.1), value: statusPhase)
                     }
                 }
-            }
 
-            Spacer()
+                // Plane icon — follows the bezier path and rotates to face the flight direction
+                Image(systemName: "airplane")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color.sgYellow)
+                    .shadow(color: Color.sgYellow.opacity(0.5), radius: 6)
+                    .rotationEffect(.degrees(planeAngle))
+                    .position(planePos)
+
+                // Center content overlay (departure board + status)
+                VStack(spacing: 0) {
+                    Spacer()
+
+                    // Departure board header
+                    VStack(spacing: Spacing.xs) {
+                        Text("DEPARTURES")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.sgYellow.opacity(0.6))
+                            .tracking(4)
+
+                        Rectangle()
+                            .fill(Color.sgYellow.opacity(0.2))
+                            .frame(width: 120, height: 1)
+                    }
+
+                    Spacer().frame(height: Spacing.lg)
+
+                    // Origin code — big and bold
+                    SplitFlapRow(
+                        text: departureCode,
+                        maxLength: 3,
+                        size: .lg,
+                        color: Color.sgYellow,
+                        alignment: .center,
+                        animate: animateFlap,
+                        staggerMs: 50
+                    )
+
+                    Spacer().frame(height: Spacing.lg)
+
+                    // Arrow between origin and destination
+                    Image(systemName: "arrow.down")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.sgYellow.opacity(0.4))
+
+                    Spacer().frame(height: Spacing.lg)
+
+                    // Cycling destination
+                    VStack(spacing: 4) {
+                        SplitFlapRow(
+                            text: destinations[currentDestIndex].0,
+                            maxLength: 3,
+                            size: .md,
+                            color: Color.sgWhite,
+                            alignment: .center,
+                            animate: animateFlap,
+                            staggerMs: 35,
+                            animationID: currentDestIndex
+                        )
+
+                        if showSubtext {
+                            Text(destinations[currentDestIndex].1)
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Color.sgMuted)
+                                .transition(.opacity)
+                        }
+                    }
+
+                    Spacer().frame(height: Spacing.xl)
+
+                    // Status line with progress
+                    VStack(spacing: Spacing.sm) {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.sgYellow.opacity(0), Color.sgYellow.opacity(0.4), Color.sgYellow.opacity(0)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(height: 1)
+                            .padding(.horizontal, Spacing.xl)
+
+                        Text(statusLines[min(statusPhase, statusLines.count - 1)].uppercased())
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.sgYellow.opacity(0.7))
+                            .tracking(1.5)
+                            .contentTransition(.numericText())
+                            .animation(.easeInOut(duration: 0.3), value: statusPhase)
+
+                        // Progress dots
+                        HStack(spacing: 6) {
+                            ForEach(0..<5, id: \.self) { i in
+                                Circle()
+                                    .fill(i <= statusPhase ? Color.sgYellow : Color.sgBorder)
+                                    .frame(width: 6, height: 6)
+                                    .animation(.easeInOut(duration: 0.3).delay(Double(i) * 0.1), value: statusPhase)
+                            }
+                        }
+                    }
+
+                    Spacer()
+                }
+            }
+            .onAppear {
+                containerSize = geo.size
+                initializeFlight(in: geo.size)
+                startAnimations()
+            }
+            .onChange(of: geo.size) { _, newSize in
+                containerSize = newSize
+            }
+            .onReceive(planeTimer) { _ in
+                advancePlane()
+            }
         }
-        .onAppear { startAnimations() }
     }
 
+    // MARK: - Plane Flight Logic
+
+    /// Pick a random start edge, end edge, and two control points for a swooping cubic bezier arc.
+    private func initializeFlight(in size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+
+        let margin: CGFloat = 40
+        let w = size.width
+        let h = size.height
+
+        // Random edge: 0 = left, 1 = top, 2 = right, 3 = bottom
+        let startEdge = Int.random(in: 0...3)
+        var endEdge = Int.random(in: 0...3)
+        if endEdge == startEdge { endEdge = (endEdge + 2) % 4 }
+
+        flightStart = edgePoint(edge: startEdge, w: w, h: h, margin: margin)
+        flightEnd = edgePoint(edge: endEdge, w: w, h: h, margin: margin)
+
+        // Control points biased toward the center for nice wide arcs
+        controlA = CGPoint(
+            x: CGFloat.random(in: w * 0.15...w * 0.85),
+            y: CGFloat.random(in: h * 0.15...h * 0.85)
+        )
+        controlB = CGPoint(
+            x: CGFloat.random(in: w * 0.15...w * 0.85),
+            y: CGFloat.random(in: h * 0.15...h * 0.85)
+        )
+
+        flightT = 0
+        planePos = flightStart
+
+        // Keep a tail of the old trail for continuity, then it fades naturally
+        if trail.count > 30 {
+            trail = Array(trail.suffix(30))
+        }
+    }
+
+    private func edgePoint(edge: Int, w: CGFloat, h: CGFloat, margin: CGFloat) -> CGPoint {
+        switch edge {
+        case 0: return CGPoint(x: -margin, y: CGFloat.random(in: h * 0.1...h * 0.9))
+        case 1: return CGPoint(x: CGFloat.random(in: w * 0.1...w * 0.9), y: -margin)
+        case 2: return CGPoint(x: w + margin, y: CGFloat.random(in: h * 0.1...h * 0.9))
+        default: return CGPoint(x: CGFloat.random(in: w * 0.1...w * 0.9), y: h + margin)
+        }
+    }
+
+    /// Evaluate cubic bezier at parameter t.
+    private func bezierPoint(t: CGFloat) -> CGPoint {
+        let u = 1 - t
+        let tt = t * t
+        let uu = u * u
+        let uuu = uu * u
+        let ttt = tt * t
+
+        let x = uuu * flightStart.x
+            + 3 * uu * t * controlA.x
+            + 3 * u * tt * controlB.x
+            + ttt * flightEnd.x
+
+        let y = uuu * flightStart.y
+            + 3 * uu * t * controlA.y
+            + 3 * u * tt * controlB.y
+            + ttt * flightEnd.y
+
+        return CGPoint(x: x, y: y)
+    }
+
+    /// Tangent angle at parameter t so the plane icon points in the direction of travel.
+    private func bezierAngle(t: CGFloat) -> Double {
+        let dt: CGFloat = 0.001
+        let p1 = bezierPoint(t: max(0, t - dt))
+        let p2 = bezierPoint(t: min(1, t + dt))
+        let dx = p2.x - p1.x
+        let dy = p2.y - p1.y
+        return atan2(dy, dx) * 180 / .pi
+    }
+
+    /// Called every 25 ms to move the plane along its current arc and record the trail.
+    private func advancePlane() {
+        guard containerSize.width > 0 else { return }
+
+        let speed: CGFloat = 0.004 // roughly 4 seconds per arc
+        flightT += speed
+
+        if flightT >= 1.0 {
+            initializeFlight(in: containerSize)
+            return
+        }
+
+        let newPos = bezierPoint(t: flightT)
+        planePos = newPos
+        planeAngle = bezierAngle(t: flightT)
+
+        trail.append(newPos)
+        if trail.count > 200 {
+            trail.removeFirst(trail.count - 200)
+        }
+    }
+
+    // MARK: - Split-Flap & Status Animations
+
     private func startAnimations() {
-        // Initial flap
         withAnimation { animateFlap = true }
 
-        // Show subtext
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             withAnimation(.easeOut(duration: 0.3)) { showSubtext = true }
         }
 
-        // Plane animation
-        Task { @MainActor in
-            while !Task.isCancelled {
-                planeX = -60
-                withAnimation(.easeInOut(duration: 2.0)) { planeX = 60 }
-                try? await Task.sleep(nanoseconds: 2_200_000_000)
-            }
-        }
-
-        // Cycle destinations + status
+        // Cycle destinations + advance status phase
         Task { @MainActor in
             var destIdx = 0
             var statusIdx = 0

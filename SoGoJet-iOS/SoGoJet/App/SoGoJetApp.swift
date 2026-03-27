@@ -185,12 +185,14 @@ struct SoGoJetApp: App {
                     // Sync departure airport to shared App Group for the widget
                     settingsStore.syncToWidget()
 
-                    // Set actual screen pixel size for image downsampling
+                    // Set actual screen pixel size and scale for image downsampling.
+                    // The scale is used when creating UIImage from CGImage so SwiftUI
+                    // renders at native Retina sharpness instead of blurry 1x.
                     let scenes = UIApplication.shared.connectedScenes
                     if let windowScene = scenes.compactMap({ $0 as? UIWindowScene }).first {
                         let screen = windowScene.screen
                         let pixelSize = max(screen.bounds.width, screen.bounds.height) * screen.scale
-                        await ImageCache.shared.updateMaxPixelSize(pixelSize)
+                        await ImageCache.shared.updateMaxPixelSize(pixelSize, scale: screen.scale)
                     }
 
                     // Trim disk image cache so we aren't always at capacity
