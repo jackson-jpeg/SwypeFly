@@ -77,6 +77,7 @@ widget_files = [
   'WidgetViews.swift',
   'WidgetAPIClient.swift',
   'SharedDefaults.swift',
+  'FlightSearchLiveActivity.swift',
 ]
 
 widget_files.each do |filename|
@@ -86,6 +87,20 @@ widget_files.each do |filename|
     widget_target.source_build_phase.add_file_reference(file_ref)
   else
     puts "⚠️  Missing: #{path}"
+  end
+end
+
+# Add shared FlightSearchAttributes model (used by the Live Activity)
+shared_model = 'SoGoJet/Models/FlightSearchActivity.swift'
+if File.exist?(shared_model)
+  shared_ref = project.main_group.find_file_by_path(shared_model)
+  if shared_ref
+    widget_target.source_build_phase.add_file_reference(shared_ref)
+    puts "✅ Added shared FlightSearchActivity.swift to widget target"
+  else
+    shared_ref = project.main_group.new_file(shared_model)
+    widget_target.source_build_phase.add_file_reference(shared_ref)
+    puts "✅ Added shared FlightSearchActivity.swift to widget target (new ref)"
   end
 end
 

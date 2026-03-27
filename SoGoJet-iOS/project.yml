@@ -27,6 +27,7 @@ schemes:
     build:
       targets:
         SoGoJet: all
+        SoGoJetWidgetExtension: all
     run:
       config: Debug
 targets:
@@ -40,6 +41,7 @@ targets:
     dependencies:
       - package: stripe-ios
         product: StripePaymentSheet
+      - target: SoGoJetWidgetExtension
     entitlements:
       path: SoGoJet/SoGoJet.entitlements
     settings:
@@ -53,3 +55,30 @@ targets:
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.travel"
         CODE_SIGN_ENTITLEMENTS: SoGoJet/SoGoJet.entitlements
+
+  SoGoJetWidgetExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: SoGoJetWidget
+        excludes:
+          - "**/.DS_Store"
+      - path: SoGoJet/Models/FlightSearchActivity.swift
+    entitlements:
+      path: SoGoJetWidget/SoGoJetWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.SoGoJet.Widget
+        INFOPLIST_FILE: SoGoJetWidget/Info.plist
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: false
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_ENTITLEMENTS: SoGoJetWidget/SoGoJetWidget.entitlements
+        DEAD_CODE_STRIPPING: true
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/Frameworks"
+          - "@executable_path/../../Frameworks"
