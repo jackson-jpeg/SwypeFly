@@ -6,6 +6,7 @@ struct ReviewView: View {
     @Environment(AuthStore.self) private var auth
 
     @State private var showSignInRequired = false
+    @State private var showBookingSoonAlert = false
 
     private var offer: TripOption? {
         store.selectedOffer
@@ -23,6 +24,11 @@ struct ReviewView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("You need to sign in before completing a purchase. Go back to the main screen and sign in first.")
+        }
+        .alert("Booking Coming Soon", isPresented: $showBookingSoonAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("In-app booking is coming soon! For now, you can use the deal link to book on the airline's website at this price.")
         }
     }
 
@@ -414,17 +420,32 @@ struct ReviewView: View {
                     .background(Color.sgOrange, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
+            } else if store.step == .paying {
+                HStack(spacing: Spacing.sm) {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(Color.sgYellow)
+                    Text("Processing...")
+                        .font(SGFont.bodyBold(size: 16))
+                    Spacer()
+                }
+                .foregroundStyle(Color.sgBg)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.md)
+                .background(Color.sgYellow.opacity(0.5), in: RoundedRectangle(cornerRadius: Radius.md))
             } else {
+                // TestFlight: payment not yet live — show booking interest CTA
                 Button {
-                    authenticateAndPay()
+                    showBookingSoonAlert = true
                 } label: {
                     HStack(spacing: Spacing.sm) {
-                        Image(systemName: "faceid")
+                        Image(systemName: "bell.badge")
                             .font(.system(size: 14, weight: .semibold))
-                        Text("Pay \(totalLabel)")
+                        Text("Reserve \(totalLabel)")
                             .font(SGFont.bodyBold(size: 16))
                         Spacer()
-                        Text("Secure")
+                        Text("Coming Soon")
                             .font(SGFont.bodyBold(size: 11))
                     }
                     .foregroundStyle(Color.sgBg)
