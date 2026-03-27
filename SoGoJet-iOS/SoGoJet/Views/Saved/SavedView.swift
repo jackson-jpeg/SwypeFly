@@ -15,6 +15,7 @@ struct SavedView: View {
     @State private var compareB: Deal?
     @State private var showExportSheet = false
     @State private var exportPDFData: Data?
+    @State private var compareBannerPulse = false
 
     private enum SortMode: String, CaseIterable {
         case recent = "Latest"
@@ -37,6 +38,11 @@ struct SavedView: View {
                     emptyState
                 } else {
                     summaryLine
+
+                    if comparableDealsCount >= 2 {
+                        compareBanner
+                    }
+
                     sortBar
                     cardGrid
                 }
@@ -154,6 +160,77 @@ struct SavedView: View {
             .padding(.horizontal, Spacing.xs)
     }
 
+    // MARK: - Comparable Deals
+
+    /// Number of saved deals available for comparison.
+    private var comparableDealsCount: Int {
+        savedStore.savedDeals.count
+    }
+
+    // MARK: - Compare Banner
+
+    private var compareBanner: some View {
+        Button {
+            HapticEngine.selection()
+            compareA = nil
+            compareB = nil
+            showComparePicker = true
+        } label: {
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.sgBg)
+                    .frame(width: 28, height: 28)
+                    .background(Color.sgYellow)
+                    .clipShape(Circle())
+                    .scaleEffect(compareBannerPulse ? 1.12 : 1.0)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Compare Destinations")
+                        .font(SGFont.bodyBold(size: 14))
+                        .foregroundStyle(Color.sgWhite)
+                    Text("See \(savedStore.count) routes side by side")
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgMuted)
+                }
+
+                Spacer()
+
+                Text("\(savedStore.count)")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgBg)
+                    .frame(width: 24, height: 24)
+                    .background(Color.sgYellow)
+                    .clipShape(Circle())
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.sgMuted)
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm + 2)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md)
+                    .stroke(Color.sgYellow.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .onAppear {
+            // Subtle pulse to draw attention, then stop
+            withAnimation(
+                .easeInOut(duration: 0.8)
+                .repeatCount(3, autoreverses: true)
+            ) {
+                compareBannerPulse = true
+            }
+            // Reset after animation completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) {
+                compareBannerPulse = false
+            }
+        }
+    }
+
     // MARK: - Sort Bar
 
     private var sortBar: some View {
@@ -166,7 +243,6 @@ struct SavedView: View {
                             isSelected: sortMode == mode,
                             tone: .amber
                         ) {
-                            HapticEngine.selection()
                             sortMode = mode
                         }
                     }

@@ -1248,55 +1248,52 @@ struct DestinationDetailView: View {
         var items: [PackingItem] = []
         let vibes = Set(deal.safeVibeTags.map { $0.lowercased() })
         let temp: Double = deal.averageTemp ?? 22
-        let duration = deal.tripDays
-        let flightHrs = flightHours() ?? 0
+        let isInternational = deal.country.lowercased() != "usa" && deal.country.lowercased() != "united states"
 
-        // Always pack
+        // Universal essentials (always included)
         items.append(PackingItem(icon: "doc.text", text: "Passport"))
-        items.append(PackingItem(icon: "creditcard", text: "Travel card"))
+        items.append(PackingItem(icon: "battery.100.bolt", text: "Phone charger"))
+        if isInternational {
+            items.append(PackingItem(icon: "bolt.fill", text: "Travel adapter"))
+        }
 
-        // Weather-based
+        // Weather-based (one set only)
         if temp >= 28 {
             items.append(PackingItem(icon: "sun.max", text: "Sunscreen"))
             items.append(PackingItem(icon: "eyeglasses", text: "Sunglasses"))
-            items.append(PackingItem(icon: "drop", text: "Water bottle"))
         } else if temp <= 12 {
-            items.append(PackingItem(icon: "cloud.snow", text: "Warm layers"))
+            items.append(PackingItem(icon: "cloud.snow", text: "Warm jacket"))
             items.append(PackingItem(icon: "hand.raised", text: "Gloves"))
         } else {
             items.append(PackingItem(icon: "tshirt", text: "Light layers"))
         }
 
-        // Vibe-based
+        // Vibe-based (destination-specific)
         if vibes.contains("beach") {
-            items.append(PackingItem(icon: "figure.pool.swim", text: "Swimwear"))
-            items.append(PackingItem(icon: "shoeprints.fill", text: "Flip flops"))
+            items.append(PackingItem(icon: "figure.pool.swim", text: "Swimsuit"))
+            items.append(PackingItem(icon: "figure.walk", text: "Flip flops"))
         }
         if vibes.contains("adventure") || vibes.contains("nature") {
-            items.append(PackingItem(icon: "shoe", text: "Hiking shoes"))
-            items.append(PackingItem(icon: "binoculars", text: "Binoculars"))
+            items.append(PackingItem(icon: "shoe.fill", text: "Hiking shoes"))
+            items.append(PackingItem(icon: "drop.fill", text: "Water bottle"))
+        }
+        if vibes.contains("tropical") {
+            items.append(PackingItem(icon: "ant.fill", text: "Insect repellent"))
+            items.append(PackingItem(icon: "cloud.rain", text: "Light rain jacket"))
+        }
+        if vibes.contains("culture") || vibes.contains("historic") {
+            items.append(PackingItem(icon: "shoe.fill", text: "Walking shoes"))
         }
         if vibes.contains("nightlife") || vibes.contains("city") {
             items.append(PackingItem(icon: "tshirt.fill", text: "Smart outfit"))
         }
 
-        // Long flight
-        if flightHrs >= 6 {
+        // Long flight comfort
+        if flightHours() ?? 0 >= 6 {
             items.append(PackingItem(icon: "headphones", text: "Headphones"))
-            items.append(PackingItem(icon: "book", text: "Entertainment"))
         }
 
-        // Long trip
-        if duration > 5 {
-            items.append(PackingItem(icon: "bag", text: "Laundry bag"))
-        }
-
-        // International
-        if deal.country.lowercased() != "usa" && deal.country.lowercased() != "united states" {
-            items.append(PackingItem(icon: "powerplug", text: "Power adapter"))
-        }
-
-        return Array(items.prefix(10))
+        return Array(items.prefix(8))
     }
 
     // MARK: - Itinerary

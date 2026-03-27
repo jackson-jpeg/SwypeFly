@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sanger": {
+      "command": "node",
+      "args": ["/root/Sanger/mcp-server/server.mjs"],
+      "env": {
+        "SANGER_API_TOKEN": "0b235b4a67b0ca23651f4d9c4ed4846bff7df5554dc94f64cc46374c4c136a8f",
+        "SANGER_BASE_URL": "https://www.sang3r.com"
+      }
+    }
+  }
+}

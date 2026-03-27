@@ -311,7 +311,6 @@ final class BookingStore {
     /// Select a seat.
     func selectSeat(_ seatId: String) {
         selectedSeatId = seatId
-        HapticEngine.selection()
     }
 
     /// Move to the review step.

@@ -72,7 +72,14 @@ struct TripView: View {
             return (departureDate, fallbackReturn)
         }
 
-        let departure = calendar.date(byAdding: .day, value: 42, to: Date()) ?? Date()
+        // Find the next Friday that's at least 21 days away
+        let threeWeeksOut = calendar.date(byAdding: .day, value: 21, to: Date())!
+        let nextFriday = calendar.nextDate(
+            after: threeWeeksOut,
+            matching: DateComponents(weekday: 6),
+            matchingPolicy: .nextTimePreservingSmallerComponents
+        ) ?? threeWeeksOut
+        let departure = nextFriday
         let fallbackReturn = calendar.date(
             byAdding: .day,
             value: max(deal.tripDays, 7),
@@ -286,7 +293,9 @@ struct TripView: View {
                 }
             }
 
-            quickSearchControls
+            if showAdvancedSearch {
+                quickSearchControls
+            }
 
             if showAdvancedSearch {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -597,7 +606,6 @@ struct TripView: View {
             // No activeDateChip change for flexible — it uses its own toggle
         }
 
-        HapticEngine.selection()
         performSearch()
     }
 
@@ -803,7 +811,6 @@ struct TripView: View {
         let isSelected = selectedCabinClass == cabinClass
 
         return Button {
-            HapticEngine.selection()
             selectedCabinClass = cabinClass
         } label: {
             Text(cabinClass.displayName)
@@ -2063,7 +2070,6 @@ struct TripView: View {
 
     private func selectOrigin(_ code: String) {
         guard !code.isEmpty else { return }
-        HapticEngine.selection()
         selectedOriginCode = code
     }
 
@@ -2076,7 +2082,6 @@ struct TripView: View {
 
         departureDate = normalizedDeparture
         returnDate = calendar.date(byAdding: .day, value: tripLengthDays, to: normalizedDeparture) ?? normalizedDeparture
-        HapticEngine.selection()
         performSearch()
     }
 
@@ -2084,7 +2089,6 @@ struct TripView: View {
         let calendar = Calendar.current
         let normalizedDeparture = calendar.startOfDay(for: departureDate)
         returnDate = calendar.date(byAdding: .day, value: max(days, 1), to: normalizedDeparture) ?? normalizedDeparture
-        HapticEngine.selection()
         performSearch()
     }
 
@@ -2099,7 +2103,6 @@ struct TripView: View {
 
         departureDate = friday
         returnDate = calendar.date(byAdding: .day, value: tripLengthDays, to: friday) ?? friday
-        HapticEngine.selection()
         performSearch()
     }
 
@@ -2112,7 +2115,6 @@ struct TripView: View {
             calendar.date(byAdding: .day, value: 1, to: departureDate) ?? departureDate,
             calendar.startOfDay(for: window.returnDate)
         )
-        HapticEngine.selection()
         performSearch()
     }
 
@@ -2125,7 +2127,6 @@ struct TripView: View {
 
         departureDate = normalizedDeparture
         returnDate = calendar.date(byAdding: .day, value: tripLengthDays, to: normalizedDeparture) ?? normalizedDeparture
-        HapticEngine.selection()
         performSearch()
     }
 
@@ -2133,7 +2134,6 @@ struct TripView: View {
         Task { @MainActor in
             guard switchingSimilarDestinationID == nil else { return }
 
-            HapticEngine.selection()
             switchingSimilarDestinationID = suggestion.id
 
             let preservedOrigin = effectiveOriginCode

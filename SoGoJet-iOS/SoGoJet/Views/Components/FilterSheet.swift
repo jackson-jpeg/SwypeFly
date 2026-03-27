@@ -95,7 +95,6 @@ struct FilterSheet: View {
             FlowLayout(spacing: Spacing.sm) {
                 ForEach(items, id: \.self) { item in
                     filterChip(item, displayText: item.capitalized, isSelected: selection.wrappedValue.contains(item)) {
-                        HapticEngine.selection()
                         if selection.wrappedValue.contains(item) {
                             selection.wrappedValue.remove(item)
                         } else {
