@@ -197,13 +197,13 @@ struct ReviewView: View {
             tone: .ivory
         ) {
             if let outbound = offer?.outboundSlice {
-                flightSliceRow(prefix: "OUT", slice: outbound, date: store.searchDepartureDate)
+                sliceManifestSection(prefix: "OUT", slice: outbound, date: store.searchDepartureDate)
             }
             if offer?.outboundSlice != nil, offer?.returnSlice != nil {
                 manifestDivider
             }
             if let inbound = offer?.returnSlice {
-                flightSliceRow(prefix: "RTN", slice: inbound, date: store.searchReturnDate)
+                sliceManifestSection(prefix: "RTN", slice: inbound, date: store.searchReturnDate)
             }
             if let offer {
                 manifestDivider
@@ -215,6 +215,177 @@ struct ReviewView: View {
                     tone: .amber
                 )
             }
+
+            // Baggage info
+            if let baggage = offer?.baggageIncluded {
+                manifestDivider
+                baggageInfoRow(baggage)
+            }
+
+            // Meal info
+            if let meal = offer?.mealInfo {
+                manifestDivider
+                mealInfoRow(meal)
+            }
+
+            // Booking conditions
+            if let conditions = offer?.conditions {
+                manifestDivider
+                conditionsInfoRow(conditions)
+            }
+        }
+    }
+
+    /// Show per-segment breakdown for a slice, or fall back to the simple row.
+    @ViewBuilder
+    private func sliceManifestSection(prefix: String, slice: FlightSlice, date: String?) -> some View {
+        if let segments = slice.segments, segments.count > 1 {
+            // Multi-segment: show each segment with layover info
+            ForEach(Array(segments.enumerated()), id: \.element.id) { index, segment in
+                if index > 0 {
+                    // Layover indicator between segments
+                    let prevSegment = segments[index - 1]
+                    let layoverText = computeLayover(
+                        arriving: prevSegment.arrivalTime,
+                        departing: segment.departureTime,
+                        cityName: prevSegment.destinationCityName.isEmpty ? prevSegment.destination : prevSegment.destinationCityName
+                    )
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.sgOrange)
+                        Text(layoverText)
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgOrange)
+                        Spacer()
+                    }
+                    .padding(.vertical, Spacing.xs)
+                }
+
+                VintageTerminalManifestRow(
+                    prefix: index == 0 ? prefix : "LEG",
+                    title: "\(segment.origin) to \(segment.destination)",
+                    value: "\(segment.departureTime.shortDateTime) \u{2192} \(segment.arrivalTime.shortTime)",
+                    subtitle: [date?.shortDate, Optional(segment.aircraft), Optional(segment.airline)].compactMap { (str: String?) -> String? in
+                        guard let s = str, !s.isEmpty else { return nil }
+                        return s
+                    }.joined(separator: "  |  "),
+                    tone: .amber
+                )
+            }
+        } else {
+            // Single segment or no segment data — use existing simple row
+            flightSliceRow(prefix: prefix, slice: slice, date: date)
+
+            // Show aircraft from segment if available
+            if let segments = slice.segments, let seg = segments.first, !seg.aircraft.isEmpty {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "airplane")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color.sgMuted)
+                    Text(seg.aircraft)
+                        .font(SGFont.body(size: 11))
+                        .foregroundStyle(Color.sgMuted)
+                    Spacer()
+                }
+                .padding(.vertical, Spacing.xs)
+            }
+        }
+    }
+
+    private func baggageInfoRow(_ baggage: BaggageInfo) -> some View {
+        let description: String = {
+            if let checked = baggage.checkedPieces, checked > 0 {
+                let weight = baggage.checkedWeightKg.map { "\(Int($0))kg" } ?? ""
+                return "Includes \(checked) \u{00D7} \(weight) checked bag\(checked > 1 ? "s" : "")"
+            }
+            return "No checked baggage included"
+        }()
+        let hasChecked = (baggage.checkedPieces ?? 0) > 0
+
+        return VintageTerminalManifestRow(
+            prefix: "BAG",
+            title: hasChecked ? "Checked Baggage" : "Carry-on Only",
+            value: description,
+            subtitle: baggage.cabinPieces.map { "\($0) cabin bag\($0 > 1 ? "s" : "") included" },
+            tone: hasChecked ? .moss : .ivory
+        )
+    }
+
+    private func mealInfoRow(_ meal: MealInfo) -> some View {
+        let displayName: String = {
+            if let name = meal.name, !name.isEmpty { return name }
+            switch meal.rank?.lowercased() {
+            case "meal": return "Meal included"
+            case "snack", "refreshment": return "Refreshments"
+            default: return "No meal service"
+            }
+        }()
+        let rankLower = meal.rank?.lowercased()
+        let hasMeal = rankLower != nil && rankLower != "none" && rankLower != ""
+
+        return VintageTerminalManifestRow(
+            prefix: "MEAL",
+            title: "Meal Service",
+            value: displayName,
+            tone: hasMeal ? .moss : .ivory
+        )
+    }
+
+    private func conditionsInfoRow(_ conditions: BookingConditions) -> some View {
+        let refundText: String = {
+            if conditions.refundable == true {
+                if let penalty = conditions.refundPenalty, !penalty.isEmpty {
+                    return "Refundable (\(penalty) fee)"
+                }
+                return "Fully refundable"
+            }
+            return "Non-refundable"
+        }()
+        let changeText: String? = {
+            guard let changeable = conditions.changeable else { return nil }
+            if changeable {
+                if let penalty = conditions.changePenalty, !penalty.isEmpty {
+                    return "Changeable (\(penalty) fee)"
+                }
+                return "Free changes"
+            }
+            return "No changes allowed"
+        }()
+
+        return VintageTerminalManifestRow(
+            prefix: "COND",
+            title: "Booking Conditions",
+            value: refundText,
+            subtitle: changeText,
+            tone: conditions.refundable == true ? .moss : .ember
+        )
+    }
+
+    /// Compute layover duration between two ISO time strings.
+    private func computeLayover(arriving: String, departing: String, cityName: String) -> String {
+        let isoFmt = ISO8601DateFormatter()
+        let noTzFmt = DateFormatter()
+        noTzFmt.locale = Locale(identifier: "en_US_POSIX")
+        noTzFmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+
+        let arrDate = isoFmt.date(from: arriving) ?? noTzFmt.date(from: arriving)
+        let depDate = isoFmt.date(from: departing) ?? noTzFmt.date(from: departing)
+
+        guard let arr = arrDate, let dep = depDate else {
+            return "Layover in \(cityName)"
+        }
+
+        let minutes = Int(dep.timeIntervalSince(arr) / 60)
+        let hours = minutes / 60
+        let mins = minutes % 60
+
+        if hours > 0 && mins > 0 {
+            return "\(hours)h \(mins)m layover in \(cityName)"
+        } else if hours > 0 {
+            return "\(hours)h layover in \(cityName)"
+        } else {
+            return "\(mins)m layover in \(cityName)"
         }
     }
 

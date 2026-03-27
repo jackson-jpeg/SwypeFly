@@ -1599,44 +1599,154 @@ struct TripView: View {
                     .foregroundStyle(Color.sgWhiteDim)
             }
 
-            HStack(alignment: .center, spacing: Spacing.md) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(slice.origin)
-                        .font(SGFont.display(size: 28))
-                        .foregroundStyle(Color.sgWhite)
-                    Text(slice.departureTime.shortDate)
-                        .font(SGFont.body(size: 11))
-                        .foregroundStyle(Color.sgMuted)
-                    Text(slice.departureTime.boardTime)
-                        .font(SGFont.bodyBold(size: 13))
-                        .foregroundStyle(accent)
+            // Show per-segment breakdown for connecting flights
+            if let segments = slice.segments, segments.count > 1 {
+                segmentBreakdownView(segments: segments, totalDuration: slice.duration, accent: accent)
+            } else {
+                // Nonstop or no segment data — show simple origin → destination
+                HStack(alignment: .center, spacing: Spacing.md) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(slice.origin)
+                            .font(SGFont.display(size: 28))
+                            .foregroundStyle(Color.sgWhite)
+                        Text(slice.departureTime.shortDate)
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgMuted)
+                        Text(slice.departureTime.boardTime)
+                            .font(SGFont.bodyBold(size: 13))
+                            .foregroundStyle(accent)
+                    }
+
+                    VStack(spacing: 2) {
+                        Image(systemName: "airplane")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(accent)
+                        Text(slice.duration)
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(slice.destination)
+                            .font(SGFont.display(size: 28))
+                            .foregroundStyle(Color.sgWhite)
+                        Text(slice.arrivalTime.shortDate)
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgMuted)
+                        Text(slice.arrivalTime.boardTime)
+                            .font(SGFont.bodyBold(size: 13))
+                            .foregroundStyle(accent)
+                    }
                 }
 
-                VStack(spacing: 2) {
-                    Image(systemName: "airplane")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(accent)
-                    Text(slice.duration)
-                        .font(SGFont.body(size: 11))
+                // Show aircraft type for single-segment flights
+                if let segments = slice.segments, let seg = segments.first, !seg.aircraft.isEmpty {
+                    Text(seg.aircraft)
+                        .font(SGFont.body(size: 10))
                         .foregroundStyle(Color.sgMuted)
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(slice.destination)
-                        .font(SGFont.display(size: 28))
-                        .foregroundStyle(Color.sgWhite)
-                    Text(slice.arrivalTime.shortDate)
-                        .font(SGFont.body(size: 11))
-                        .foregroundStyle(Color.sgMuted)
-                    Text(slice.arrivalTime.boardTime)
-                        .font(SGFont.bodyBold(size: 13))
-                        .foregroundStyle(accent)
                 }
             }
         }
         .padding(Spacing.sm)
         .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.sm))
+    }
+
+    /// Compact connection breakdown showing each segment with layover info between them.
+    private func segmentBreakdownView(segments: [FlightSegment], totalDuration: String, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(segments.enumerated()), id: \.element.id) { index, segment in
+                // Segment row: ORIGIN → DEST    duration
+                HStack(spacing: 0) {
+                    Text("\(segment.origin) \u{2192} \(segment.destination)")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.sgWhite)
+
+                    Spacer()
+
+                    Text(segment.duration)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.sgWhiteDim)
+                }
+                .padding(.vertical, 4)
+
+                // Aircraft type
+                if !segment.aircraft.isEmpty {
+                    Text(segment.aircraft)
+                        .font(SGFont.body(size: 10))
+                        .foregroundStyle(Color.sgMuted)
+                        .padding(.bottom, 2)
+                }
+
+                // Layover row between segments
+                if index < segments.count - 1 {
+                    let layoverText = layoverDescription(
+                        arriving: segment.arrivalTime,
+                        departing: segments[index + 1].departureTime,
+                        cityName: segment.destinationCityName.isEmpty ? segment.destination : segment.destinationCityName
+                    )
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Color.sgOrange)
+                        Text(layoverText)
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgOrange)
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, Spacing.sm)
+                    .background(Color.sgOrange.opacity(0.08), in: RoundedRectangle(cornerRadius: Radius.sm))
+                    .padding(.vertical, 2)
+                }
+            }
+
+            // Total summary line
+            Rectangle()
+                .fill(Color.sgBorder.opacity(0.4))
+                .frame(height: 1)
+                .padding(.vertical, 4)
+
+            HStack {
+                Text("Total: \(totalDuration)")
+                    .font(SGFont.bodyBold(size: 12))
+                    .foregroundStyle(accent)
+
+                Text("\u{00B7}")
+                    .foregroundStyle(Color.sgMuted)
+
+                Text("\(segments.count - 1) stop\(segments.count > 2 ? "s" : "")")
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
+            }
+        }
+    }
+
+    /// Compute a human-readable layover duration string.
+    private func layoverDescription(arriving: String, departing: String, cityName: String) -> String {
+        let isoFmt = ISO8601DateFormatter()
+        // Also try without timezone for Duffel-style times
+        let noTzFmt = DateFormatter()
+        noTzFmt.locale = Locale(identifier: "en_US_POSIX")
+        noTzFmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+
+        let arrDate = isoFmt.date(from: arriving) ?? noTzFmt.date(from: arriving)
+        let depDate = isoFmt.date(from: departing) ?? noTzFmt.date(from: departing)
+
+        guard let arr = arrDate, let dep = depDate else {
+            return "Layover in \(cityName)"
+        }
+
+        let minutes = Int(dep.timeIntervalSince(arr) / 60)
+        let hours = minutes / 60
+        let mins = minutes % 60
+
+        if hours > 0 && mins > 0 {
+            return "\(hours)h \(mins)m layover in \(cityName)"
+        } else if hours > 0 {
+            return "\(hours)h layover in \(cityName)"
+        } else {
+            return "\(mins)m layover in \(cityName)"
+        }
     }
 
     private func alternativesSection(_ options: [TripOption]) -> some View {
@@ -1720,7 +1830,7 @@ struct TripView: View {
                 }
                 .frame(width: 70)
 
-                // Center: Airline + stops
+                // Center: Airline + stops + connection info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(option.airline)
                         .font(SGFont.bodyBold(size: 13))
@@ -1733,13 +1843,21 @@ struct TripView: View {
                             .foregroundStyle(stopsColor)
 
                         if let out = option.outboundSlice {
-                            Text("\(out.origin) → \(out.destination)")
+                            Text("\(out.origin) \u{2192} \(out.destination)")
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundStyle(Color.sgMuted)
                         }
                     }
 
-                    if option.flightNumber != "—" {
+                    // Show connection cities from segment data
+                    if let segments = option.outboundSlice?.segments, segments.count > 1 {
+                        let connectionCities = segments.dropLast().map { seg in
+                            seg.destinationCityName.isEmpty ? seg.destination : seg.destinationCityName
+                        }
+                        Text("via \(connectionCities.joined(separator: ", "))")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.sgOrange)
+                    } else if option.flightNumber != "—" {
                         Text(option.flightNumber)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(Color.sgMuted)

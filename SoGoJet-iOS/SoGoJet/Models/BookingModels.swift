@@ -94,6 +94,80 @@ struct MonthlyFare: Codable, Hashable, Sendable {
     let transferCount: Int?
 }
 
+// MARK: - Flight Segment (Duffel rich data)
+
+struct FlightSegment: Codable, Sendable, Identifiable, Hashable {
+    var id: String { "\(origin)-\(destination)-\(departureTime)" }
+    let origin: String
+    let originCityName: String
+    let destination: String
+    let destinationCityName: String
+    let departureTime: String
+    let arrivalTime: String
+    let duration: String
+    let airline: String
+    let airlineCode: String
+    let flightNumber: String
+    let aircraft: String
+    let aircraftCode: String
+    let cabinClass: String
+
+    enum CodingKeys: String, CodingKey {
+        case origin
+        case originCityName = "origin_city_name"
+        case destination
+        case destinationCityName = "destination_city_name"
+        case departureTime = "departure_time"
+        case arrivalTime = "arrival_time"
+        case duration
+        case airline
+        case airlineCode = "airline_code"
+        case flightNumber = "flight_number"
+        case aircraft
+        case aircraftCode = "aircraft_code"
+        case cabinClass = "cabin_class"
+    }
+}
+
+// MARK: - Baggage Info
+
+struct BaggageInfo: Codable, Sendable, Hashable {
+    let cabinPieces: Int?
+    let cabinWeightKg: Double?
+    let checkedPieces: Int?
+    let checkedWeightKg: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case cabinPieces = "cabin_pieces"
+        case cabinWeightKg = "cabin_weight_kg"
+        case checkedPieces = "checked_pieces"
+        case checkedWeightKg = "checked_weight_kg"
+    }
+}
+
+// MARK: - Meal Info
+
+struct MealInfo: Codable, Sendable, Hashable {
+    let rank: String?
+    let name: String?
+}
+
+// MARK: - Booking Conditions
+
+struct BookingConditions: Codable, Sendable, Hashable {
+    let refundable: Bool?
+    let refundPenalty: String?
+    let changeable: Bool?
+    let changePenalty: String?
+
+    enum CodingKeys: String, CodingKey {
+        case refundable
+        case refundPenalty = "refund_penalty"
+        case changeable
+        case changePenalty = "change_penalty"
+    }
+}
+
 // MARK: - Trip Option
 
 struct TripOption: Codable, Identifiable, Hashable, Sendable {
@@ -107,6 +181,25 @@ struct TripOption: Codable, Identifiable, Hashable, Sendable {
     let passengers: [OfferPassenger]?
     let expiresAt: String?
     let availableServices: [AvailableService]?
+    let baggageIncluded: BaggageInfo?
+    let mealInfo: MealInfo?
+    let conditions: BookingConditions?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case totalAmount = "total_amount"
+        case totalCurrency = "total_currency"
+        case baseAmount = "base_amount"
+        case taxAmount = "tax_amount"
+        case slices
+        case cabinClass = "cabin_class"
+        case passengers
+        case expiresAt = "expires_at"
+        case availableServices = "available_services"
+        case baggageIncluded = "baggage_included"
+        case mealInfo = "meal_info"
+        case conditions
+    }
 
     var outboundSlice: FlightSlice? { slices.first }
     var returnSlice: FlightSlice? { slices.dropFirst().first }
@@ -124,7 +217,7 @@ struct TripOption: Codable, Identifiable, Hashable, Sendable {
     var price: Double { totalAmount }
     var currency: String { totalCurrency }
     var seatsRemaining: Int? { nil }
-    var baggageIncluded: Bool? {
+    var hasBaggageService: Bool? {
         availableServices?.contains(where: { $0.type == "baggage" && $0.amount == 0 }) == true
             ? true
             : nil
@@ -142,6 +235,7 @@ struct FlightSlice: Codable, Hashable, Sendable {
     let airline: String
     let flightNumber: String
     let aircraft: String
+    let segments: [FlightSegment]?
 }
 
 struct OfferPassenger: Codable, Hashable, Sendable {

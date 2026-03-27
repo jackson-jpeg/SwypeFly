@@ -50,6 +50,17 @@ function parseDuration(iso: string): string {
   return `${totalHours}h ${mins}m`;
 }
 
+// Calculate layover duration between two ISO timestamps
+function connectionDuration(arrivalIso: string, departureIso: string): string {
+  if (!arrivalIso || !departureIso) return '';
+  const diffMs = new Date(departureIso).getTime() - new Date(arrivalIso).getTime();
+  if (diffMs <= 0) return '';
+  const totalMins = Math.round(diffMs / 60000);
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  return `${h}h ${m}m`;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transformOffer(raw: any, cabinClass = 'economy') {
   const total = parseFloat(raw.total_amount) || 0;
@@ -58,9 +69,36 @@ function transformOffer(raw: any, cabinClass = 'economy') {
   const slices = (raw.slices || []).map((s: any) => {
     const firstSeg = s.segments?.[0];
     const lastSeg = s.segments?.length > 1 ? s.segments[s.segments.length - 1] : firstSeg;
+
+    // Map ALL segments (not just first/last) for connection details
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const segments = (s.segments || []).map((seg: any) => ({
+      origin: seg.origin?.iata_code || '',
+      originCityName: seg.origin?.city_name || seg.origin?.name || '',
+      destination: seg.destination?.iata_code || '',
+      destinationCityName: seg.destination?.city_name || seg.destination?.name || '',
+      departureTime: seg.departing_at || '',
+      arrivalTime: seg.arriving_at || '',
+      duration: parseDuration(seg.duration || ''),
+      airline: seg.operating_carrier?.name || seg.marketing_carrier?.name || '',
+      airlineCode: seg.operating_carrier?.iata_code || seg.marketing_carrier?.iata_code || '',
+      flightNumber: seg.operating_carrier_flight_number || seg.marketing_carrier_flight_number || '',
+      aircraft: seg.aircraft?.name || '',
+      aircraftCode: seg.aircraft?.iata_code || '',
+      cabinClass: seg.cabin_class || '',
+    }));
+
+    // Calculate connection durations between consecutive segments
+    const connections: string[] = [];
+    for (let i = 0; i < segments.length - 1; i++) {
+      connections.push(connectionDuration(segments[i].arrivalTime, segments[i + 1].departureTime));
+    }
+
     return {
       origin: s.origin?.iata_code ?? '',
+      originCityName: s.origin?.city_name || s.origin?.name || '',
       destination: s.destination?.iata_code ?? '',
+      destinationCityName: s.destination?.city_name || s.destination?.name || '',
       departureTime: firstSeg?.departing_at ?? '',
       arrivalTime: lastSeg?.arriving_at ?? '',
       duration: parseDuration(s.duration || ''),
@@ -68,6 +106,8 @@ function transformOffer(raw: any, cabinClass = 'economy') {
       airline: firstSeg?.operating_carrier?.name ?? raw.owner?.name ?? '',
       flightNumber: `${firstSeg?.operating_carrier?.iata_code ?? ''} ${firstSeg?.operating_carrier_flight_number ?? ''}`.trim(),
       aircraft: firstSeg?.aircraft?.name ?? '',
+      segments,
+      connectionDurations: connections,
     };
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,6 +119,33 @@ function transformOffer(raw: any, cabinClass = 'economy') {
     currency: svc.total_currency || 'USD',
     metadata: svc.metadata,
   }));
+
+  // Extract baggage info from first passenger
+  const firstPassenger = raw.passengers?.[0];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const baggageIncluded = (firstPassenger?.baggages || []).map((b: any) => ({
+    type: b.type || '',           // 'carry_on' or 'checked'
+    quantity: b.quantity ?? 0,
+  }));
+
+  // Extract meal info from first passenger (if available)
+  const mealInfo = firstPassenger?.meal
+    ? { type: firstPassenger.meal.type || '', description: firstPassenger.meal.description || '' }
+    : null;
+
+  // Extract booking conditions (refund/change policies)
+  const rawConditions = raw.conditions || {};
+  const conditions = {
+    refundable: rawConditions.refund_before_departure?.allowed ?? null,
+    refundPenalty: rawConditions.refund_before_departure?.penalty_amount
+      ? `${rawConditions.refund_before_departure.penalty_currency || 'USD'} ${rawConditions.refund_before_departure.penalty_amount}`
+      : null,
+    changeable: rawConditions.change_before_departure?.allowed ?? null,
+    changePenalty: rawConditions.change_before_departure?.penalty_amount
+      ? `${rawConditions.change_before_departure.penalty_currency || 'USD'} ${rawConditions.change_before_departure.penalty_amount}`
+      : null,
+  };
+
   // Apply booking markup
   const markupAmount = Math.round(total * (BOOKING_MARKUP_PERCENT / 100));
   const markedUpTotal = total + markupAmount;
@@ -94,6 +161,9 @@ function transformOffer(raw: any, cabinClass = 'economy') {
     passengers: raw.passengers || [],
     expiresAt: raw.expires_at ?? new Date(Date.now() + 7 * 86400000).toISOString(),
     availableServices: services,
+    baggageIncluded,
+    mealInfo,
+    conditions,
     // Accounting fields (not shown to user)
     _duffelBasePrice: total,
     _markupAmount: markupAmount,
@@ -137,7 +207,9 @@ function stubSearch(origin: string, destination: string, cabinClass: string, dep
       slices: [
         {
           origin,
+          originCityName: '',
           destination,
+          destinationCityName: '',
           departureTime: `${depDate}T${a.depTime}:00`,
           arrivalTime: `${depDate}T${a.arrTime}:00`,
           duration: a.dur,
@@ -145,10 +217,28 @@ function stubSearch(origin: string, destination: string, cabinClass: string, dep
           airline: a.name,
           flightNumber: `${a.code} ${a.flight}`,
           aircraft: 'Boeing 737-900',
+          segments: [{
+            origin,
+            originCityName: '',
+            destination,
+            destinationCityName: '',
+            departureTime: `${depDate}T${a.depTime}:00`,
+            arrivalTime: `${depDate}T${a.arrTime}:00`,
+            duration: a.dur,
+            airline: a.name,
+            airlineCode: a.code,
+            flightNumber: a.flight,
+            aircraft: 'Boeing 737-900',
+            aircraftCode: '',
+            cabinClass,
+          }],
+          connectionDurations: [],
         },
         {
           origin: destination,
+          originCityName: '',
           destination: origin,
+          destinationCityName: '',
           departureTime: `${retDate}T${a.depTime}:00`,
           arrivalTime: `${retDate}T${a.arrTime}:00`,
           duration: a.dur,
@@ -156,6 +246,22 @@ function stubSearch(origin: string, destination: string, cabinClass: string, dep
           airline: a.name,
           flightNumber: `${a.code} ${parseInt(a.flight) + 1}`,
           aircraft: 'Boeing 737-900',
+          segments: [{
+            origin: destination,
+            originCityName: '',
+            destination: origin,
+            destinationCityName: '',
+            departureTime: `${retDate}T${a.depTime}:00`,
+            arrivalTime: `${retDate}T${a.arrTime}:00`,
+            duration: a.dur,
+            airline: a.name,
+            airlineCode: a.code,
+            flightNumber: `${parseInt(a.flight) + 1}`,
+            aircraft: 'Boeing 737-900',
+            aircraftCode: '',
+            cabinClass,
+          }],
+          connectionDurations: [],
         },
       ],
       cabinClass,
@@ -165,6 +271,9 @@ function stubSearch(origin: string, destination: string, cabinClass: string, dep
         { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
         { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
       ],
+      baggageIncluded: [{ type: 'carry_on', quantity: 1 }],
+      mealInfo: null,
+      conditions: { refundable: false, refundPenalty: null, changeable: true, changePenalty: 'USD 75.00' },
     };
   });
 }
@@ -214,7 +323,9 @@ function stubOffer(offerId: string) {
       slices: [
         {
           origin: 'JFK',
+          originCityName: 'New York',
           destination: 'BCN',
+          destinationCityName: 'Barcelona',
           departureTime: '2026-04-15T08:15:00',
           arrivalTime: '2026-04-15T12:50:00',
           duration: '4h 35m',
@@ -222,6 +333,22 @@ function stubOffer(offerId: string) {
           airline: 'Delta Air Lines',
           flightNumber: 'DL 1842',
           aircraft: 'Boeing 737-900',
+          segments: [{
+            origin: 'JFK',
+            originCityName: 'New York',
+            destination: 'BCN',
+            destinationCityName: 'Barcelona',
+            departureTime: '2026-04-15T08:15:00',
+            arrivalTime: '2026-04-15T12:50:00',
+            duration: '4h 35m',
+            airline: 'Delta Air Lines',
+            airlineCode: 'DL',
+            flightNumber: '1842',
+            aircraft: 'Boeing 737-900',
+            aircraftCode: '',
+            cabinClass: 'economy',
+          }],
+          connectionDurations: [],
         },
       ],
       cabinClass: 'economy',
@@ -231,6 +358,9 @@ function stubOffer(offerId: string) {
         { id: 'bag-23kg', type: 'baggage', name: '1 Checked Bag (23kg)', amount: 35, currency: 'USD' },
         { id: 'bag-2x23kg', type: 'baggage', name: '2 Checked Bags (23kg each)', amount: 60, currency: 'USD' },
       ],
+      baggageIncluded: [{ type: 'carry_on', quantity: 1 }],
+      mealInfo: null,
+      conditions: { refundable: false, refundPenalty: null, changeable: true, changePenalty: 'USD 75.00' },
     },
     seatMap: {
       columns: COLUMNS,
