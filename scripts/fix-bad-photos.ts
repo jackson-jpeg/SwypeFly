@@ -94,6 +94,34 @@ async function fixDestination(destId: string, city: string, queries: string[]) {
 async function main() {
   // Destinations with bad/wrong/missing photos
   const fixes: [string, string, string[]][] = [
+    // Priority — these failed last run, put them first
+    ['59', 'Savannah GA', [
+      'Savannah Georgia Spanish moss',
+      'Savannah Georgia Forsyth Park',
+      'Savannah historic squares',
+    ]],
+    ['v2-81', 'Hamburg', [
+      'Hamburg Germany Speicherstadt warehouse district',
+      'Hamburg Elbphilharmonie concert hall',
+    ]],
+    ['v2-85', 'Bruges', [
+      'Bruges Belgium medieval canals',
+      'Bruges Belgium Markt square belfry',
+    ]],
+    ['v2-88', 'Catania', [
+      'Catania Sicily Italy Piazza Duomo',
+      'Mount Etna Sicily volcano',
+    ]],
+    ['v2-93', 'Cappadocia', [
+      'Cappadocia Turkey hot air balloons sunrise',
+      'Cappadocia fairy chimneys cave houses',
+    ]],
+    ['v4-29', 'Lilongwe (Lake Malawi)', [
+      'Lake Malawi Africa crystal clear water',
+      'Malawi Africa landscape nature',
+    ]],
+    // Already fixed — skip these on next run by commenting out
+    /*
     ['106', 'Asheville NC', [
       'Asheville North Carolina Blue Ridge Parkway mountains',
       'Biltmore Estate mansion Asheville',
@@ -164,27 +192,7 @@ async function main() {
       'Traverse City Michigan Grand Traverse Bay',
       'Traverse City Michigan cherry orchards vineyards',
     ]],
-    // Also fix the 5 that were rate-limited earlier
-    ['v2-81', 'Hamburg', [
-      'Hamburg Germany Speicherstadt warehouse district',
-      'Hamburg Elbphilharmonie concert hall',
-    ]],
-    ['v2-85', 'Bruges', [
-      'Bruges Belgium medieval canals',
-      'Bruges Belgium Markt square belfry',
-    ]],
-    ['v2-88', 'Catania', [
-      'Catania Sicily Italy Piazza Duomo',
-      'Mount Etna Sicily volcano',
-    ]],
-    ['v2-93', 'Cappadocia', [
-      'Cappadocia Turkey hot air balloons sunrise',
-      'Cappadocia fairy chimneys cave houses',
-    ]],
-    ['v4-29', 'Lilongwe (Lake Malawi)', [
-      'Lake Malawi Africa crystal clear water',
-      'Malawi Africa landscape nature',
-    ]],
+    */
   ];
 
   for (const [id, city, queries] of fixes) {
