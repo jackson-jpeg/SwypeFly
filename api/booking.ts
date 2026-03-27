@@ -880,11 +880,19 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
           return_date: v.data.returnDate ?? (lastSlice?.segments?.[0]?.departing_at?.split('T')[0] ?? ''),
           airline: airlineName,
           booking_reference: bookingRef,
-          customer_email: v.data.passengers?.[0]?.email || null,
         })
         .select()
         .single();
       if (bookingInsertErr) throw new Error(`DB insert failed: ${bookingInsertErr.message}`);
+
+      // Try to store customer email — column may not exist yet, non-critical
+      if (booking?.id && v.data.passengers?.[0]?.email) {
+        await supabase
+          .from(TABLES.bookings)
+          .update({ customer_email: v.data.passengers[0].email })
+          .eq('id', booking.id)
+          .then(() => {}, () => {}); // Silently ignore if column doesn't exist
+      }
 
       // Save passengers — non-critical, Duffel order already has passenger data
       for (const passenger of v.data.passengers) {
