@@ -313,17 +313,15 @@ struct DealCard: View {
 
     private var priceBadge: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            // "seen at" label for estimated prices, "live" for confirmed prices
-            if priceIsConfirmed {
-                Text("live")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Color.sgDealAmazing)
-            } else if deal.isEstimatedPrice {
+            // All feed prices are now live Duffel fares
+            if deal.hasPrice {
                 HStack(spacing: 3) {
-                    Text("seen at")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Color.sgWhite.opacity(0.7))
-                    PriceInfoButton()
+                    Circle()
+                        .fill(Color.sgDealAmazing)
+                        .frame(width: 5, height: 5)
+                    Text("live fare")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.sgDealAmazing)
                 }
             }
 
@@ -339,7 +337,7 @@ struct DealCard: View {
                     text: effectivePrice,
                     maxLength: 6,
                     size: .sm,
-                    color: deal.isEstimatedPrice && !priceIsConfirmed ? Color.sgWhite.opacity(0.85) : Color.sgWhite,
+                    color: Color.sgWhite,
                     alignment: .trailing,
                     animate: animate,
                     startDelay: 0.3,
@@ -351,23 +349,6 @@ struct DealCard: View {
             .padding(.vertical, 6)
             .background(deal.tierColor)
             .clipShape(Capsule())
-            .overlay(
-                // Dashed border for estimated prices, solid for live
-                Capsule()
-                    .strokeBorder(
-                        deal.isEstimatedPrice && !priceIsConfirmed
-                            ? Color.sgWhite.opacity(0.3)
-                            : Color.clear,
-                        style: StrokeStyle(lineWidth: 1, dash: [4, 3])
-                    )
-            )
-
-            // Freshness timestamp for estimated prices
-            if deal.isEstimatedPrice, !priceIsConfirmed, let freshness = deal.priceFreshnessLabel {
-                Text(freshness)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(deal.priceFreshness == .old ? Color.sgRed.opacity(0.8) : Color.sgWhite.opacity(0.5))
-            }
         }
     }
 
