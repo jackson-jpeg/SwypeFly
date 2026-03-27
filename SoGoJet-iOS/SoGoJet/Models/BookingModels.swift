@@ -332,10 +332,19 @@ struct BookedPassenger: Codable, Hashable, Sendable {
 
 private extension String {
     var formattedClockTime: String {
-        guard let date = ISO8601DateFormatter().date(from: self) else { return self }
+        // Try ISO8601 with timezone
+        var date = ISO8601DateFormatter().date(from: self)
+        // Try without timezone (Duffel: "2026-04-15T09:55:00")
+        if date == nil {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            date = fmt.date(from: self)
+        }
+        guard let parsed = date else { return self }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
+        return formatter.string(from: parsed)
     }
 }

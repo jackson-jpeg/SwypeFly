@@ -1613,52 +1613,128 @@ struct TripView: View {
                 }
             } label: {
                 HStack {
-                    Text("Other Options (\(options.count))")
-                        .font(SGFont.sectionHead)
-                        .foregroundStyle(Color.sgWhiteDim)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("More Flights")
+                            .font(SGFont.sectionHead)
+                            .foregroundStyle(Color.sgWhite)
+                        Text("\(options.count) additional fares available")
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgMuted)
+                    }
 
                     Spacer()
 
                     Image(systemName: alternativesExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.sgMuted)
+                        .padding(8)
+                        .background(Color.sgSurface, in: Circle())
                 }
             }
             .buttonStyle(.plain)
 
             if alternativesExpanded {
-                ForEach(options.prefix(6)) { option in
-                    alternativeRow(option)
+                ForEach(options) { option in
+                    alternativeRow(option, cheapest: options.first?.price ?? option.price)
                 }
             }
         }
     }
 
-    private func alternativeRow(_ option: TripOption) -> some View {
-        Button {
+    private func alternativeRow(_ option: TripOption, cheapest: Double) -> some View {
+        let isGoodDeal = option.price <= cheapest * 1.05
+        let stopsLabel = option.stops == 0 ? "Nonstop" : option.stops == 1 ? "1 stop" : "\(option.stops) stops"
+        let stopsColor: Color = option.stops == 0 ? Color.sgGreen : (option.stops == 1 ? Color.sgYellow : Color.sgMuted)
+
+        return Button {
             handleOfferSelection(option)
         } label: {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                HStack {
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                // Left: Route timeline
+                VStack(spacing: 4) {
+                    // Departure
+                    Text(option.departureTime)
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.sgWhite)
+
+                    // Duration + stops
+                    VStack(spacing: 2) {
+                        // Flight path visualization
+                        HStack(spacing: 3) {
+                            Circle().fill(Color.sgYellow).frame(width: 4, height: 4)
+                            Rectangle().fill(Color.sgBorder).frame(height: 1)
+                            if option.stops > 0 {
+                                ForEach(0..<min(option.stops, 2), id: \.self) { _ in
+                                    Circle().fill(Color.sgMuted).frame(width: 3, height: 3)
+                                    Rectangle().fill(Color.sgBorder).frame(height: 1)
+                                }
+                            }
+                            Circle().fill(Color.sgWhite.opacity(0.5)).frame(width: 4, height: 4)
+                        }
+                        .frame(width: 60)
+
+                        Text(option.duration)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+
+                    // Arrival
+                    Text(option.arrivalTime)
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.sgWhite)
+                }
+                .frame(width: 70)
+
+                // Center: Airline + stops
+                VStack(alignment: .leading, spacing: 4) {
                     Text(option.airline)
                         .font(SGFont.bodyBold(size: 13))
                         .foregroundStyle(Color.sgWhite)
-                    Spacer()
-                    Text("$\(Int(option.price))")
-                        .font(SGFont.bodyBold(size: 16))
-                        .foregroundStyle(Color.sgYellow)
+                        .lineLimit(1)
+
+                    HStack(spacing: 6) {
+                        Text(stopsLabel)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(stopsColor)
+
+                        if let out = option.outboundSlice {
+                            Text("\(out.origin) → \(out.destination)")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Color.sgMuted)
+                        }
+                    }
+
+                    if option.flightNumber != "—" {
+                        Text(option.flightNumber)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.sgMuted)
+                    }
                 }
 
-                Text("\(option.departureTime) · \(option.duration) · \(displayCabinName(option.cabinClass))")
-                    .font(SGFont.body(size: 12))
-                    .foregroundStyle(Color.sgMuted)
+                Spacer()
+
+                // Right: Price
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("$\(Int(option.price))")
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .foregroundStyle(isGoodDeal ? Color.sgYellow : Color.sgWhite)
+
+                    if isGoodDeal && option.price > cheapest {
+                        Text("Similar")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.sgGreen)
+                    }
+                }
             }
-            .padding(Spacing.sm + Spacing.xs)
-            .background(Color.sgSurface)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+            .padding(Spacing.md)
+            .background(Color.sgCell)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
             .overlay(
-                RoundedRectangle(cornerRadius: Radius.sm)
-                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+                RoundedRectangle(cornerRadius: Radius.md)
+                    .strokeBorder(
+                        isGoodDeal ? Color.sgYellow.opacity(0.2) : Color.sgBorder,
+                        lineWidth: 1
+                    )
             )
         }
         .buttonStyle(.plain)
