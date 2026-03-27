@@ -19,7 +19,9 @@ final class AuthStore: NSObject {
     var authError: String?
 
     /// JWT token for authenticating API requests
-    private(set) var authToken: String?
+    private(set) var authToken: String? {
+        didSet { APIClient.authToken = authToken }
+    }
 
     private let tokenKey = "sg_auth_token"
     private let userIdKey = "sg_user_id"

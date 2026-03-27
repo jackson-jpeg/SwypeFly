@@ -10,6 +10,9 @@ actor APIClient {
     private let session: URLSession
     private let decoder: JSONDecoder
 
+    /// Auth token set by AuthStore — included as Bearer header on all requests when available.
+    static var authToken: String?
+
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
@@ -336,8 +339,11 @@ actor APIClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("SoGoJet-iOS/1.0", forHTTPHeaderField: "User-Agent")
 
+        // Use endpoint-specific auth header if available, otherwise use global auth token
         if let authHeader = endpoint.authorizationHeader {
             request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        } else if let token = APIClient.authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
         if let body = endpoint.body {

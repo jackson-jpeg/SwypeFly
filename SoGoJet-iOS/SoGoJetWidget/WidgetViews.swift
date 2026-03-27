@@ -108,8 +108,8 @@ struct FlightRow: View {
                 .foregroundStyle(WD.muted.opacity(0.6))
                 .padding(.trailing, 2)
 
-            // Price
-            SplitFlapText(text: "$\(flight.price)", length: 4, color: priceColor, w: cw, h: ch, fs: fs, align: .trailing)
+            // Price (5 cells: $ + up to 4 digits, e.g. "$1299")
+            SplitFlapText(text: "$\(flight.price)", length: 5, color: priceColor, w: cw, h: ch, fs: fs, align: .trailing)
         }
     }
 
@@ -128,7 +128,7 @@ struct MediumBoardView: View {
     let entry: FlightEntry
 
     // Sized to fill medium widget (~329x155pt)
-    // With 14pt cells: 13 dest chars + 4 price chars = 17 × 14 = 238pt + gaps ≈ fits
+    // With 15pt cells: 12 dest chars + 5 price chars = 17 × 15 = 255pt + gaps ≈ fits
     private let cw: CGFloat = 15
     private let ch: CGFloat = 22
     private let fs: CGFloat = 12
@@ -157,11 +157,11 @@ struct MediumBoardView: View {
                 let flights = Array(entry.flights.prefix(3))
                 ForEach(Array(flights.enumerated()), id: \.element.id) { i, flight in
                     Link(destination: deepLink(for: flight)) {
-                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 13)
+                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 12)
                     }
                 }
                 ForEach(0..<max(0, 3 - entry.flights.count), id: \.self) { _ in
-                    emptyRow(cw: cw, ch: ch, destLen: 13)
+                    emptyRow(cw: cw, ch: ch, destLen: 12)
                 }
             }
 
@@ -222,7 +222,7 @@ struct LargeBoardView: View {
                 let flights = Array(entry.flights.prefix(5))
                 ForEach(Array(flights.enumerated()), id: \.element.id) { i, flight in
                     Link(destination: deepLink(for: flight)) {
-                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 14)
+                        FlightRow(flight: flight, highlighted: i == 0, cw: cw, ch: ch, fs: fs, destLen: 13)
                     }
 
                     if i < min(flights.count, 5) - 1 {
@@ -230,7 +230,7 @@ struct LargeBoardView: View {
                     }
                 }
                 ForEach(0..<max(0, 5 - entry.flights.count), id: \.self) { _ in
-                    emptyRow(cw: cw, ch: ch, destLen: 14)
+                    emptyRow(cw: cw, ch: ch, destLen: 13)
                 }
             }
 
@@ -269,7 +269,7 @@ private func emptyRow(cw: CGFloat, ch: CGFloat, destLen: Int) -> some View {
     HStack(spacing: 0) {
         Color.clear.frame(width: 3, height: ch).padding(.trailing, 3)
         HStack(spacing: 1) {
-            ForEach(0..<(destLen + 4), id: \.self) { _ in
+            ForEach(0..<(destLen + 5), id: \.self) { _ in
                 RoundedRectangle(cornerRadius: 2.5)
                     .fill(WD.cellBg)
                     .overlay(RoundedRectangle(cornerRadius: 2.5).strokeBorder(WD.border, lineWidth: 0.5))
@@ -283,5 +283,6 @@ private func emptyRow(cw: CGFloat, ch: CGFloat, destLen: Int) -> some View {
 private func deepLink(for flight: WidgetFlight) -> URL {
     // Use the sogojet:// custom URL scheme so iOS routes taps to the app
     // instead of opening Safari (universal links require Associated Domains).
-    URL(string: "sogojet://destination/\(flight.id)") ?? URL(string: "sogojet://home")!
+    let encoded = flight.id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? flight.id
+    return URL(string: "sogojet://destination/\(encoded)") ?? URL(string: "sogojet://home")!
 }

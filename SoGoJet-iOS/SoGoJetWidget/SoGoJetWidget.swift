@@ -115,12 +115,15 @@ struct DepartureBoardEntryView: View {
     @Environment(\.widgetFamily) var family
 
     var body: some View {
-        switch family {
-        case .systemLarge:
-            LargeBoardView(entry: entry)
-        default:
-            MediumBoardView(entry: entry)
+        Group {
+            switch family {
+            case .systemLarge:
+                LargeBoardView(entry: entry)
+            default:
+                MediumBoardView(entry: entry)
+            }
         }
+        .redacted(reason: entry.isPlaceholder ? .placeholder : [])
     }
 }
 
