@@ -414,6 +414,27 @@ final class BookingStore {
             }()
 
             // Build passenger list — for MVP all passengers use the primary traveler's details
+            let passportExpiryISO: String? = {
+                guard !passenger.passportExpiry.isEmpty else { return nil }
+                // Already ISO (YYYY-MM-DD) — pass through
+                if passenger.passportExpiry.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil {
+                    return passenger.passportExpiry
+                }
+                // Attempt to parse common date formats and re-format as ISO
+                let fmt = DateFormatter()
+                fmt.locale = Locale(identifier: "en_US_POSIX")
+                for format in ["MM/dd/yyyy", "dd/MM/yyyy", "yyyy-MM-dd'T'HH:mm:ssZ"] {
+                    fmt.dateFormat = format
+                    if let date = fmt.date(from: passenger.passportExpiry) {
+                        let iso = DateFormatter()
+                        iso.dateFormat = "yyyy-MM-dd"
+                        iso.locale = Locale(identifier: "en_US_POSIX")
+                        return iso.string(from: date)
+                    }
+                }
+                return nil
+            }()
+
             let passengers = (1...passengerCount).map { index in
                 CreateOrderPassenger(
                     id: "pax_\(index)",
@@ -421,9 +442,12 @@ final class BookingStore {
                     familyName: passenger.lastName,
                     bornOn: passenger.dateOfBirth,
                     gender: passenger.gender.bookingValue,
-                    title: passenger.title.lowercased(),
+                    title: DuffelTitle(from: passenger.title),
                     email: passenger.email,
-                    phoneNumber: passenger.phone
+                    phoneNumber: passenger.phone,
+                    passportNumber: passenger.passportNumber.isEmpty ? nil : passenger.passportNumber,
+                    passportExpiry: passportExpiryISO,
+                    nationality: passenger.nationality.isEmpty ? nil : passenger.nationality.uppercased()
                 )
             }
 

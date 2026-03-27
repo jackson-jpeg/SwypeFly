@@ -578,7 +578,7 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
       // Client sends amount in cents; convert to dollars for comparison
       const clientAmount = v.data.amount / 100;
       const discrepancy = Math.abs(clientAmount - expectedTotal) / expectedTotal;
-      if (discrepancy > 0.02) {
+      if (discrepancy > 0.005) {
         console.warn(`[booking/payment-intent] Amount mismatch: client=$${clientAmount}, expected=$${expectedTotal} (${(discrepancy * 100).toFixed(1)}% off)`);
         return res.status(400).json({
           error: 'Payment amount does not match offer price. Please refresh the offer and try again.',
@@ -586,6 +586,11 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
           expectedAmount: Math.round(expectedTotal * 100),
           providedAmount: v.data.amount,
         });
+      }
+      // Verify currency matches the offer
+      const offerCurrency = offer.total_currency || 'USD';
+      if (v.data.currency.toUpperCase() !== offerCurrency.toUpperCase()) {
+        return res.status(400).json({ error: 'Currency mismatch', code: 'CURRENCY_MISMATCH' });
       }
     } catch (offerErr: any) {
       // If the offer can't be fetched (expired, etc.), reject — don't allow blind payment
@@ -683,88 +688,97 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       activeOfferId = refreshResult.newOfferId;
     }
 
-    const { createOrder } = await import('../services/duffel.js');
+    const { createOrder, getOffer } = await import('../services/duffel.js');
+    const { refundPaymentIntent } = await import('../services/stripe.js');
+
+    // Re-fetch the offer to get the authoritative currency — don't trust client-sent value
+    let offerCheck: any = null;
+    try {
+      offerCheck = await getOffer(activeOfferId);
+    } catch (_e) {
+      // Non-fatal: fall back to USD if offer can't be re-fetched at this stage
+    }
     // Use offer total from the request body (payment intent may not be confirmed yet)
     const paymentAmount = v.data.amount ? (v.data.amount / 100).toFixed(2) : '0.00';
-    const paymentCurrency = (v.data.currency || 'USD').toUpperCase();
+    const paymentCurrency = offerCheck?.total_currency || 'USD'; // From Duffel, not client
 
-    let duffelOrder: any;
+    // Re-verify offer price before creating order — catch last-second price changes
+    if (offerCheck && Math.abs(parseFloat(offerCheck.total_amount) - parseFloat(paymentAmount)) > 1) {
+      // Price changed since payment was created — refund and tell client
+      await refundPaymentIntent(v.data.paymentIntentId);
+      console.warn(`[booking/create-order] Price changed: offer=$${offerCheck.total_amount}, payment=$${paymentAmount} — refunded ${v.data.paymentIntentId}`);
+      return res.status(409).json({
+        error: 'Price changed since payment was initiated. You have been refunded.',
+        code: 'PRICE_CHANGED',
+        newPrice: offerCheck.total_amount,
+      });
+    }
+
+    // Wrap entire post-payment section — ANY failure triggers a refund
     try {
-      duffelOrder = await createOrder({
+      const duffelOrder: any = await createOrder({
         offerId: activeOfferId,
         passengers: v.data.passengers,
         selectedServices: v.data.selectedServices,
         paymentAmount,
         paymentCurrency,
       });
-    } catch (orderErr: any) {
-      // Order creation failed after payment succeeded — initiate a refund
-      console.error(`[booking/create-order] Order creation failed, initiating refund for ${v.data.paymentIntentId}`);
-      try {
-        const { refundPaymentIntent } = await import('../services/stripe.js');
-        await refundPaymentIntent(v.data.paymentIntentId);
-        console.log(`[booking/create-order] Refund initiated for ${v.data.paymentIntentId}`);
-      } catch (refundErr: any) {
-        // Refund failed — log urgently so it can be handled manually
-        console.error(`[booking/create-order] CRITICAL: Refund FAILED for ${v.data.paymentIntentId}: ${refundErr?.message}`);
-        logApiError('api/booking/create-order-refund-failed', refundErr);
-      }
-      // Re-throw the original order error so the outer catch block handles the response
-      throw orderErr;
-    }
 
-    // Extract flight details for booking record
-    const firstSlice = duffelOrder.slices?.[0];
-    const firstSeg = firstSlice?.segments?.[0];
-    const lastSlice = duffelOrder.slices?.[duffelOrder.slices.length - 1];
-    const airlineName = firstSeg?.operating_carrier?.name ?? '';
-    const bookingRef = duffelOrder.booking_reference ?? '';
+      // Extract flight details for booking record
+      const firstSlice = duffelOrder.slices?.[0];
+      const firstSeg = firstSlice?.segments?.[0];
+      const lastSlice = duffelOrder.slices?.[duffelOrder.slices.length - 1];
+      const airlineName = firstSeg?.operating_carrier?.name ?? '';
+      const bookingRef = duffelOrder.booking_reference ?? '';
 
-    const { data: booking, error: bookingInsertErr } = await supabase
-      .from(TABLES.bookings)
-      .insert({
-        user_id: userId,
-        duffel_order_id: duffelOrder.id,
-        status: 'confirmed',
-        total_amount: parseFloat(duffelOrder.total_amount),
-        currency: duffelOrder.total_currency,
-        passenger_count: v.data.passengers.length,
-        stripe_payment_intent_id: v.data.paymentIntentId,
-        created_at: new Date().toISOString(),
-        destination_city: v.data.destinationCity ?? '',
-        destination_iata: v.data.destinationIata ?? (firstSlice?.destination?.iata_code ?? ''),
-        origin_iata: v.data.originIata ?? (firstSlice?.origin?.iata_code ?? ''),
-        departure_date: v.data.departureDate ?? (firstSeg?.departing_at?.split('T')[0] ?? ''),
-        return_date: v.data.returnDate ?? (lastSlice?.segments?.[0]?.departing_at?.split('T')[0] ?? ''),
-        airline: airlineName,
-        booking_reference: bookingRef,
-      })
-      .select()
-      .single();
-    if (bookingInsertErr) throw bookingInsertErr;
-
-    for (const passenger of v.data.passengers) {
-      const { error: paxErr } = await supabase
-        .from(TABLES.bookingPassengers)
+      // Save to Supabase
+      const { data: booking, error: bookingInsertErr } = await supabase
+        .from(TABLES.bookings)
         .insert({
-          booking_id: booking.id,
-          given_name: passenger.given_name,
-          family_name: passenger.family_name,
-          born_on: passenger.born_on,
-          gender: passenger.gender,
-          title: passenger.title,
-          email: passenger.email,
-          phone_number: passenger.phone_number,
-        });
-      if (paxErr) throw paxErr;
-    }
+          user_id: userId,
+          duffel_order_id: duffelOrder.id,
+          status: 'confirmed',
+          total_amount: parseFloat(duffelOrder.total_amount),
+          currency: duffelOrder.total_currency,
+          passenger_count: v.data.passengers.length,
+          stripe_payment_intent_id: v.data.paymentIntentId,
+          created_at: new Date().toISOString(),
+          destination_city: v.data.destinationCity ?? '',
+          destination_iata: v.data.destinationIata ?? (firstSlice?.destination?.iata_code ?? ''),
+          origin_iata: v.data.originIata ?? (firstSlice?.origin?.iata_code ?? ''),
+          departure_date: v.data.departureDate ?? (firstSeg?.departing_at?.split('T')[0] ?? ''),
+          return_date: v.data.returnDate ?? (lastSlice?.segments?.[0]?.departing_at?.split('T')[0] ?? ''),
+          airline: airlineName,
+          booking_reference: bookingRef,
+        })
+        .select()
+        .single();
+      if (bookingInsertErr) throw new Error(`DB insert failed: ${bookingInsertErr.message}`);
 
-    // Send confirmation email (non-blocking)
-    try {
-      const { sendBookingConfirmationEmail } = await import('../utils/email.js');
-      const primaryEmail = v.data.passengers[0]?.email ?? '';
-      if (primaryEmail) {
-        sendBookingConfirmationEmail({
+      // Save passengers — non-critical, Duffel order already has passenger data
+      for (const passenger of v.data.passengers) {
+        const { error: paxErr } = await supabase
+          .from(TABLES.bookingPassengers)
+          .insert({
+            booking_id: booking.id,
+            given_name: passenger.given_name,
+            family_name: passenger.family_name,
+            born_on: passenger.born_on,
+            gender: passenger.gender,
+            title: passenger.title,
+            email: passenger.email,
+            phone_number: passenger.phone_number,
+          });
+        if (paxErr) console.warn(`[booking/create-order] Passenger insert failed (non-critical): ${paxErr.message}`);
+        // Don't throw on passenger insert — booking exists, this is supplementary
+      }
+
+      // Send confirmation email (non-blocking)
+      try {
+        const { sendBookingConfirmationEmail } = await import('../utils/email.js');
+        const primaryEmail = v.data.passengers[0]?.email ?? '';
+        if (primaryEmail) {
+          sendBookingConfirmationEmail({
           to: primaryEmail,
           passengerName: `${v.data.passengers[0].given_name} ${v.data.passengers[0].family_name}`,
           bookingReference: bookingRef,
@@ -782,33 +796,44 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       // Email is non-critical — don't fail the booking
     }
 
-    const responseData = {
-      orderId: booking.id,
-      bookingReference: bookingRef,
-      status: 'confirmed' as const,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      passengers: (duffelOrder.passengers ?? []).map((p: any) => ({
-        id: p.id,
-        name: `${p.given_name} ${p.family_name}`,
-        seatDesignator: p.seat?.designator,
-      })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      slices: (duffelOrder.slices ?? []).map((s: any) => ({
-        origin: s.origin?.iata_code ?? '',
-        destination: s.destination?.iata_code ?? '',
-        departureTime: s.segments?.[0]?.departing_at ?? '',
-        arrivalTime: s.segments?.[0]?.arriving_at ?? '',
-        duration: parseDuration(s.duration || ''),
-        stops: (s.segments?.length || 1) - 1,
-        airline: s.segments?.[0]?.operating_carrier?.name ?? '',
-        flightNumber: `${s.segments?.[0]?.operating_carrier?.iata_code ?? ''} ${s.segments?.[0]?.operating_carrier_flight_number ?? ''}`.trim(),
-        aircraft: s.segments?.[0]?.aircraft?.name ?? '',
-      })),
-      totalPaid: parseFloat(duffelOrder.total_amount) || 0,
-      currency: duffelOrder.total_currency || 'USD',
-    };
+      const responseData = {
+        orderId: booking.id,
+        bookingReference: bookingRef,
+        status: 'confirmed' as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        passengers: (duffelOrder.passengers ?? []).map((p: any) => ({
+          id: p.id,
+          name: `${p.given_name} ${p.family_name}`,
+          seatDesignator: p.seat?.designator,
+        })),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        slices: (duffelOrder.slices ?? []).map((s: any) => ({
+          origin: s.origin?.iata_code ?? '',
+          destination: s.destination?.iata_code ?? '',
+          departureTime: s.segments?.[0]?.departing_at ?? '',
+          arrivalTime: s.segments?.[0]?.arriving_at ?? '',
+          duration: parseDuration(s.duration || ''),
+          stops: (s.segments?.length || 1) - 1,
+          airline: s.segments?.[0]?.operating_carrier?.name ?? '',
+          flightNumber: `${s.segments?.[0]?.operating_carrier?.iata_code ?? ''} ${s.segments?.[0]?.operating_carrier_flight_number ?? ''}`.trim(),
+          aircraft: s.segments?.[0]?.aircraft?.name ?? '',
+        })),
+        totalPaid: parseFloat(duffelOrder.total_amount) || 0,
+        currency: duffelOrder.total_currency || 'USD',
+      };
 
-    return res.status(200).json(responseData);
+      return res.status(200).json(responseData);
+    } catch (postPaymentErr: any) {
+      // ANY failure after payment verification → refund
+      try {
+        await refundPaymentIntent(v.data.paymentIntentId);
+        console.error(`[booking/create-order] Refunded ${v.data.paymentIntentId} after failure:`, postPaymentErr);
+      } catch (refundErr: any) {
+        console.error(`[booking/create-order] CRITICAL: Refund FAILED for ${v.data.paymentIntentId}: ${refundErr?.message}`);
+        logApiError('api/booking/create-order-refund-failed', refundErr);
+      }
+      throw postPaymentErr; // re-throw to outer handler
+    }
   } catch (err: any) {
     logApiError('api/booking/create-order', err);
     // Duffel SDK errors have `errors` array; Stripe/general errors use `message`

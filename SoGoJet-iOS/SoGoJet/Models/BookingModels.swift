@@ -203,15 +203,31 @@ struct PassengerData: Codable, Hashable, Sendable {
     }
 }
 
+/// Valid Duffel passenger title values.
+enum DuffelTitle: String, Codable, CaseIterable, Sendable {
+    case mr, mrs, ms, miss, dr
+
+    /// Attempt to map a free-form string to a valid Duffel title.
+    /// Falls back to `.mr` when the input doesn't match any known value.
+    init(from raw: String) {
+        self = DuffelTitle(rawValue: raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)) ?? .mr
+    }
+
+    var displayName: String { rawValue.capitalized }
+}
+
 struct CreateOrderPassenger: Codable, Hashable, Sendable {
     let id: String
     let givenName: String
     let familyName: String
     let bornOn: String
     let gender: String
-    let title: String
+    let title: DuffelTitle
     let email: String
     let phoneNumber: String
+    let passportNumber: String?
+    let passportExpiry: String?
+    let nationality: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -222,6 +238,9 @@ struct CreateOrderPassenger: Codable, Hashable, Sendable {
         case title
         case email
         case phoneNumber = "phone_number"
+        case passportNumber = "passport_number"
+        case passportExpiry = "passport_expiry"
+        case nationality
     }
 }
 

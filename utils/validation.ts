@@ -176,6 +176,9 @@ export const passengerSchema = z.object({
   title: z.enum(['mr', 'mrs', 'ms', 'miss', 'dr']),
   email: z.string().email().max(255),
   phone_number: z.string().min(5).max(20),
+  passport_number: z.string().min(5).max(20).optional(),
+  passport_expiry: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD').optional(),
+  nationality: z.string().length(2).toUpperCase().optional(), // ISO 3166-1 alpha-2
 });
 
 export const bookingSearchSchema = z.object({

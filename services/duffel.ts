@@ -37,6 +37,9 @@ export interface PassengerInfo {
   title: 'mr' | 'mrs' | 'ms' | 'miss' | 'dr';
   email: string;
   phone_number: string;
+  passport_number?: string;
+  passport_expiry?: string;   // YYYY-MM-DD
+  nationality?: string;       // ISO 3166-1 alpha-2 country code
 }
 
 export interface CreateOrderParams {
@@ -105,16 +108,32 @@ export async function createOrder(params: CreateOrderParams) {
   const response = await client.orders.create({
     type: 'instant',
     selected_offers: [params.offerId],
-    passengers: params.passengers.map((p) => ({
-      id: p.id,
-      given_name: p.given_name,
-      family_name: p.family_name,
-      born_on: p.born_on,
-      gender: p.gender,
-      title: p.title,
-      email: p.email,
-      phone_number: p.phone_number,
-    })),
+    passengers: params.passengers.map((p) => {
+      const base: Record<string, unknown> = {
+        id: p.id,
+        given_name: p.given_name,
+        family_name: p.family_name,
+        born_on: p.born_on,
+        gender: p.gender,
+        title: p.title,
+        email: p.email,
+        phone_number: p.phone_number,
+      };
+
+      // Attach passport / nationality when provided (required for international flights)
+      if (p.passport_number && p.passport_expiry) {
+        base.identity_documents = [
+          {
+            unique_identifier: p.passport_number,
+            expires_on: p.passport_expiry,
+            issuing_country_code: p.nationality || 'US',
+            type: 'passport',
+          },
+        ];
+      }
+
+      return base;
+    }),
     services: params.selectedServices || [],
     payments: [
       {
