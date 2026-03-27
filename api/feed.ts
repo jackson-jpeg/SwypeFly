@@ -106,8 +106,7 @@ async function fetchLivePriceForDest(
         },
         { onConflict: 'origin,destination_iata' },
       )
-      .then(() => {})
-      .catch(() => {});
+      .then(() => {}, () => {});
 
     return priceData;
   } catch (err) {
@@ -132,7 +131,7 @@ async function fillMissingPrices(
     chunks.push(missing.slice(i, i + ON_DEMAND_CONCURRENCY));
   }
 
-  const priceResults = new Map<string, { price: number; airline: string; duration: string; fetchedAt: string }>();
+  const priceResults = new Map<string, OnDemandPrice>();
   for (const chunk of chunks) {
     const results = await Promise.allSettled(
       chunk.map(async (d) => {
