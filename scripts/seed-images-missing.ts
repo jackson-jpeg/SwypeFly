@@ -64,9 +64,9 @@ async function main() {
 
   const idsWithImages = new Set((existingImages || []).map((r: any) => r.destination_id));
 
-  // Find destinations missing images
+  // Find destinations missing gallery images (no rows in destination_images table)
   const missing = allDests.filter(
-    (d: any) => !idsWithImages.has(d.id) && (!d.image_url || d.image_url === ''),
+    (d: any) => !idsWithImages.has(d.id),
   );
 
   console.log(`Found ${missing.length} destinations without images (out of ${allDests.length} total)\n`);
