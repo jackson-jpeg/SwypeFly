@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Pressable, Platform } from 'react-native';
 import { router } from 'expo-router';
 
-const LAST_UPDATED = 'February 9, 2026';
+const LAST_UPDATED = 'March 27, 2026';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   if (Platform.OS === 'web') {

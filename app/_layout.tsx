@@ -14,6 +14,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { colors } from '../theme/tokens';
 import ToastContainer from '../components/common/ToastContainer';
 import LaunchMark from '../components/common/LaunchMark';
+import AppDownloadBanner from '../components/common/AppDownloadBanner';
 import useAnimatedFavicon from '../hooks/useAnimatedFavicon';
 
 SplashScreen.preventAutoHideAsync();
@@ -93,6 +94,45 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <Head>
         <title>SoGoJet — Discover Cheap Flights</title>
+        {/* Vintage terminal CSS effects to match iOS aesthetic */}
+        <style>{`
+          body {
+            background: #0A0806;
+            /* Subtle noise texture overlay */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+          }
+          /* Subtle warm radial glow behind content */
+          #root::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(ellipse at 50% 20%, rgba(247,232,160,0.04) 0%, transparent 60%);
+          }
+          /* Faint horizontal scanlines */
+          #root::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 99999;
+            background: repeating-linear-gradient(
+              to bottom,
+              transparent 0px,
+              transparent 3px,
+              rgba(0,0,0,0.015) 3px,
+              rgba(0,0,0,0.015) 4px
+            );
+          }
+          /* Custom scrollbar for dark theme */
+          ::-webkit-scrollbar { width: 6px; }
+          ::-webkit-scrollbar-track { background: transparent; }
+          ::-webkit-scrollbar-thumb { background: #2A2218; border-radius: 3px; }
+          ::-webkit-scrollbar-thumb:hover { background: #3A3228; }
+          /* Selection color */
+          ::selection { background: rgba(247,232,160,0.25); color: #F7E8A0; }
+        `}</style>
         <meta
           name="description"
           content="Swipe through stunning destinations and find the cheapest flights from your city. Book in seconds."
@@ -109,6 +149,7 @@ export default function RootLayout() {
         <meta name="twitter:title" content="SoGoJet — Discover Cheap Flights" />
         <meta name="twitter:image" content="https://sogojet.com/api/og" />
         <meta name="theme-color" content="#0A0806" />
+        <meta name="apple-itunes-app" content="app-id=com.sogojet.app" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/assets/icon-180.png" sizes="180x180" />
         <link
@@ -139,6 +180,7 @@ export default function RootLayout() {
           </OnboardingGate>
           <StatusBar style="light" />
           <ToastContainer />
+          <AppDownloadBanner />
         </QueryClientProvider>
       </ErrorBoundary>
       <LaunchMark visible={showLaunchMark} onFinish={() => setShowLaunchMark(false)} />

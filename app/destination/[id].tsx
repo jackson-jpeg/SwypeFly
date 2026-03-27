@@ -37,13 +37,33 @@ export default function DestinationDetailScreen() {
   const insets = useSafeAreaInsets();
 
   const allDeals = useDealStore((s) => s.deals);
-  const deal = allDeals.find((d) => d.id === id);
+  const localDeal = allDeals.find((d) => d.id === id);
   const savedIds = useSavedStore((s) => s.savedIds);
   const toggle = useSavedStore((s) => s.toggle);
-  const isSaved = deal ? savedIds.includes(deal.id) : false;
 
   const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
   const [animate, setAnimate] = useState(false);
+  const [serverDeal, setServerDeal] = useState<BoardDeal | null>(null);
+  const [loadingServer, setLoadingServer] = useState(false);
+
+  // If deal not in local store (e.g. deep link), fetch from server
+  useEffect(() => {
+    if (!localDeal && id && !serverDeal && !loadingServer) {
+      setLoadingServer(true);
+      fetch(`/api/destination?id=${encodeURIComponent(id)}&origin=${encodeURIComponent(departureCode)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.city) {
+            setServerDeal(data as BoardDeal);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoadingServer(false));
+    }
+  }, [id, localDeal, departureCode]);
+
+  const deal = localDeal || serverDeal;
+  const isSaved = deal ? savedIds.includes(deal.id) : false;
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 200);
@@ -95,7 +115,11 @@ export default function DestinationDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.white} />
         </Pressable>
         <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>Deal not found</Text>
+          {loadingServer ? (
+            <Text style={styles.notFoundText}>Loading destination...</Text>
+          ) : (
+            <Text style={styles.notFoundText}>Deal not found</Text>
+          )}
         </View>
       </View>
     );

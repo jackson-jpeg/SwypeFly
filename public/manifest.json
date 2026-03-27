@@ -37,5 +37,12 @@
       "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }]
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/sogojet/id0000000000",
+      "id": "com.sogojet.app"
+    }
+  ]
 }

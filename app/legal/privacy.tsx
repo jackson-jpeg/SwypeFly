@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Pressable, Platform } from 'react-native';
 import { router } from 'expo-router';
 
-const LAST_UPDATED = 'February 9, 2026';
+const LAST_UPDATED = 'March 27, 2026';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   if (Platform.OS === 'web') {
@@ -64,12 +64,16 @@ export default function PrivacyPolicy() {
           </Section>
 
           <Section title="Third-Party Services">
-            <P>Appwrite: database hosting and user authentication.</P>
+            <P>Supabase: database hosting and data storage.</P>
+            <P>Clerk: user authentication and account management (Sign in with Apple, Google, TikTok).</P>
+            <P>Duffel: live flight search, booking, and ticketing.</P>
+            <P>Stripe: secure payment processing for flight bookings.</P>
             <P>Travelpayouts / Aviasales: flight price data and affiliate booking links.</P>
             <P>Amadeus: supplemental flight pricing data.</P>
             <P>LiteAPI: hotel pricing data.</P>
+            <P>Unsplash: destination photography.</P>
+            <P>Resend: transactional email delivery (booking confirmations, price alerts).</P>
             <P>Vercel: application hosting and serverless API infrastructure.</P>
-            <P>Sentry (optional): error monitoring and performance tracking.</P>
           </Section>
 
           <Section title="Cookies & Local Storage">
