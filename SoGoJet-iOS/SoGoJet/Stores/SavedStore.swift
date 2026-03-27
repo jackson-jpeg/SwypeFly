@@ -47,6 +47,10 @@ final class SavedStore {
             savedDeals.remove(at: idx)
             saveToDisk()
             deindexFromSpotlight(deal.id)
+            // Fire-and-forget: sync unsave to backend
+            Task {
+                let _: EmptyResponse? = try? await APIClient.shared.fetch(.savedUnsave(dealId: deal.id))
+            }
             return false
         } else {
             savedDeals.insert(deal, at: 0)
@@ -54,6 +58,10 @@ final class SavedStore {
             indexInSpotlight(deal)
             HapticEngine.success()
             ReviewPrompter.shared.recordSave(totalSavedCount: savedDeals.count)
+            // Fire-and-forget: sync save to backend
+            Task {
+                let _: EmptyResponse? = try? await APIClient.shared.fetch(.savedSave(dealId: deal.id))
+            }
             return true
         }
     }
@@ -118,6 +126,37 @@ final class SavedStore {
         CSSearchableIndex.default().deleteSearchableItems(
             withDomainIdentifiers: ["com.sogojet.saved-deals"]
         )
+    }
+
+    // MARK: Cloud Sync
+
+    /// Fetch saved deals from the server and merge with local UserDefaults.
+    /// Keeps the union of both sets so nothing is lost.
+    /// Call this on app launch when the user is authenticated.
+    func syncFromServer() {
+        guard APIClient.authToken != nil else { return }
+        Task {
+            do {
+                let response: SavedListResponse = try await APIClient.shared.fetch(.savedList)
+                await MainActor.run {
+                    let localIds = Set(savedDeals.map(\.id))
+                    // Append server-only deals that aren't already local
+                    var didChange = false
+                    for deal in response.deals where !localIds.contains(deal.id) {
+                        savedDeals.append(deal)
+                        indexInSpotlight(deal)
+                        didChange = true
+                    }
+                    if didChange {
+                        saveToDisk()
+                    }
+                }
+            } catch {
+                #if DEBUG
+                print("[SavedStore] syncFromServer failed: \(error.localizedDescription)")
+                #endif
+            }
+        }
     }
 
     // MARK: Persistence
@@ -194,4 +233,11 @@ final class SavedStore {
         }
         return parts.joined(separator: " · ")
     }
+}
+
+// MARK: - Saved List Response
+
+/// Response from `GET /api/saved?action=list`.
+struct SavedListResponse: Codable {
+    let deals: [Deal]
 }

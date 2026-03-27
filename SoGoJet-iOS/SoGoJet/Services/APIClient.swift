@@ -13,6 +13,9 @@ actor APIClient {
     /// Auth token set by AuthStore — included as Bearer header on all requests when available.
     static var authToken: String?
 
+    /// Posted when a 401 response invalidates the session token.
+    static let sessionExpired = Notification.Name("sg_session_expired")
+
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
@@ -65,6 +68,9 @@ actor APIClient {
         case auth(identityToken: String, givenName: String?, familyName: String?, email: String?)
         case authOAuth(code: String, redirectUri: String)
         case deleteAccount(authToken: String)
+        case savedList
+        case savedSave(dealId: String)
+        case savedUnsave(dealId: String)
 
         var path: String {
             switch self {
@@ -85,6 +91,9 @@ actor APIClient {
                 case .auth,
                      .authOAuth,
                      .deleteAccount:  return "/auth"
+                case .savedList,
+                     .savedSave,
+                     .savedUnsave:    return "/saved"
             }
         }
 
@@ -97,7 +106,9 @@ actor APIClient {
                  .bookingPaymentIntent,
                  .bookingCreateOrder,
                  .auth,
-                 .authOAuth:
+                 .authOAuth,
+                 .savedSave,
+                 .savedUnsave:
                 return "POST"
             case .deleteAccount:
                 return "DELETE"
@@ -177,6 +188,15 @@ actor APIClient {
             case .deleteAccount:
                 return [URLQueryItem(name: "action", value: "delete")]
 
+            case .savedList:
+                return [URLQueryItem(name: "action", value: "list")]
+
+            case .savedSave:
+                return [URLQueryItem(name: "action", value: "save")]
+
+            case .savedUnsave:
+                return [URLQueryItem(name: "action", value: "unsave")]
+
             default:
                 return []
             }
@@ -241,6 +261,12 @@ actor APIClient {
                     "redirect_uri": redirectUri,
                 ])
 
+            case let .savedSave(dealId):
+                return try? JSONEncoder().encode(["dealId": dealId])
+
+            case let .savedUnsave(dealId):
+                return try? JSONEncoder().encode(["dealId": dealId])
+
             default:
                 return nil
             }
@@ -281,6 +307,11 @@ actor APIClient {
 
                 switch error {
                 case .httpError(let code, _):
+                    // 401: token expired — clear auth and notify UI
+                    if code == 401 {
+                        APIClient.authToken = nil
+                        NotificationCenter.default.post(name: APIClient.sessionExpired, object: nil)
+                    }
                     // 429: rate limited — respect Retry-After or wait 5s
                     if code == 429 {
                         if attempt < retries {
@@ -289,7 +320,7 @@ actor APIClient {
                         continue
                     }
                     // Permanent client errors — don't retry
-                    if (400...499).contains(code) {
+                    if (400...499).contains(code) && code != 429 {
                         throw error
                     }
                     // 5xx server errors (502, 503, 504 etc.) — retry

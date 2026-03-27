@@ -204,6 +204,9 @@ struct SoGoJetApp: App {
                         await feedStore.fetchDeals(origin: settingsStore.departureCode)
                     }
 
+                    // Merge saved deals from server (if authenticated)
+                    savedStore.syncFromServer()
+
                     // Register background fare drop checks
                     FareDropMonitor.registerBackgroundTask()
                     FareDropMonitor.scheduleNextCheck()
@@ -296,6 +299,9 @@ struct SoGoJetApp: App {
                         SoGoJetAppDelegate.pendingShortcutType = nil
                         router.handleQuickAction(type)
                     }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: APIClient.sessionExpired)) { _ in
+                    authStore.signOut()
                 }
                 .onContinueUserActivity("com.sogojet.search") { _ in
                     router.handleQuickAction("com.sogojet.search")

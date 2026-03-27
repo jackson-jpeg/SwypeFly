@@ -12,6 +12,7 @@ final class FeedStore {
     var isLoading: Bool = false
     var hasMore: Bool = true
     var error: String?
+    var showingCachedData: Bool = false
     private var activeOrigin: String?
     private var activeRequestID = UUID()
     private(set) var lastFetchDate: Date?
@@ -63,6 +64,12 @@ final class FeedStore {
         self.selectedRegions = UserDefaults.standard.stringArray(forKey: Self.regionsKey) ?? []
         let storedMax = UserDefaults.standard.object(forKey: Self.maxPriceKey) as? Int
         self.maxPriceFilter = storedMax
+
+        // Pre-load cached deals so we have something to show if first fetch fails
+        if let cached = loadFromDiskCache() {
+            self.loadedDeals = cached
+            self.showingCachedData = true
+        }
     }
 
     // MARK: Derived
@@ -125,6 +132,8 @@ final class FeedStore {
             hasMore = response.nextCursor != nil
             page = 1
             lastFetchDate = Date()
+            showingCachedData = false
+            cacheToDisk(loadedDeals)
 
             do {
                 try await expandFilteredResultsIfNeeded(origin: origin, requestID: requestID)
@@ -139,7 +148,14 @@ final class FeedStore {
             #if DEBUG
             print("❌ [FeedStore] fetchDeals failed: \(error)")
             #endif
-            self.error = userFacingMessage(for: error)
+            if loadedDeals.isEmpty, let cached = loadFromDiskCache() {
+                loadedDeals = cached
+                showingCachedData = true
+                // Don't set error — show cached data instead of error screen
+            } else if loadedDeals.isEmpty {
+                self.error = userFacingMessage(for: error)
+            }
+            // If loadedDeals already has data (e.g. from init cache load), keep it
         }
 
         guard activeRequestID == requestID, activeOrigin == origin else { return }
@@ -238,6 +254,23 @@ final class FeedStore {
                 .swipe(dealId: dealId, action: action)
             )
         }
+    }
+
+    // MARK: Disk Cache
+
+    private func cacheToDisk(_ deals: [Deal]) {
+        guard let data = try? JSONEncoder().encode(deals) else { return }
+        let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("sg_feed_cache.json")
+        try? data.write(to: url)
+    }
+
+    private func loadFromDiskCache() -> [Deal]? {
+        let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("sg_feed_cache.json")
+        guard let data = try? Data(contentsOf: url),
+              let deals = try? JSONDecoder().decode([Deal].self, from: data) else { return nil }
+        return deals
     }
 
     private func matchesActiveFilters(_ deal: Deal) -> Bool {
