@@ -169,19 +169,26 @@ export const useDealStore = create<DealState>()((set, get) => ({
     try {
       const params = new URLSearchParams({ origin, cursor: '0', ...filters });
       const res = await fetch(`${API_BASE}/api/feed?${params}`);
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(res.status === 429 ? 'Too many requests — try again in a moment' : `Failed to load flights (${res.status})`);
+      }
       const data = await res.json();
       const raw: ApiDestination[] = data.destinations || data.deals || data;
       const deals = raw.map((d) => apiToBoardDeal(d, origin));
       set({ deals, isLoading: false });
     } catch (e) {
-      set({ deals: [], isLoading: false, error: (e as Error).message });
+      const msg = (e as Error).message;
+      const friendly = msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')
+        ? 'Network error — check your connection'
+        : msg;
+      set({ deals: [], isLoading: false, error: friendly });
     }
   },
 
   fetchMore: async (origin, filters?: Record<string, string>) => {
     if (get().isLoading) return;
-    if (!API_BASE) return;
+    set({ isLoading: true });
 
     cursor += PAGE_SIZE;
     try {
@@ -191,15 +198,17 @@ export const useDealStore = create<DealState>()((set, get) => ({
         ...filters,
       });
       const res = await fetch(`${API_BASE}/api/feed?${params}`);
-      if (!res.ok) return;
+      if (!res.ok) { set({ isLoading: false }); return; }
       const data = await res.json();
       const raw: ApiDestination[] = data.destinations || data.deals || data;
       if (raw.length > 0) {
         const newDeals = raw.map((d) => apiToBoardDeal(d, origin));
-        set({ deals: [...get().deals, ...newDeals] });
+        set({ deals: [...get().deals, ...newDeals], isLoading: false });
+      } else {
+        set({ isLoading: false });
       }
     } catch {
-      // Silently fail on pagination errors
+      set({ isLoading: false });
     }
   },
 }));
