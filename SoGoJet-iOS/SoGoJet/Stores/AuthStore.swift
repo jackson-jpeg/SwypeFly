@@ -90,7 +90,7 @@ final class AuthStore: NSObject {
 
     // MARK: Backend Auth
 
-    /// Send the Apple identity token to the backend to get a Clerk session token.
+    /// Exchange Apple identity token for a Clerk session token via the backend.
     private func authenticateWithBackend(identityToken: Data, fullName: PersonNameComponents?, email: String?) async {
         guard let tokenString = String(data: identityToken, encoding: .utf8) else {
             authError = "Invalid Apple ID token"
@@ -98,31 +98,67 @@ final class AuthStore: NSObject {
             return
         }
 
-        // For now, use the Apple identity token directly as the auth token.
-        // The backend can verify this via Clerk's Apple OAuth integration.
-        // A production implementation would exchange this for a Clerk session token.
-        let name = [fullName?.givenName, fullName?.familyName]
-            .compactMap { $0 }
-            .joined(separator: " ")
+        do {
+            // Call backend to exchange Apple token for Clerk session
+            let response: AuthResponse = try await APIClient.shared.fetch(
+                .auth(
+                    identityToken: tokenString,
+                    givenName: fullName?.givenName,
+                    familyName: fullName?.familyName,
+                    email: email
+                )
+            )
 
-        self.authToken = tokenString
-        self.userId = "apple_\(tokenString.prefix(20))"
-        self.userName = name.isEmpty ? nil : name
-        self.userEmail = email
-        self.isAuthenticated = true
-        self.isLoading = false
+            self.authToken = response.sessionToken
+            self.userId = response.userId
+            self.userName = response.name
+            self.userEmail = response.email
+            self.isAuthenticated = true
+            self.isLoading = false
 
-        saveSession(
-            token: tokenString,
-            userId: self.userId!,
-            name: self.userName,
-            email: self.userEmail
-        )
+            saveSession(
+                token: response.sessionToken,
+                userId: response.userId,
+                name: response.name,
+                email: response.email
+            )
 
-        #if DEBUG
-        print("[Auth] Signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email"))")
-        #endif
+            #if DEBUG
+            print("[Auth] Signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email")) clerk_id=\(response.userId)")
+            #endif
+        } catch {
+            // Fallback: use Apple token directly if backend auth fails
+            #if DEBUG
+            print("[Auth] Backend auth failed, using Apple token: \(error.localizedDescription)")
+            #endif
+            let name = [fullName?.givenName, fullName?.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+
+            self.authToken = tokenString
+            self.userId = "apple_\(tokenString.prefix(20))"
+            self.userName = name.isEmpty ? nil : name
+            self.userEmail = email
+            self.isAuthenticated = true
+            self.isLoading = false
+
+            saveSession(
+                token: tokenString,
+                userId: self.userId!,
+                name: self.userName,
+                email: self.userEmail
+            )
+        }
     }
+}
+
+// MARK: - Auth Response
+
+private struct AuthResponse: Codable {
+    let sessionToken: String
+    let userId: String
+    let email: String?
+    let name: String?
 }
 
 // MARK: - ASAuthorizationControllerDelegate

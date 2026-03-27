@@ -59,6 +59,7 @@ actor APIClient {
         case swipe(dealId: String, action: String)
         case alertCreate(destination: String, maxPrice: Int)
         case subscribe(email: String)
+        case auth(identityToken: String, givenName: String?, familyName: String?, email: String?)
 
         var path: String {
             switch self {
@@ -76,6 +77,7 @@ actor APIClient {
                 case .swipe:          return "/swipe"
                 case .alertCreate:    return "/alerts"
                 case .subscribe:      return "/subscribe"
+                case .auth:           return "/auth"
             }
         }
 
@@ -86,7 +88,8 @@ actor APIClient {
                  .subscribe,
                  .bookingSearch,
                  .bookingPaymentIntent,
-                 .bookingCreateOrder:
+                 .bookingCreateOrder,
+                 .auth:
                 return "POST"
             default:
                 return "GET"
@@ -155,6 +158,9 @@ actor APIClient {
             case .bookingCreateOrder:
                 return [URLQueryItem(name: "action", value: "create-order")]
 
+            case .auth:
+                return [URLQueryItem(name: "action", value: "apple")]
+
             default:
                 return []
             }
@@ -205,6 +211,13 @@ actor APIClient {
             case let .bookingCreateOrder(request):
                 let encoder = JSONEncoder()
                 return try? encoder.encode(request)
+
+            case let .auth(identityToken, givenName, familyName, email):
+                var body: [String: Any] = ["identityToken": identityToken]
+                if let givenName { body["givenName"] = givenName }
+                if let familyName { body["familyName"] = familyName }
+                if let email { body["email"] = email }
+                return try? JSONSerialization.data(withJSONObject: body)
 
             default:
                 return nil
