@@ -505,40 +505,8 @@ struct FeedView: View {
     // MARK: - Loading State
 
     private var loadingState: some View {
-        VStack(spacing: Spacing.lg) {
-            Spacer()
-
-            // Animated split-flap departure code
-            SplitFlapRow(
-                text: settingsStore.departureCode,
-                maxLength: 3,
-                size: .lg,
-                color: Color.sgYellow,
-                alignment: .center,
-                animate: true,
-                staggerMs: 50
-            )
-
-            VStack(spacing: Spacing.sm) {
-                Text("Finding live fares")
-                    .font(SGFont.bodyBold(size: 16))
-                    .foregroundStyle(Color.sgWhite)
-
-                Text("Searching airlines for the best deals from \(settingsStore.departureCode)…")
-                    .font(SGFont.body(size: 13))
-                    .foregroundStyle(Color.sgMuted)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Spacing.xl)
-            }
-
-            ProgressView()
-                .progressViewStyle(.circular)
-                .tint(Color.sgYellow)
-                .scaleEffect(1.1)
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        FeedLoadingView(departureCode: settingsStore.departureCode)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Empty State
@@ -912,6 +880,195 @@ private struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
+
+// MARK: - Feed Loading Animation
+
+/// Full-screen departure board loading experience while Duffel searches for live fares.
+private struct FeedLoadingView: View {
+    let departureCode: String
+
+    @State private var currentDestIndex = 0
+    @State private var animateFlap = false
+    @State private var planeX: CGFloat = -60
+    @State private var showSubtext = false
+    @State private var statusPhase = 0
+
+    private let destinations = [
+        ("BCN", "Barcelona"), ("NRT", "Tokyo"), ("CDG", "Paris"),
+        ("FCO", "Rome"), ("LHR", "London"), ("DPS", "Bali"),
+        ("JFK", "New York"), ("SIN", "Singapore"), ("GIG", "Rio"),
+    ]
+
+    private let statusLines = [
+        "Connecting to airlines",
+        "Scanning live inventory",
+        "Comparing fares",
+        "Ranking deals",
+        "Almost ready",
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Departure board header
+            VStack(spacing: Spacing.xs) {
+                Text("DEPARTURES")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.sgYellow.opacity(0.6))
+                    .tracking(4)
+
+                Rectangle()
+                    .fill(Color.sgYellow.opacity(0.2))
+                    .frame(width: 120, height: 1)
+            }
+
+            Spacer().frame(height: Spacing.lg)
+
+            // Origin code — big and bold
+            SplitFlapRow(
+                text: departureCode,
+                maxLength: 3,
+                size: .lg,
+                color: Color.sgYellow,
+                alignment: .center,
+                animate: animateFlap,
+                staggerMs: 50
+            )
+
+            Spacer().frame(height: Spacing.md)
+
+            // Animated plane flying to cycling destinations
+            ZStack {
+                // Flight path line
+                Rectangle()
+                    .fill(Color.sgBorder)
+                    .frame(height: 1)
+                    .padding(.horizontal, Spacing.xl)
+
+                // Plane
+                Image(systemName: "airplane")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.sgYellow)
+                    .offset(x: planeX)
+
+                // Origin dot
+                HStack {
+                    Circle().fill(Color.sgYellow).frame(width: 6, height: 6)
+                    Spacer()
+                    Circle().fill(Color.sgWhite.opacity(0.4)).frame(width: 6, height: 6)
+                }
+                .padding(.horizontal, Spacing.xl)
+            }
+            .frame(height: 30)
+
+            Spacer().frame(height: Spacing.md)
+
+            // Cycling destination
+            VStack(spacing: 4) {
+                SplitFlapRow(
+                    text: destinations[currentDestIndex].0,
+                    maxLength: 3,
+                    size: .md,
+                    color: Color.sgWhite,
+                    alignment: .center,
+                    animate: animateFlap,
+                    staggerMs: 35,
+                    animationID: currentDestIndex
+                )
+
+                if showSubtext {
+                    Text(destinations[currentDestIndex].1)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.sgMuted)
+                        .transition(.opacity)
+                }
+            }
+
+            Spacer().frame(height: Spacing.xl)
+
+            // Status line with progress
+            VStack(spacing: Spacing.sm) {
+                // Scan line
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.sgYellow.opacity(0), Color.sgYellow.opacity(0.4), Color.sgYellow.opacity(0)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(height: 1)
+                    .padding(.horizontal, Spacing.xl)
+
+                Text(statusLines[min(statusPhase, statusLines.count - 1)].uppercased())
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.sgYellow.opacity(0.7))
+                    .tracking(1.5)
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.3), value: statusPhase)
+
+                // Progress dots
+                HStack(spacing: 6) {
+                    ForEach(0..<5, id: \.self) { i in
+                        Circle()
+                            .fill(i <= statusPhase ? Color.sgYellow : Color.sgBorder)
+                            .frame(width: 6, height: 6)
+                            .animation(.easeInOut(duration: 0.3).delay(Double(i) * 0.1), value: statusPhase)
+                    }
+                }
+            }
+
+            Spacer()
+        }
+        .onAppear { startAnimations() }
+    }
+
+    private func startAnimations() {
+        // Initial flap
+        withAnimation { animateFlap = true }
+
+        // Show subtext
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeOut(duration: 0.3)) { showSubtext = true }
+        }
+
+        // Plane animation
+        Task { @MainActor in
+            while !Task.isCancelled {
+                planeX = -60
+                withAnimation(.easeInOut(duration: 2.0)) { planeX = 60 }
+                try? await Task.sleep(nanoseconds: 2_200_000_000)
+            }
+        }
+
+        // Cycle destinations + status
+        Task { @MainActor in
+            var destIdx = 0
+            var statusIdx = 0
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                guard !Task.isCancelled else { return }
+
+                withAnimation(.easeOut(duration: 0.15)) { showSubtext = false }
+                try? await Task.sleep(nanoseconds: 150_000_000)
+
+                destIdx = (destIdx + 1) % destinations.count
+                currentDestIndex = destIdx
+                animateFlap = false
+                try? await Task.sleep(nanoseconds: 80_000_000)
+                animateFlap = true
+
+                withAnimation(.easeOut(duration: 0.3)) { showSubtext = true }
+
+                if statusIdx < statusLines.count - 1 {
+                    statusIdx += 1
+                    statusPhase = statusIdx
+                }
+            }
+        }
+    }
+}
 
 // MARK: - Preview
 
