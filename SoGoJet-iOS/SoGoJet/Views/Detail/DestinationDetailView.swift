@@ -1376,6 +1376,30 @@ struct DestinationDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding(.horizontal, 16)
             .padding(.top, 12)
+        } else {
+            // Empty state — itinerary not available for this destination
+            VStack(alignment: .leading, spacing: 8) {
+                Text("ITINERARY")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
+
+                HStack(spacing: 8) {
+                    Image(systemName: "map")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.sgMuted)
+                    Text("Itinerary not available yet for \(deal.city)")
+                        .font(SGFont.body(size: 14))
+                        .foregroundStyle(Color.sgMuted)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
         }
     }
 
@@ -1447,6 +1471,30 @@ struct DestinationDetailView: View {
                                 .frame(height: 1)
                         }
                     }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+        } else {
+            // Empty state — restaurant recommendations not available
+            VStack(alignment: .leading, spacing: 8) {
+                Text("WHERE TO EAT")
+                    .font(SGFont.bodyBold(size: 13))
+                    .foregroundStyle(Color.sgMuted)
+                    .tracking(1.5)
+                    .accessibilityAddTraits(.isHeader)
+
+                HStack(spacing: 8) {
+                    Image(systemName: "fork.knife")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.sgMuted)
+                    Text("Restaurant tips not available yet for \(deal.city)")
+                        .font(SGFont.body(size: 14))
+                        .foregroundStyle(Color.sgMuted)
                 }
             }
             .padding(16)

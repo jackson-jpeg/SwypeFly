@@ -26,6 +26,39 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         // Subscribe to MetricKit for crash diagnostics
         MXMetricManager.shared.add(self)
 
+        // Style unselected tab bar items to match dark terminal theme
+        let tabAppearance = UITabBarAppearance()
+        tabAppearance.configureWithOpaqueBackground()
+        tabAppearance.backgroundColor = UIColor(Color.sgBg)
+
+        // Unselected items: muted color
+        let normalAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor(Color.sgMuted)]
+        tabAppearance.stackedLayoutAppearance.normal.iconColor = UIColor(Color.sgMuted)
+        tabAppearance.stackedLayoutAppearance.normal.titleTextAttributes = normalAttrs
+        // Selected items: yellow accent
+        let selectedAttrs: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor(Color.sgYellow)]
+        tabAppearance.stackedLayoutAppearance.selected.iconColor = UIColor(Color.sgYellow)
+        tabAppearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedAttrs
+        // Badge styling: yellow background to match accent
+        tabAppearance.stackedLayoutAppearance.normal.badgeBackgroundColor = UIColor(Color.sgYellow)
+        tabAppearance.stackedLayoutAppearance.normal.badgeTextAttributes = [.foregroundColor: UIColor.black]
+        tabAppearance.stackedLayoutAppearance.selected.badgeBackgroundColor = UIColor(Color.sgYellow)
+        tabAppearance.stackedLayoutAppearance.selected.badgeTextAttributes = [.foregroundColor: UIColor.black]
+
+        UITabBar.appearance().standardAppearance = tabAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabAppearance
+
+        // Style navigation bar for consistent dark theme across all screens
+        let navAppearance = UINavigationBarAppearance()
+        navAppearance.configureWithOpaqueBackground()
+        navAppearance.backgroundColor = UIColor(Color.sgBg)
+        navAppearance.titleTextAttributes = [.foregroundColor: UIColor(Color.sgWhite)]
+        navAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.sgWhite)]
+        UINavigationBar.appearance().standardAppearance = navAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+        UINavigationBar.appearance().compactAppearance = navAppearance
+        UINavigationBar.appearance().tintColor = UIColor(Color.sgYellow)
+
         return true
     }
 

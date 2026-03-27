@@ -104,6 +104,9 @@ final class FeedStore {
     // MARK: Actions
 
     /// Fetch the first page of deals (replaces current list).
+    /// Note: no `isLoading` guard here — callers like `toggleVibe` update filter state
+    /// before calling, so we must allow re-entry. Stale responses are safely discarded
+    /// via `activeRequestID` comparison.
     func fetchDeals(origin: String) async {
         let requestID = UUID()
         activeRequestID = requestID

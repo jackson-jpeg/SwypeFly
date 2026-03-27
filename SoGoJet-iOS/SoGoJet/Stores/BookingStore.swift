@@ -159,6 +159,7 @@ final class BookingStore {
     }
 
     /// Search for bookable flights.
+    @ObservationIgnored private var isSearchingFlights = false
     func searchFlights(
         origin: String,
         destination: String,
@@ -166,6 +167,9 @@ final class BookingStore {
         returnDate: String?,
         cabinClass: BookingCabinClass = .economy
     ) async {
+        guard !isSearchingFlights else { return }
+        isSearchingFlights = true
+        defer { isSearchingFlights = false }
         let requestID = UUID()
         activeSearchRequestID = requestID
         step = .searching
@@ -265,8 +269,12 @@ final class BookingStore {
     }
 
     /// Move to seat selection and fetch seat map.
+    @ObservationIgnored private var isFetchingSeats = false
     func proceedToSeats() async {
         guard let offer = selectedOffer else { return }
+        guard !isFetchingSeats else { return }
+        isFetchingSeats = true
+        defer { isFetchingSeats = false }
         saveLastPassenger()
         let requestID = UUID()
         activeOfferRequestID = requestID
@@ -320,8 +328,12 @@ final class BookingStore {
 
     /// Step 1: Create Stripe payment intent and prepare the PaymentSheet.
     /// Called when user taps "Pay". After this, ReviewView presents the PaymentSheet.
+    @ObservationIgnored private var isPreparingPayment = false
     func preparePayment() async {
         guard let offer = selectedOffer else { return }
+        guard !isPreparingPayment else { return }
+        isPreparingPayment = true
+        defer { isPreparingPayment = false }
 
         if isOfferExpired {
             paymentError = "This fare has expired. Searching for fresh options now."
@@ -377,9 +389,13 @@ final class BookingStore {
 
     /// Step 2: Called after Stripe PaymentSheet completes successfully.
     /// Creates the actual Duffel order (real ticket).
+    @ObservationIgnored private var isCompletingBooking = false
     func completeBookingAfterPayment() async {
         guard let offer = selectedOffer,
               let paymentIntentId = currentPaymentIntentId else { return }
+        guard !isCompletingBooking else { return }
+        isCompletingBooking = true
+        defer { isCompletingBooking = false }
 
         let requestID = activeCheckoutRequestID
         step = .paying
