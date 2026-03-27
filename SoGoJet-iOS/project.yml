@@ -40,6 +40,8 @@ targets:
     dependencies:
       - package: stripe-ios
         product: StripePaymentSheet
+    entitlements:
+      path: SoGoJet/SoGoJet.entitlements
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app
@@ -50,3 +52,4 @@ targets:
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.travel"
+        CODE_SIGN_ENTITLEMENTS: SoGoJet/SoGoJet.entitlements
