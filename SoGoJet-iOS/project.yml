@@ -68,7 +68,7 @@ targets:
       path: SoGoJetWidget/SoGoJetWidget.entitlements
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.SoGoJet.Widget
+        PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app.Widget
         INFOPLIST_FILE: SoGoJetWidget/Info.plist
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
