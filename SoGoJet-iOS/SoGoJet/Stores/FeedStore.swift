@@ -377,6 +377,4 @@ final class FeedStore {
     }
 }
 
-// MARK: - Empty Response (for fire-and-forget POST endpoints)
-
-private struct EmptyResponse: Codable {}
+// EmptyResponse is defined in APIClient.swift
