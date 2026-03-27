@@ -12,7 +12,11 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('[FATAL] Supabase credentials not configured — database operations will fail');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+// Use a dummy URL in test/CI environments where env vars aren't set
+const effectiveUrl = supabaseUrl || 'https://placeholder.supabase.co';
+const effectiveKey = supabaseServiceKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
+
+export const supabase = createClient(effectiveUrl, effectiveKey, {
   auth: { persistSession: false },
 });
 
