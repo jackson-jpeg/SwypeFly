@@ -114,6 +114,26 @@ async function main() {
       'Brisbane South Bank Australia',
       'Story Bridge Brisbane night',
     ]],
+    ['52', 'Denver CO', [
+      'Denver Colorado Rocky Mountains skyline',
+      'Denver Colorado Union Station downtown',
+      'Red Rocks Amphitheatre Denver Colorado',
+    ]],
+    ['157', 'Destin FL', [
+      'Destin Florida emerald coast white sand beach',
+      'Destin Florida harbor boardwalk',
+      'Destin Florida Henderson Beach turquoise water',
+    ]],
+    ['155', 'Door County WI', [
+      'Door County Wisconsin lighthouse peninsula',
+      'Door County Wisconsin autumn cherry blossoms',
+      'Door County Wisconsin waterfront village',
+    ]],
+    ['158', 'Naples FL', [
+      'Naples Florida beach sunset Gulf Mexico',
+      'Naples Florida pier',
+      'Naples Florida Third Street South downtown',
+    ]],
     // Also fix the 5 that were rate-limited earlier
     ['v2-81', 'Hamburg', [
       'Hamburg Germany Speicherstadt warehouse district',
