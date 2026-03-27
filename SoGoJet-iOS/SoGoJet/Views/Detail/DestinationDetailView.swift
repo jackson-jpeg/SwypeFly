@@ -497,6 +497,27 @@ struct DestinationDetailView: View {
                             .foregroundStyle(Color.sgOrange)
                     }
                 }
+
+                // Language & Currency info row
+                HStack(spacing: 16) {
+                    Label {
+                        Text(Self.languageForCountry(deal.country))
+                            .font(SGFont.body(size: 14))
+                            .foregroundStyle(Color.sgWhiteDim)
+                    } icon: {
+                        Text("🗣")
+                            .font(.system(size: 14))
+                    }
+
+                    Label {
+                        Text(Self.currencyForCountry(deal.country))
+                            .font(SGFont.body(size: 14))
+                            .foregroundStyle(Color.sgWhiteDim)
+                    } icon: {
+                        Text("💱")
+                            .font(.system(size: 14))
+                    }
+                }
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -683,6 +704,14 @@ struct DestinationDetailView: View {
                     }
                 }
 
+                // What to wear suggestion
+                if let temp = deal.averageTemp {
+                    Text(Self.whatToWear(temp))
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                        .padding(.top, 4)
+                }
+
                 // 12-month seasonality bar chart
                 monthSeasonalityBar
             }
@@ -768,6 +797,66 @@ struct DestinationDetailView: View {
         let currentFull = fullFormatter.string(from: Date())
         return month.localizedCaseInsensitiveContains(current) ||
                month.localizedCaseInsensitiveContains(currentFull)
+    }
+
+    // MARK: - Language / Currency / What to Wear Helpers
+
+    private static let languageMap: [String: String] = [
+        "Japan": "Japanese", "France": "French", "Spain": "Spanish",
+        "Italy": "Italian", "Germany": "German", "Brazil": "Portuguese",
+        "China": "Mandarin", "Thailand": "Thai", "Vietnam": "Vietnamese",
+        "South Korea": "Korean", "Mexico": "Spanish", "Portugal": "Portuguese",
+        "Greece": "Greek", "Turkey": "Turkish", "Egypt": "Arabic",
+        "Morocco": "Arabic/French", "India": "Hindi/English",
+        "Indonesia": "Bahasa", "Colombia": "Spanish", "Peru": "Spanish",
+        "Argentina": "Spanish", "Chile": "Spanish", "Taiwan": "Mandarin",
+        "Myanmar": "Burmese", "Cambodia": "Khmer", "Malaysia": "Malay/English",
+        "Philippines": "Filipino/English", "Nepal": "Nepali",
+        "Jordan": "Arabic", "Lebanon": "Arabic/French", "Oman": "Arabic",
+        "UAE": "Arabic/English", "Georgia": "Georgian", "Uzbekistan": "Uzbek",
+        "USA": "English", "UK": "English", "United Kingdom": "English",
+        "Canada": "English/French", "Australia": "English",
+        "New Zealand": "English", "Ireland": "English", "Jamaica": "English",
+        "Singapore": "English/Mandarin", "South Africa": "English",
+    ]
+
+    private static func languageForCountry(_ country: String) -> String {
+        languageMap[country] ?? "English"
+    }
+
+    private static let currencyMap: [String: String] = [
+        "Japan": "JPY ¥", "France": "EUR €", "UK": "GBP £",
+        "United Kingdom": "GBP £", "USA": "USD $", "Thailand": "THB ฿",
+        "Mexico": "MXN $", "Brazil": "BRL R$", "India": "INR ₹",
+        "China": "CNY ¥", "Australia": "AUD $", "Canada": "CAD $",
+        "Colombia": "COP $", "South Korea": "KRW ₩", "Switzerland": "CHF",
+        "Sweden": "SEK kr", "Norway": "NOK kr", "Denmark": "DKK kr",
+        "Turkey": "TRY ₺", "Egypt": "EGP £", "South Africa": "ZAR R",
+        "New Zealand": "NZD $", "Singapore": "SGD $", "Malaysia": "MYR",
+        "Indonesia": "IDR", "Vietnam": "VND ₫", "Philippines": "PHP ₱",
+        "Morocco": "MAD", "Kenya": "KES", "Tanzania": "TZS",
+        "Peru": "PEN", "Chile": "CLP $", "Argentina": "ARS $",
+        "Spain": "EUR €", "Italy": "EUR €", "Germany": "EUR €",
+        "Portugal": "EUR €", "Greece": "EUR €", "Ireland": "EUR €",
+    ]
+
+    private static func currencyForCountry(_ country: String) -> String {
+        currencyMap[country] ?? "Local currency"
+    }
+
+    private static func whatToWear(_ tempCelsius: Double) -> String {
+        switch tempCelsius {
+        case ..<5:
+            return "👕 Bundle up — heavy winter coat and layers essential"
+        case 5..<15:
+            return "🧥 Bring a warm jacket and layers"
+        case 15..<25:
+            return "👔 Light layers — perfect for casual wear"
+        case 25..<35:
+            return "👕 Light, breathable clothing recommended"
+        default:
+            return "🥵 Extreme heat — stay hydrated, wear sun protection"
+        }
     }
 
     // MARK: - Trip Budget Estimator

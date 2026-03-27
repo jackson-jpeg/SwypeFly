@@ -47,6 +47,10 @@ struct SavedView: View {
         .background(Color.sgBg)
         .navigationTitle("")
         .navigationBarHidden(true)
+        .onAppear {
+            // Donate Siri shortcut so "Show my saved flights" appears in suggestions
+            SiriShortcuts.donateSaved(count: savedStore.count)
+        }
         .sheet(isPresented: $showComparePicker) {
             ComparePickerView(
                 deals: sortedDeals,

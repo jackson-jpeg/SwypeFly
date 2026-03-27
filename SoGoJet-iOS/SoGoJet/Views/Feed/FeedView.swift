@@ -80,6 +80,9 @@ struct FeedView: View {
             if feedStore.allDeals.isEmpty && !feedStore.isLoading {
                 await feedStore.fetchDeals(origin: settingsStore.departureCode)
             }
+
+            // Donate Siri shortcut so "Search Flights" appears in suggestions
+            SiriShortcuts.donateSearch(origin: settingsStore.departureCode)
         }
         .onChange(of: settingsStore.departureCode) { _, newCode in
             currentIndex = 0
