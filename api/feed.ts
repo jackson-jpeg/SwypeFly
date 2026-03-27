@@ -808,14 +808,19 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
         if (error) return { documents: [] };
         return { documents: data ?? [] };
       }),
-    supabase
-      .from(TABLES.destinationImages)
-      .select('*')
-      .limit(2500)
-      .then(({ data, error }) => {
-        if (error) return { documents: [] };
-        return { documents: data ?? [] };
-      }),
+    // Fetch images in two batches to avoid Supabase's 1000-row default limit
+    Promise.all([
+      supabase
+        .from(TABLES.destinationImages)
+        .select('*')
+        .range(0, 999)
+        .then(({ data }) => data ?? []),
+      supabase
+        .from(TABLES.destinationImages)
+        .select('*')
+        .range(1000, 1999)
+        .then(({ data }) => data ?? []),
+    ]).then(([batch1, batch2]) => ({ documents: [...batch1, ...batch2] })),
     bulkGetRouteStats(origin),
   ]);
 
@@ -1070,13 +1075,23 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       nature_score: (d.nature_score as number) || 0,
       food_score: (d.food_score as number) || 0,
       popularity_score: (d.popularity_score as number) || 0,
-      // Only show Duffel prices — these are real live fares that match booking.
-      // Travelpayouts calendar prices are estimates that mislead users.
-      live_price: lp?.price ?? null,
-      live_airline: lp?.airline ?? '',
-      live_duration: lp?.duration ?? '',
-      price_source: lp?.source ?? undefined,
-      price_fetched_at: lp?.fetched_at ?? undefined,
+      // Only show fresh Duffel prices — these are real live fares that match booking.
+      // Filter out stale prices (>48h old) and non-Duffel sources (Amadeus, Travelpayouts).
+      live_price: (() => {
+        if (!lp?.price) return null;
+        // Only trust Duffel prices
+        if (lp.source !== 'duffel') return null;
+        // Skip prices older than 48 hours
+        if (lp.fetched_at) {
+          const age = Date.now() - new Date(lp.fetched_at).getTime();
+          if (age > 48 * 60 * 60 * 1000) return null;
+        }
+        return lp.price;
+      })(),
+      live_airline: lp?.source === 'duffel' ? (lp?.airline ?? '') : '',
+      live_duration: lp?.source === 'duffel' ? (lp?.duration ?? '') : '',
+      price_source: lp?.source === 'duffel' ? lp.source : undefined,
+      price_fetched_at: lp?.source === 'duffel' ? (lp?.fetched_at ?? undefined) : undefined,
       // Prefer Duffel dates (match the price shown) over calendar dates
       departure_date: lp?.departure_date ?? cp?.date,
       return_date: lp?.return_date ?? cp?.return_date,
