@@ -489,7 +489,7 @@ struct DestinationDetailView: View {
 
                 if let temp = deal.averageTemp {
                     Label {
-                        Text("Avg temp: \(Int(temp))\u{00B0}")
+                        Text("Avg temp: \(Deal.formatTemp(temp, metric: settingsStore.usesMetric))")
                             .font(SGFont.body(size: 14))
                             .foregroundStyle(Color.sgWhiteDim)
                     } icon: {
@@ -619,7 +619,7 @@ struct DestinationDetailView: View {
                                 .font(.system(size: 28))
                                 .foregroundStyle(tempColor(temp))
 
-                            Text("\(Int(temp))°")
+                            Text(Deal.formatTemp(temp, metric: settingsStore.usesMetric))
                                 .font(.system(size: 28, weight: .bold, design: .monospaced))
                                 .foregroundStyle(Color.sgWhite)
 
@@ -1060,7 +1060,7 @@ struct DestinationDetailView: View {
         if let temp = deal.averageTemp, temp < 10 {
             tips.append(TravelTip(
                 icon: "snowflake",
-                text: "Pack warm layers -- average temperatures around \(Int(temp))\u{00B0}"
+                text: "Pack warm layers -- average temperatures around \(Deal.formatTemp(temp, metric: settingsStore.usesMetric))"
             ))
         }
 
@@ -1483,7 +1483,7 @@ struct DestinationDetailView: View {
                 .frame(width: 140, height: 100)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                Text("\(distanceKm)km")
+                Text(Deal.formatDistance(Double(distanceKm), metric: settingsStore.usesMetric))
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .foregroundStyle(Color.sgBg)
                     .padding(.horizontal, 6)

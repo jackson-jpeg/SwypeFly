@@ -8,6 +8,7 @@ struct CompareView: View {
     let dealA: Deal
     let dealB: Deal
     @Environment(\.dismiss) private var dismiss
+    @Environment(SettingsStore.self) private var settingsStore
 
     var body: some View {
         NavigationStack {
@@ -170,8 +171,8 @@ struct CompareView: View {
         // No clear "better" for temperature — just informational
         return metricRow(
             label: "Avg temp",
-            leftValue: dealA.averageTemp.map { "\(Int($0))°F" } ?? "--",
-            rightValue: dealB.averageTemp.map { "\(Int($0))°F" } ?? "--",
+            leftValue: dealA.averageTemp.map { Deal.formatTemp($0, metric: settingsStore.usesMetric) } ?? "--",
+            rightValue: dealB.averageTemp.map { Deal.formatTemp($0, metric: settingsStore.usesMetric) } ?? "--",
             leftWins: false,
             rightWins: false
         )

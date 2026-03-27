@@ -407,13 +407,7 @@ struct DealCard: View {
         if deal.flightDuration == nil || deal.flightDuration?.isEmpty == true {
             if let airport = departureAirport,
                let km = deal.distanceKm(fromLat: airport.latitude, lon: airport.longitude) {
-                if deal.isDomesticUS {
-                    let mi = Int((km * 0.621371).rounded())
-                    parts.append("~\(mi.formatted()) mi")
-                } else {
-                    let rounded = Int(km.rounded())
-                    parts.append("~\(rounded.formatted()) km")
-                }
+                parts.append("~\(Deal.formatDistance(km, metric: settingsStore.usesMetric))")
             }
         }
 

@@ -360,6 +360,30 @@ extension Deal {
     }
 }
 
+// MARK: - Unit Formatting Helpers
+
+extension Deal {
+    /// Format a Celsius temperature for display, converting to Fahrenheit when metric is false.
+    static func formatTemp(_ celsius: Double, metric: Bool) -> String {
+        if metric {
+            return "\(Int(celsius))°C"
+        } else {
+            let f = celsius * 9.0 / 5.0 + 32.0
+            return "\(Int(f))°F"
+        }
+    }
+
+    /// Format a distance in km for display, converting to miles when metric is false.
+    static func formatDistance(_ km: Double, metric: Bool) -> String {
+        if metric {
+            return "\(Int(km)) km"
+        } else {
+            let miles = km * 0.621371
+            return "\(Int(miles)) mi"
+        }
+    }
+}
+
 // MARK: - Geo Helpers
 
 extension Deal {

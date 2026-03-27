@@ -29,6 +29,7 @@ struct SettingsView: View {
                 accountSection
                 departureSection
                 displaySection
+                unitsSection
                 notificationsSection
                 savedSection
                 aboutSection
@@ -278,6 +279,50 @@ struct SettingsView: View {
             .padding(.vertical, 10)
             .background(
                 settings.preferredView == id ? Color.sgYellow : Color.clear,
+                in: RoundedRectangle(cornerRadius: Radius.md)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Units
+
+    private var unitsSection: some View {
+        settingsSection("Units") {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                HStack(spacing: 0) {
+                    unitButton(metric: false, label: "°F / mi", icon: "ruler")
+                    unitButton(metric: true, label: "°C / km", icon: "ruler")
+                }
+                .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
+
+                Text(settings.usesMetric
+                     ? "Temperatures in Celsius, distances in kilometers."
+                     : "Temperatures in Fahrenheit, distances in miles.")
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
+            }
+        }
+    }
+
+    private func unitButton(metric: Bool, label: String, icon: String) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                HapticEngine.selection()
+                settings.usesMetric = metric
+            }
+        } label: {
+            HStack(spacing: Spacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(label)
+                    .font(SGFont.bodyBold(size: 13))
+            }
+            .foregroundStyle(settings.usesMetric == metric ? Color.sgBg : Color.sgWhiteDim)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                settings.usesMetric == metric ? Color.sgYellow : Color.clear,
                 in: RoundedRectangle(cornerRadius: Radius.md)
             )
         }

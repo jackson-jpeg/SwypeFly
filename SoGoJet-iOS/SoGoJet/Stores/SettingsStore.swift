@@ -61,6 +61,18 @@ final class SettingsStore {
         set { UserDefaults.standard.set(newValue, forKey: "sg_has_onboarded") }
     }
 
+    /// Whether to display measurements in metric (°C / km) or imperial (°F / mi).
+    /// Defaults to the device locale preference if not explicitly set by the user.
+    var usesMetric: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: "sg_uses_metric") != nil {
+                return UserDefaults.standard.bool(forKey: "sg_uses_metric")
+            }
+            return Locale.current.measurementSystem == .metric
+        }
+        set { UserDefaults.standard.set(newValue, forKey: "sg_uses_metric") }
+    }
+
     // MARK: Convenience
 
     /// Formatted departure label, e.g. "New York (JFK)".
