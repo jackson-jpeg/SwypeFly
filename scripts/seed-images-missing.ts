@@ -35,10 +35,13 @@ async function searchUnsplash(query: string, count = 10): Promise<any[]> {
   }
   const data = await res.json();
   return (data.results || []).map((img: any) => ({
-    url: img.urls?.regular || img.urls?.full,
-    thumb: img.urls?.thumb,
-    credit: img.user?.name || 'Unsplash',
     unsplash_id: img.id,
+    url_raw: img.urls?.raw || img.urls?.full,
+    url_regular: img.urls?.regular,
+    url_small: img.urls?.small,
+    blur_hash: img.blur_hash || '',
+    photographer: img.user?.name || 'Unsplash',
+    photographer_url: img.user?.links?.html || '',
   }));
 }
 
@@ -87,15 +90,22 @@ async function main() {
     }
 
     // Set primary image on the destination
-    const primaryUrl = images[0].url;
+    const primaryUrl = images[0].url_regular;
     await supabase.from('destinations').update({ image_url: primaryUrl }).eq('id', dest.id);
 
-    // Insert all images into destination_images
+    // Insert all images into destination_images (matching actual schema)
     const imageRows = images.slice(0, 10).map((img: any, i: number) => ({
       destination_id: dest.id,
-      image_url: img.url,
-      thumbnail_url: img.thumb || img.url,
+      unsplash_id: img.unsplash_id,
+      url_raw: img.url_raw,
+      url_regular: img.url_regular,
+      url_small: img.url_small,
+      blur_hash: img.blur_hash,
+      photographer: img.photographer,
+      photographer_url: img.photographer_url,
       is_primary: i === 0,
+      quality_score: 80,
+      fetched_at: new Date().toISOString(),
     }));
 
     const { error } = await supabase.from('destination_images').insert(imageRows);

@@ -111,7 +111,7 @@ async function loadData() {
   let allImgs = [];
   offset = 0;
   while (true) {
-    const res = await fetch(`${url}/rest/v1/destination_images?select=destination_id,image_url,thumbnail_url,is_primary&order=destination_id.asc&offset=${offset}&limit=1000`, {
+    const res = await fetch(`${url}/rest/v1/destination_images?select=destination_id,url_regular,url_small,is_primary,photographer&order=destination_id.asc&offset=${offset}&limit=1000`, {
       headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
     });
     const batch = await res.json();
@@ -157,8 +157,8 @@ function renderGrid() {
         <div class="main-photo"><img src="${pendingChanges[dest.id] || currentPrimary}" alt="${dest.city}" loading="lazy"></div>
         <div class="photos">
           ${destImages.map(img => `
-            <div class="photo-wrapper ${(pendingChanges[dest.id] || currentPrimary) === img.image_url ? 'selected' : ''}" onclick="selectPhoto('${dest.id}', '${img.image_url}', this)">
-              <img src="${img.thumbnail_url || img.image_url}" alt="${dest.city}" loading="lazy">
+            <div class="photo-wrapper ${(pendingChanges[dest.id] || currentPrimary) === img.url_regular ? 'selected' : ''}" onclick="selectPhoto('${dest.id}', '${img.url_regular}', this)">
+              <img src="${img.url_small || img.url_regular}" alt="${dest.city}" loading="lazy">
               <div class="star">★</div>
             </div>
           `).join('')}
