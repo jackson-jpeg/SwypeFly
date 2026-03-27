@@ -12,5 +12,10 @@
 	</array>
 	<key>aps-environment</key>
 	<string>production</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:sogojet.com</string>
+		<string>applinks:www.sogojet.com</string>
+	</array>
 </dict>
 </plist>

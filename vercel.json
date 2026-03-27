@@ -10,6 +10,12 @@
       ]
     },
     {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
       "source": "/api/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "https://sogojet.com" },
@@ -35,6 +41,7 @@
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/tiktok6qw0kODSIWEj0oNE58BzKpqs3UrdPDuN.txt", "destination": "/tiktok6qw0kODSIWEj0oNE58BzKpqs3UrdPDuN.txt" },
     { "source": "/tiktok-developers-site-verification.txt", "destination": "/tiktok-developers-site-verification.txt" },
+    { "source": "/.well-known/(.*)", "destination": "/.well-known/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [

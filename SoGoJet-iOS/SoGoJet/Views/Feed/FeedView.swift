@@ -27,7 +27,6 @@ struct FeedView: View {
     @Environment(ToastManager.self) private var toastManager
     @Environment(NetworkMonitor.self) private var network
 
-    @State private var scrollToTop: Bool = false
     @State private var currentIndex: Int? = 0
     @State private var swipeCount: Int = 0
     @State private var headerVisible: Bool = true

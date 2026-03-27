@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["2MU4PC84GZ.com.sogojet.app"],
+        "paths": [
+          "/destination/*",
+          "/share/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["2MU4PC84GZ.com.sogojet.app"]
+  }
+}

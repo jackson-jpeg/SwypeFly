@@ -303,6 +303,7 @@ struct SoGoJetApp: App {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: APIClient.sessionExpired)) { _ in
                     authStore.signOut()
+                    toastManager.show(message: "Session expired. Please sign in again.", type: .info, duration: 4)
                 }
                 .onContinueUserActivity("com.sogojet.search") { _ in
                     router.handleQuickAction("com.sogojet.search")
