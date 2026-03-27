@@ -56,6 +56,25 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         return config
     }
 
+    // MARK: - Quick Actions (Warm Launch)
+
+    /// Handle quick action when the app is already running (warm launch).
+    /// For cold launch, the shortcut is captured in configurationForConnecting above.
+    func application(
+        _ application: UIApplication,
+        performActionFor shortcutItem: UIApplicationShortcutItem,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        Self.pendingShortcutType = shortcutItem.type
+        // Post notification so the SwiftUI lifecycle picks it up
+        NotificationCenter.default.post(
+            name: .sogojetQuickActionTriggered,
+            object: nil,
+            userInfo: ["type": shortcutItem.type]
+        )
+        completionHandler(true)
+    }
+
     // MARK: - UNUserNotificationCenterDelegate
 
     /// Handle notification tap when the app is in the foreground or background.
@@ -89,6 +108,7 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
 
 extension Notification.Name {
     static let sogojetNotificationTapped = Notification.Name("sogojetNotificationTapped")
+    static let sogojetQuickActionTriggered = Notification.Name("sogojetQuickActionTriggered")
 }
 
 @main
@@ -183,6 +203,13 @@ struct SoGoJetApp: App {
                         return
                     }
 
+                    // Handle sogojet:// custom scheme deep links
+                    // (e.g. sogojet://destination/{id} from widgets, sogojet://search, etc.)
+                    if url.scheme == "sogojet" {
+                        router.handleCustomSchemeURL(url, feedStore: feedStore)
+                        return
+                    }
+
                     router.handleDeepLink(url, feedStore: feedStore)
                 }
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
@@ -227,6 +254,12 @@ struct SoGoJetApp: App {
                     if let dealId = notification.userInfo?["dealId"] as? String {
                         SoGoJetAppDelegate.pendingNotificationDealId = nil
                         router.handleNotificationDealId(dealId, feedStore: feedStore, savedStore: savedStore)
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .sogojetQuickActionTriggered)) { notification in
+                    if let type = notification.userInfo?["type"] as? String {
+                        SoGoJetAppDelegate.pendingShortcutType = nil
+                        router.handleQuickAction(type)
                     }
                 }
                 .onContinueUserActivity("com.sogojet.search") { _ in

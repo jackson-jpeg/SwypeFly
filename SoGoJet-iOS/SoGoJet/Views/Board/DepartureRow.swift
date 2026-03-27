@@ -29,13 +29,20 @@ struct DepartureBoardSlot: Identifiable, Equatable {
         )
     }
 
+    /// Board-friendly price that fits within the split-flap column (max 7 chars).
+    /// "Check price" (11 chars) would be truncated, so we show "— —" instead.
+    private static func boardPrice(for deal: Deal) -> String {
+        guard deal.hasPrice else { return "— —" }
+        return deal.priceFormatted
+    }
+
     static func fromDeal(_ deal: Deal, slot: Int) -> DepartureBoardSlot {
         DepartureBoardSlot(
             id: slot,
             deal: deal,
             code: deal.iataCode.uppercased(),
             destination: deal.city.uppercased(),
-            price: deal.priceFormatted,
+            price: boardPrice(for: deal),
             airlineName: deal.airlineName,
             country: deal.country,
             isEstimatedPrice: deal.isEstimatedPrice
@@ -132,7 +139,7 @@ struct DepartureRow: View {
 
                 SplitFlapRow(
                     text: slot.price,
-                    maxLength: 6,
+                    maxLength: 7,
                     size: .sm,
                     color: priceColor,
                     alignment: .trailing,
@@ -141,7 +148,7 @@ struct DepartureRow: View {
                     staggerMs: 40,
                     animationID: animationID
                 )
-                .frame(width: 110, alignment: .trailing)
+                .frame(width: 82, alignment: .trailing)
             }
 
             // Country + flight info subtitle

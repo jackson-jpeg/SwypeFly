@@ -346,35 +346,13 @@ struct DepartureBoardView: View {
                         }
                     }
                 })
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    if let deal = slot.deal {
-                        Button {
-                            HapticEngine.medium()
-                            router.startBooking(deal)
-                        } label: {
-                            Label("Search", systemImage: "airplane.departure")
-                        }
-                        .tint(Color.sgYellow)
-                    }
-                }
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    if let deal = slot.deal {
-                        Button {
-                            toggleSave(deal)
-                        } label: {
-                            Label(
-                                savedStore.isSaved(id: deal.id) ? "Unsave" : "Save",
-                                systemImage: savedStore.isSaved(id: deal.id) ? "heart.slash" : "heart.fill"
-                            )
-                        }
-                        .tint(savedStore.isSaved(id: deal.id) ? Color.sgRed : Color.sgGreen)
-                    }
-                }
+                // Note: .swipeActions only works inside List — actions are provided
+                // via context menu and the bottom action buttons instead.
                 .accessibilityLabel(slot.accessibilityText)
                 .accessibilityHint(
                     slot.isBlank
                         ? "No flight in this row"
-                        : "Tap to view deal details. Swipe right to search flights, left to save."
+                        : "Tap to view deal details. Long press for more options."
                 )
                 .accessibilityAddTraits(slot.isBlank ? [] : .isButton)
             }

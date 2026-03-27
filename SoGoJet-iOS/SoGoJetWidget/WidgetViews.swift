@@ -281,5 +281,7 @@ private func emptyRow(cw: CGFloat, ch: CGFloat, destLen: Int) -> some View {
 }
 
 private func deepLink(for flight: WidgetFlight) -> URL {
-    URL(string: "https://sogojet.com/destination/\(flight.id)") ?? URL(string: "https://sogojet.com")!
+    // Use the sogojet:// custom URL scheme so iOS routes taps to the app
+    // instead of opening Safari (universal links require Associated Domains).
+    URL(string: "sogojet://destination/\(flight.id)") ?? URL(string: "sogojet://home")!
 }

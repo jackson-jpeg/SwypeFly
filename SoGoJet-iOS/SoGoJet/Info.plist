@@ -24,8 +24,10 @@
 	</array>
 	<key>NSUserActivityTypes</key>
 	<array>
+		<string>com.sogojet.search</string>
 		<string>com.sogojet.search-flights</string>
 		<string>com.sogojet.saved</string>
+		<string>com.sogojet.board</string>
 		<string>com.sogojet.view-deal</string>
 	</array>
 	<key>NSFaceIDUsageDescription</key>

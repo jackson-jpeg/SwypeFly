@@ -211,6 +211,44 @@ final class Router {
 
     // MARK: Deep Links
 
+    /// Handle sogojet:// custom scheme URLs (from widgets, Siri, Spotlight, etc.).
+    /// Supports:
+    ///   sogojet://destination/{id} — open a deal detail
+    ///   sogojet://search           — open the search sheet
+    ///   sogojet://saved            — switch to the saved tab
+    ///   sogojet://board            — switch to the departure board
+    ///   sogojet://home             — go to the feed tab
+    @MainActor func handleCustomSchemeURL(_ url: URL, feedStore: FeedStore) {
+        guard url.scheme == "sogojet" else { return }
+        let host = url.host() ?? url.host ?? ""
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+
+        switch host {
+        case "destination":
+            // sogojet://destination/{id}
+            if let destinationId = pathComponents.first {
+                activeTab = .feed
+                if let deal = feedStore.allDeals.first(where: { $0.id == destinationId }) {
+                    showDeal(deal)
+                } else {
+                    pendingDeepLinkId = destinationId
+                }
+            }
+        case "search":
+            handleQuickAction("com.sogojet.search")
+        case "saved":
+            handleQuickAction("com.sogojet.saved")
+        case "board":
+            handleQuickAction("com.sogojet.board")
+        case "home":
+            activeTab = .feed
+        default:
+            #if DEBUG
+            print("[Router] Unrecognized sogojet:// URL: \(url)")
+            #endif
+        }
+    }
+
     /// Handle an incoming deep link URL.
     /// Supports: https://sogojet.com/destination/{id}
     /// Returns the destination ID if parsed successfully, or nil.
