@@ -1046,10 +1046,10 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       continent: (d.continent as string) || undefined,
       tagline: (d.tagline as string) || '',
       description: (d.description as string) || '',
-      // Prefer Unsplash images (destination_images collection) — they load reliably in browsers.
-      // Google Places photo URLs (d.image_url) expire and return HTML instead of images.
-      image_url: imageMap.get(d.id)?.url || (d.image_url as string) || '',
-      image_urls: imageMap.get(d.id)?.urls?.length ? imageMap.get(d.id)!.urls : (d.image_urls as string[]) || [],
+      // Only use Unsplash images (destination_images collection).
+      // Google Places URLs expire and we're paying for Unsplash — use it exclusively.
+      image_url: imageMap.get(d.id)?.url || '',
+      image_urls: imageMap.get(d.id)?.urls?.length ? imageMap.get(d.id)!.urls : [],
       flight_price: d.flight_price as number,
       hotel_price_per_night: (d.hotel_price_per_night as number) || 0,
       currency: (d.currency as string) || 'USD',
