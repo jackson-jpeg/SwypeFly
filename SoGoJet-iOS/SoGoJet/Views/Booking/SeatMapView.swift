@@ -528,6 +528,7 @@ struct SeatMapView: View {
         return Button {
             guard seat.available else { return }
             store.selectSeat(seat.id)
+            HapticEngine.medium()
         } label: {
             CabinSeatCell(
                 seat: seat,
@@ -899,6 +900,8 @@ private struct SeatLegendBadge: View {
             RoundedRectangle(cornerRadius: Radius.md)
                 .strokeBorder(Color.sgBorder.opacity(0.55), lineWidth: 1)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title): \(subtitle)")
     }
 }
 

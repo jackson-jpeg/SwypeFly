@@ -178,6 +178,8 @@ struct BookingFlowView: View {
                 currentIndex: currentStepIndex,
                 tone: .amber
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Booking progress: step \(currentStepIndex + 1) of \(flowSteps.count)")
         }
         .padding(.horizontal, Spacing.md)
         .padding(.top, Spacing.sm)

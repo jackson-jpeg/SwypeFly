@@ -242,6 +242,7 @@ struct DealCard: View {
                 .frame(height: 90)
         }
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private func startSwipeHintBounce() {

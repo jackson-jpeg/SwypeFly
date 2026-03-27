@@ -62,12 +62,13 @@ struct SavedCard: View {
                         // Nonstop badge
                         if deal.isNonstop == true {
                             Text("Nonstop")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 10, weight: .bold, design: .default).leading(.tight))
                                 .foregroundStyle(Color.sgBg)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 2)
                                 .background(Color.sgDealAmazing)
                                 .clipShape(Capsule())
+                                .accessibilityLabel("Nonstop flight")
                         }
 
                         // Trip countdown badge
@@ -83,6 +84,7 @@ struct SavedCard: View {
                             .padding(.vertical, 2)
                             .background((deal.daysUntilDeparture ?? 99 <= 3 ? Color.sgRed : Color.sgYellow).opacity(0.15))
                             .clipShape(Capsule())
+                            .accessibilityLabel("Departure \(countdown)")
                         }
                     }
 

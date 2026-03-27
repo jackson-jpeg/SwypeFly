@@ -1473,8 +1473,17 @@ struct TripView: View {
 
     // MARK: - Results
 
+    @discardableResult
+    private func announceResults(count: Int) -> Bool {
+        if UIAccessibility.isVoiceOverRunning {
+            UIAccessibility.post(notification: .announcement, argument: "\(count) fare\(count == 1 ? "" : "s") found")
+        }
+        return true
+    }
+
     private func tripContent(options: [TripOption]) -> some View {
         ScrollView(showsIndicators: false) {
+            let _ = announceResults(count: options.count)
             VStack(spacing: Spacing.lg) {
                 header
                 searchSummaryCard
