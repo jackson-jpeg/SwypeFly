@@ -69,8 +69,12 @@ export function resetRateLimits(): void {
  * Extract client IP from Vercel request headers.
  */
 export function getClientIp(headers: Record<string, string | string[] | undefined>): string {
+  // Prefer x-real-ip (set by Vercel's proxy, cannot be spoofed)
+  const realIp = headers['x-real-ip'];
+  if (typeof realIp === 'string' && realIp) return realIp.trim();
+  // Fallback to last entry in x-forwarded-for (added by the closest proxy)
   const forwarded = headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
-  if (Array.isArray(forwarded)) return forwarded[0].split(',')[0].trim();
-  return headers['x-real-ip'] as string || 'unknown';
+  if (typeof forwarded === 'string') return forwarded.split(',').pop()?.trim() || 'unknown';
+  if (Array.isArray(forwarded) && forwarded.length) return forwarded[forwarded.length - 1].split(',').pop()?.trim() || 'unknown';
+  return 'unknown';
 }

@@ -11,7 +11,8 @@ actor APIClient {
     private let decoder: JSONDecoder
 
     /// Auth token set by AuthStore — included as Bearer header on all requests when available.
-    static var authToken: String?
+    /// nonisolated(unsafe) because this is set from @MainActor (AuthStore) and read from the actor.
+    nonisolated(unsafe) static var authToken: String?
 
     /// Posted when a 401 response invalidates the session token.
     static let sessionExpired = Notification.Name("sg_session_expired")

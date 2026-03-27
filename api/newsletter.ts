@@ -211,8 +211,9 @@ function formatDate(dateStr: string): string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
 
-  // Auth — cron secret or preview mode
-  const secret = req.query.secret || req.headers['x-cron-secret'];
+  // Auth — Vercel cron Bearer token, query param, or custom header
+  const bearerToken = req.headers.authorization?.replace('Bearer ', '');
+  const secret = bearerToken || req.query.secret || req.headers['x-cron-secret'];
   const preview = req.query.preview === 'true' && process.env.VERCEL_ENV !== 'production';
 
   if (!preview) {

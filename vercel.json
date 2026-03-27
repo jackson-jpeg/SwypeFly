@@ -59,7 +59,7 @@
       "schedule": "0 */2 * * *"
     },
     {
-      "path": "/api/newsletter?secret=${CRON_SECRET}",
+      "path": "/api/newsletter",
       "schedule": "0 10 * * 1"
     }
   ]

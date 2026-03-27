@@ -1,7 +1,6 @@
-// Sentry removed in v2 — log errors to console only
-function captureException(error: unknown, _context?: Record<string, unknown>) {
-  console.error('[Sentry stub]', error);
-}
+// Structured JSON logging for Vercel serverless functions.
+// Logs are captured by Vercel's log drain and can be forwarded to
+// Sentry, Datadog, or any log aggregation service.
 
 interface LogEntry {
   level: 'error' | 'warn' | 'info';
@@ -27,14 +26,14 @@ function emitLog(entry: LogEntry) {
 
 export function logApiError(endpoint: string, error: unknown, context?: Record<string, unknown>) {
   const message = error instanceof Error ? error.message : String(error);
+  const stack = error instanceof Error ? error.stack : undefined;
   emitLog({
     level: 'error',
     endpoint,
     message,
     timestamp: new Date().toISOString(),
-    context,
+    context: { ...context, ...(stack ? { stack } : {}) },
   });
-  captureException(error, { ...context, endpoint });
 }
 
 export function logApiWarn(endpoint: string, message: string, context?: Record<string, unknown>) {

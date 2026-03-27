@@ -1161,8 +1161,14 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
               if (paxRows && paxRows.length > 0) {
                 const email = paxRows[0].email as string;
                 if (email) {
-                  console.log(`[booking/duffel-webhook] Would notify ${email} about schedule change for ${booking.booking_reference}`);
-                  // TODO: Send actual email when email service is configured
+                  const { sendScheduleChangeEmail } = await import('../utils/email.js');
+                  await sendScheduleChangeEmail({
+                    to: email,
+                    passengerName: email.split('@')[0],
+                    bookingReference: booking.booking_reference as string,
+                    destinationCity: booking.destination_city as string || 'your destination',
+                    changeDescription: 'The airline has updated your flight schedule. Please check your booking for the latest departure and arrival times.',
+                  });
                 }
               }
             } catch (notifyErr) {

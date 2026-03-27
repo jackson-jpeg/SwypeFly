@@ -4,6 +4,7 @@ import { destinationQuerySchema, priceCalendarQuerySchema, weekMatrixQuerySchema
 import { fetchPriceCalendar, fetchMonthlyPrices, fetchWeekMatrix } from '../services/travelpayouts';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 
 // ─── Price calendar handler ──────────────────────────────────────────
 
@@ -238,6 +239,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limit: 30 req/min per IP
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`dest:${ip}`, 30, 60_000);
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
   }
 
   // Route by action param

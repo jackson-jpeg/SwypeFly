@@ -12,10 +12,10 @@ private let logger = Logger(subsystem: "com.sogojet.app", category: "diagnostics
 
 class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MXMetricManagerSubscriber {
     /// Stores the shortcut action type when the app is launched from a quick action.
-    static var pendingShortcutType: String?
+    nonisolated(unsafe) static var pendingShortcutType: String?
 
     /// Stores the deal ID from a notification tap when the app is cold-launched.
-    static var pendingNotificationDealId: String?
+    nonisolated(unsafe) static var pendingNotificationDealId: String?
 
     func application(
         _ application: UIApplication,

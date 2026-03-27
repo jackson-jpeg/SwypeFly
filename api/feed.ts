@@ -9,6 +9,7 @@ import { searchFlights } from '../services/duffel';
 import { cors } from './_cors.js';
 import { bulkGetRouteStats } from '../utils/priceStats';
 import { nearbyAirports } from '../data/airports';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 
 const PAGE_SIZE = 10;
 
@@ -1309,6 +1310,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limit: 20 req/min per IP
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`feed:${ip}`, 20, 60_000);
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
   }
 
   // Route by action param

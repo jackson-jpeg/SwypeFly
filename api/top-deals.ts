@@ -4,10 +4,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
+  // Rate limit: 10 req/min per IP
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`top-deals:${ip}`, 10, 60_000);
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+  }
 
   const limit = Math.min(parseInt(String(req.query.limit || '10'), 10) || 10, 25);
   const origin = req.query.origin ? String(req.query.origin).toUpperCase() : undefined;

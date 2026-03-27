@@ -4,6 +4,7 @@ import Observation
 // MARK: - Router
 // Centralised navigation state for the app.
 
+@MainActor
 @Observable
 final class Router {
     // MARK: Tab
