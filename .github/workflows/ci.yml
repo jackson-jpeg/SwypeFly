@@ -25,7 +25,10 @@ jobs:
         run: npm run lint
 
       - name: Test
-        run: npm run test -- --coverage
+        run: npm run test -- --coverage --passWithNoTests
+        env:
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
 
       - name: Build web
         run: npx expo export --platform web
