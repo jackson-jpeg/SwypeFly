@@ -46,8 +46,12 @@ describe('checkRateLimit', () => {
 });
 
 describe('getClientIp', () => {
-  it('extracts IP from x-forwarded-for', () => {
-    expect(getClientIp({ 'x-forwarded-for': '1.2.3.4, 5.6.7.8' })).toBe('1.2.3.4');
+  it('prefers x-real-ip over x-forwarded-for', () => {
+    expect(getClientIp({ 'x-real-ip': '10.0.0.1', 'x-forwarded-for': '1.2.3.4, 5.6.7.8' })).toBe('10.0.0.1');
+  });
+
+  it('extracts last IP from x-forwarded-for (proxy-added, unspoofable)', () => {
+    expect(getClientIp({ 'x-forwarded-for': '1.2.3.4, 5.6.7.8' })).toBe('5.6.7.8');
   });
 
   it('extracts IP from x-real-ip', () => {
