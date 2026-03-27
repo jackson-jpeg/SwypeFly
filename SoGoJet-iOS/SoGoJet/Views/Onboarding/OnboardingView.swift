@@ -5,6 +5,7 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(SettingsStore.self) private var settings
     @Environment(FeedStore.self) private var feedStore
+    @Environment(AuthStore.self) private var auth
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var currentDestinationIndex = 0
@@ -35,19 +36,25 @@ struct OnboardingView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, Spacing.xl)
-                .padding(.bottom, 80) // space for sticky button
+                .padding(.bottom, 160) // space for sticky buttons
             }
             .scrollDismissesKeyboard(.interactively)
 
-            // Sticky "Start Exploring" button — always visible
-            getStartedButton
-                .padding(.horizontal, Spacing.md)
-                .padding(.bottom, Spacing.md)
-                .background(
-                    Color.sgBg.opacity(0.95)
-                        .background(.ultraThinMaterial)
-                        .ignoresSafeArea(edges: .bottom)
-                )
+            // Sticky bottom — sign in options + start button
+            VStack(spacing: 10) {
+                // Optional sign-in buttons (compact row)
+                signInOptions
+                    .padding(.horizontal, Spacing.md)
+
+                getStartedButton
+                    .padding(.horizontal, Spacing.md)
+            }
+            .padding(.bottom, Spacing.md)
+            .background(
+                Color.sgBg.opacity(0.95)
+                    .background(.ultraThinMaterial)
+                    .ignoresSafeArea(edges: .bottom)
+            )
         }
         .background(Color.sgBg)
         .navigationTitle("")
@@ -207,6 +214,93 @@ struct OnboardingView: View {
         }
     }
 
+    // MARK: - Sign In Options
+
+    private var signInOptions: some View {
+        VStack(spacing: 8) {
+            if !auth.isAuthenticated {
+                Text("Sign in to book flights and save across devices")
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
+
+                HStack(spacing: 8) {
+                    // Apple
+                    Button {
+                        auth.signInWithApple()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "apple.logo")
+                                .font(.system(size: 13))
+                            Text("Apple")
+                                .font(SGFont.bodyBold(size: 13))
+                        }
+                        .foregroundStyle(Color.sgBg)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Color.sgWhite)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(auth.isLoading)
+
+                    // Google
+                    Button {
+                        auth.signInWithGoogle()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "g.circle.fill")
+                                .font(.system(size: 13))
+                            Text("Google")
+                                .font(SGFont.bodyBold(size: 13))
+                        }
+                        .foregroundStyle(Color.sgBg)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Color.sgWhite)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(auth.isLoading)
+
+                    // TikTok
+                    Button {
+                        auth.signInWithTikTok()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.rectangle.fill")
+                                .font(.system(size: 11))
+                            Text("TikTok")
+                                .font(SGFont.bodyBold(size: 13))
+                        }
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Color.sgSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(Color.sgBorder, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(auth.isLoading)
+                }
+
+                if auth.isLoading {
+                    ProgressView()
+                        .tint(Color.sgYellow)
+                        .scaleEffect(0.8)
+                }
+
+                if let error = auth.authError {
+                    Text(error)
+                        .font(SGFont.body(size: 11))
+                        .foregroundStyle(Color.sgRed)
+                }
+            }
+        }
+    }
+
     // MARK: - CTA
 
     private var getStartedButton: some View {
@@ -285,4 +379,6 @@ private struct OnboardingShowcase {
 #Preview("Onboarding") {
     OnboardingView()
         .environment(SettingsStore())
+        .environment(AuthStore())
+        .environment(FeedStore())
 }

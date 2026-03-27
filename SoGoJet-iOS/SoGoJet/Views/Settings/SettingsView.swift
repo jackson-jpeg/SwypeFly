@@ -106,6 +106,7 @@ struct SettingsView: View {
                     }
                 }
 
+                // Sign in with Apple
                 Button {
                     auth.signInWithApple()
                 } label: {
@@ -122,6 +123,62 @@ struct SettingsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
+                .disabled(auth.isLoading)
+
+                HStack(spacing: 8) {
+                    // Sign in with Google
+                    Button {
+                        auth.signInWithGoogle()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "g.circle.fill")
+                                .font(.system(size: 14))
+                            Text("Google")
+                                .font(SGFont.bodyBold(size: 13))
+                        }
+                        .foregroundStyle(Color.sgBg)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.sgWhite)
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(auth.isLoading)
+
+                    // Sign in with TikTok
+                    Button {
+                        auth.signInWithTikTok()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.rectangle.fill")
+                                .font(.system(size: 12))
+                            Text("TikTok")
+                                .font(SGFont.bodyBold(size: 13))
+                        }
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.sgSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.md)
+                                .strokeBorder(Color.sgBorder, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(auth.isLoading)
+                }
+
+                if auth.isLoading {
+                    ProgressView()
+                        .tint(Color.sgYellow)
+                }
+
+                if let error = auth.authError {
+                    Text(error)
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgRed)
+                }
             }
         }
         .alert("Sign Out?", isPresented: $showSignOutConfirmation) {
