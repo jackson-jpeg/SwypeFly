@@ -15,12 +15,14 @@ interface FilterState {
   regions: string[];
   vibes: string[];
   duration: Duration;
+  search: string;
   isOpen: boolean;
 
   setPriceRange: (range: PriceRange) => void;
   toggleRegion: (region: string) => void;
   toggleVibe: (vibe: string) => void;
   setDuration: (duration: Duration) => void;
+  setSearch: (query: string) => void;
   clearAll: () => void;
   open: () => void;
   close: () => void;
@@ -33,6 +35,7 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
   regions: [],
   vibes: [],
   duration: null,
+  search: '',
   isOpen: false,
 
   setPriceRange: (range) => {
@@ -59,23 +62,26 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
     set({ duration: get().duration === duration ? null : duration });
   },
 
-  clearAll: () => set({ priceRange: null, regions: [], vibes: [], duration: null }),
+  setSearch: (query) => set({ search: query }),
+
+  clearAll: () => set({ priceRange: null, regions: [], vibes: [], duration: null, search: '' }),
 
   open: () => set({ isOpen: true }),
   close: () => set({ isOpen: false }),
 
   activeCount: () => {
-    const { priceRange, regions, vibes, duration } = get();
+    const { priceRange, regions, vibes, duration, search } = get();
     let count = 0;
     if (priceRange) count++;
     count += regions.length;
     count += vibes.length;
     if (duration) count++;
+    if (search.trim()) count++;
     return count;
   },
 
   toQueryParams: () => {
-    const { priceRange, regions, vibes, duration } = get();
+    const { priceRange, regions, vibes, duration, search } = get();
     const params: Record<string, string> = {};
 
     if (priceRange) {
@@ -87,6 +93,7 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
     if (regions.length > 0) params.regionFilter = regions.join(',');
     if (vibes.length > 0) params.vibeFilter = vibes.join(',');
     if (duration) params.durationFilter = duration;
+    if (search.trim()) params.search = search.trim();
 
     return params;
   },

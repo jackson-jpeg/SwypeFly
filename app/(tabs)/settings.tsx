@@ -21,6 +21,86 @@ import { successHaptic } from '../../utils/haptics';
 import { showToast } from '../../stores/toastStore';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
 
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
+
+function NewsletterSignup() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+
+  const handleSubscribe = async () => {
+    if (!email.trim() || !email.includes('@')) return;
+    setStatus('sending');
+    try {
+      const res = await fetch(`${API_BASE}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (res.ok) {
+        setStatus('done');
+        setEmail('');
+        showToast('Subscribed to deal alerts!');
+        successHaptic();
+      } else {
+        setStatus('error');
+      }
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'done') {
+    return (
+      <View style={{ backgroundColor: colors.cell, borderRadius: 8, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.border }}>
+        <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.green, textAlign: 'center' }}>
+          You're subscribed! We'll send the best deals to your inbox.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ backgroundColor: colors.cell, borderRadius: 8, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.border, gap: 10 }}>
+      <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted }}>
+        Get the best flight deals delivered to your inbox weekly.
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <TextInput
+          style={{
+            flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+            borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8, fontFamily: fonts.body,
+            fontSize: 14, color: colors.white,
+          }}
+          placeholder="your@email.com"
+          placeholderTextColor={colors.muted + '60'}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Pressable
+          onPress={handleSubscribe}
+          disabled={status === 'sending'}
+          style={{
+            backgroundColor: colors.orange, borderRadius: 6, paddingHorizontal: 16,
+            justifyContent: 'center', opacity: status === 'sending' ? 0.5 : 1,
+          }}
+        >
+          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: '#FFF8F0' }}>
+            {status === 'sending' ? '...' : 'Subscribe'}
+          </Text>
+        </Pressable>
+      </View>
+      {status === 'error' && (
+        <Text style={{ fontFamily: fonts.body, fontSize: 12, color: '#E85D4A' }}>
+          Something went wrong. Please try again.
+        </Text>
+      )}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const settings = useSettingsStore();
@@ -222,6 +302,34 @@ export default function SettingsScreen() {
         <Text style={styles.rowLabel}>Contact</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.faint} />
       </Pressable>
+
+      {/* ── Newsletter ── */}
+      <Text style={styles.sectionLabel}>STAY IN THE LOOP</Text>
+      <NewsletterSignup />
+
+      {/* ── Get the App ── */}
+      {Platform.OS === 'web' && (
+        <>
+          <Text style={styles.sectionLabel}>GET THE APP</Text>
+          <Pressable
+            style={[styles.row, { backgroundColor: colors.yellow + '10', borderColor: colors.yellow + '30' }]}
+            onPress={() => {
+              if (typeof window !== 'undefined') window.open('https://apps.apple.com/app/sogojet/id0000000000', '_blank');
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+              <Ionicons name="logo-apple" size={20} color={colors.yellow} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: colors.yellow }]}>Download SoGoJet for iOS</Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                  Booking, price alerts, Face ID, and more
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.yellow} />
+          </Pressable>
+        </>
+      )}
 
       <Text style={styles.footer}>SoGoJet v2.0</Text>
     </ScrollView>

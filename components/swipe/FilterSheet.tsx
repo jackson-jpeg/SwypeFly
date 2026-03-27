@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -70,6 +71,8 @@ export default function FilterSheet() {
   const toggleRegion = useFilterStore((s) => s.toggleRegion);
   const toggleVibe = useFilterStore((s) => s.toggleVibe);
   const setDuration = useFilterStore((s) => s.setDuration);
+  const search = useFilterStore((s) => s.search);
+  const setSearch = useFilterStore((s) => s.setSearch);
   const clearAll = useFilterStore((s) => s.clearAll);
   const toQueryParams = useFilterStore((s) => s.toQueryParams);
   const departureCode = useSettingsStore((s) => s.departureCode);
@@ -175,6 +178,19 @@ export default function FilterSheet() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Search bar */}
+          <TextInput
+            style={searchStyles.input}
+            placeholder="Search city, country, or vibe..."
+            placeholderTextColor={colors.muted + '80'}
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+            accessibilityLabel="Search destinations"
+          />
+
           {/* Header row: first section label + clear all */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>PRICE</Text>
@@ -369,5 +385,20 @@ const styles = StyleSheet.create({
   },
   applyTextDisabled: {
     color: '#FFF8F080',
+  },
+});
+
+const searchStyles = StyleSheet.create({
+  input: {
+    backgroundColor: colors.cell,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.white,
+    marginBottom: spacing.sm,
   },
 });

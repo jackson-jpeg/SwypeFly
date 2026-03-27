@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -288,6 +289,50 @@ export default function DestinationDetailScreen() {
           <Text style={styles.description}>{deal.description}</Text>
         </View>
 
+        {/* Weather & Best Time */}
+        {((deal as any).averageTemp || (deal as any).bestMonths?.length > 0) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>WEATHER & BEST TIME</Text>
+            <View style={styles.detailGrid}>
+              {(deal as any).averageTemp && (
+                <DetailItem icon="thermometer-outline" label="Avg Temp" value={`${(deal as any).averageTemp}°F`} />
+              )}
+              {(deal as any).bestMonths?.length > 0 && (
+                <DetailItem icon="sunny-outline" label="Best Months" value={(deal as any).bestMonths.slice(0, 3).join(', ')} />
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Budget Estimate */}
+        {(deal.price || (deal as any).hotelPricePerNight) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>BUDGET ESTIMATE</Text>
+            <View style={styles.budgetRows}>
+              {deal.price && (
+                <View style={styles.budgetRow}>
+                  <Text style={styles.budgetLabel}>Flights (round trip)</Text>
+                  <Text style={styles.budgetValue}>${deal.price}</Text>
+                </View>
+              )}
+              {(deal as any).hotelPricePerNight && (
+                <View style={styles.budgetRow}>
+                  <Text style={styles.budgetLabel}>Hotel (per night)</Text>
+                  <Text style={styles.budgetValue}>${(deal as any).hotelPricePerNight}</Text>
+                </View>
+              )}
+              {deal.price && (deal as any).hotelPricePerNight && deal.tripDays && (
+                <View style={[styles.budgetRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, marginTop: 4 }]}>
+                  <Text style={[styles.budgetLabel, { fontFamily: fonts.bodyBold }]}>Est. Total ({deal.tripDays} nights)</Text>
+                  <Text style={[styles.budgetValue, { color: colors.yellow }]}>
+                    ${Math.round(deal.price + (deal as any).hotelPricePerNight * (deal.tripDays - 1))}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Vibe tags */}
         {deal.vibeTags.length > 0 && (
           <View style={styles.section}>
@@ -387,6 +432,27 @@ export default function DestinationDetailScreen() {
                 </Pressable>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* Get the App CTA */}
+        {Platform.OS === 'web' && (
+          <View style={styles.appCta}>
+            <Text style={styles.appCtaTitle}>GET THE FULL EXPERIENCE</Text>
+            <Text style={styles.appCtaText}>
+              Book flights, get price drop alerts, compare deals side-by-side, and more — all in the SoGoJet iOS app.
+            </Text>
+            <Pressable
+              style={styles.appCtaButton}
+              onPress={() => {
+                if (typeof window !== 'undefined') {
+                  window.open('https://apps.apple.com/app/sogojet/id0000000000', '_blank');
+                }
+              }}
+            >
+              <Ionicons name="logo-apple" size={18} color="#0A0806" />
+              <Text style={styles.appCtaButtonText}>Download on the App Store</Text>
+            </Pressable>
           </View>
         )}
 
@@ -638,6 +704,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
+  // Budget
+  budgetRows: {
+    gap: 6,
+  },
+  budgetRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+  },
+  budgetLabel: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.muted,
+  },
+  budgetValue: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.white,
+  },
+
   // Itinerary
   itineraryDay: {
     flexDirection: 'row',
@@ -802,6 +888,46 @@ const styles = StyleSheet.create({
   // Not found
   notFound: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   notFoundText: { fontFamily: fonts.display, fontSize: 20, color: colors.muted },
+
+  // App download CTA
+  appCta: {
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+    backgroundColor: colors.cell,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center' as const,
+    gap: 12,
+  },
+  appCtaTitle: {
+    fontFamily: fonts.display,
+    fontSize: 16,
+    color: colors.yellow,
+    letterSpacing: 2,
+    textAlign: 'center' as const,
+  },
+  appCtaText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.muted,
+    textAlign: 'center' as const,
+    lineHeight: 20,
+  },
+  appCtaButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    backgroundColor: colors.yellow,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  appCtaButtonText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: '#0A0806',
+  },
 
   // Bottom bar
   bottomBar: {
