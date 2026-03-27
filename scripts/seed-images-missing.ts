@@ -94,9 +94,7 @@ async function main() {
     const imageRows = images.slice(0, 10).map((img: any, i: number) => ({
       destination_id: dest.id,
       image_url: img.url,
-      thumbnail_url: img.thumb,
-      credit: img.credit,
-      unsplash_id: img.unsplash_id,
+      thumbnail_url: img.thumb || img.url,
       is_primary: i === 0,
     }));
 

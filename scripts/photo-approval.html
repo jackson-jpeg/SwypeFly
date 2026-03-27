@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoGoJet — Photo Approval</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #e5e5e5; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
+  .header { padding: 24px 32px; border-bottom: 1px solid #222; position: sticky; top: 0; background: #0a0a0a; z-index: 100; }
+  .header h1 { font-size: 24px; color: #f7e8a0; margin-bottom: 8px; }
+  .header .stats { font-size: 13px; color: #888; }
+  .header .controls { margin-top: 12px; display: flex; gap: 12px; align-items: center; }
+  .header input { background: #1a1a1a; border: 1px solid #333; color: #e5e5e5; padding: 8px 14px; border-radius: 8px; font-size: 14px; width: 300px; }
+  .header select { background: #1a1a1a; border: 1px solid #333; color: #e5e5e5; padding: 8px 14px; border-radius: 8px; font-size: 14px; }
+  .header button { background: #f7e8a0; color: #0a0a0a; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .header button:hover { background: #e8d990; }
+  .header .btn-outline { background: transparent; border: 1px solid #333; color: #e5e5e5; }
+  .header .btn-outline:hover { border-color: #f7e8a0; color: #f7e8a0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px; padding: 24px 32px; }
+  .card { background: #141414; border-radius: 12px; border: 1px solid #222; overflow: hidden; transition: border-color 0.2s; }
+  .card.no-image { border-color: #663333; }
+  .card.approved { border-color: #4a9; }
+  .card-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .card-header h3 { font-size: 15px; font-weight: 600; }
+  .card-header h3 span { color: #888; font-weight: 400; font-size: 12px; margin-left: 6px; }
+  .card-header .badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #222; color: #aaa; }
+  .card-header .badge.missing { background: #442222; color: #f88; }
+  .card-header .badge.ok { background: #224422; color: #8f8; }
+  .photos { display: flex; gap: 4px; padding: 0 4px 4px; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .photos::-webkit-scrollbar { height: 4px; }
+  .photos::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  .photo-wrapper { flex-shrink: 0; scroll-snap-align: start; position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; transition: border-color 0.15s; }
+  .photo-wrapper:hover { border-color: #f7e8a0; }
+  .photo-wrapper.selected { border-color: #f7e8a0; }
+  .photo-wrapper img { width: 160px; height: 110px; object-fit: cover; display: block; }
+  .photo-wrapper .star { position: absolute; top: 4px; right: 4px; background: #f7e8a0; color: #0a0a0a; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; opacity: 0; transition: opacity 0.15s; }
+  .photo-wrapper.selected .star { opacity: 1; }
+  .main-photo { padding: 4px; }
+  .main-photo img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; }
+  .no-photos { padding: 16px; text-align: center; color: #666; font-size: 13px; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #224422; color: #8f8; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 200; display: none; }
+  .loading { text-align: center; padding: 60px; font-size: 16px; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SoGoJet Photo Approval</h1>
+  <div class="stats" id="stats">Loading destinations...</div>
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search city or country..." oninput="filterCards()">
+    <select id="filter" onchange="filterCards()">
+      <option value="all">All Destinations</option>
+      <option value="no-image">Missing Images</option>
+      <option value="has-image">Has Images</option>
+    </select>
+    <button onclick="saveAllChanges()">💾 Save All Changes</button>
+    <button class="btn-outline" onclick="loadData()">🔄 Refresh</button>
+  </div>
+</div>
+
+<div class="grid" id="grid">
+  <div class="loading">Loading all destinations and images...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Config — update these with your Supabase credentials
+const SUPABASE_URL = '';
+const SUPABASE_KEY = '';
+
+let destinations = [];
+let images = {};
+let pendingChanges = {};
+
+async function loadData() {
+  // Try to get config from URL params or prompt
+  let url = SUPABASE_URL || new URLSearchParams(location.search).get('url') || '';
+  let key = SUPABASE_KEY || new URLSearchParams(location.search).get('key') || '';
+
+  if (!url || !key) {
+    url = localStorage.getItem('sg_supabase_url') || prompt('Enter your Supabase URL:');
+    key = localStorage.getItem('sg_supabase_key') || prompt('Enter your Supabase service role key:');
+    if (url && key) {
+      localStorage.setItem('sg_supabase_url', url);
+      localStorage.setItem('sg_supabase_key', key);
+    }
+  }
+  if (!url || !key) { alert('Need Supabase credentials'); return; }
+
+  document.getElementById('grid').innerHTML = '<div class="loading">Loading...</div>';
+
+  // Fetch all destinations (paginated since Supabase limits to 1000)
+  let allDests = [];
+  let offset = 0;
+  while (true) {
+    const res = await fetch(`${url}/rest/v1/destinations?select=id,iata_code,city,country,image_url,is_active&is_active=eq.true&order=city.asc&offset=${offset}&limit=500`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+    });
+    const batch = await res.json();
+    if (!batch.length) break;
+    allDests.push(...batch);
+    offset += 500;
+    if (batch.length < 500) break;
+  }
+  destinations = allDests;
+
+  // Fetch all destination images
+  let allImgs = [];
+  offset = 0;
+  while (true) {
+    const res = await fetch(`${url}/rest/v1/destination_images?select=destination_id,image_url,thumbnail_url,is_primary&order=destination_id.asc&offset=${offset}&limit=1000`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+    });
+    const batch = await res.json();
+    if (!batch.length) break;
+    allImgs.push(...batch);
+    offset += 1000;
+    if (batch.length < 1000) break;
+  }
+
+  // Group images by destination_id
+  images = {};
+  for (const img of allImgs) {
+    if (!images[img.destination_id]) images[img.destination_id] = [];
+    images[img.destination_id].push(img);
+  }
+
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const noImg = destinations.filter(d => !d.image_url && !images[d.id]?.length).length;
+  const withImg = destinations.length - noImg;
+  document.getElementById('stats').textContent = `${destinations.length} destinations · ${withImg} with images · ${noImg} missing images`;
+
+  grid.innerHTML = '';
+  const filtered = getFilteredDestinations();
+
+  for (const dest of filtered) {
+    const destImages = images[dest.id] || [];
+    const hasImage = !!(dest.image_url || destImages.length);
+    const currentPrimary = dest.image_url || (destImages.find(i => i.is_primary)?.image_url) || '';
+
+    const card = document.createElement('div');
+    card.className = `card ${hasImage ? '' : 'no-image'} ${pendingChanges[dest.id] ? 'approved' : ''}`;
+    card.dataset.city = dest.city.toLowerCase();
+    card.dataset.country = dest.country.toLowerCase();
+    card.dataset.id = dest.id;
+
+    let photosHtml = '';
+    if (destImages.length > 0) {
+      photosHtml = `
+        <div class="main-photo"><img src="${pendingChanges[dest.id] || currentPrimary}" alt="${dest.city}" loading="lazy"></div>
+        <div class="photos">
+          ${destImages.map(img => `
+            <div class="photo-wrapper ${(pendingChanges[dest.id] || currentPrimary) === img.image_url ? 'selected' : ''}" onclick="selectPhoto('${dest.id}', '${img.image_url}', this)">
+              <img src="${img.thumbnail_url || img.image_url}" alt="${dest.city}" loading="lazy">
+              <div class="star">★</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else if (currentPrimary) {
+      photosHtml = `<div class="main-photo"><img src="${currentPrimary}" alt="${dest.city}" loading="lazy"></div>`;
+    } else {
+      photosHtml = `<div class="no-photos">No photos — run image seed script</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="card-header">
+        <h3>${dest.city}<span>${dest.country} · ${dest.iata_code}</span></h3>
+        <span class="badge ${hasImage ? 'ok' : 'missing'}">${destImages.length} photos</span>
+      </div>
+      ${photosHtml}
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function selectPhoto(destId, imageUrl, el) {
+  pendingChanges[destId] = imageUrl;
+
+  // Update the card UI
+  const card = el.closest('.card');
+  card.classList.add('approved');
+
+  // Update main photo
+  const mainImg = card.querySelector('.main-photo img');
+  if (mainImg) mainImg.src = imageUrl;
+
+  // Update selected state on thumbnails
+  card.querySelectorAll('.photo-wrapper').forEach(pw => pw.classList.remove('selected'));
+  el.classList.add('selected');
+
+  showToast(`Selected new photo for ${card.querySelector('h3').textContent.split(card.querySelector('span')?.textContent || '')[0].trim()}`);
+}
+
+async function saveAllChanges() {
+  const changes = Object.entries(pendingChanges);
+  if (!changes.length) { showToast('No changes to save'); return; }
+
+  const url = localStorage.getItem('sg_supabase_url');
+  const key = localStorage.getItem('sg_supabase_key');
+
+  let saved = 0;
+  for (const [destId, imageUrl] of changes) {
+    const res = await fetch(`${url}/rest/v1/destinations?id=eq.${destId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ image_url: imageUrl }),
+    });
+    if (res.ok) saved++;
+  }
+
+  showToast(`Saved ${saved}/${changes.length} photo changes!`);
+  pendingChanges = {};
+}
+
+function filterCards() {
+  renderGrid();
+}
+
+function getFilteredDestinations() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const filter = document.getElementById('filter').value;
+
+  return destinations.filter(d => {
+    if (search && !d.city.toLowerCase().includes(search) && !d.country.toLowerCase().includes(search) && !d.iata_code.toLowerCase().includes(search)) return false;
+    if (filter === 'no-image' && (d.image_url || images[d.id]?.length)) return false;
+    if (filter === 'has-image' && !d.image_url && !images[d.id]?.length) return false;
+    return true;
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// Auto-load on page open
+loadData();
+</script>
+</body>
+</html>
