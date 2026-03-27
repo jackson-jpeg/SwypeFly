@@ -144,6 +144,7 @@ struct FilterSheet: View {
             HStack(spacing: Spacing.sm) {
                 Image(systemName: "line.3.horizontal.decrease")
                     .font(.system(size: 14, weight: .semibold))
+                    .accessibilityHidden(true)
                 Text(hasFilters ? "Apply Filters" : "Show All Deals")
                     .font(SGFont.bodyBold(size: 16))
             }

@@ -59,6 +59,7 @@ struct PassengerForm: View {
                 }
                 .font(SGFont.bodyBold(size: 16))
                 .foregroundStyle(Color.sgYellow)
+                .accessibilityLabel("Dismiss keyboard")
             }
         }
         .onAppear {
@@ -324,6 +325,7 @@ struct PassengerForm: View {
                 )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Continue to seat map")
             .disabled(!isValid)
 
             VintageTerminalSecondaryButton(

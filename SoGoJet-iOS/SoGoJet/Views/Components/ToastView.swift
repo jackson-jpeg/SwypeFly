@@ -106,6 +106,7 @@ struct ToastOverlay: View {
             Image(systemName: toast.type.iconName)
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(toast.type.color)
+                .accessibilityHidden(true)
 
             Text(toast.message)
                 .font(SGFont.bodyBold(size: 14))

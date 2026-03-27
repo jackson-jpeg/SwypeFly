@@ -124,7 +124,9 @@ struct BookingFlowView: View {
                 router.dismissFullScreen()
                 // Let the user sign in from the main app
             }
+            .accessibilityLabel("Sign in to complete booking")
             Button("Continue Browsing", role: .cancel) {}
+                .accessibilityLabel("Dismiss and continue browsing flights")
         } message: {
             Text("Create an account to complete your booking. You can browse flights and compare prices without signing in.")
         }

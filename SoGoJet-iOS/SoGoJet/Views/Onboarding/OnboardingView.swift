@@ -242,6 +242,7 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(auth.isLoading)
+                    .accessibilityLabel("Sign in with Apple")
 
                     // Google
                     Button {
@@ -261,6 +262,7 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(auth.isLoading)
+                    .accessibilityLabel("Sign in with Google")
 
                     // TikTok
                     Button {
@@ -284,6 +286,7 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(auth.isLoading)
+                    .accessibilityLabel("Sign in with TikTok")
                 }
 
                 if auth.isLoading {

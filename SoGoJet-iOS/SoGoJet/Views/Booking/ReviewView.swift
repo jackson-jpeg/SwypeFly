@@ -23,6 +23,7 @@ struct ReviewView: View {
         }
         .alert("Sign In Required", isPresented: $showSignInRequired) {
             Button("OK", role: .cancel) {}
+                .accessibilityLabel("Dismiss sign in required alert")
         } message: {
             Text("You need to sign in before completing a purchase. Go back to the main screen and sign in first.")
         }
@@ -358,6 +359,7 @@ struct ReviewView: View {
                     .background(Color.sgOrange, in: RoundedRectangle(cornerRadius: Radius.sm))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Search for flights again")
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(Spacing.md)
@@ -415,6 +417,7 @@ struct ReviewView: View {
                     .background(Color.sgOrange, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Search for flights again")
             } else if store.step == .paying {
                 HStack(spacing: Spacing.sm) {
                     ProgressView()
@@ -464,6 +467,7 @@ struct ReviewView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Pay for flight")
                 .disabled(offer == nil || store.isOfferExpired)
             } else {
                 // No payment sheet yet — show button to prepare payment
@@ -488,6 +492,7 @@ struct ReviewView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Pay for flight")
                 .disabled(offer == nil || store.isOfferExpired)
             }
 

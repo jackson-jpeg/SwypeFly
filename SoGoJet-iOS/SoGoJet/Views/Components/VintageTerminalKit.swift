@@ -539,6 +539,7 @@ struct VintageTerminalActionButton: View {
                 if let icon {
                     Image(systemName: icon)
                         .font(.system(size: 14, weight: .semibold))
+                        .accessibilityHidden(true)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -589,6 +590,7 @@ struct VintageTerminalSecondaryButton: View {
                 if let icon {
                     Image(systemName: icon)
                         .font(.system(size: 13, weight: .semibold))
+                        .accessibilityHidden(true)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -654,6 +656,7 @@ struct VintageTerminalSearchField: View {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(tone.text)
+                .accessibilityHidden(true)
 
             TextField(
                 "",
@@ -708,6 +711,7 @@ struct VintageTerminalInfoRow: View {
                     .foregroundStyle(tone.text)
             }
             .frame(width: 34, height: 34)
+            .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -804,6 +808,7 @@ struct VintageTerminalRouteDisplay: View {
                     Image(systemName: "airplane")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(tone.text)
+                        .accessibilityHidden(true)
 
                     Rectangle()
                         .fill(

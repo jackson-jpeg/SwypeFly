@@ -14,6 +14,7 @@ struct PriceExplainerSheet: View {
                 Image(systemName: "info.circle.fill")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.sgYellow)
+                    .accessibilityHidden(true)
                 Text("About Prices")
                     .font(SGFont.sectionHead)
                     .foregroundStyle(Color.sgWhite)
@@ -84,6 +85,7 @@ struct PriceExplainerSheet: View {
                 .foregroundStyle(Color.sgYellow)
                 .frame(width: 24, alignment: .center)
                 .padding(.top, 2)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)

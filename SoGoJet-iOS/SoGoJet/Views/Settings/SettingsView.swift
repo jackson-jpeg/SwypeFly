@@ -91,6 +91,7 @@ struct SettingsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: Radius.md))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Sign out of your account")
                 }
             } else {
                 HStack(spacing: 8) {
@@ -125,6 +126,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(auth.isLoading)
+                .accessibilityLabel("Sign in with Apple")
 
                 HStack(spacing: 8) {
                     // Sign in with Google
@@ -145,6 +147,7 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(auth.isLoading)
+                    .accessibilityLabel("Sign in with Google")
 
                     // Sign in with TikTok
                     Button {
@@ -168,6 +171,7 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(auth.isLoading)
+                    .accessibilityLabel("Sign in with TikTok")
                 }
 
                 if auth.isLoading {
@@ -236,6 +240,7 @@ struct SettingsView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Change departure airport")
             }
         }
     }
@@ -283,6 +288,7 @@ struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Switch to \(label) view mode")
     }
 
     // MARK: - Units
@@ -327,6 +333,7 @@ struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Switch to \(label) units")
     }
 
     // MARK: - Notifications
@@ -374,6 +381,7 @@ struct SettingsView: View {
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .tint(Color.sgYellow)
+                .accessibilityLabel("Toggle \(title)")
         }
     }
 
@@ -412,6 +420,7 @@ struct SettingsView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("View saved flights")
 
                     Button {
                         showClearConfirmation = true
@@ -430,6 +439,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                     .disabled(savedStore.count == 0)
                     .opacity(savedStore.count == 0 ? 0.4 : 1)
+                    .accessibilityLabel("Clear all saved flights")
                 }
             }
         }
@@ -501,6 +511,7 @@ struct SettingsView: View {
             .padding(.vertical, Spacing.sm)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 
     // MARK: - Bindings and Helpers

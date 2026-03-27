@@ -97,6 +97,7 @@ struct AuthView: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(auth.isLoading)
+                        .accessibilityLabel("Sign in with Google")
 
                         // Sign in with TikTok
                         Button {
@@ -121,6 +122,7 @@ struct AuthView: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(auth.isLoading)
+                        .accessibilityLabel("Sign in with TikTok")
 
                         // Continue as guest
                         Button {
@@ -141,6 +143,7 @@ struct AuthView: View {
                                 )
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Continue without signing in")
 
                         // Loading indicator
                         if auth.isLoading {

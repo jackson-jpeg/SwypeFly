@@ -219,6 +219,7 @@ struct TripView: View {
                         .foregroundStyle(Color.sgMuted)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Show advanced search options")
                 }
             }
             .padding(.horizontal, Spacing.md)
@@ -328,6 +329,7 @@ struct TripView: View {
                     .background(Color.sgSurface, in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Switch back to \(settingsStore.departureCode) origin airport")
             }
         }
         .padding(Spacing.md)
@@ -776,6 +778,7 @@ struct TripView: View {
             .labelsHidden()
             .tint(Color.sgYellow)
             .colorScheme(.dark)
+            .accessibilityLabel("Select \(title.lowercased()) date")
 
             Text(subtitle)
                 .font(SGFont.body(size: 12))
@@ -825,6 +828,7 @@ struct TripView: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Select \(cabinClass.displayName) cabin")
     }
 
     private var searchButton: some View {
@@ -847,6 +851,7 @@ struct TripView: View {
             .background(Color.sgYellow)
             .clipShape(RoundedRectangle(cornerRadius: Radius.md))
         }
+        .accessibilityLabel("Search for live flight prices")
     }
 
     // MARK: - Recent Searches
@@ -1045,6 +1050,7 @@ struct TripView: View {
                         .background(Color.sgYellow, in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Refresh live flight search")
 
                 if store.lastSearchSnapshot != nil {
                     Button {
@@ -1061,6 +1067,7 @@ struct TripView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Reset to recommended travel dates")
                 }
             }
         }
@@ -1637,6 +1644,7 @@ struct TripView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(alternativesExpanded ? "Hide additional flights" : "Show additional flights")
 
             if alternativesExpanded {
                 ForEach(options) { option in
@@ -1763,6 +1771,7 @@ struct TripView: View {
             .background(Color.sgYellow)
             .clipShape(RoundedRectangle(cornerRadius: Radius.md))
         }
+        .accessibilityLabel("Continue to booking for $\(Int(bestOffer.price))")
         .padding(.top, Spacing.sm)
     }
 

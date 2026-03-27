@@ -216,6 +216,7 @@ struct SavedView: View {
                     .stroke(Color.sgYellow.opacity(0.3), lineWidth: 1)
             )
         }
+        .accessibilityLabel("Compare \(savedStore.count) saved destinations side by side")
         .onAppear {
             // Subtle pulse to draw attention, then stop
             withAnimation(
@@ -267,6 +268,7 @@ struct SavedView: View {
                     .background(Color.sgYellow.opacity(0.85))
                     .clipShape(Capsule())
                 }
+                .accessibilityLabel("Export trip plan")
             }
 
             if savedStore.savedDeals.count >= 2 {
@@ -288,6 +290,7 @@ struct SavedView: View {
                     .background(Color.sgYellow)
                     .clipShape(Capsule())
                 }
+                .accessibilityLabel("Compare saved destinations")
             }
         }
     }

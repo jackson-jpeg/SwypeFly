@@ -44,17 +44,35 @@ struct SwipeableCardStack: View {
                 ForEach(peekCards.reversed(), id: \.offset) { index, deal in
                     let depth = index - currentIndex
                     peekCard(deal: deal, depth: depth, screenSize: geo.size)
+                        .accessibilityHidden(true)
                 }
 
                 // Top card with drag gesture
                 if let topDeal = topDeal, !isFlying {
                     topCard(deal: topDeal, screenSize: geo.size)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(topDeal.city), \(topDeal.country). \(topDeal.cardPriceLabel)")
+                        .accessibilityHint("Swipe right to save, swipe left to skip, or double tap to view details")
+                        .accessibilityAction(named: "Save") {
+                            HapticEngine.success()
+                            onSave(topDeal)
+                            onAdvance()
+                        }
+                        .accessibilityAction(named: "Skip") {
+                            HapticEngine.light()
+                            onSkip(topDeal)
+                            onAdvance()
+                        }
+                        .accessibilityAction(named: "View Details") {
+                            onTap(topDeal)
+                        }
                         .zIndex(100)
                 }
 
                 // Flying-away card (animating off screen)
                 if isFlying, let flyingDeal = flyingDeal {
                     flyingCard(deal: flyingDeal, screenSize: geo.size)
+                        .accessibilityHidden(true)
                         .zIndex(200)
                 }
 
