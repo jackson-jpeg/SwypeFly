@@ -283,12 +283,14 @@ final class AuthStore: NSObject {
             self.isAuthenticated = true
             self.isLoading = false
 
-            saveSession(
-                token: tokenString,
-                userId: self.userId!,
-                name: self.userName,
-                email: self.userEmail
-            )
+            if let userId = self.userId {
+                saveSession(
+                    token: tokenString,
+                    userId: userId,
+                    name: self.userName,
+                    email: self.userEmail
+                )
+            }
         }
     }
 }

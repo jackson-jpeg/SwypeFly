@@ -14,6 +14,7 @@ struct DestinationDetailView: View {
 
     @State private var shareItem: DetailShareDealItem?
     @State private var travelers: Int = 1
+    @State private var heartBounce: Bool = false
 
     private var isSaved: Bool {
         savedStore.isSaved(id: deal.id)
@@ -1660,7 +1661,11 @@ struct DestinationDetailView: View {
             HStack(spacing: 12) {
                 Button {
                     HapticEngine.medium()
+                    heartBounce = true
                     savedStore.toggle(deal: deal)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        heartBounce = false
+                    }
                 } label: {
                     Image(systemName: isSaved ? "heart.fill" : "heart")
                         .font(.system(size: 20))
@@ -1668,6 +1673,8 @@ struct DestinationDetailView: View {
                         .frame(width: 48, height: 48)
                         .background(Color.sgSurface)
                         .clipShape(Circle())
+                        .scaleEffect(heartBounce ? 1.3 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.5), value: heartBounce)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isSaved ? "Remove from saved" : "Save \(deal.city)")

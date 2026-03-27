@@ -20,8 +20,8 @@ struct ExploreMapView: View {
             Map(position: $camera) {
                 ForEach(mappableDeals) { deal in
                     Annotation(deal.city, coordinate: CLLocationCoordinate2D(
-                        latitude: deal.latitude!,
-                        longitude: deal.longitude!
+                        latitude: deal.latitude ?? 0,
+                        longitude: deal.longitude ?? 0
                     )) {
                         mapPin(for: deal)
                     }
