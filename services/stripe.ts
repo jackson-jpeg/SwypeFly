@@ -60,6 +60,16 @@ export async function autoConfirmPaymentIntent(paymentIntentId: string) {
   });
 }
 
+// ─── Refund Payment Intent ──────────────────────────────────────────────────
+// Issues a full refund for a payment intent (e.g., when order creation fails after payment).
+
+export async function refundPaymentIntent(paymentIntentId: string) {
+  const stripe = getStripe();
+  return stripe.refunds.create({
+    payment_intent: paymentIntentId,
+  });
+}
+
 // ─── Verify Webhook Signature ───────────────────────────────────────────────
 
 export function constructWebhookEvent(

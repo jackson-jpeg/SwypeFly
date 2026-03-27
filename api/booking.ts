@@ -568,6 +568,34 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
     const v = validateRequest(paymentIntentSchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
 
+    // Validate that the client-sent amount matches the actual offer price from Duffel
+    try {
+      const { getOffer } = await import('../services/duffel.js');
+      const offer = await getOffer(v.data.offerId);
+      const duffelTotal = parseFloat(offer.total_amount) || 0;
+      // Apply the same markup the client should have seen
+      const expectedTotal = duffelTotal + Math.round(duffelTotal * (BOOKING_MARKUP_PERCENT / 100));
+      // Client sends amount in cents; convert to dollars for comparison
+      const clientAmount = v.data.amount / 100;
+      const discrepancy = Math.abs(clientAmount - expectedTotal) / expectedTotal;
+      if (discrepancy > 0.02) {
+        console.warn(`[booking/payment-intent] Amount mismatch: client=$${clientAmount}, expected=$${expectedTotal} (${(discrepancy * 100).toFixed(1)}% off)`);
+        return res.status(400).json({
+          error: 'Payment amount does not match offer price. Please refresh the offer and try again.',
+          code: 'AMOUNT_MISMATCH',
+          expectedAmount: Math.round(expectedTotal * 100),
+          providedAmount: v.data.amount,
+        });
+      }
+    } catch (offerErr: any) {
+      // If the offer can't be fetched (expired, etc.), reject — don't allow blind payment
+      console.warn(`[booking/payment-intent] Could not verify offer ${v.data.offerId}: ${offerErr?.message}`);
+      return res.status(400).json({
+        error: 'Could not verify offer price. The offer may have expired — please search again.',
+        code: 'OFFER_VERIFICATION_FAILED',
+      });
+    }
+
     // For guest checkout, use email from request body as receipt_email
     const receiptEmail = (req.body as Record<string, unknown>)?.email as string | undefined;
 
@@ -659,13 +687,31 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     // Use offer total from the request body (payment intent may not be confirmed yet)
     const paymentAmount = v.data.amount ? (v.data.amount / 100).toFixed(2) : '0.00';
     const paymentCurrency = (v.data.currency || 'USD').toUpperCase();
-    const duffelOrder = await createOrder({
-      offerId: activeOfferId,
-      passengers: v.data.passengers,
-      selectedServices: v.data.selectedServices,
-      paymentAmount,
-      paymentCurrency,
-    });
+
+    let duffelOrder: any;
+    try {
+      duffelOrder = await createOrder({
+        offerId: activeOfferId,
+        passengers: v.data.passengers,
+        selectedServices: v.data.selectedServices,
+        paymentAmount,
+        paymentCurrency,
+      });
+    } catch (orderErr: any) {
+      // Order creation failed after payment succeeded — initiate a refund
+      console.error(`[booking/create-order] Order creation failed, initiating refund for ${v.data.paymentIntentId}`);
+      try {
+        const { refundPaymentIntent } = await import('../services/stripe.js');
+        await refundPaymentIntent(v.data.paymentIntentId);
+        console.log(`[booking/create-order] Refund initiated for ${v.data.paymentIntentId}`);
+      } catch (refundErr: any) {
+        // Refund failed — log urgently so it can be handled manually
+        console.error(`[booking/create-order] CRITICAL: Refund FAILED for ${v.data.paymentIntentId}: ${refundErr?.message}`);
+        logApiError('api/booking/create-order-refund-failed', refundErr);
+      }
+      // Re-throw the original order error so the outer catch block handles the response
+      throw orderErr;
+    }
 
     // Extract flight details for booking record
     const firstSlice = duffelOrder.slices?.[0];
@@ -870,23 +916,30 @@ const DUFFEL_WEBHOOK_SECRET = (process.env.DUFFEL_WEBHOOK_SECRET || '').trim();
 async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Reject webhooks if signature verification is not configured
+  if (!DUFFEL_WEBHOOK_SECRET) {
+    console.error('[booking/duffel-webhook] DUFFEL_WEBHOOK_SECRET not configured — rejecting unsigned webhook');
+    return res.status(500).json({ error: 'Webhook signature verification not configured' });
+  }
+
   // Duffel sends a signature in the x-duffel-signature header
   const signature = req.headers['x-duffel-signature'];
+  if (!signature || typeof signature !== 'string') {
+    return res.status(400).json({ error: 'Missing x-duffel-signature header' });
+  }
 
   // Read raw body for signature verification
   const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
-  // Verify webhook signature if secret is configured
-  if (DUFFEL_WEBHOOK_SECRET && signature) {
-    const crypto = await import('crypto');
-    const expected = crypto
-      .createHmac('sha256', DUFFEL_WEBHOOK_SECRET)
-      .update(rawBody)
-      .digest('hex');
-    if (signature !== expected) {
-      console.warn('[booking/duffel-webhook] Invalid signature');
-      return res.status(401).json({ error: 'Invalid webhook signature' });
-    }
+  // Verify webhook signature
+  const crypto = await import('crypto');
+  const expected = crypto
+    .createHmac('sha256', DUFFEL_WEBHOOK_SECRET)
+    .update(rawBody)
+    .digest('hex');
+  if (signature !== expected) {
+    console.warn('[booking/duffel-webhook] Invalid signature');
+    return res.status(401).json({ error: 'Invalid webhook signature' });
   }
 
   try {

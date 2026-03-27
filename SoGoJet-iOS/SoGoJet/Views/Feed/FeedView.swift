@@ -25,6 +25,7 @@ struct FeedView: View {
     @Environment(SettingsStore.self) private var settingsStore
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
+    @Environment(NetworkMonitor.self) private var network
 
     @State private var scrollToTop: Bool = false
     @State private var currentIndex: Int? = 0
@@ -57,6 +58,20 @@ struct FeedView: View {
                 swipeFeedContent
             } else {
                 feedContent
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if !network.isConnected {
+                HStack(spacing: Spacing.xs) {
+                    Image(systemName: "wifi.slash")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("You're offline. Showing cached deals.")
+                        .font(SGFont.body(size: 12))
+                }
+                .foregroundStyle(Color.sgWhite)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Spacing.sm)
+                .background(Color.sgOrange.opacity(0.85))
             }
         }
         .task {
@@ -514,30 +529,27 @@ struct FeedView: View {
     private var emptyState: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                // Title
+                // Title — distinguish network errors from empty results
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text(feedStore.hasActiveFilters ? "No Matches" : "No Routes")
-                        .font(SGFont.display(size: 28))
-                        .foregroundStyle(Color.sgWhite)
+                    if feedStore.error != nil && feedStore.allDeals.isEmpty {
+                        Text("Couldn't Load Deals")
+                            .font(SGFont.display(size: 28))
+                            .foregroundStyle(Color.sgWhite)
 
-                    Text(feedStore.hasActiveFilters
-                        ? "Your filters ruled out all routes. Clear them or try a nearby airport."
-                        : "No live routes from \(settingsStore.departureCode) right now. Try a nearby airport.")
-                        .font(SGFont.body(size: 14))
-                        .foregroundStyle(Color.sgWhiteDim)
-                }
+                        Text(feedStore.error ?? "Something went wrong. Please try again.")
+                            .font(SGFont.body(size: 14))
+                            .foregroundStyle(Color.sgWhiteDim)
+                    } else {
+                        Text(feedStore.hasActiveFilters ? "No Matches" : "No Routes")
+                            .font(SGFont.display(size: 28))
+                            .foregroundStyle(Color.sgWhite)
 
-                // Error detail
-                if let error = feedStore.error {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(Color.sgOrange)
-                        Text(error)
-                            .font(SGFont.body(size: 13))
+                        Text(feedStore.hasActiveFilters
+                            ? "Your filters ruled out all routes. Clear them or try a nearby airport."
+                            : "No live routes from \(settingsStore.departureCode) right now. Try a nearby airport.")
+                            .font(SGFont.body(size: 14))
                             .foregroundStyle(Color.sgWhiteDim)
                     }
-                    .padding(Spacing.md)
-                    .background(Color.sgOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: Radius.md))
                 }
 
                 // Clear filters
@@ -561,8 +573,8 @@ struct FeedView: View {
                     .buttonStyle(.plain)
                 }
 
-                // Nearby airports
-                if !feedStore.hasActiveFilters {
+                // Nearby airports (only when no error — not helpful during network failures)
+                if !feedStore.hasActiveFilters && feedStore.error == nil {
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         Text("Nearby Airports")
                             .font(SGFont.bodyBold(size: 13))
@@ -585,13 +597,13 @@ struct FeedView: View {
                     }
                 }
 
-                // Retry
+                // Try Again
                 Button {
                     Task {
                         await feedStore.fetchDeals(origin: settingsStore.departureCode)
                     }
                 } label: {
-                    Label("Retry", systemImage: "arrow.clockwise")
+                    Label("Try Again", systemImage: "arrow.clockwise")
                         .font(SGFont.bodyBold(size: 14))
                         .foregroundStyle(Color.sgWhite)
                         .frame(maxWidth: .infinity)
@@ -1078,4 +1090,6 @@ private struct FeedLoadingView: View {
         .environment(SavedStore())
         .environment(SettingsStore())
         .environment(Router())
+        .environment(ToastManager())
+        .environment(NetworkMonitor())
 }

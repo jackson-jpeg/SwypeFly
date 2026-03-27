@@ -172,6 +172,17 @@ struct SoGoJetApp: App {
                     }
                 }
                 .onOpenURL { url in
+                    // Handle sogojet:// OAuth callbacks as a fallback.
+                    // ASWebAuthenticationSession normally intercepts these, but
+                    // if the system delivers the URL to the app instead (e.g. the
+                    // session was deallocated), we log it and let it pass through.
+                    if url.scheme == "sogojet" && url.host == "oauth-callback" {
+                        #if DEBUG
+                        print("[App] Received OAuth callback URL (fallback): \(url)")
+                        #endif
+                        return
+                    }
+
                     router.handleDeepLink(url, feedStore: feedStore)
                 }
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in

@@ -90,6 +90,9 @@ final class BookingStore {
     /// Client secret for the current payment intent.
     private var currentClientSecret: String?
 
+    /// Payment intent ID returned by the server. Used when creating the Duffel order.
+    private var currentPaymentIntentId: String?
+
     private static let stripePublishableKey = "pk_live_51T6cxRLUI2d6YDhKrt7A8IB5xJOyuHYiS81B35aZQ5tkZqFzpgwUCG8ASqobPkg1MEwsHYTlZbpIaqQgYepRd8Jw00jnVCCaZj"
 
     private static let recentSearchesKey = "SGRecentSearches"
@@ -350,6 +353,7 @@ final class BookingStore {
             )
             guard activeCheckoutRequestID == requestID else { return }
             currentClientSecret = paymentIntent.clientSecret
+            currentPaymentIntentId = paymentIntent.paymentIntentId
 
             // Configure Stripe PaymentSheet
             STPAPIClient.shared.publishableKey = Self.stripePublishableKey
@@ -376,14 +380,11 @@ final class BookingStore {
     /// Creates the actual Duffel order (real ticket).
     func completeBookingAfterPayment() async {
         guard let offer = selectedOffer,
-              let clientSecret = currentClientSecret else { return }
+              let paymentIntentId = currentPaymentIntentId else { return }
 
         let requestID = activeCheckoutRequestID
         step = .paying
         paymentError = nil
-
-        // Extract payment intent ID from client secret (format: pi_xxx_secret_yyy)
-        let paymentIntentId = String(clientSecret.split(separator: "_secret_").first ?? "")
 
         do {
             let amountInCents = Int((totalPrice * 100).rounded())
@@ -397,10 +398,10 @@ final class BookingStore {
                 return [CreateOrderSelectedService(id: serviceId, quantity: passengerCount)]
             }()
 
-            let orderRequest = BookingCreateOrderRequest(
-                offerId: offer.id,
-                passengers: [CreateOrderPassenger(
-                    id: "pax_1",
+            // Build passenger list — for MVP all passengers use the primary traveler's details
+            let passengers = (1...passengerCount).map { index in
+                CreateOrderPassenger(
+                    id: "pax_\(index)",
                     givenName: passenger.firstName,
                     familyName: passenger.lastName,
                     bornOn: passenger.dateOfBirth,
@@ -408,7 +409,12 @@ final class BookingStore {
                     title: passenger.title.lowercased(),
                     email: passenger.email,
                     phoneNumber: passenger.phone
-                )],
+                )
+            }
+
+            let orderRequest = BookingCreateOrderRequest(
+                offerId: offer.id,
+                passengers: passengers,
                 selectedServices: selectedServices,
                 paymentIntentId: paymentIntentId,
                 amount: amountInCents,
@@ -425,6 +431,8 @@ final class BookingStore {
             )
             guard activeCheckoutRequestID == requestID else { return }
             bookingOrder = order
+            currentClientSecret = nil
+            currentPaymentIntentId = nil
             step = .confirmed(reference: order.bookingReference)
             HapticEngine.success()
             ReviewPrompter.shared.recordBookingCompleted()
@@ -490,6 +498,8 @@ final class BookingStore {
         bookingOrder = nil
         lastPriceDiscrepancy = nil
         paymentError = nil
+        currentClientSecret = nil
+        currentPaymentIntentId = nil
         passengerCount = 1
         searchOrigin = nil
         searchDestination = nil

@@ -76,6 +76,7 @@ struct AuthView: View {
                         .signInWithAppleButtonStyle(.white)
                         .frame(height: 52)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .disabled(auth.isLoading)
 
                         // Sign in with Google
                         Button {
@@ -95,6 +96,7 @@ struct AuthView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         .buttonStyle(.plain)
+                        .disabled(auth.isLoading)
 
                         // Sign in with TikTok
                         Button {
@@ -118,6 +120,7 @@ struct AuthView: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        .disabled(auth.isLoading)
 
                         // Continue as guest
                         Button {

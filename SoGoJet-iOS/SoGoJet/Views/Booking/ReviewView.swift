@@ -7,7 +7,6 @@ struct ReviewView: View {
     @Environment(AuthStore.self) private var auth
 
     @State private var showSignInRequired = false
-    @State private var showBookingSoonAlert = false
     @State private var isPreparingPayment = false
 
     private var offer: TripOption? {
@@ -26,11 +25,6 @@ struct ReviewView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("You need to sign in before completing a purchase. Go back to the main screen and sign in first.")
-        }
-        .alert("Booking Coming Soon", isPresented: $showBookingSoonAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("In-app booking is coming soon! For now, you can use the deal link to book on the airline's website at this price.")
         }
     }
 
@@ -302,6 +296,7 @@ struct ReviewView: View {
         switch result {
         case .completed:
             HapticEngine.success()
+            store.step = .paying
             Task {
                 await store.completeBookingAfterPayment()
             }
@@ -469,7 +464,7 @@ struct ReviewView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
-                .disabled(offer == nil)
+                .disabled(offer == nil || store.isOfferExpired)
             } else {
                 // No payment sheet yet — show button to prepare payment
                 Button {
@@ -493,7 +488,7 @@ struct ReviewView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
-                .disabled(offer == nil)
+                .disabled(offer == nil || store.isOfferExpired)
             }
 
             VintageTerminalSecondaryButton(

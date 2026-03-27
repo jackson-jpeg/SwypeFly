@@ -42,14 +42,19 @@ async function handleAppleSignIn(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!CLERK_SECRET_KEY) {
-      // Fallback when Clerk isn't configured — return a mock session
-      console.warn('[auth] CLERK_SECRET_KEY not set, returning mock session');
-      return res.status(200).json({
-        sessionToken: identityToken,
-        userId: `apple_${identityToken.substring(0, 20)}`,
-        email: email || null,
-        name: [givenName, familyName].filter(Boolean).join(' ') || null,
-      });
+      // DEV ONLY: Fallback when Clerk isn't configured — return a mock session
+      // WARNING: This must not be used in production. Set CLERK_SECRET_KEY in env.
+      console.warn('[auth] CLERK_SECRET_KEY not set, returning mock session (DEV ONLY)');
+      return res
+        .setHeader('X-Auth-Warning', 'Development mode - no real authentication')
+        .status(200)
+        .json({
+          sessionToken: `dev_mock_${Date.now()}`,
+          userId: `dev_${Date.now()}`,
+          email: email || null,
+          name: [givenName, familyName].filter(Boolean).join(' ') || null,
+          _devMode: true,
+        });
     }
 
     // Exchange Apple identity token for a Clerk session via Clerk's Backend API
@@ -77,20 +82,21 @@ async function handleAppleSignIn(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // Last resort: return Apple token as session (works for guest-like access)
-      console.warn('[auth] Clerk token exchange failed, using Apple token directly');
-      return res.status(200).json({
-        sessionToken: identityToken,
-        userId: `apple_${identityToken.substring(0, 20)}`,
-        email: email || null,
-        name: [givenName, familyName].filter(Boolean).join(' ') || null,
+      // Clerk token exchange failed and no user found by email — return error
+      console.error('[auth] Clerk token exchange failed and user lookup failed');
+      return res.status(401).json({
+        error: 'Authentication failed. Could not verify Apple identity token.',
       });
     }
 
     const ticketData = await ticketResponse.json();
+    if (!ticketData.token || !ticketData.user_id) {
+      console.error('[auth] Clerk returned incomplete ticket data');
+      return res.status(401).json({ error: 'Authentication failed. Incomplete response from auth provider.' });
+    }
     return res.status(200).json({
-      sessionToken: ticketData.token || identityToken,
-      userId: ticketData.user_id || `apple_${identityToken.substring(0, 20)}`,
+      sessionToken: ticketData.token,
+      userId: ticketData.user_id,
       email: email || null,
       name: [givenName, familyName].filter(Boolean).join(' ') || null,
     });
