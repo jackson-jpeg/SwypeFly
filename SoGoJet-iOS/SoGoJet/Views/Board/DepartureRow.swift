@@ -46,7 +46,7 @@ struct DepartureBoardSlot: Identifiable, Equatable {
         guard let deal else {
             return "Empty departure board row"
         }
-        let priceText = isEstimatedPrice ? "from \(deal.priceFormatted)" : deal.priceFormatted
+        let priceText = isEstimatedPrice ? "seen at \(deal.priceFormatted)" : deal.priceFormatted
         var parts = [deal.city, deal.country, priceText]
         if deal.airlineName != "—" {
             parts.append(deal.airlineName)
@@ -148,7 +148,7 @@ struct DepartureRow: View {
             if !slot.isBlank, let deal = slot.deal {
                 HStack(spacing: 4) {
                     if slot.isEstimatedPrice {
-                        Text("from")
+                        Text("seen at")
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(Color.sgMuted.opacity(0.7))
                     }

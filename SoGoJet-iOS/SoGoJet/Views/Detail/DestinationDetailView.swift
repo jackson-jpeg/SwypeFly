@@ -99,7 +99,7 @@ struct DestinationDetailView: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         if deal.isEstimatedPrice {
                             HStack(spacing: 3) {
-                                Text("from")
+                                Text("seen at")
                                     .font(.system(size: 10, weight: .medium))
                                     .foregroundStyle(Color.sgWhite.opacity(0.7))
                                 PriceInfoButton()
@@ -408,7 +408,7 @@ struct DestinationDetailView: View {
                         VStack(spacing: 2) {
                             VStack(spacing: 0) {
                                 if deal.isEstimatedPrice {
-                                    Text("from")
+                                    Text("seen at")
                                         .font(.system(size: 7, weight: .medium))
                                         .foregroundStyle(Color.sgBg.opacity(0.7))
                                 }
@@ -1412,7 +1412,7 @@ struct DestinationDetailView: View {
                 .lineLimit(1)
             HStack(spacing: 2) {
                 if otherDeal.isEstimatedPrice {
-                    Text("from")
+                    Text("seen at")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Color.sgMuted)
                 }
@@ -1499,7 +1499,7 @@ struct DestinationDetailView: View {
                 .lineLimit(1)
             HStack(spacing: 2) {
                 if otherDeal.isEstimatedPrice {
-                    Text("from")
+                    Text("seen at")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Color.sgMuted)
                 }

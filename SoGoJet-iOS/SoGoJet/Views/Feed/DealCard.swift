@@ -349,6 +349,13 @@ struct DealCard: View {
             .padding(.vertical, 6)
             .background(deal.tierColor)
             .clipShape(Capsule())
+
+            // Price freshness timestamp for estimated prices
+            if deal.isEstimatedPrice, let freshness = deal.priceFreshnessLabel {
+                Text(freshness)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.5))
+            }
         }
     }
 

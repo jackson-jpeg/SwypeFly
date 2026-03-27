@@ -14,9 +14,7 @@ struct TripView: View {
     let deal: Deal
 
     @State private var alternativesExpanded = false
-    @State private var showPriceAlert = false
     @State private var showEmailSignup = false
-    @State private var priceAlertOption: TripOption?
     @State private var departureDate = Date()
     @State private var returnDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
     @State private var selectedOriginCode = ""
@@ -2153,8 +2151,6 @@ struct TripView: View {
                 )
 
                 alternativesExpanded = false
-                showPriceAlert = false
-                priceAlertOption = nil
                 marketIntel = nil
                 monthlyIntel = nil
                 marketIntelError = nil
