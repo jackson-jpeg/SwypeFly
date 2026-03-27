@@ -6,6 +6,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '_cors\\.js$': '<rootDir>/__tests__/__mocks__/_cors.ts',
+    '^(\\.\\.[\\/])*services[\\/]supabaseServer$': '<rootDir>/__tests__/__mocks__/supabaseServer.ts',
   },
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
