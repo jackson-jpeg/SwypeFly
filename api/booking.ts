@@ -1140,7 +1140,7 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
         if (orderId) {
           const { data: bookingRows } = await supabase
             .from(TABLES.bookings)
-            .select('id, booking_reference')
+            .select('id, booking_reference, destination_city')
             .eq('duffel_order_id', orderId)
             .limit(1);
           if (bookingRows && bookingRows.length > 0) {

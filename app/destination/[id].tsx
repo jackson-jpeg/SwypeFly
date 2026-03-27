@@ -20,6 +20,7 @@ import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { shareDestination } from '../../utils/share';
 import { showToast } from '../../stores/toastStore';
+import type { BoardDeal } from '../../types/deal';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const HERO_H = 360;
@@ -292,7 +293,7 @@ export default function DestinationDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>VIBES</Text>
             <View style={styles.vibeRow}>
-              {deal.vibeTags.map((tag) => (
+              {deal.vibeTags.map((tag: string) => (
                 <View key={tag} style={styles.vibeChip}>
                   <Text style={styles.vibeText}>{tag}</Text>
                 </View>
@@ -305,13 +306,13 @@ export default function DestinationDetailScreen() {
         {deal.itinerary && deal.itinerary.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>SAMPLE ITINERARY</Text>
-            {deal.itinerary.map((day) => (
+            {deal.itinerary.map((day: { day: number; activities: string[] }) => (
               <View key={day.day} style={styles.itineraryDay}>
                 <View style={styles.dayBadge}>
                   <Text style={styles.dayBadgeText}>Day {day.day}</Text>
                 </View>
                 <View style={styles.dayActivities}>
-                  {day.activities.map((activity, i) => (
+                  {day.activities.map((activity: string, i: number) => (
                     <Text key={i} style={styles.activityText}>
                       • {activity}
                     </Text>
@@ -326,7 +327,7 @@ export default function DestinationDetailScreen() {
         {deal.restaurants && deal.restaurants.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>WHERE TO EAT</Text>
-            {deal.restaurants.map((r, i) => (
+            {deal.restaurants.map((r: { name: string; type: string; rating: number }, i: number) => (
               <View key={i} style={styles.restaurantRow}>
                 <View>
                   <Text style={styles.restaurantName}>{r.name}</Text>
