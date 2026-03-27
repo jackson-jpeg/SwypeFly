@@ -217,9 +217,9 @@ struct ReviewView: View {
             }
 
             // Baggage info
-            if let baggage = offer?.baggageIncluded {
+            if let baggageList = offer?.baggageIncluded, !baggageList.isEmpty {
                 manifestDivider
-                baggageInfoRow(baggage)
+                baggageInfoRow(baggageList)
             }
 
             // Meal info
@@ -293,21 +293,29 @@ struct ReviewView: View {
         }
     }
 
-    private func baggageInfoRow(_ baggage: BaggageInfo) -> some View {
+    private func baggageInfoRow(_ baggageList: [BaggageInfo]) -> some View {
+        let carryOn = baggageList.filter { $0.type == "carry_on" }
+        let checked = baggageList.filter { $0.type == "checked" }
+        let hasChecked = checked.contains { $0.quantity > 0 }
+
         let description: String = {
-            if let checked = baggage.checkedPieces, checked > 0 {
-                let weight = baggage.checkedWeightKg.map { "\(Int($0))kg" } ?? ""
-                return "Includes \(checked) \u{00D7} \(weight) checked bag\(checked > 1 ? "s" : "")"
+            if hasChecked {
+                let total = checked.reduce(0) { $0 + $1.quantity }
+                return "Includes \(total) checked bag\(total > 1 ? "s" : "")"
             }
             return "No checked baggage included"
         }()
-        let hasChecked = (baggage.checkedPieces ?? 0) > 0
+
+        let subtitle: String? = {
+            let carryOnCount = carryOn.reduce(0) { $0 + $1.quantity }
+            return carryOnCount > 0 ? "\(carryOnCount) cabin bag\(carryOnCount > 1 ? "s" : "") included" : nil
+        }()
 
         return VintageTerminalManifestRow(
             prefix: "BAG",
             title: hasChecked ? "Checked Baggage" : "Carry-on Only",
             value: description,
-            subtitle: baggage.cabinPieces.map { "\($0) cabin bag\($0 > 1 ? "s" : "") included" },
+            subtitle: subtitle,
             tone: hasChecked ? .moss : .ivory
         )
     }

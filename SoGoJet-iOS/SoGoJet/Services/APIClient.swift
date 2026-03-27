@@ -310,7 +310,9 @@ actor APIClient {
                     // 401: token expired — clear auth and notify UI
                     if code == 401 {
                         APIClient.authToken = nil
-                        NotificationCenter.default.post(name: APIClient.sessionExpired, object: nil)
+                        Task { @MainActor in
+                            NotificationCenter.default.post(name: APIClient.sessionExpired, object: nil)
+                        }
                     }
                     // 429: rate limited — respect Retry-After or wait 5s
                     if code == 429 {

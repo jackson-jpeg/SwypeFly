@@ -112,37 +112,14 @@ struct FlightSegment: Codable, Sendable, Identifiable, Hashable {
     let aircraftCode: String
     let cabinClass: String
 
-    enum CodingKeys: String, CodingKey {
-        case origin
-        case originCityName = "origin_city_name"
-        case destination
-        case destinationCityName = "destination_city_name"
-        case departureTime = "departure_time"
-        case arrivalTime = "arrival_time"
-        case duration
-        case airline
-        case airlineCode = "airline_code"
-        case flightNumber = "flight_number"
-        case aircraft
-        case aircraftCode = "aircraft_code"
-        case cabinClass = "cabin_class"
-    }
+    // API returns camelCase — match exactly
 }
 
 // MARK: - Baggage Info
 
 struct BaggageInfo: Codable, Sendable, Hashable {
-    let cabinPieces: Int?
-    let cabinWeightKg: Double?
-    let checkedPieces: Int?
-    let checkedWeightKg: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case cabinPieces = "cabin_pieces"
-        case cabinWeightKg = "cabin_weight_kg"
-        case checkedPieces = "checked_pieces"
-        case checkedWeightKg = "checked_weight_kg"
-    }
+    let type: String       // "carry_on" or "checked"
+    let quantity: Int
 }
 
 // MARK: - Meal Info
@@ -160,12 +137,7 @@ struct BookingConditions: Codable, Sendable, Hashable {
     let changeable: Bool?
     let changePenalty: String?
 
-    enum CodingKeys: String, CodingKey {
-        case refundable
-        case refundPenalty = "refund_penalty"
-        case changeable
-        case changePenalty = "change_penalty"
-    }
+    // API returns camelCase
 }
 
 // MARK: - Trip Option
@@ -181,24 +153,16 @@ struct TripOption: Codable, Identifiable, Hashable, Sendable {
     let passengers: [OfferPassenger]?
     let expiresAt: String?
     let availableServices: [AvailableService]?
-    let baggageIncluded: BaggageInfo?
+    let baggageIncluded: [BaggageInfo]?
     let mealInfo: MealInfo?
     let conditions: BookingConditions?
 
+    // API returns camelCase keys — no CodingKeys needed for standard fields
+    // Only map fields where Swift name differs from JSON key
     enum CodingKeys: String, CodingKey {
-        case id
-        case totalAmount = "total_amount"
-        case totalCurrency = "total_currency"
-        case baseAmount = "base_amount"
-        case taxAmount = "tax_amount"
-        case slices
-        case cabinClass = "cabin_class"
-        case passengers
-        case expiresAt = "expires_at"
-        case availableServices = "available_services"
-        case baggageIncluded = "baggage_included"
-        case mealInfo = "meal_info"
-        case conditions
+        case id, totalAmount, totalCurrency, baseAmount, taxAmount
+        case slices, cabinClass, passengers, expiresAt
+        case availableServices, baggageIncluded, mealInfo, conditions
     }
 
     var outboundSlice: FlightSlice? { slices.first }

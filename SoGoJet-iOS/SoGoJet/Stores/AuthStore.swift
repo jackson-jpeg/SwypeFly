@@ -66,9 +66,6 @@ final class AuthStore: NSObject {
         authError = nil
 
         let redirectUri = "\(oauthCallbackScheme)://oauth-callback"
-        let authURL = URL(string: "https://\(clerkDomain)/v1/client/sign_ins?strategy=\(provider)&redirect_url=\(redirectUri)")!
-
-        // Use Clerk's OAuth redirect flow
         let clerkOAuthURL = URL(string: "https://\(clerkDomain)/oauth/authorize?strategy=\(provider)&redirect_url=\(redirectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectUri)")!
 
         let session = ASWebAuthenticationSession(

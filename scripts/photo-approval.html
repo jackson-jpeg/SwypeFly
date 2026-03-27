@@ -256,20 +256,31 @@ async function saveAllChanges() {
 
   let saved = 0;
   for (const [destId, imageUrl] of changes) {
-    const res = await fetch(`${url}/rest/v1/destinations?id=eq.${destId}`, {
+    // 1. Update destinations.image_url
+    const res1 = await fetch(`${url}/rest/v1/destinations?id=eq.${destId}`, {
       method: 'PATCH',
-      headers: {
-        'apikey': key,
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({ image_url: imageUrl }),
     });
-    if (res.ok) saved++;
+
+    // 2. Clear all is_primary flags for this destination
+    await fetch(`${url}/rest/v1/destination_images?destination_id=eq.${destId}`, {
+      method: 'PATCH',
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ is_primary: false }),
+    });
+
+    // 3. Set is_primary on the selected image
+    await fetch(`${url}/rest/v1/destination_images?destination_id=eq.${destId}&url_regular=eq.${encodeURIComponent(imageUrl)}`, {
+      method: 'PATCH',
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ is_primary: true }),
+    });
+
+    if (res1.ok) saved++;
   }
 
-  showToast(`Saved ${saved}/${changes.length} photo changes!`);
+  showToast(`Saved ${saved}/${changes.length} photo changes (feed + gallery updated)!`);
   pendingChanges = {};
 }
 
