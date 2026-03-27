@@ -258,6 +258,9 @@ final class FeedStore {
     private(set) var livePriceOverrides: [String: Double] = [:]
 
     func recordSwipe(dealId: String, action: String) {
+        // Skip recording if not authenticated — no point queueing swipes that will fail
+        guard APIClient.authToken != nil else { return }
+
         // Add to persistent queue so the swipe survives network failures
         var queue = pendingSwipes
         queue.append(["dealId": dealId, "action": action])
@@ -271,17 +274,22 @@ final class FeedStore {
     /// Failed swipes stay in the queue for the next attempt.
     func flushPendingSwipes() async {
         let queue = pendingSwipes
-        guard !queue.isEmpty else { return }
+        guard !queue.isEmpty, APIClient.authToken != nil else { return }
 
         var remaining: [[String: String]] = []
         for swipe in queue {
             guard let dealId = swipe["dealId"], let action = swipe["action"] else { continue }
+            let attempts = Int(swipe["attempts"] ?? "0") ?? 0
+            // Drop swipes that have failed too many times
+            guard attempts < 5 else { continue }
             do {
                 let _: EmptyResponse = try await APIClient.shared.fetch(
                     .swipe(dealId: dealId, action: action)
                 )
             } catch {
-                remaining.append(swipe) // Keep failed ones for next attempt
+                var retry = swipe
+                retry["attempts"] = String(attempts + 1)
+                remaining.append(retry)
             }
         }
         pendingSwipes = remaining

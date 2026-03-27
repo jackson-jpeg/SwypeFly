@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,10 +8,26 @@ import { successHaptic } from '../../utils/haptics';
 import SplitFlapRow from '../board/SplitFlapRow';
 import { shareDestination } from '../../utils/share';
 import { showToast } from '../../stores/toastStore';
+import { useFilterStore } from '../../stores/filterStore';
 import PriceSparkline from './PriceSparkline';
 import type { BoardDeal } from '../../types/deal';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+/** Upgrade Unsplash URL to requested width + high quality. Handles both parameterized and raw URLs. */
+function upgradeUnsplashUrl(url: string, width: number): string {
+  if (!url.includes('unsplash.com')) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('w', String(width));
+    u.searchParams.set('q', '85');
+    u.searchParams.set('auto', 'format');
+    u.searchParams.set('fit', 'crop');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
 
 function formatShortDate(dateStr: string): string {
   const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
@@ -58,7 +74,17 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e2
 export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
   const imageUri = deal.imageUrl || FALLBACK_IMAGE;
   const saveScale = useRef(new Animated.Value(1)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
   const [showActions, setShowActions] = useState(false);
+  const toggleVibe = useFilterStore((s) => s.toggleVibe);
+
+  // Fade-in entrance animation when card becomes visible
+  useEffect(() => {
+    if (animate) {
+      cardOpacity.setValue(0);
+      Animated.timing(cardOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+    }
+  }, [animate]);
 
   const handleLongPress = useCallback(() => {
     setShowActions(true);
@@ -89,8 +115,11 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
       {Platform.OS === 'web' ? (
         // expo-image and RNImage both fail to render on web — use raw <img>
         <img
-          src={imageUri}
+          src={upgradeUnsplashUrl(imageUri, 1600)}
+          srcSet={`${upgradeUnsplashUrl(imageUri, 1080)} 1080w, ${upgradeUnsplashUrl(imageUri, 1600)} 1600w, ${upgradeUnsplashUrl(imageUri, 2400)} 2400w`}
+          sizes="100vw"
           alt=""
+          loading="eager"
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
@@ -180,8 +209,8 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
         </View>
       )}
 
-      {/* Bottom content */}
-      <View style={styles.bottomContent}>
+      {/* Bottom content — fades in with card */}
+      <Animated.View style={[styles.bottomContent, { opacity: cardOpacity }]}>
         {/* Destination — split-flap city name */}
         <View style={styles.destinationRow}>
           <SplitFlapRow
@@ -246,13 +275,17 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           )}
         </View>
 
-        {/* Vibe tags */}
+        {/* Vibe tags — tappable to filter */}
         {deal.vibeTags.length > 0 && (
           <View style={styles.vibeRow}>
             {deal.vibeTags.slice(0, 3).map((tag) => (
-              <View key={tag} style={styles.vibeChip}>
+              <Pressable
+                key={tag}
+                style={({ pressed }) => [styles.vibeChip, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
+                onPress={() => { toggleVibe(tag); successHaptic(); showToast(`Filtering by ${tag}`); }}
+              >
                 <Text style={styles.vibeText}>{tag}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         )}
@@ -291,7 +324,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
             <Ionicons name="arrow-forward" size={16} color={colors.bg} />
           </Pressable>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Quick actions overlay (long-press) */}
       {showActions && (

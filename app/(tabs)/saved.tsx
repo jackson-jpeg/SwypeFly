@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable, ScrollView, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import SavedCard from '../../components/saved/SavedCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
-import { lightHaptic } from '../../utils/haptics';
+import { lightHaptic, successHaptic } from '../../utils/haptics';
 import type { BoardDeal } from '../../types/deal';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc';
@@ -18,12 +19,209 @@ const SORT_LABELS: Record<SortOption, string> = {
   'price-desc': 'Price ↓',
 };
 
+// ─── Compare Sheet ────────────────────────────────────────────────
+
+function CompareSheet({ deals, onClose }: { deals: [BoardDeal, BoardDeal]; onClose: () => void }) {
+  const [a, b] = deals;
+
+  const rows: { label: string; aVal: string; bVal: string; highlight?: 'lower' | 'higher' }[] = [
+    {
+      label: 'Price',
+      aVal: a.price != null ? `$${a.price}` : '—',
+      bVal: b.price != null ? `$${b.price}` : '—',
+      highlight: 'lower',
+    },
+    {
+      label: 'Duration',
+      aVal: a.flightDuration || '—',
+      bVal: b.flightDuration || '—',
+    },
+    {
+      label: 'Stops',
+      aVal: a.isNonstop ? 'Nonstop' : a.totalStops != null ? `${a.totalStops} stop${a.totalStops > 1 ? 's' : ''}` : '—',
+      bVal: b.isNonstop ? 'Nonstop' : b.totalStops != null ? `${b.totalStops} stop${b.totalStops > 1 ? 's' : ''}` : '—',
+    },
+    {
+      label: 'Trip',
+      aVal: a.tripDays > 0 ? `${a.tripDays} days` : '—',
+      bVal: b.tripDays > 0 ? `${b.tripDays} days` : '—',
+    },
+    {
+      label: 'Airline',
+      aVal: a.airline || '—',
+      bVal: b.airline || '—',
+    },
+    {
+      label: 'Vibes',
+      aVal: a.vibeTags.slice(0, 2).join(', ') || '—',
+      bVal: b.vibeTags.slice(0, 2).join(', ') || '—',
+    },
+  ];
+
+  return (
+    <Modal visible animationType="slide" transparent>
+      <View style={cmpStyles.backdrop}>
+        <View style={cmpStyles.sheet}>
+          <View style={cmpStyles.header}>
+            <Text style={cmpStyles.title}>COMPARE</Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <Ionicons name="close" size={24} color={colors.muted} />
+            </Pressable>
+          </View>
+
+          {/* City headers */}
+          <View style={cmpStyles.cityRow}>
+            <View style={cmpStyles.cityCell}>
+              <Text style={cmpStyles.cityName}>{a.destination}</Text>
+              <Text style={cmpStyles.cityCountry}>{a.country}</Text>
+            </View>
+            <Text style={cmpStyles.vs}>VS</Text>
+            <View style={cmpStyles.cityCell}>
+              <Text style={cmpStyles.cityName}>{b.destination}</Text>
+              <Text style={cmpStyles.cityCountry}>{b.country}</Text>
+            </View>
+          </View>
+
+          {/* Comparison rows */}
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+            {rows.map((row) => {
+              const aNum = parseFloat(row.aVal.replace(/[^0-9.]/g, ''));
+              const bNum = parseFloat(row.bVal.replace(/[^0-9.]/g, ''));
+              const aWins = row.highlight === 'lower' && !isNaN(aNum) && !isNaN(bNum) && aNum < bNum;
+              const bWins = row.highlight === 'lower' && !isNaN(aNum) && !isNaN(bNum) && bNum < aNum;
+
+              return (
+                <View key={row.label} style={cmpStyles.row}>
+                  <View style={[cmpStyles.valCell, aWins && cmpStyles.winCell]}>
+                    <Text style={[cmpStyles.val, aWins && cmpStyles.winVal]}>{row.aVal}</Text>
+                  </View>
+                  <View style={cmpStyles.labelCell}>
+                    <Text style={cmpStyles.label}>{row.label}</Text>
+                  </View>
+                  <View style={[cmpStyles.valCell, bWins && cmpStyles.winCell]}>
+                    <Text style={[cmpStyles.val, bWins && cmpStyles.winVal]}>{row.bVal}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const cmpStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(10,8,6,0.85)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+    maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  title: {
+    fontFamily: fonts.display,
+    fontSize: 20,
+    color: colors.yellow,
+    letterSpacing: 3,
+  },
+  cityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  cityCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  cityName: {
+    fontFamily: fonts.display,
+    fontSize: 22,
+    color: colors.white,
+    letterSpacing: 1,
+  },
+  cityCountry: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  vs: {
+    fontFamily: fonts.display,
+    fontSize: 14,
+    color: colors.faint,
+    letterSpacing: 2,
+    marginHorizontal: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border + '40',
+  },
+  valCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  winCell: {
+    backgroundColor: colors.dealAmazing + '15',
+  },
+  labelCell: {
+    width: 70,
+    alignItems: 'center',
+  },
+  label: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  val: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.white,
+  },
+  winVal: {
+    color: colors.dealAmazing,
+    fontFamily: fonts.bodyBold,
+  },
+});
+
+// ─── Saved Screen ─────────────────────────────────────────────────
+
 export default function SavedScreen() {
   const insets = useSafeAreaInsets();
   const { savedDeals, toggle } = useSavedStore();
   const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
   const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const [compareDeals, setCompareDeals] = useState<[BoardDeal, BoardDeal] | null>(null);
 
   // Compute savings stats
   const savingsStats = useMemo(() => {
@@ -46,8 +244,27 @@ export default function SavedScreen() {
   }, [savedDeals, sortBy]);
 
   const handlePress = useCallback((deal: BoardDeal) => {
+    if (compareMode) {
+      setCompareSelection((prev) => {
+        if (prev.includes(deal.id)) return prev.filter((id) => id !== deal.id);
+        if (prev.length >= 2) return prev;
+        const next = [...prev, deal.id];
+        if (next.length === 2) {
+          const a = savedDeals.find((d) => d.id === next[0]);
+          const b = savedDeals.find((d) => d.id === next[1]);
+          if (a && b) {
+            setCompareDeals([a, b]);
+            setCompareMode(false);
+            setCompareSelection([]);
+          }
+        }
+        return next;
+      });
+      lightHaptic();
+      return;
+    }
     router.push(`/destination/${deal.id}`);
-  }, [router]);
+  }, [router, compareMode, savedDeals]);
 
   const handleBook = useCallback((deal: BoardDeal) => {
     const store = useBookingFlowStore.getState();
@@ -59,17 +276,30 @@ export default function SavedScreen() {
     router.push(`/booking/${deal.id}/trip`);
   }, [router, departureCode]);
 
+  const toggleCompareMode = useCallback(() => {
+    setCompareMode((prev) => !prev);
+    setCompareSelection([]);
+    lightHaptic();
+  }, []);
+
   const renderItem = useCallback(
     ({ item, index }: { item: BoardDeal; index: number }) => (
-      <SavedCard
-        deal={item}
-        index={index}
-        onPress={() => handlePress(item)}
-        onRemove={() => toggle(item)}
-        onBook={() => handleBook(item)}
-      />
+      <View style={compareMode && compareSelection.includes(item.id) ? styles.selectedCard : undefined}>
+        <SavedCard
+          deal={item}
+          index={index}
+          onPress={() => handlePress(item)}
+          onRemove={() => toggle(item)}
+          onBook={compareMode ? undefined : () => handleBook(item)}
+        />
+        {compareMode && compareSelection.includes(item.id) && (
+          <View style={styles.checkmark}>
+            <Ionicons name="checkmark-circle" size={24} color={colors.yellow} />
+          </View>
+        )}
+      </View>
     ),
-    [handlePress, toggle],
+    [handlePress, toggle, handleBook, compareMode, compareSelection],
   );
 
   const keyExtractor = useCallback((item: BoardDeal) => item.id, []);
@@ -84,26 +314,42 @@ export default function SavedScreen() {
               {savedDeals.length} {savedDeals.length === 1 ? 'flight' : 'flights'}
             </Text>
           </View>
-          {savedDeals.length > 1 && (
-            <View style={styles.sortRow}>
-              {(Object.keys(SORT_LABELS) as SortOption[]).map((opt) => (
-                <Pressable
-                  key={opt}
-                  onPress={() => { lightHaptic(); setSortBy(opt); }}
-                  style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
-                >
-                  <Text style={[styles.sortText, sortBy === opt && styles.sortTextActive]}>
-                    {SORT_LABELS[opt]}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+          <View style={styles.headerActions}>
+            {savedDeals.length >= 2 && (
+              <Pressable
+                onPress={toggleCompareMode}
+                style={[styles.compareBtn, compareMode && styles.compareBtnActive]}
+              >
+                <Ionicons name="git-compare-outline" size={16} color={compareMode ? colors.bg : colors.yellow} />
+                <Text style={[styles.compareBtnText, compareMode && { color: colors.bg }]}>
+                  {compareMode ? `Select ${2 - compareSelection.length}` : 'Compare'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
         </View>
+        {savedDeals.length > 1 && !compareMode && (
+          <View style={styles.sortRow}>
+            {(Object.keys(SORT_LABELS) as SortOption[]).map((opt) => (
+              <Pressable
+                key={opt}
+                onPress={() => { lightHaptic(); setSortBy(opt); }}
+                style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
+              >
+                <Text style={[styles.sortText, sortBy === opt && styles.sortTextActive]}>
+                  {SORT_LABELS[opt]}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+        {compareMode && (
+          <Text style={styles.compareHint}>Tap two cards to compare them side by side</Text>
+        )}
       </View>
 
       {/* Savings summary */}
-      {savingsStats.count > 0 && savingsStats.totalSavings > 0 && (
+      {savingsStats.count > 0 && savingsStats.totalSavings > 0 && !compareMode && (
         <View style={styles.savingsBanner}>
           <View style={styles.savingsStat}>
             <Text style={styles.savingsValue}>${savingsStats.totalSavings.toLocaleString()}</Text>
@@ -141,6 +387,11 @@ export default function SavedScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Compare sheet */}
+      {compareDeals && (
+        <CompareSheet deals={compareDeals} onClose={() => setCompareDeals(null)} />
+      )}
     </View>
   );
 }
@@ -157,10 +408,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
   sortRow: {
     flexDirection: 'row',
     gap: 6,
-    marginTop: 4,
+    marginTop: 10,
   },
   sortChip: {
     paddingHorizontal: 10,
@@ -193,6 +449,46 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 4,
   },
+  // Compare mode
+  compareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.yellow + '40',
+    backgroundColor: colors.yellow + '10',
+  },
+  compareBtnActive: {
+    backgroundColor: colors.yellow,
+    borderColor: colors.yellow,
+  },
+  compareBtnText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    color: colors.yellow,
+  },
+  compareHint: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  selectedCard: {
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.yellow,
+  },
+  checkmark: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    zIndex: 10,
+  },
+
   // Savings banner
   savingsBanner: {
     flexDirection: 'row',

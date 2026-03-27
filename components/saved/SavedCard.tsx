@@ -8,7 +8,44 @@ import type { BoardDeal } from '../../types/deal';
 
 const CARD_GAP = 12;
 const CARD_W = (Dimensions.get('window').width - spacing.md * 2 - CARD_GAP) / 2;
-const CARD_H = CARD_W * 1.35;
+const CARD_H = CARD_W * 1.55;
+
+function upgradeUnsplashUrl(url: string, width: number): string {
+  if (!url || !url.includes('unsplash.com')) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('w', String(width));
+    u.searchParams.set('q', '80');
+    u.searchParams.set('auto', 'format');
+    u.searchParams.set('fit', 'crop');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+const DEAL_TIER_COLORS: Record<string, string> = {
+  amazing: colors.dealAmazing,
+  great: colors.dealGreat,
+  good: colors.dealGood,
+  fair: colors.muted,
+};
+
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function daysUntil(dateStr: string): number | null {
+  if (!dateStr) return null;
+  const dep = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
+  if (isNaN(dep.getTime())) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diff = Math.ceil((dep.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return diff >= 0 ? diff : null;
+}
 
 interface SavedCardProps {
   deal: BoardDeal;
@@ -19,12 +56,18 @@ interface SavedCardProps {
 }
 
 export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }: SavedCardProps) {
+  const countdown = daysUntil(deal.departureDate);
+  const tierColor = deal.dealTier ? DEAL_TIER_COLORS[deal.dealTier] : null;
+
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       {Platform.OS === 'web' && deal.imageUrl ? (
         <img
-          src={deal.imageUrl}
+          src={upgradeUnsplashUrl(deal.imageUrl, 600)}
+          srcSet={`${upgradeUnsplashUrl(deal.imageUrl, 400)} 400w, ${upgradeUnsplashUrl(deal.imageUrl, 600)} 600w, ${upgradeUnsplashUrl(deal.imageUrl, 800)} 800w`}
+          sizes="50vw"
           alt=""
+          loading="lazy"
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
@@ -37,31 +80,62 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }
         />
       )}
       <LinearGradient
-        colors={['transparent', 'rgba(10,8,6,0.85)']}
-        locations={[0.4, 1]}
+        colors={['transparent', 'rgba(10,8,6,0.4)', 'rgba(10,8,6,0.92)']}
+        locations={[0.3, 0.55, 1]}
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Remove button */}
-      <Pressable onPress={onRemove} style={styles.removeBtn} hitSlop={8}>
-        <Ionicons name="heart" size={16} color="#E85D4A" />
-      </Pressable>
-
-      {/* Price */}
-      <View style={styles.priceBadge}>
-        <SplitFlapRow
-          text={deal.priceFormatted || ''}
-          maxLength={6}
-          size="sm"
-          color={colors.yellow}
-          align="left"
-          startDelay={index * 50 + 100}
-          animate={true}
-        />
+      {/* Top row: badges left, remove right */}
+      <View style={styles.topRow}>
+        <View style={styles.topBadges}>
+          {/* Deal tier badge */}
+          {tierColor && deal.dealTier !== 'fair' && (
+            <View style={[styles.tierBadge, { backgroundColor: tierColor + '25', borderColor: tierColor + '50' }]}>
+              <Text style={[styles.tierText, { color: tierColor }]}>
+                {deal.savingsPercent && deal.savingsPercent > 0
+                  ? `${deal.savingsPercent}% OFF`
+                  : deal.dealTier === 'amazing' ? 'AMAZING' : deal.dealTier === 'great' ? 'GREAT' : 'GOOD'}
+              </Text>
+            </View>
+          )}
+          {/* Nonstop badge */}
+          {deal.isNonstop === true && (
+            <View style={styles.nonstopBadge}>
+              <Text style={styles.nonstopText}>NONSTOP</Text>
+            </View>
+          )}
+        </View>
+        <Pressable onPress={onRemove} style={styles.removeBtn} hitSlop={8}>
+          <Ionicons name="heart" size={16} color="#E85D4A" />
+        </Pressable>
       </View>
+
+      {/* Trip countdown — top left below badges */}
+      {countdown != null && (
+        <View style={[styles.countdownBadge, countdown <= 3 && styles.countdownUrgent]}>
+          <Ionicons name="time-outline" size={10} color={countdown <= 3 ? '#E85D4A' : colors.muted} />
+          <Text style={[styles.countdownText, countdown <= 3 && { color: '#E85D4A' }]}>
+            {countdown === 0 ? 'TODAY' : countdown === 1 ? '1 DAY' : `${countdown} DAYS`}
+          </Text>
+        </View>
+      )}
 
       {/* Bottom info */}
       <View style={styles.bottom}>
+        {/* Price */}
+        <View style={styles.priceBadge}>
+          <SplitFlapRow
+            text={deal.priceFormatted || ''}
+            maxLength={6}
+            size="sm"
+            color={colors.yellow}
+            align="left"
+            startDelay={index * 50 + 100}
+            animate={true}
+          />
+        </View>
+
+        {/* City name */}
         <SplitFlapRow
           text={deal.destination || ''}
           maxLength={10}
@@ -72,16 +146,41 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }
           animate={true}
         />
         <Text style={styles.country} numberOfLines={1}>{deal.country}</Text>
+
+        {/* Date range */}
+        {deal.departureDate && deal.returnDate && (
+          <View style={styles.dateRow}>
+            <Ionicons name="calendar-outline" size={10} color={colors.green} />
+            <Text style={styles.dateText}>
+              {formatShortDate(deal.departureDate)} – {formatShortDate(deal.returnDate)}
+            </Text>
+          </View>
+        )}
+
+        {/* Flight meta */}
         <View style={styles.metaRow}>
           <Text style={styles.meta}>{deal.airline}</Text>
           <Text style={styles.metaDot}>·</Text>
-          <Text style={styles.meta}>{deal.tripDays}d</Text>
-          {onBook && (
-            <Pressable onPress={onBook} style={styles.bookChip} hitSlop={6}>
-              <Text style={styles.bookChipText}>Book →</Text>
-            </Pressable>
+          <Text style={styles.meta}>{deal.flightDuration}</Text>
+          {deal.totalStops != null && deal.totalStops > 0 && (
+            <>
+              <Text style={styles.metaDot}>·</Text>
+              <Text style={styles.meta}>{deal.totalStops} stop{deal.totalStops > 1 ? 's' : ''}</Text>
+            </>
           )}
         </View>
+
+        {/* Book button — full width */}
+        {onBook && (
+          <Pressable
+            onPress={onBook}
+            style={({ pressed }) => [styles.bookBtn, pressed && { opacity: 0.85 }]}
+          >
+            <Ionicons name="airplane" size={12} color={colors.bg} />
+            <Text style={styles.bookBtnText}>Book</Text>
+            <Ionicons name="arrow-forward" size={12} color={colors.bg} />
+          </Pressable>
+        )}
       </View>
     </Pressable>
   );
@@ -97,10 +196,50 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
 
-  removeBtn: {
+  // Top row
+  topRow: {
     position: 'absolute',
     top: 8,
+    left: 8,
     right: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    zIndex: 2,
+  },
+  topBadges: {
+    flexDirection: 'row',
+    gap: 4,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
+  tierBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  tierText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 8,
+    letterSpacing: 0.5,
+  },
+  nonstopBadge: {
+    backgroundColor: colors.dealAmazing + '20',
+    borderWidth: 1,
+    borderColor: colors.dealAmazing + '40',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  nonstopText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 8,
+    color: colors.dealAmazing,
+    letterSpacing: 0.5,
+  },
+
+  removeBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -109,15 +248,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  priceBadge: {
+  // Countdown
+  countdownBadge: {
     position: 'absolute',
-    top: 8,
+    top: 40,
     left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(10,8,6,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 2,
+  },
+  countdownUrgent: {
+    backgroundColor: 'rgba(232,93,74,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(232,93,74,0.3)',
+  },
+  countdownText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 9,
+    color: colors.muted,
+    letterSpacing: 0.3,
+  },
+
+  // Price badge
+  priceBadge: {
     backgroundColor: 'rgba(10,8,6,0.7)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
   },
+
+  // Bottom content
   bottom: {
     position: 'absolute',
     bottom: 0,
@@ -131,11 +298,23 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 1,
   },
-  metaRow: {
+  dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginTop: 4,
+  },
+  dateText: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    color: colors.green,
+    letterSpacing: 0.2,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
   },
   meta: {
     fontFamily: fonts.body,
@@ -146,16 +325,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.faint,
   },
-  bookChip: {
-    marginLeft: 'auto',
+
+  // Book button
+  bookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: colors.yellow,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 8,
   },
-  bookChipText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 10,
+  bookBtnText: {
+    fontFamily: fonts.display,
+    fontSize: 13,
     color: colors.bg,
+    letterSpacing: 0.5,
   },
 });

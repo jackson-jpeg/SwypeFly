@@ -49,36 +49,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
   }
 
-  // Require auth
+  // Auth is optional — guests can swipe, we just skip preference learning
   const authResult = await verifyClerkToken(req.headers.authorization);
-  if (!authResult) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const userId = authResult?.userId ?? null;
 
   try {
-    const userId = authResult.userId;
 
     const v = validateRequest(swipeBodySchema, req.body);
     if (!v.success) return res.status(400).json({ error: v.error });
     const { destination_id, action, time_spent_ms, price_shown } = v.data;
 
-    // 1. Insert swipe history
-    try {
-      const { error } = await supabase.from(TABLES.swipeHistory).insert({
-        user_id: userId,
-        destination_id,
-        action,
-        time_spent_ms: time_spent_ms ?? 0,
-        price_shown: price_shown ?? 0,
-      });
-      if (error) throw error;
-    } catch (err) {
-      logApiError('api/swipe/history', err);
+    // 1. Insert swipe history (only for auth'd users)
+    if (userId) {
+      try {
+        const { error } = await supabase.from(TABLES.swipeHistory).insert({
+          user_id: userId,
+          destination_id,
+          action,
+          time_spent_ms: time_spent_ms ?? 0,
+          price_shown: price_shown ?? 0,
+        });
+        if (error) throw error;
+      } catch (err) {
+        logApiError('api/swipe/history', err);
+      }
     }
 
-    // 2. Update user preference vectors
+    // 2. Update user preference vectors (only for auth'd users)
     const lr = LEARNING_RATES[action];
-    if (lr !== undefined && lr !== 0) {
+    if (userId && lr !== undefined && lr !== 0) {
       try {
         // Fetch destination feature vector
         const { data: dest, error: destError } = await supabase
