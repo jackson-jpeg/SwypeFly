@@ -289,8 +289,8 @@ struct PassengerForm: View {
                     tone: .ivory
                 )
                 VintageTerminalChecklistItem(
-                    title: "Route alerts coming soon",
-                    detail: "We'll email you if anything changes.",
+                    title: "Route alerts enabled",
+                    detail: "We'll notify you if anything changes on your route.",
                     tone: .moss
                 )
             }

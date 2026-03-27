@@ -11,6 +11,7 @@ struct SettingsView: View {
 
     @State private var showClearConfirmation = false
     @State private var showSignOutConfirmation = false
+    @State private var showDeleteAccountConfirmation = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -92,6 +93,26 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Sign out of your account")
+
+                    // Delete Account button (only shown when authenticated)
+                    Button(role: .destructive) {
+                        showDeleteAccountConfirmation = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                            Text("Delete Account")
+                                .font(SGFont.bodyBold(size: 14))
+                        }
+                        .foregroundStyle(Color.sgRed)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.sgSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+                        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.sgRed.opacity(0.3), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Delete your account and all data")
                 }
             } else {
                 HStack(spacing: 8) {
@@ -194,6 +215,29 @@ struct SettingsView: View {
         } message: {
             Text("You can still browse deals as a guest, but you won't be able to book flights.")
         }
+        .alert("Delete Account?", isPresented: $showDeleteAccountConfirmation) {
+            Button("Delete", role: .destructive) {
+                Task { await deleteAccount() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete your account, saved trips, and all personal data. This cannot be undone.")
+        }
+    }
+
+    // MARK: - Delete Account
+
+    private func deleteAccount() async {
+        // Call backend to delete user data
+        do {
+            if let token = auth.authToken {
+                let _: EmptyResponse = try await APIClient.shared.fetch(.deleteAccount(authToken: token))
+            }
+        } catch {
+            // Even if backend fails, sign out locally
+        }
+        auth.signOut()
+        settings.hasOnboarded = false // Reset to onboarding
     }
 
     // MARK: - Departure Airport

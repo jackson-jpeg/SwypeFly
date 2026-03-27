@@ -169,12 +169,17 @@ struct AuthView: View {
 
                 // Terms
                 if showButtons {
-                    Text("By continuing, you agree to our Terms of Service and Privacy Policy.")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.sgMuted.opacity(0.5))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                        .padding(.bottom, 16)
+                    HStack(spacing: 4) {
+                        Text("By continuing, you agree to our")
+                        Link("Terms", destination: URL(string: "https://sogojet.com/legal/terms")!)
+                        Text("and")
+                        Link("Privacy Policy", destination: URL(string: "https://sogojet.com/legal/privacy")!)
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.sgMuted.opacity(0.5))
+                    .tint(Color.sgYellow)
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 16)
                 }
             }
         }

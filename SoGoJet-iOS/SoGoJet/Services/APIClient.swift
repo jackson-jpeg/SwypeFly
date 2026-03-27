@@ -61,6 +61,7 @@ actor APIClient {
         case subscribe(email: String)
         case auth(identityToken: String, givenName: String?, familyName: String?, email: String?)
         case authOAuth(code: String, redirectUri: String)
+        case deleteAccount(authToken: String)
 
         var path: String {
             switch self {
@@ -79,7 +80,8 @@ actor APIClient {
                 case .alertCreate:    return "/alerts"
                 case .subscribe:      return "/subscribe"
                 case .auth,
-                     .authOAuth:      return "/auth"
+                     .authOAuth,
+                     .deleteAccount:  return "/auth"
             }
         }
 
@@ -94,6 +96,8 @@ actor APIClient {
                  .auth,
                  .authOAuth:
                 return "POST"
+            case .deleteAccount:
+                return "DELETE"
             default:
                 return "GET"
             }
@@ -167,6 +171,9 @@ actor APIClient {
             case .authOAuth:
                 return [URLQueryItem(name: "action", value: "oauth")]
 
+            case .deleteAccount:
+                return [URLQueryItem(name: "action", value: "delete")]
+
             default:
                 return []
             }
@@ -235,22 +242,107 @@ actor APIClient {
                 return nil
             }
         }
+
+        /// Optional Bearer token for authenticated endpoints.
+        var authorizationHeader: String? {
+            switch self {
+            case let .deleteAccount(authToken):
+                return "Bearer \(authToken)"
+            default:
+                return nil
+            }
+        }
     }
 
     // MARK: Generic Fetch
 
     /// Perform a request and decode the JSON response into `T`.
-    func fetch<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+    /// Retries transient errors (timeout, network, 502/503/504) and 429 (rate limit).
+    /// Does not retry permanent client errors (400, 401, 403, 404, 422).
+    func fetch<T: Decodable>(_ endpoint: Endpoint, retries: Int = 2) async throws -> T {
+        var lastError: Error?
+
+        for attempt in 0...retries {
+            // Delay before retry attempts
+            if attempt > 0 {
+                #if DEBUG
+                print("[APIClient] Retry attempt \(attempt) for \(endpoint.path)")
+                #endif
+                try await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)
+            }
+
+            do {
+                return try await performRequest(endpoint)
+            } catch let error as APIError {
+                lastError = error
+
+                switch error {
+                case .httpError(let code, _):
+                    // 429: rate limited — respect Retry-After or wait 5s
+                    if code == 429 {
+                        if attempt < retries {
+                            try await Task.sleep(nanoseconds: 5_000_000_000)
+                        }
+                        continue
+                    }
+                    // Permanent client errors — don't retry
+                    if (400...499).contains(code) {
+                        throw error
+                    }
+                    // 5xx server errors (502, 503, 504 etc.) — retry
+                    continue
+
+                case .decodingFailed:
+                    // Bad data from server won't improve on retry
+                    throw error
+
+                case .invalidURL:
+                    throw error
+
+                case .invalidResponse:
+                    // Transient — retry
+                    continue
+                }
+            } catch let error as URLError {
+                lastError = error
+                // Transient network errors — retry
+                switch error.code {
+                case .timedOut,
+                     .notConnectedToInternet,
+                     .networkConnectionLost,
+                     .cannotConnectToHost,
+                     .cannotFindHost,
+                     .dnsLookupFailed:
+                    continue
+                default:
+                    throw error
+                }
+            } catch {
+                // Unknown errors — don't retry
+                throw error
+            }
+        }
+
+        throw lastError!
+    }
+
+    // MARK: Single Request
+
+    /// Perform a single network request and decode the response.
+    private func performRequest<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
         let url = try buildURL(for: endpoint)
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("SoGoJet-iOS/1.0", forHTTPHeaderField: "User-Agent")
 
+        if let authHeader = endpoint.authorizationHeader {
+            request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        }
+
         if let body = endpoint.body {
             request.httpBody = body
         }
-
 
         let (data, response) = try await session.data(for: request)
 
@@ -292,6 +384,12 @@ actor APIClient {
         return url
     }
 }
+
+// MARK: - API Error
+
+// MARK: - Empty Response (for endpoints that return {} or minimal JSON)
+
+struct EmptyResponse: Codable {}
 
 // MARK: - API Error
 

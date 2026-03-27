@@ -137,11 +137,18 @@ struct ContentView: View {
                 .environment(router)
                 .environment(toastManager)
                 .environment(recentlyViewedStore)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(Color.sgBg)
+                .presentationCornerRadius(20)
         case .departurePicker:
             NavigationStack {
                 AirportPicker(selectedCode: departureCodeBinding)
             }
             .environment(settings)
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color.sgBg)
         case .filters:
             FilterSheet()
                 .environment(feedStore)

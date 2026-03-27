@@ -29,26 +29,35 @@ struct SavedView: View {
     ]
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                headerSection
-                    .padding(.top, Spacing.lg)
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    headerSection
+                        .padding(.top, Spacing.lg)
+                        .id("saved-top")
 
-                if savedStore.savedDeals.isEmpty {
-                    emptyState
-                } else {
-                    summaryLine
+                    if savedStore.savedDeals.isEmpty {
+                        emptyState
+                    } else {
+                        summaryLine
 
-                    if comparableDealsCount >= 2 {
-                        compareBanner
+                        if comparableDealsCount >= 2 {
+                            compareBanner
+                        }
+
+                        sortBar
+                        cardGrid
                     }
-
-                    sortBar
-                    cardGrid
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.bottom, Spacing.xl)
+            }
+            .onChange(of: router.scrollToTopTrigger) { _, _ in
+                guard router.activeTab == .saved else { return }
+                withAnimation(.easeOut(duration: 0.3)) {
+                    proxy.scrollTo("saved-top", anchor: .top)
                 }
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.bottom, Spacing.xl)
         }
         .background(Color.sgBg)
         .navigationTitle("")

@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from './_cors.js';
 import { logApiError } from '../utils/apiLogger';
+import { verifyClerkToken } from '../utils/clerkAuth';
+import { supabase, TABLES } from '../services/supabaseServer';
 
 // ─── Clerk Auth Endpoint ────────────────────────────────────────────────────
 // Exchanges an Apple Sign In identity token for a Clerk session token.
@@ -11,11 +13,15 @@ const CLERK_SECRET_KEY = (process.env.CLERK_SECRET_KEY || '').trim();
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
 
+  const { action } = req.query;
+
+  if (req.method === 'DELETE' && action === 'delete') {
+    return handleDeleteAccount(req, res);
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
-  const { action } = req.query;
 
   if (action === 'apple') {
     return handleAppleSignIn(req, res);
@@ -25,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return handleOAuthExchange(req, res);
   }
 
-  return res.status(400).json({ error: 'Invalid action. Use ?action=apple or ?action=oauth' });
+  return res.status(400).json({ error: 'Invalid action. Use ?action=apple, ?action=oauth, or DELETE ?action=delete' });
 }
 
 async function handleAppleSignIn(req: VercelRequest, res: VercelResponse) {
@@ -225,6 +231,57 @@ async function handleOAuthExchange(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     logApiError('api/auth/oauth', err);
     return res.status(500).json({ error: 'Authentication failed' });
+  }
+}
+
+// ─── Delete Account ────────────────────────────────────────────────────────
+// Permanently deletes all user data from Supabase and optionally the Clerk user.
+// Required by Apple App Store guidelines (June 2022).
+
+async function handleDeleteAccount(req: VercelRequest, res: VercelResponse) {
+  try {
+    // Verify auth token
+    const auth = await verifyClerkToken(req.headers.authorization as string | undefined);
+    if (!auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const userId = auth.userId;
+
+    // Delete user data from all Supabase tables (order matters for foreign keys)
+    const tablesToPurge = [
+      TABLES.swipeHistory,
+      TABLES.savedTrips,
+      TABLES.userPreferences,
+      TABLES.bookings,
+    ];
+
+    for (const table of tablesToPurge) {
+      const { error } = await supabase.from(table).delete().eq('user_id', userId);
+      if (error) {
+        console.warn(`[auth/delete] Failed to purge ${table} for ${userId}:`, error.message);
+      }
+    }
+
+    // Delete the Clerk user if secret key is configured
+    if (CLERK_SECRET_KEY) {
+      try {
+        const deleteResponse = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` },
+        });
+        if (!deleteResponse.ok) {
+          console.warn('[auth/delete] Failed to delete Clerk user:', await deleteResponse.text());
+        }
+      } catch (clerkErr) {
+        console.warn('[auth/delete] Clerk user deletion error:', clerkErr);
+      }
+    }
+
+    return res.status(200).json({ deleted: true });
+  } catch (err) {
+    logApiError('api/auth/delete', err);
+    return res.status(500).json({ error: 'Account deletion failed' });
   }
 }
 
