@@ -153,7 +153,7 @@ struct SwipeableCardStack: View {
                     .foregroundStyle(Color.sgWhite)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
-                    .background(Color.sgAccent)
+                    .background(Color.sgYellow)
                     .clipShape(Capsule())
                 }
 
