@@ -111,11 +111,15 @@ struct DealCard: View {
                                         onVibeFilter(tag)
                                     } label: {
                                         Text(tag.lowercased())
-                                            .font(.system(size: 11, weight: .medium))
+                                            .font(.system(size: 12, weight: .medium))
                                             .foregroundStyle(Color.sgYellow)
-                                            .padding(.horizontal, 8)
+                                            .padding(.horizontal, 10)
                                             .padding(.vertical, 3)
-                                            .background(Color.sgYellow.opacity(0.15))
+                                            .background(Color.sgYellow.opacity(0.25))
+                                            .overlay(
+                                                Capsule()
+                                                    .strokeBorder(Color.sgYellow.opacity(0.3), lineWidth: 0.5)
+                                            )
                                             .clipShape(Capsule())
                                     }
                                     .buttonStyle(.plain)

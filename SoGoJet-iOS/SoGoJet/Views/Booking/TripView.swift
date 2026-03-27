@@ -192,6 +192,7 @@ struct TripView: View {
                 searchConsole
 
                 if isSearching {
+                    searchingInlineBanner
                     searchingCard
                 } else {
                     searchButton
@@ -831,6 +832,27 @@ struct TripView: View {
         .accessibilityLabel("Select \(cabinClass.displayName) cabin")
     }
 
+    private var searchingInlineBanner: some View {
+        HStack(spacing: Spacing.sm) {
+            ProgressView()
+                .tint(Color.sgYellow)
+                .scaleEffect(0.85)
+
+            Text("Searching airlines for the best fares...")
+                .font(SGFont.bodyBold(size: 14))
+                .foregroundStyle(Color.sgWhiteDim)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Spacing.md)
+        .padding(.horizontal, Spacing.md)
+        .background(Color.sgYellow.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md)
+                .strokeBorder(Color.sgYellow.opacity(0.25), lineWidth: 1)
+        )
+    }
+
     private var searchButton: some View {
         Button {
             performSearch()
@@ -934,7 +956,7 @@ struct TripView: View {
             let count = options.count
             return count == 1 ? "1 Fare Found" : "\(count) Fares Found"
         case .failed:
-            return "No Fares Found"
+            return "No Flights Found"
         default:
             if store.lastSearchSnapshot != nil {
                 return "Search Complete"
@@ -950,7 +972,7 @@ struct TripView: View {
         case .trip:
             return "Live fares ready. Pick one to continue."
         case .failed:
-            return "Try different dates or check back later."
+            return "Try different dates or check nearby airports."
         default:
             if store.lastSearchSnapshot != nil {
                 return "Previous results shown below."
@@ -1786,18 +1808,61 @@ struct TripView: View {
                 searchMissionControlCard
 
                 VStack(spacing: Spacing.md) {
-                    Image(systemName: "exclamationmark.triangle")
+                    Image(systemName: "airplane.circle")
                         .font(.system(size: 42))
                         .foregroundStyle(Color.sgOrange)
 
-                    Text("Search Failed")
+                    Text("No Flights Found")
                         .font(SGFont.cardTitle)
                         .foregroundStyle(Color.sgWhite)
 
-                    Text(message)
+                    Text("No flights found for these dates. Try different dates or check nearby airports.")
                         .font(SGFont.bodyDefault)
                         .foregroundStyle(Color.sgMuted)
                         .multilineTextAlignment(.center)
+
+                    VStack(spacing: Spacing.sm) {
+                        Button {
+                            applyNextWeekend()
+                        } label: {
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: "calendar.badge.plus")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text("Try This Weekend")
+                                    .font(SGFont.bodyBold(size: 14))
+                            }
+                            .foregroundStyle(Color.sgBg)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, Spacing.sm)
+                            .padding(.horizontal, Spacing.md)
+                            .background(Color.sgYellow, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Search for this weekend instead")
+
+                        Button {
+                            shiftTrip(by: 30)
+                        } label: {
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: "arrow.forward.circle")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text("Try Next Month")
+                                    .font(SGFont.bodyBold(size: 14))
+                            }
+                            .foregroundStyle(Color.sgWhiteDim)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, Spacing.sm)
+                            .padding(.horizontal, Spacing.md)
+                            .background(Color.sgSurface, in: Capsule())
+                            .overlay(
+                                Capsule()
+                                    .strokeBorder(Color.sgBorder, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Shift dates forward one month and search again")
+                    }
+                    .padding(.top, Spacing.xs)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.lg)

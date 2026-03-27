@@ -265,8 +265,8 @@ struct SwipeableCardStack: View {
     // MARK: - Peek Cards (Behind Top)
 
     private func peekCard(deal: Deal, depth: Int, screenSize: CGSize) -> some View {
-        let scale = 1.0 - Double(depth) * 0.05
-        let yOffset = CGFloat(depth) * 12
+        let scale = 1.0 - Double(depth) * 0.08
+        let yOffset = CGFloat(depth) * 20
 
         return DealCard(
             deal: deal,
@@ -277,6 +277,7 @@ struct SwipeableCardStack: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .scaleEffect(scale)
         .offset(y: yOffset)
+        .opacity(1.0 - Double(depth) * 0.15)
         .allowsHitTesting(false)
     }
 
