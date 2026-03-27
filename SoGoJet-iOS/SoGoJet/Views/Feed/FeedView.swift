@@ -114,7 +114,7 @@ struct FeedView: View {
             let deal = newIdx < feedStore.deals.count ? feedStore.deals[newIdx] : nil
             HapticEngine.forTier(deal?.dealTier)
 
-            if swipeCount >= 2 && headerVisible {
+            if swipeCount >= 5 && headerVisible {
                 withAnimation(.easeOut(duration: 0.4)) {
                     headerVisible = false
                 }
@@ -181,6 +181,9 @@ struct FeedView: View {
         .overlay(alignment: .top) {
             if (headerVisible || settingsStore.swipeMode) && !feedStore.deals.isEmpty {
                 headerOverlay
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            } else if !headerVisible && !feedStore.deals.isEmpty {
+                collapsedHeaderPill
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -404,6 +407,41 @@ struct FeedView: View {
                 .fill(Color.sgBorder.opacity(0.45))
                 .frame(height: 1)
         }
+    }
+
+    private var collapsedHeaderPill: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.3)) {
+                headerVisible = true
+                swipeCount = 0
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                Text("\(settingsStore.departureCode)")
+                    .font(SGFont.bodyBold(size: 11))
+                Text("·")
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color.sgWhiteDim)
+                Text("Filters")
+                    .font(SGFont.body(size: 11))
+                    .foregroundStyle(Color.sgWhiteDim)
+            }
+            .foregroundStyle(Color.sgYellow)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(Color.sgBg.opacity(0.8))
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule().strokeBorder(Color.sgYellow.opacity(0.25), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
+        .accessibilityLabel("Show header controls")
+        .accessibilityHint("Tap to show departure airport and filter controls")
     }
 
     private var statsRow: some View {

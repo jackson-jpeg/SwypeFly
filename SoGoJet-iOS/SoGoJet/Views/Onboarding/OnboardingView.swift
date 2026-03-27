@@ -205,7 +205,7 @@ struct OnboardingView: View {
                 ),
                 dismissOnSelection: false
             )
-            .frame(height: 340)
+            .frame(height: 580)
             .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.lg)
@@ -307,23 +307,32 @@ struct OnboardingView: View {
     // MARK: - CTA
 
     private var getStartedButton: some View {
-        Button {
-            HapticEngine.success()
-            settings.hasOnboarded = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "airplane.departure")
-                Text("Start Exploring")
-                    .font(SGFont.bodyBold(size: 17))
+        VStack(spacing: 6) {
+            if settings.departureCode.isEmpty {
+                Text("Select your departure airport above")
+                    .font(SGFont.body(size: 13))
+                    .foregroundStyle(Color.sgOrange)
             }
-            .foregroundStyle(Color.sgBg)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(Color.sgYellow)
-            .clipShape(Capsule())
+
+            Button {
+                HapticEngine.success()
+                settings.hasOnboarded = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "airplane.departure")
+                    Text("Start Exploring")
+                        .font(SGFont.bodyBold(size: 17))
+                }
+                .foregroundStyle(Color.sgBg)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(settings.departureCode.isEmpty ? Color.sgYellow.opacity(0.4) : Color.sgYellow)
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(settings.departureCode.isEmpty)
+            .accessibilityLabel("Finish onboarding and start exploring deals")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Finish onboarding and start exploring deals")
     }
 
     // MARK: - Cycling

@@ -15,12 +15,14 @@ struct SwipeableCardStack: View {
     var onBook: (Deal) -> Void = { _ in }
     var onVibeFilter: (String) -> Void = { _ in }
     var onAdvance: () -> Void = {}
+    var onLoadMore: () -> Void = {}
+    var onStartOver: () -> Void = {}
 
     /// How many cards peek behind the top card
     private let peekCount = 2
 
     /// Swipe threshold (points) — cross this to commit the swipe
-    private let swipeThreshold: CGFloat = 100
+    private let swipeThreshold: CGFloat = 130
 
     /// Max rotation during drag (degrees)
     private let maxRotation: Double = 12
@@ -32,6 +34,7 @@ struct SwipeableCardStack: View {
     @State private var flyDirection: SwipeDirection = .none
     @State private var stampOpacity: Double = 0
     @State private var hapticFired = false
+    @State private var cardEntrance = false
 
     private enum SwipeDirection {
         case left, right, none
@@ -50,6 +53,18 @@ struct SwipeableCardStack: View {
                 // Top card with drag gesture
                 if let topDeal = topDeal, !isFlying {
                     topCard(deal: topDeal, screenSize: geo.size)
+                        .scaleEffect(cardEntrance ? 0.95 : 1.0)
+                        .offset(y: cardEntrance ? 12 : 0)
+                        .opacity(cardEntrance ? 0.0 : 1.0)
+                        .animation(.easeOut(duration: 0.3), value: cardEntrance)
+                        .onAppear {
+                            // If cardEntrance is true, animate to full size
+                            if cardEntrance {
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    cardEntrance = false
+                                }
+                            }
+                        }
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("\(topDeal.city), \(topDeal.country). \(topDeal.cardPriceLabel)")
                         .accessibilityHint("Swipe right to save, swipe left to skip, or double tap to view details")
@@ -124,6 +139,41 @@ struct SwipeableCardStack: View {
                     .font(SGFont.body(size: 14))
                     .foregroundStyle(Color.sgWhiteDim)
             }
+
+            VStack(spacing: Spacing.sm) {
+                Button {
+                    HapticEngine.medium()
+                    onLoadMore()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.down.circle.fill")
+                        Text("Load More Deals")
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.sgWhite)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 14)
+                    .background(Color.sgAccent)
+                    .clipShape(Capsule())
+                }
+
+                Button {
+                    HapticEngine.light()
+                    onStartOver()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.counterclockwise")
+                        Text("Start Over")
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.sgWhiteDim)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Color.sgWhite.opacity(0.08))
+                    .clipShape(Capsule())
+                }
+            }
+            .padding(.top, Spacing.sm)
         }
     }
 
@@ -292,7 +342,8 @@ struct SwipeableCardStack: View {
                 } else if horizontalDistance < -swipeThreshold || velocity < -500 {
                     commitSwipe(direction: .left, screenSize: screenSize)
                 } else {
-                    // Snap back
+                    // Snap back with haptic feedback
+                    HapticEngine.light()
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         dragOffset = .zero
                     }
@@ -329,10 +380,19 @@ struct SwipeableCardStack: View {
 
         // After fly animation, advance and reset
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            // Set entrance state before advancing so new card starts at peek scale
+            cardEntrance = true
             isFlying = false
             flyAwayOffset = .zero
             flyDirection = .none
             onAdvance()
+
+            // Animate the new top card from peek state to full size
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    cardEntrance = false
+                }
+            }
         }
     }
 
@@ -357,15 +417,21 @@ struct SwipeableCardStack: View {
     }
 
     /// 0...1 progress toward right swipe commit
+    /// Stamps start appearing at 30% of threshold for earlier visual feedback
     private var rightSwipeProgress: Double {
         guard dragOffset.width > 0 else { return 0 }
-        return min(Double(dragOffset.width / swipeThreshold), 1.0)
+        let dragWidth = Double(dragOffset.width)
+        let deadZone = Double(swipeThreshold) * 0.3
+        return min(max(0, (dragWidth - deadZone) / (Double(swipeThreshold) * 0.7)), 1.0)
     }
 
     /// 0...1 progress toward left swipe commit
+    /// Stamps start appearing at 30% of threshold for earlier visual feedback
     private var leftSwipeProgress: Double {
         guard dragOffset.width < 0 else { return 0 }
-        return min(Double(-dragOffset.width / swipeThreshold), 1.0)
+        let dragWidth = Double(-dragOffset.width)
+        let deadZone = Double(swipeThreshold) * 0.3
+        return min(max(0, (dragWidth - deadZone) / (Double(swipeThreshold) * 0.7)), 1.0)
     }
 
     /// Card rotation during drag (degrees)

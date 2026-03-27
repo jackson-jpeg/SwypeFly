@@ -336,7 +336,7 @@ struct DealCard: View {
                 SplitFlapRow(
                     text: effectivePrice,
                     maxLength: 6,
-                    size: .sm,
+                    size: .md,
                     color: Color.sgWhite,
                     alignment: .trailing,
                     animate: animate,
@@ -345,8 +345,8 @@ struct DealCard: View {
                     animationID: animationTrigger
                 )
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
             .background(deal.tierColor)
             .clipShape(Capsule())
 

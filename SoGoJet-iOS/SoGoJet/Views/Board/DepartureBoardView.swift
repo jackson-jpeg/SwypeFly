@@ -162,6 +162,9 @@ struct DepartureBoardView: View {
 
             Text("FARE")
                 .frame(width: 82, alignment: .trailing)
+
+            // Spacer to align with chevron column in rows
+            Spacer().frame(width: 14)
         }
         .font(SGFont.bodyBold(size: 10))
         .foregroundStyle(Color.sgMuted)

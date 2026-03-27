@@ -149,6 +149,12 @@ struct DepartureRow: View {
                     animationID: animationID
                 )
                 .frame(width: 82, alignment: .trailing)
+
+                if !slot.isBlank {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(isActive ? Color.sgYellow.opacity(0.7) : Color.sgMuted.opacity(0.5))
+                }
             }
 
             // Country + flight info subtitle

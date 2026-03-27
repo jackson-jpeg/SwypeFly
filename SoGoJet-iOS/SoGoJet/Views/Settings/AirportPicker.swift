@@ -15,13 +15,18 @@ struct AirportPicker: View {
     }
 
     private var filteredAirports: [Airport] {
-        if searchText.isEmpty { return Self.airports }
-        let query = searchText.lowercased()
-        return Self.airports.filter {
-            $0.code.lowercased().contains(query)
-                || $0.city.lowercased().contains(query)
-                || $0.name.lowercased().contains(query)
+        let base: [Airport]
+        if searchText.isEmpty {
+            base = Self.airports
+        } else {
+            let query = searchText.lowercased()
+            base = Self.airports.filter {
+                $0.code.lowercased().contains(query)
+                    || $0.city.lowercased().contains(query)
+                    || $0.name.lowercased().contains(query)
+            }
         }
+        return base.sorted { $0.city.localizedCaseInsensitiveCompare($1.city) == .orderedAscending }
     }
 
     private var popularAirports: [Airport] {
