@@ -516,22 +516,22 @@ export default function DestinationDetailScreen() {
         </View>
 
         {/* Weather & Best Time */}
-        {((deal as any).averageTemp || (deal as any).bestMonths?.length > 0) && (
+        {(deal.averageTemp || (deal.bestMonths && deal.bestMonths.length > 0)) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>WEATHER & BEST TIME</Text>
             <View style={styles.detailGrid}>
-              {(deal as any).averageTemp && (
-                <DetailItem icon="thermometer-outline" label="Avg Temp" value={`${(deal as any).averageTemp}°F`} />
+              {deal.averageTemp && (
+                <DetailItem icon="thermometer-outline" label="Avg Temp" value={`${deal.averageTemp}°F`} />
               )}
-              {(deal as any).bestMonths?.length > 0 && (
-                <DetailItem icon="sunny-outline" label="Best Months" value={(deal as any).bestMonths.slice(0, 3).join(', ')} />
+              {deal.bestMonths && deal.bestMonths.length > 0 && (
+                <DetailItem icon="sunny-outline" label="Best Months" value={deal.bestMonths.slice(0, 3).join(', ')} />
               )}
             </View>
           </View>
         )}
 
         {/* Budget Estimate */}
-        {(deal.price || (deal as any).hotelPricePerNight) && (
+        {(deal.price || deal.hotelPricePerNight) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>BUDGET ESTIMATE</Text>
             <View style={styles.budgetRows}>
@@ -541,17 +541,17 @@ export default function DestinationDetailScreen() {
                   <Text style={styles.budgetValue}>${deal.price}</Text>
                 </View>
               )}
-              {(deal as any).hotelPricePerNight && (
+              {deal.hotelPricePerNight && (
                 <View style={styles.budgetRow}>
                   <Text style={styles.budgetLabel}>Hotel (per night)</Text>
-                  <Text style={styles.budgetValue}>${(deal as any).hotelPricePerNight}</Text>
+                  <Text style={styles.budgetValue}>${deal.hotelPricePerNight}</Text>
                 </View>
               )}
-              {deal.price && (deal as any).hotelPricePerNight && deal.tripDays && (
+              {deal.price && deal.hotelPricePerNight && deal.tripDays && (
                 <View style={[styles.budgetRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, marginTop: 4 }]}>
                   <Text style={[styles.budgetLabel, { fontFamily: fonts.bodyBold }]}>Est. Total ({deal.tripDays} nights)</Text>
                   <Text style={[styles.budgetValue, { color: colors.yellow }]}>
-                    ${Math.round(deal.price + (deal as any).hotelPricePerNight * (deal.tripDays - 1))}
+                    ${Math.round(deal.price + deal.hotelPricePerNight * (deal.tripDays - 1))}
                   </Text>
                 </View>
               )}

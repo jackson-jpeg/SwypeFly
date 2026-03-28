@@ -41,4 +41,9 @@ export interface BoardDeal {
   // Nearby airport fallback
   nearbyOrigin?: string;
   nearbyOriginLabel?: string;
+  // Destination metadata (from server, may not always be present)
+  averageTemp?: number;
+  bestMonths?: string[];
+  hotelPricePerNight?: number;
+  currency?: string;
 }

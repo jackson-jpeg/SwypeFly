@@ -319,6 +319,8 @@ export default function SavedScreen() {
               <Pressable
                 onPress={toggleCompareMode}
                 style={[styles.compareBtn, compareMode && styles.compareBtnActive]}
+                accessibilityRole="button"
+                accessibilityLabel={compareMode ? 'Cancel comparison' : 'Compare two saved deals'}
               >
                 <Ionicons name="git-compare-outline" size={16} color={compareMode ? colors.bg : colors.yellow} />
                 <Text style={[styles.compareBtnText, compareMode && { color: colors.bg }]}>
@@ -335,6 +337,9 @@ export default function SavedScreen() {
                 key={opt}
                 onPress={() => { lightHaptic(); setSortBy(opt); }}
                 style={[styles.sortChip, sortBy === opt && styles.sortChipActive]}
+                accessibilityRole="button"
+                accessibilityLabel={`Sort by ${SORT_LABELS[opt]}`}
+                accessibilityState={{ selected: sortBy === opt }}
               >
                 <Text style={[styles.sortText, sortBy === opt && styles.sortTextActive]}>
                   {SORT_LABELS[opt]}

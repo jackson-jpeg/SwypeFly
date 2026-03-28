@@ -60,13 +60,19 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }
   const tierColor = deal.dealTier ? DEAL_TIER_COLORS[deal.dealTier] : null;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${deal.destination}, ${deal.country}. ${deal.priceFormatted || 'Price varies'}. ${deal.airline}`}
+      accessibilityHint="Tap to view details"
+    >
       {Platform.OS === 'web' && deal.imageUrl ? (
         <img
           src={upgradeUnsplashUrl(deal.imageUrl, 600)}
           srcSet={`${upgradeUnsplashUrl(deal.imageUrl, 400)} 400w, ${upgradeUnsplashUrl(deal.imageUrl, 600)} 600w, ${upgradeUnsplashUrl(deal.imageUrl, 800)} 800w`}
           sizes="50vw"
-          alt=""
+          alt={`${deal.destination}, ${deal.country}`}
           loading="lazy"
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
@@ -105,7 +111,7 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }
             </View>
           )}
         </View>
-        <Pressable onPress={onRemove} style={styles.removeBtn} hitSlop={8}>
+        <Pressable onPress={onRemove} style={styles.removeBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Remove ${deal.destination} from saved`}>
           <Ionicons name="heart" size={16} color="#E85D4A" />
         </Pressable>
       </View>
@@ -175,6 +181,8 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }
           <Pressable
             onPress={onBook}
             style={({ pressed }) => [styles.bookBtn, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button"
+            accessibilityLabel={`Book flights to ${deal.destination}`}
           >
             <Ionicons name="airplane" size={12} color={colors.bg} />
             <Text style={styles.bookBtnText}>Book</Text>

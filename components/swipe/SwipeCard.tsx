@@ -124,7 +124,15 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
   }, [onSave, isSaved, saveScale]);
 
   return (
-    <Pressable style={styles.card} onPress={showActions ? () => setShowActions(false) : onTap} onLongPress={handleLongPress} delayLongPress={400}>
+    <Pressable
+      style={styles.card}
+      onPress={showActions ? () => setShowActions(false) : onTap}
+      onLongPress={handleLongPress}
+      delayLongPress={400}
+      accessibilityRole="button"
+      accessibilityLabel={`${deal.destination}, ${deal.country}. ${deal.priceFormatted || 'Price varies'}. ${deal.airline}, ${deal.flightDuration}`}
+      accessibilityHint="Tap to view details, long press for actions"
+    >
       {/* Background image */}
       {Platform.OS === 'web' ? (
         // expo-image and RNImage both fail to render on web — use raw <img>
@@ -297,6 +305,8 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
                 key={tag}
                 style={({ pressed }) => [styles.vibeChip, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
                 onPress={() => { toggleVibe(tag); successHaptic(); showToast(`Filtering by ${tag}`); }}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${tag}`}
               >
                 <Text style={styles.vibeText}>{tag}</Text>
               </Pressable>
@@ -309,6 +319,8 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           <Pressable
             onPress={handleSave}
             style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={isSaved ? `Unsave ${deal.destination}` : `Save ${deal.destination}`}
           >
             <Animated.View style={{ transform: [{ scale: saveScale }] }}>
               <Ionicons
@@ -325,6 +337,8 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           <Pressable
             onPress={handleShare}
             style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Share ${deal.destination} deal`}
           >
             <Ionicons name="share-outline" size={20} color={colors.white} />
             <Text style={styles.actionLabel}>Share</Text>
@@ -333,6 +347,8 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           <Pressable
             onPress={onBook}
             style={({ pressed }) => [styles.bookBtn, pressed && styles.bookPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Search flights to ${deal.destination}`}
           >
             <Text style={styles.bookLabel}>Search Flights</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.bg} />
