@@ -64,7 +64,7 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
 
     // MARK: - MetricKit (Crash Reporting)
 
-    func didReceive(_ payloads: [MXMetricPayload]) {
+    nonisolated func didReceive(_ payloads: [MXMetricPayload]) {
         for payload in payloads {
             logger.info("[MetricKit] Metric payload received: \(payload.jsonRepresentation().count) bytes")
         }
@@ -111,7 +111,7 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
     // MARK: - UNUserNotificationCenterDelegate
 
     /// Handle notification tap when the app is in the foreground or background.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
@@ -130,7 +130,7 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
     }
 
     /// Show notifications even when app is in the foreground.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
