@@ -17,10 +17,20 @@ import { nearbyAirports } from '../../data/airports';
 // Immersion mode: header fades after 2+ swipes, returns on tap
 const IMMERSE_AFTER_SWIPES = 2;
 
+function formatFreshness(timestamp: number | null): string | null {
+  if (!timestamp) return null;
+  const mins = Math.floor((Date.now() - timestamp) / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 export default function FeedScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { deals, isLoading, error, fetchDeals } = useDealStore();
+  const { deals, isLoading, error, fetchDeals, lastFetchedAt } = useDealStore();
   const departureCode = useSettingsStore((s) => s.departureCode);
   const preferredView = useSettingsStore((s) => s.preferredView);
   const toQueryParams = useFilterStore((s) => s.toQueryParams);
@@ -89,6 +99,7 @@ export default function FeedScreen() {
             {dealStats && dealStats.avgSavings > 0 && (
               <Text style={styles.dealCounter}>
                 {dealStats.total} deals · avg {dealStats.avgSavings}% off
+                {lastFetchedAt ? ` · ${formatFreshness(lastFetchedAt)}` : ''}
               </Text>
             )}
           </View>

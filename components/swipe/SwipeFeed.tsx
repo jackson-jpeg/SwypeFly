@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { View, FlatList, Text, Dimensions, StyleSheet, Platform, ViewToken, ActivityIndicator, Pressable } from 'react-native';
+import { View, FlatList, Text, Dimensions, StyleSheet, Platform, ViewToken, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useDealStore } from '../../stores/dealStore';
@@ -23,6 +23,7 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
   const departureCode = useSettingsStore((s) => s.departureCode);
   const toQueryParams = useFilterStore((s) => s.toQueryParams);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const savedIds = useSavedStore((s) => s.savedIds);
   const toggle = useSavedStore((s) => s.toggle);
   const listRef = useRef<FlatList<BoardDeal>>(null);
@@ -76,6 +77,13 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [visibleIndex, deals, toggle, router]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchDeals(departureCode, toQueryParams());
+    setRefreshing(false);
+    setVisibleIndex(0);
+  }, [fetchDeals, departureCode, toQueryParams]);
 
   const handleSave = useCallback(
     (deal: BoardDeal) => {
@@ -154,6 +162,15 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
         snapToInterval={SCREEN_H}
         decelerationRate="fast"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.yellow}
+            colors={[colors.yellow]}
+            progressBackgroundColor={colors.surface}
+          />
+        }
         onEndReached={handleEndReached}
         onEndReachedThreshold={2}
         removeClippedSubviews={Platform.OS !== 'web'}

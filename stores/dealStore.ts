@@ -127,6 +127,7 @@ interface DealState {
   deals: BoardDeal[];
   isLoading: boolean;
   error: string | null;
+  lastFetchedAt: number | null;
 
   // Board-specific
   boardIndex: number;
@@ -144,6 +145,7 @@ let cursor = 0;
 export const useDealStore = create<DealState>()((set, get) => ({
   deals: [],
   isLoading: false,
+  lastFetchedAt: null,
   error: null,
 
   boardIndex: 0,
@@ -176,7 +178,7 @@ export const useDealStore = create<DealState>()((set, get) => ({
       const data = await res.json();
       const raw: ApiDestination[] = data.destinations || data.deals || data;
       const deals = raw.map((d) => apiToBoardDeal(d, origin));
-      set({ deals, isLoading: false });
+      set({ deals, isLoading: false, lastFetchedAt: Date.now() });
     } catch (e) {
       const msg = (e as Error).message;
       const friendly = msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')

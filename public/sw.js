@@ -37,9 +37,10 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  const keepCaches = [CACHE_NAME, CACHE_NAME + '-feed'];
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => !keepCaches.includes(k)).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -48,8 +49,26 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET and API calls
+  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
+
+  // Cache feed API responses — network-first, serve cached when offline
+  if (url.pathname === '/api/feed') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME + '-feed').then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || new Response('{"destinations":[]}', { headers: { 'Content-Type': 'application/json' } })))
+    );
+    return;
+  }
+
+  // Skip other API calls
   if (url.pathname.startsWith('/api/')) return;
 
   // Cache-first for static assets (JS, CSS, images, fonts)
