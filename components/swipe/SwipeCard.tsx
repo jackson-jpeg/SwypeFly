@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, memo } from 'react';
 import { View, Text, StyleSheet, Dimensions, Platform, Pressable, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -71,7 +71,7 @@ interface SwipeCardProps {
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80';
 
-export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
+function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: SwipeCardProps) {
   const imageUri = deal.imageUrl || FALLBACK_IMAGE;
   const saveScale = useRef(new Animated.Value(1)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -141,7 +141,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           srcSet={`${upgradeUnsplashUrl(imageUri, 1080)} 1080w, ${upgradeUnsplashUrl(imageUri, 1600)} 1600w, ${upgradeUnsplashUrl(imageUri, 2400)} 2400w`}
           sizes="100vw"
           alt={`${deal.destination}, ${deal.country}`}
-          loading="eager"
+          loading={isFirst ? 'eager' : 'lazy'}
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
@@ -704,3 +704,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
+
+export default memo(SwipeCard);

@@ -12,7 +12,7 @@ if (!config.resolver.sourceExts.includes('cjs')) {
   config.resolver.sourceExts.push('cjs');
 }
 
-// Disable package exports resolution to avoid mjs/esm conflicts with Metro
-config.resolver.unstable_enablePackageExports = false;
+// Enable package exports for tree-shaking (reduces web bundle size)
+config.resolver.unstable_enablePackageExports = true;
 
 module.exports = config;

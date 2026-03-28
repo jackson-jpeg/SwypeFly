@@ -4,8 +4,8 @@ import { colors, fonts } from '../../theme/tokens';
 import { lightHaptic } from '../../utils/haptics';
 
 const CHAR_POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-const CYCLE_INTERVAL = 60; // ms between random chars
-const DEFAULT_DURATION = 500; // total cycling time
+const CYCLE_INTERVAL = 100; // ms between random chars (was 60 — reduced CPU from ~4000 to ~2400 updates/sec)
+const DEFAULT_DURATION = 400; // total cycling time (was 500 — settle faster)
 
 interface SplitFlapCharProps {
   target: string;

@@ -19,7 +19,16 @@ import useAnimatedFavicon from '../hooks/useAnimatedFavicon';
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,       // 5 min before considered stale
+      gcTime: 30 * 60 * 1000,         // 30 min garbage collection
+      retry: 1,                        // One retry on failure
+      refetchOnWindowFocus: false,     // Don't refetch on tab focus — deals don't change that fast
+    },
+  },
+});
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
   const hasCompletedOnboarding = useSettingsStore((s) => s.hasCompletedOnboarding);

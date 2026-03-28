@@ -82,11 +82,16 @@ export default function FeedScreen() {
     }
   }, [departureCode]);
 
-  // Refetch when filters change (sheet closes) or departure changes
+  // Single fetch effect: runs on mount, departure change, and filter sheet close.
+  // Debounce to prevent double-fire when departure change triggers both effects.
+  const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!isSheetOpen) {
+    if (isSheetOpen) return; // Don't fetch while user is editing filters
+    if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
+    fetchTimerRef.current = setTimeout(() => {
       fetchDeals(departureCode, toQueryParams());
-    }
+    }, 50); // 50ms debounce collapses rapid successive triggers
+    return () => { if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current); };
   }, [departureCode, isSheetOpen]);
 
   return (
