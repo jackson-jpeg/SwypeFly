@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   Pressable,
   StyleSheet,
   Dimensions,
   Platform,
+  Animated,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +35,161 @@ const DEAL_TIER_COLORS: Record<string, string> = {
   fair: colors.muted,
 };
 
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
+
+function upgradeUnsplashUrl(url: string, width: number): string {
+  if (!url || !url.includes('unsplash.com')) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('w', String(width));
+    u.searchParams.set('q', '85');
+    u.searchParams.set('auto', 'format');
+    u.searchParams.set('fit', 'crop');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+function PriceAlertCTA({ deal }: { deal: BoardDeal }) {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'input' | 'sending' | 'done' | 'error'>('idle');
+  const targetPrice = deal.price ? Math.round(deal.price * 0.9) : null;
+
+  const handleCreate = async () => {
+    if (!email.trim() || !email.includes('@')) return;
+    setStatus('sending');
+    try {
+      const res = await fetch(`${API_BASE}/api/alerts?action=create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination_id: deal.id,
+          target_price: targetPrice,
+          email: email.trim(),
+        }),
+      });
+      if (res.ok) {
+        setStatus('done');
+        showToast(`Price alert set for ${deal.destination}!`);
+      } else {
+        setStatus('error');
+      }
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'done') {
+    return (
+      <View style={[alertStyles.cta, { borderColor: colors.dealAmazing + '40' }]}>
+        <Ionicons name="checkmark-circle" size={24} color={colors.dealAmazing} />
+        <View style={{ flex: 1 }}>
+          <Text style={[alertStyles.title, { color: colors.dealAmazing }]}>Tracking this price</Text>
+          <Text style={alertStyles.desc}>We'll email you when {deal.destination} drops below ${targetPrice}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (status === 'input' || status === 'sending' || status === 'error') {
+    return (
+      <View style={alertStyles.cta}>
+        <View style={{ flex: 1, gap: 8 }}>
+          <Text style={alertStyles.title}>Get notified at ${targetPrice}</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TextInput
+              style={alertStyles.emailInput}
+              placeholder="your@email.com"
+              placeholderTextColor={colors.muted + '60'}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Pressable
+              style={({ pressed }) => [alertStyles.btn, pressed && { opacity: 0.85 }, status === 'sending' && { opacity: 0.5 }]}
+              onPress={handleCreate}
+              disabled={status === 'sending'}
+            >
+              <Ionicons name="notifications" size={16} color={colors.bg} />
+              <Text style={alertStyles.btnText}>{status === 'sending' ? '...' : 'Set Alert'}</Text>
+            </Pressable>
+          </View>
+          {status === 'error' && (
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: '#E85D4A' }}>Something went wrong. Try again.</Text>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={alertStyles.cta}>
+      <View style={{ flex: 1 }}>
+        <Text style={alertStyles.title}>Track this price</Text>
+        <Text style={alertStyles.desc}>Get notified when {deal.destination} drops below ${targetPrice}</Text>
+      </View>
+      <Pressable style={({ pressed }) => [alertStyles.btn, pressed && { opacity: 0.85 }]} onPress={() => setStatus('input')}>
+        <Ionicons name="notifications-outline" size={18} color={colors.bg} />
+        <Text style={alertStyles.btnText}>Alert</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const alertStyles = StyleSheet.create({
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.cell,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  title: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.yellow,
+  },
+  desc: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  emailInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.white,
+  },
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.yellow,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  btnText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+    color: colors.bg,
+  },
+});
+
 export default function DestinationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -47,6 +204,16 @@ export default function DestinationDetailScreen() {
   const [animate, setAnimate] = useState(false);
   const [serverDeal, setServerDeal] = useState<BoardDeal | null>(null);
   const [loadingServer, setLoadingServer] = useState(false);
+
+  // Escape key goes back on web
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') router.back();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [router]);
 
   // If deal not in local store (e.g. deep link), fetch from server
   useEffect(() => {
@@ -127,17 +294,40 @@ export default function DestinationDetailScreen() {
     );
   }
 
+  // Parallax scroll tracking for web
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const parallaxTransform = Platform.OS === 'web' ? {
+    transform: [{ translateY: Animated.multiply(scrollY, -0.35) }],
+  } : {};
+
   return (
     <View style={styles.container}>
-      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-        {/* Hero image */}
+      <Animated.ScrollView
+        bounces={false}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
+        {/* Hero image with parallax */}
         <View style={styles.hero}>
-          <Image
-            source={{ uri: deal.imageUrl }}
-            style={StyleSheet.absoluteFillObject}
-            contentFit="cover"
-            transition={400}
-          />
+          {Platform.OS === 'web' ? (
+            <Animated.View style={[StyleSheet.absoluteFillObject, parallaxTransform, { overflow: 'hidden' }]}>
+              <img
+                src={upgradeUnsplashUrl(deal.imageUrl, 1600)}
+                srcSet={`${upgradeUnsplashUrl(deal.imageUrl, 1080)} 1080w, ${upgradeUnsplashUrl(deal.imageUrl, 1600)} 1600w, ${upgradeUnsplashUrl(deal.imageUrl, 2400)} 2400w`}
+                sizes="100vw"
+                alt=""
+                style={{ width: '100%', height: '130%', objectFit: 'cover', objectPosition: 'center' }}
+              />
+            </Animated.View>
+          ) : (
+            <Image
+              source={{ uri: deal.imageUrl }}
+              style={StyleSheet.absoluteFillObject}
+              contentFit="cover"
+              transition={400}
+            />
+          )}
           <LinearGradient
             colors={['rgba(10,8,6,0.4)', 'transparent', 'rgba(10,8,6,0.95)']}
             locations={[0, 0.3, 1]}
@@ -389,16 +579,7 @@ export default function DestinationDetailScreen() {
 
         {/* Price alert CTA */}
         {deal.price != null && (
-          <View style={styles.alertCta}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.alertCtaTitle}>Track this price</Text>
-              <Text style={styles.alertCtaDesc}>Get notified when {deal.destination} drops below ${deal.price}</Text>
-            </View>
-            <Pressable style={styles.alertCtaBtn}>
-              <Ionicons name="notifications-outline" size={18} color={colors.bg} />
-              <Text style={styles.alertCtaBtnText}>Alert</Text>
-            </Pressable>
-          </View>
+          <PriceAlertCTA deal={deal} />
         )}
 
         {/* Similar destinations */}
@@ -458,7 +639,7 @@ export default function DestinationDetailScreen() {
 
         {/* Spacer for bottom bar */}
         <View style={{ height: 120 }} />
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Sticky bottom bar */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>

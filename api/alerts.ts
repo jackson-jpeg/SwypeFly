@@ -80,23 +80,28 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
   }
 
   const authResult = await verifyClerkToken(req.headers.authorization);
-  if (!authResult) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  const userId = authResult.userId;
+  const userId = authResult?.userId ?? null;
 
   const v = validateRequest(priceAlertBodySchema, req.body);
   if (!v.success) return res.status(400).json({ error: v.error });
   const { destination_id, target_price, email } = v.data;
 
+  // Guests must provide an email
+  if (!userId && !email) {
+    return res.status(400).json({ error: 'Email required for guest price alerts' });
+  }
+
   try {
-    const { data: existingRows, error: listErr } = await supabase
+    // Check for existing alert by user_id or email
+    const existQuery = supabase
       .from(TABLES.priceAlerts)
       .select('*')
-      .eq('user_id', userId)
       .eq('destination_id', destination_id)
       .eq('is_active', true)
       .limit(1);
+    if (userId) existQuery.eq('user_id', userId);
+    else if (email) existQuery.eq('email', email);
+    const { data: existingRows, error: listErr } = await existQuery;
     if (listErr) throw listErr;
 
     if (existingRows && existingRows.length > 0) {
@@ -114,7 +119,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
     const { data: alert, error: insertErr } = await supabase
       .from(TABLES.priceAlerts)
       .insert({
-        user_id: userId,
+        user_id: userId || 'guest',
         email: email || null,
         destination_id,
         target_price,

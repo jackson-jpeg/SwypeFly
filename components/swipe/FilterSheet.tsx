@@ -115,6 +115,16 @@ export default function FilterSheet() {
     }
   }, [isOpen]);
 
+  // Escape key closes sheet on web
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, close]);
+
   // Debounced count fetch when filters change
   const fetchCount = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

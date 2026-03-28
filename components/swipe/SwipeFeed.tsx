@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { View, FlatList, Text, Dimensions, StyleSheet, Platform, ViewToken, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -40,6 +40,42 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
   }).current;
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+
+  // Keyboard shortcuts for web: ↑/↓ to navigate, S to save, Enter to open detail
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const deal = deals[visibleIndex];
+      if (!deal) return;
+
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'j': {
+          e.preventDefault();
+          const next = Math.min(visibleIndex + 1, deals.length - 1);
+          listRef.current?.scrollToIndex({ index: next, animated: true });
+          break;
+        }
+        case 'ArrowUp':
+        case 'k': {
+          e.preventDefault();
+          const prev = Math.max(visibleIndex - 1, 0);
+          listRef.current?.scrollToIndex({ index: prev, animated: true });
+          break;
+        }
+        case 's':
+        case 'S':
+          toggle(deal);
+          break;
+        case 'Enter':
+          router.push(`/destination/${deal.id}`);
+          break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [visibleIndex, deals, toggle, router]);
 
   const handleSave = useCallback(
     (deal: BoardDeal) => {
