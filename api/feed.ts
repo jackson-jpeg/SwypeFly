@@ -638,6 +638,15 @@ function scoreFeedGeneric(
   recentVibes.push(getVibeBucket(seed.vibe_tags));
 
   const recentCountries: string[] = [];
+  const recentPriceBrackets: string[] = [];
+
+  // Price bracket helper — prevents wall of same-priced flights
+  const priceBracket = (p: number): string => {
+    if (p < 200) return 'steal';
+    if (p < 400) return 'budget';
+    if (p < 700) return 'mid';
+    return 'premium';
+  };
 
   while (remaining.length > 0) {
     let bestIdx = 0;
@@ -650,6 +659,7 @@ function scoreFeedGeneric(
       const vibe = getVibeBucket(d.vibe_tags);
       const country = (d.country as string) || '';
       const signals = signalMap.get(d.id);
+      const bracket = priceBracket(effectivePrice);
 
       const priceScore = 1 - (effectivePrice - minPrice) / priceRange;
 
@@ -692,6 +702,7 @@ function scoreFeedGeneric(
         - regionPenalty * 0.18                     // Don't show same region
         - countryPenalty                           // Don't show same country
         - vibePenalty * 0.08                       // Don't show same vibe
+        - (recentPriceBrackets[0] === bracket ? 0.06 : 0) // Alternate price ranges
         - expensivePenalty                         // Penalize pricey flights
         + jitter                                   // Tie-breaking randomness
         + quizBonus;                               // User preferences
@@ -729,9 +740,11 @@ function scoreFeedGeneric(
     recentRegions.unshift(getRegion(pick));
     recentVibes.unshift(getVibeBucket(pick.vibe_tags));
     recentCountries.unshift((pick.country as string) || '');
+    recentPriceBrackets.unshift(priceBracket(pick.live_price ?? pick.flight_price));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
     if (recentCountries.length > 3) recentCountries.pop();
+    if (recentPriceBrackets.length > 2) recentPriceBrackets.pop();
   }
 
   return result;
@@ -747,15 +760,21 @@ function scoreFeedGeneric(
 function paceRewards(items: ScoredDest[], rand: () => number): ScoredDest[] {
   if (items.length <= 5) return items; // Too few to pace
 
-  // Split into tiers
+  // Use RELATIVE tiers based on actual score distribution
+  // This handles cases where all scores are similar (bootstrapped stats)
+  const scores = items.map((d) => d.deal_score ?? 0).sort((a, b) => b - a);
+  const p25 = scores[Math.floor(scores.length * 0.25)] ?? 50;
+  const p75 = scores[Math.floor(scores.length * 0.75)] ?? 30;
+
+  // Split into tiers: top 25% = amazing, middle 50% = good, bottom 25% = rest
   const amazing: ScoredDest[] = [];
   const good: ScoredDest[] = [];
   const rest: ScoredDest[] = [];
 
   for (const item of items) {
     const score = item.deal_score ?? 0;
-    if (score >= 70) amazing.push(item);
-    else if (score >= 40) good.push(item);
+    if (score >= p25 && score > 0) amazing.push(item);
+    else if (score >= p75) good.push(item);
     else rest.push(item);
   }
 
