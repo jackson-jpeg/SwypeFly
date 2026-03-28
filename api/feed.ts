@@ -465,23 +465,73 @@ function scoreFeedGeneric(
   recentRegions.push(getRegion(seed));
   recentVibes.push(getVibeBucket(seed.vibe_tags));
 
-  // Pre-compute discovery bonus: destinations with prices way below their usual price
-  // are "surprise finds" — exactly what users come here for
-  const discoveryBonusMap = new Map<string, number>();
+  // ── Pre-compute scoring signals per destination ──────────────────────
+
+  const signalMap = new Map<string, {
+    discovery: number;     // Price anomaly + hidden gem bonus
+    trend: number;         // Dropping price = exciting
+    seasonality: number;   // In-season destinations rank higher
+    valueDensity: number;  // Price per day (lower = better value)
+  }>();
+
+  const currentMonth = new Date().getMonth();
+  const monthNames = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
+  ];
+  const currentMonthName = monthNames[currentMonth];
+  const adjacentMonths = [monthNames[(currentMonth + 11) % 12], monthNames[(currentMonth + 1) % 12]];
+
   for (const d of remaining) {
     const price = d.live_price ?? d.flight_price;
+    let discovery = 0;
+    let trend = 0;
+    let seasonality = 0;
+    let valueDensity = 0;
+
+    // Discovery: price anomaly detection
     const usual = d.usual_price as number | undefined;
     if (price > 0 && usual && usual > 0) {
       const pctBelow = (usual - price) / usual;
-      // >20% below usual = strong discovery bonus (scaled 0-0.4)
-      if (pctBelow > 0.2) discoveryBonusMap.set(d.id, Math.min(0.4, pctBelow));
+      if (pctBelow > 0.15) discovery += Math.min(0.45, pctBelow * 1.2);
     }
-    // Low popularity destinations get a discovery boost — they're the hidden gems
+
+    // Discovery: hidden gem bonus (low popularity + affordable)
     const pop = (d.popularity_score as number) ?? 0.5;
-    if (pop < 0.3 && price > 0 && price < 500) {
-      const existing = discoveryBonusMap.get(d.id) ?? 0;
-      discoveryBonusMap.set(d.id, existing + 0.15); // hidden gem bonus
+    if (pop < 0.3 && price > 0 && price < 500) discovery += 0.15;
+    if (pop < 0.15 && price > 0 && price < 400) discovery += 0.10; // extra rare destination
+
+    // Trend: use price_history to detect dropping prices
+    const history = d.price_history as number[] | undefined;
+    if (history && history.length >= 3) {
+      const recent = history.slice(-3);
+      const older = history.slice(0, Math.max(1, history.length - 3));
+      const recentAvg = recent.reduce((s, p) => s + p, 0) / recent.length;
+      const olderAvg = older.reduce((s, p) => s + p, 0) / older.length;
+      if (olderAvg > 0) {
+        const dropPct = (olderAvg - recentAvg) / olderAvg;
+        if (dropPct > 0.05) trend = Math.min(0.20, dropPct); // Price dropping = exciting
+        else if (dropPct < -0.10) trend = -0.10; // Price rising = less interesting
+      }
     }
+
+    // Seasonality: boost destinations in their best travel months
+    const bestMonths = (d.best_months as string[] | undefined) ?? [];
+    if (bestMonths.length > 0) {
+      const lower = bestMonths.map((m: string) => m.toLowerCase());
+      if (lower.includes(currentMonthName)) seasonality = 0.15;
+      else if (lower.some((m: string) => adjacentMonths.includes(m))) seasonality = 0.08;
+    }
+
+    // Value density: price per day of trip (lower = better bang for buck)
+    const tripDays = (d.trip_duration_days as number) ?? 5;
+    if (price > 0 && tripDays > 0) {
+      const ppd = price / tripDays;
+      // Scale: $30/day = excellent (1.0), $100/day = decent (0.5), $200/day = meh (0)
+      valueDensity = Math.max(0, Math.min(0.15, (1 - ppd / 200) * 0.15));
+    }
+
+    signalMap.set(d.id, { discovery, trend, seasonality, valueDensity });
   }
 
   const recentCountries: string[] = [];
@@ -496,6 +546,7 @@ function scoreFeedGeneric(
       const region = getRegion(d);
       const vibe = getVibeBucket(d.vibe_tags);
       const country = (d.country as string) || '';
+      const signals = signalMap.get(d.id);
 
       const priceScore = 1 - (effectivePrice - minPrice) / priceRange;
 
@@ -505,7 +556,7 @@ function scoreFeedGeneric(
         if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
       }
 
-      // Country diversity: penalize same country back-to-back (stronger than region)
+      // Country diversity: penalize same country back-to-back
       let countryPenalty = 0;
       for (let j = 0; j < Math.min(recentCountries.length, 3); j++) {
         if (recentCountries[j] === country) countryPenalty += 0.3 * (1 - j / 3);
@@ -515,30 +566,30 @@ function scoreFeedGeneric(
       for (let j = 0; j < recentVibes.length; j++) {
         if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
-      const jitter = rand() * 0.15;
+      const jitter = rand() * 0.12;
 
-      // Penalty for very expensive flights (>$600) — discovery is about accessible deals
+      // Penalty for very expensive flights (>$600)
       const expensivePenalty = effectivePrice > 600 ? (effectivePrice - 600) / 1500 : 0;
 
-      // Discovery bonus: price anomalies and hidden gems
-      const discoveryBonus = discoveryBonusMap.get(d.id) ?? 0;
-
-      // Deal quality bonus: flights that are cheap AND comfortable
-      const qualityBonus = d.deal_score != null ? (d.deal_score / 100) * 0.15 : 0;
+      // Deal quality bonus from deal engine
+      const qualityBonus = d.deal_score != null ? (d.deal_score / 100) * 0.12 : 0;
 
       // Quiz personalization bonus (additive, optional)
       const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
 
       const score =
-        priceScore * 0.30
-        + discoveryBonus
-        + qualityBonus
-        - regionPenalty * 0.20
-        - countryPenalty
-        - vibePenalty * 0.10
-        - expensivePenalty
-        + jitter
-        + quizBonus;
+        priceScore * 0.22                          // Cheap is good, but not everything
+        + (signals?.discovery ?? 0)                // Price anomalies + hidden gems (up to 0.55!)
+        + (signals?.trend ?? 0)                    // Dropping prices are exciting
+        + (signals?.seasonality ?? 0)              // Right time to visit
+        + (signals?.valueDensity ?? 0)             // Bang for your buck
+        + qualityBonus                             // Comfortable flights
+        - regionPenalty * 0.18                     // Don't show same region
+        - countryPenalty                           // Don't show same country
+        - vibePenalty * 0.08                       // Don't show same vibe
+        - expensivePenalty                         // Penalize pricey flights
+        + jitter                                   // Tie-breaking randomness
+        + quizBonus;                               // User preferences
 
       if (score > bestScore) {
         bestScore = score;
@@ -812,13 +863,42 @@ function scorePersonalized(
         if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
 
-      const jitter = rand() * 0.15;
+      const jitter = rand() * 0.10;
+
+      // Discovery: price anomaly bonus (even personalized users love a steal)
+      let discoveryBonus = 0;
+      const usual = d.usual_price as number | undefined;
+      if (effectivePrice > 0 && usual && usual > 0) {
+        const pctBelow = (usual - effectivePrice) / usual;
+        if (pctBelow > 0.15) discoveryBonus = Math.min(0.30, pctBelow);
+      }
+
+      // Trend: dropping prices are more exciting
+      let trendBonus = 0;
+      const history = d.price_history as number[] | undefined;
+      if (history && history.length >= 3) {
+        const recent = history.slice(-3);
+        const older = history.slice(0, Math.max(1, history.length - 3));
+        const recentAvg = recent.reduce((s, p) => s + p, 0) / recent.length;
+        const olderAvg = older.reduce((s, p) => s + p, 0) / older.length;
+        if (olderAvg > 0) {
+          const dropPct = (olderAvg - recentAvg) / olderAvg;
+          if (dropPct > 0.05) trendBonus = Math.min(0.12, dropPct);
+        }
+      }
 
       // Quiz bonus (additive, optional)
       const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
 
       const score =
-        prefScore * 0.35 + priceScore * 0.20 - regionPenalty * 0.20 - vibePenalty * 0.10 + jitter + quizBonus;
+        prefScore * 0.30
+        + priceScore * 0.15
+        + discoveryBonus
+        + trendBonus
+        - regionPenalty * 0.18
+        - vibePenalty * 0.08
+        + jitter
+        + quizBonus;
 
       if (score > bestScore) {
         bestScore = score;
