@@ -129,10 +129,14 @@ export default function PrivacyPolicy() {
         </Section>
 
         <Section title="Third-Party Services">
-          <P>Appwrite: database hosting and user authentication.</P>
+          <P>Supabase: database hosting and data storage.</P>
+          <P>Clerk: user authentication and identity management.</P>
           <P>Travelpayouts / Aviasales: flight price data and affiliate booking links.</P>
           <P>Amadeus: supplemental flight pricing data.</P>
+          <P>Duffel: flight search and booking processing.</P>
           <P>LiteAPI: hotel pricing data.</P>
+          <P>Stripe: payment processing (we do not store your card details).</P>
+          <P>Resend: transactional email delivery (price alerts, newsletters).</P>
           <P>Vercel: application hosting and serverless API infrastructure.</P>
           <P>Sentry (optional): error monitoring and performance tracking.</P>
         </Section>
