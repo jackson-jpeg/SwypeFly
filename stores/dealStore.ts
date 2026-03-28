@@ -44,6 +44,7 @@ interface ApiDestination {
   priceHistory?: number[];
   nearbyOrigin?: string;
   nearbyOriginLabel?: string;
+  flashDeal?: boolean;
 }
 
 function randomTime(): string {
@@ -118,6 +119,7 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     priceHistory: d.priceHistory,
     nearbyOrigin: d.nearbyOrigin,
     nearbyOriginLabel: d.nearbyOriginLabel,
+    flashDeal: d.flashDeal,
   };
 }
 

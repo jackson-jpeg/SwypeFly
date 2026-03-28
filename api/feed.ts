@@ -353,6 +353,7 @@ interface ScoredDest {
   total_stops?: number;
   max_layover_minutes?: number;
   total_travel_minutes?: number;
+  flash_deal?: boolean;
   // Computed from route stats
   usual_price?: number | null;
   savings_amount?: number | null;
@@ -522,12 +523,19 @@ function scoreFeedGeneric(
     if (pop < 0.3 && isAffordableForRegion) discovery += 0.15;
     if (pop < 0.15 && price > 0 && price < regionAvg) discovery += 0.12; // ultra-rare gem
 
+    // Discovery: flash deal bonus — extreme price drops get maximum visibility
+    if (d.flash_deal) discovery += 0.25;
+
+    // Discovery: price direction bonus — dropping prices are exciting
+    if (d.price_direction === 'down') discovery += 0.08;
+    else if (d.price_direction === 'up') discovery -= 0.05;
+
     // Discovery: novelty bonus — recently found prices are more exciting
     const foundAt = d.tp_found_at as string | undefined;
     if (foundAt) {
       const ageHours = (Date.now() - new Date(foundAt).getTime()) / (1000 * 60 * 60);
-      if (ageHours < 6) discovery += 0.08;  // Found in last 6 hours
-      else if (ageHours < 24) discovery += 0.04; // Found in last day
+      if (ageHours < 6) discovery += 0.10;  // Found in last 6 hours
+      else if (ageHours < 24) discovery += 0.05; // Found in last day
     }
 
     // Trend: use price_history to detect dropping prices
@@ -1106,6 +1114,11 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     total_stops?: number;
     max_layover_minutes?: number;
     total_travel_minutes?: number;
+    flash_deal?: boolean;
+    price_direction?: string;
+    previous_price?: number;
+    savings_percent?: number;
+    usual_price?: number;
   }>();
   const today = new Date().toISOString().split('T')[0];
   // Sort by deal_score desc (best deals first), fallback to price asc
@@ -1135,6 +1148,11 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       total_stops: (p.total_stops as number) ?? undefined,
       max_layover_minutes: (p.max_layover_minutes as number) ?? undefined,
       total_travel_minutes: (p.total_travel_minutes as number) ?? undefined,
+      flash_deal: (p.flash_deal as boolean) ?? undefined,
+      price_direction: (p.price_direction as string) ?? undefined,
+      previous_price: (p.previous_price as number) ?? undefined,
+      savings_percent: (p.savings_percent as number) ?? undefined,
+      usual_price: (p.usual_price as number) ?? undefined,
     });
   }
 
@@ -1364,8 +1382,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       trip_duration_days: lp?.trip_duration_days ?? cp?.trip_days,
       cheapest_date: lp?.departure_date ?? cp?.date ?? undefined,
       cheapest_return_date: lp?.return_date ?? cp?.return_date ?? undefined,
-      previous_price: lp?.previous_price,
-      price_direction: lp?.price_direction,
+      previous_price: lp?.previous_price ?? cp?.previous_price,
+      price_direction: lp?.price_direction ?? cp?.price_direction,
+      flash_deal: cp?.flash_deal ?? false,
       offer_json: lp?.offer_json,
       offer_expires_at: lp?.offer_expires_at,
       flight_number: lp?.flight_number,
@@ -1467,6 +1486,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
     priceHistory: d.price_history?.slice(-7) ?? undefined,
     nearbyOrigin: d.nearby_origin ?? undefined,
     nearbyOriginLabel: d.nearby_origin_label ?? undefined,
+    flashDeal: d.flash_deal ?? false,
   };
 }
 

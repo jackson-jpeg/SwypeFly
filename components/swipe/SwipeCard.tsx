@@ -49,6 +49,8 @@ const DEAL_TIER_COLORS: Record<string, string> = {
 };
 
 function getDealBadgeText(deal: BoardDeal): string | null {
+  // Flash deal — highest priority badge
+  if (deal.flashDeal) return '⚡ FLASH DEAL';
   if (!deal.dealTier || deal.dealTier === 'fair') return null;
   if (deal.savingsPercent && deal.savingsPercent >= 30) {
     return `${deal.savingsPercent}% BELOW AVG`;
@@ -62,6 +64,11 @@ function getDealBadgeText(deal: BoardDeal): string | null {
 /** Generate a "why this deal" context string for discovery */
 function getDealContext(deal: BoardDeal): string | null {
   const parts: string[] = [];
+
+  // Flash deal takes priority
+  if (deal.flashDeal) {
+    parts.push('price just dropped');
+  }
 
   // Weekend getaway detection (client-side)
   if (deal.price && deal.price < 250 && deal.tripDays >= 2 && deal.tripDays <= 4) {

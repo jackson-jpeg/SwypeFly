@@ -271,6 +271,9 @@ CREATE TABLE IF NOT EXISTS price_calendar (
   country TEXT,
   savings_percent DOUBLE PRECISION,
   usual_price DOUBLE PRECISION,
+  previous_price DOUBLE PRECISION,
+  price_direction TEXT,  -- 'up', 'down', 'stable'
+  flash_deal BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_cal_origin ON price_calendar(origin);

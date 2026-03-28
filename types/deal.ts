@@ -41,6 +41,8 @@ export interface BoardDeal {
   // Nearby airport fallback
   nearbyOrigin?: string;
   nearbyOriginLabel?: string;
+  // Flash deal flag (>30% below usual price)
+  flashDeal?: boolean;
   // Destination metadata (from server, may not always be present)
   averageTemp?: number;
   bestMonths?: string[];

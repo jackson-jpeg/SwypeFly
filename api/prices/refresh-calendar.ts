@@ -177,6 +177,40 @@ async function upsertCalendarEntry(
   // Update route stats with this price observation (non-blocking)
   updateRouteStats(origin, destIata, price).catch(() => {});
 
+  // ── Price drop detection ────────────────────────────────────────────
+  // Compare new price against previous stored price and usual price to
+  // detect drops, compute direction, and flag flash deals.
+  let previousPrice: number | undefined;
+  let priceDirection: 'up' | 'down' | 'stable' = 'stable';
+  let flashDeal = false;
+
+  try {
+    const { data: existing } = await supabase
+      .from(TABLES.priceCalendar)
+      .select('price')
+      .eq('origin', origin)
+      .eq('destination_iata', destIata)
+      .order('fetched_at', { ascending: false })
+      .limit(1);
+    if (existing && existing.length > 0) {
+      previousPrice = existing[0].price as number;
+      if (previousPrice > 0) {
+        const changePct = (previousPrice - price) / previousPrice;
+        if (changePct > 0.05) priceDirection = 'down';
+        else if (changePct < -0.05) priceDirection = 'up';
+      }
+    }
+  } catch {
+    // Non-fatal — just won't have direction data
+  }
+
+  // Flash deal: >30% below usual price AND found in last refresh
+  const usualPrice = stats ? stats.medianPrice : undefined;
+  if (usualPrice && usualPrice > 0 && price > 0) {
+    const pctBelowUsual = (usualPrice - price) / usualPrice;
+    if (pctBelowUsual > 0.30) flashDeal = true;
+  }
+
   const data = {
     origin,
     destination_iata: destIata,
@@ -192,6 +226,11 @@ async function upsertCalendarEntry(
     deal_tier: dealResult.dealTier,
     quality_score: dealResult.qualityScore,
     price_percentile: Math.round(pricePercentile),
+    savings_percent: dealResult.savingsPercent > 0 ? dealResult.savingsPercent : undefined,
+    usual_price: usualPrice ?? undefined,
+    previous_price: previousPrice ?? undefined,
+    price_direction: priceDirection,
+    flash_deal: flashDeal,
     is_nonstop: false,  // Unknown for TP data
     total_stops: -1,    // -1 = unknown
     max_layover_minutes: -1,
@@ -203,7 +242,7 @@ async function upsertCalendarEntry(
       .from(TABLES.priceCalendar)
       .upsert(data, { onConflict: 'origin,destination_iata,date' });
     if (error) throw error;
-    return 'created';
+    return flashDeal ? 'flash' : 'created';
   } catch (err) {
     return `err:${(err as Error).message?.slice(0, 80)}`;
   }
