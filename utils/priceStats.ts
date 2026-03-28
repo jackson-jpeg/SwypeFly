@@ -1,33 +1,13 @@
 /**
- * Price Statistics — rolling percentile tracking per route.
+ * Route price statistics — tracks median, percentiles, min/max per route.
+ * Uses Supabase `price_history_stats` table (was Appwrite — migrated for
+ * consistency with the rest of the data pipeline).
  *
- * Stores median, p5, p20, p80, min, max, and sample count in the
- * `price_history_stats` Appwrite collection. Updated incrementally
- * during each price refresh cron run using Welford-style online updates
- * rather than re-scanning all history.
- *
- * The collection must be created in Appwrite with these attributes:
- *   route_key (string, indexed, unique)
- *   origin (string, indexed)
- *   destination_iata (string, indexed)
- *   median_price (number)
- *   p20_price (number)
- *   p5_price (number)
- *   p80_price (number)
- *   min_price_ever (number)
- *   max_price_ever (number)
- *   sample_count (number)
- *   last_30d_avg (number)
- *   last_updated (string)
+ * Stats are updated incrementally using online percentile estimation
+ * (no need to store every historical price — just the running stats).
  */
 
-import {
-  serverDatabases,
-  DATABASE_ID,
-  COLLECTIONS,
-  Query,
-} from '../services/appwriteServer';
-import { ID } from 'node-appwrite';
+import { supabase, TABLES } from '../services/supabaseServer';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -43,16 +23,32 @@ export interface RouteStats {
   maxPriceEver: number;
   sampleCount: number;
   last30dAvg: number;
-  lastUpdated: string;
+  lastUpdated?: string;
 }
 
-// ─── In-memory cache (avoids repeated DB reads within a cron run) ────
+// ─── In-memory cache (per lambda invocation) ─────────────────────────
 
 const statsCache = new Map<string, RouteStats | null>();
 
-/**
- * Fetch route stats from Appwrite (with in-memory cache for the cron run).
- */
+function docToStats(doc: Record<string, unknown>): RouteStats {
+  return {
+    routeKey: (doc.route_key as string) || `${doc.origin}-${doc.destination_iata}`,
+    origin: doc.origin as string,
+    destinationIata: doc.destination_iata as string,
+    medianPrice: doc.median_price as number,
+    p20Price: doc.p20_price as number,
+    p5Price: doc.p5_price as number,
+    p80Price: doc.p80_price as number,
+    minPriceEver: doc.min_price_ever as number,
+    maxPriceEver: doc.max_price_ever as number,
+    sampleCount: doc.sample_count as number,
+    last30dAvg: doc.last_30d_avg as number,
+    lastUpdated: doc.last_updated as string,
+  };
+}
+
+// ─── Get stats for a single route ────────────────────────────────────
+
 export async function getRouteStats(
   origin: string,
   destinationIata: string,
@@ -61,32 +57,19 @@ export async function getRouteStats(
   if (statsCache.has(key)) return statsCache.get(key)!;
 
   try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.priceHistoryStats,
-      [Query.equal('route_key', key), Query.limit(1)],
-    );
+    const { data, error } = await supabase
+      .from(TABLES.priceHistoryStats)
+      .select('*')
+      .eq('route_key', key)
+      .limit(1);
+    if (error) throw error;
 
-    if (result.documents.length === 0) {
+    if (!data || data.length === 0) {
       statsCache.set(key, null);
       return null;
     }
 
-    const doc = result.documents[0];
-    const stats: RouteStats = {
-      routeKey: doc.route_key as string,
-      origin: doc.origin as string,
-      destinationIata: doc.destination_iata as string,
-      medianPrice: doc.median_price as number,
-      p20Price: doc.p20_price as number,
-      p5Price: doc.p5_price as number,
-      p80Price: doc.p80_price as number,
-      minPriceEver: doc.min_price_ever as number,
-      maxPriceEver: doc.max_price_ever as number,
-      sampleCount: doc.sample_count as number,
-      last30dAvg: doc.last_30d_avg as number,
-      lastUpdated: doc.last_updated as string,
-    };
+    const stats = docToStats(data[0]);
     statsCache.set(key, stats);
     return stats;
   } catch (err) {
@@ -96,50 +79,37 @@ export async function getRouteStats(
   }
 }
 
+// ─── Compute price percentile ────────────────────────────────────────
+
 /**
- * Compute what percentile a given price falls at for a route.
- * Returns 0 (cheapest ever) to 100 (most expensive ever).
+ * Given a price and route stats, return a percentile (0–100).
  * Without stats, returns 50 (assume median).
  */
-export function computePricePercentile(
-  price: number,
-  stats: RouteStats | null,
-): number {
-  if (!stats || stats.sampleCount < 3) return 50; // Not enough data
+export function computePricePercentile(price: number, stats: RouteStats | null): number {
+  if (!stats || stats.sampleCount < 1) return 50;
 
-  // Use the stored percentile boundaries for interpolation
+  // Simple piecewise linear interpolation between known percentile anchors
   if (price <= stats.p5Price) return 5;
   if (price <= stats.p20Price) {
-    // Interpolate between 5 and 20
     const range = stats.p20Price - stats.p5Price;
-    if (range <= 0) return 5;
+    if (range <= 0) return 12;
     return 5 + ((price - stats.p5Price) / range) * 15;
   }
   if (price <= stats.medianPrice) {
-    // Interpolate between 20 and 50
     const range = stats.medianPrice - stats.p20Price;
-    if (range <= 0) return 20;
+    if (range <= 0) return 35;
     return 20 + ((price - stats.p20Price) / range) * 30;
   }
   if (price <= stats.p80Price) {
-    // Interpolate between 50 and 80
     const range = stats.p80Price - stats.medianPrice;
-    if (range <= 0) return 50;
+    if (range <= 0) return 65;
     return 50 + ((price - stats.medianPrice) / range) * 30;
   }
-  // Above 80th percentile — interpolate to 100
-  const range = stats.maxPriceEver - stats.p80Price;
-  if (range <= 0) return 80;
-  return Math.min(100, 80 + ((price - stats.p80Price) / range) * 20);
+  return Math.min(100, 80 + ((price - stats.p80Price) / (stats.maxPriceEver - stats.p80Price || 1)) * 20);
 }
 
-/**
- * Update route stats with a new price observation using online
- * approximation. This avoids scanning all historical prices.
- *
- * The percentile estimates use exponential moving averages with a
- * decay factor, which converge to true percentiles over many samples.
- */
+// ─── Update stats with a new price observation ──────────────────────
+
 export async function updateRouteStats(
   origin: string,
   destinationIata: string,
@@ -149,7 +119,7 @@ export async function updateRouteStats(
   const existing = await getRouteStats(origin, destinationIata);
 
   if (!existing) {
-    // Bootstrap new route
+    // Bootstrap new route — first price observation
     const stats: RouteStats = {
       routeKey: key,
       origin,
@@ -166,11 +136,9 @@ export async function updateRouteStats(
     };
 
     try {
-      await serverDatabases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.priceHistoryStats,
-        ID.unique(),
-        {
+      const { error } = await supabase
+        .from(TABLES.priceHistoryStats)
+        .upsert({
           route_key: key,
           origin,
           destination_iata: destinationIata,
@@ -183,10 +151,9 @@ export async function updateRouteStats(
           sample_count: 1,
           last_30d_avg: newPrice,
           last_updated: stats.lastUpdated,
-        },
-      );
+        }, { onConflict: 'route_key' });
+      if (error) throw error;
     } catch (err) {
-      // May fail if concurrent create — that's OK, next update will fix it
       console.warn(`[priceStats] Failed to create stats for ${key}:`, err);
     }
 
@@ -197,9 +164,8 @@ export async function updateRouteStats(
   // Online percentile update using decay factor
   // Higher sample counts → slower adaptation (more stable)
   const n = existing.sampleCount + 1;
-  const alpha = Math.max(0.01, 1 / Math.sqrt(n)); // Decay factor
+  const alpha = Math.max(0.01, 1 / Math.sqrt(n));
 
-  // Shift percentile estimates toward the new price observation
   const nudge = (current: number, target: number) =>
     Math.round(current + alpha * (target - current));
 
@@ -230,30 +196,21 @@ export async function updateRouteStats(
   if (updated.p80Price < updated.medianPrice) updated.p80Price = updated.medianPrice;
 
   try {
-    // Find and update existing doc
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.priceHistoryStats,
-      [Query.equal('route_key', key), Query.limit(1)],
-    );
-    if (result.documents.length > 0) {
-      await serverDatabases.updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.priceHistoryStats,
-        result.documents[0].$id,
-        {
-          median_price: updated.medianPrice,
-          p20_price: updated.p20Price,
-          p5_price: updated.p5Price,
-          p80_price: updated.p80Price,
-          min_price_ever: updated.minPriceEver,
-          max_price_ever: updated.maxPriceEver,
-          sample_count: updated.sampleCount,
-          last_30d_avg: updated.last30dAvg,
-          last_updated: updated.lastUpdated,
-        },
-      );
-    }
+    const { error } = await supabase
+      .from(TABLES.priceHistoryStats)
+      .update({
+        median_price: updated.medianPrice,
+        p20_price: updated.p20Price,
+        p5_price: updated.p5Price,
+        p80_price: updated.p80Price,
+        min_price_ever: updated.minPriceEver,
+        max_price_ever: updated.maxPriceEver,
+        sample_count: updated.sampleCount,
+        last_30d_avg: updated.last30dAvg,
+        last_updated: updated.lastUpdated,
+      })
+      .eq('route_key', key);
+    if (error) throw error;
   } catch (err) {
     console.warn(`[priceStats] Failed to update stats for ${key}:`, err);
   }
@@ -262,37 +219,23 @@ export async function updateRouteStats(
   return updated;
 }
 
-/**
- * Bulk-fetch route stats for multiple routes at once (for feed scoring).
- * Returns a Map<routeKey, RouteStats>.
- */
+// ─── Bulk fetch for feed scoring ─────────────────────────────────────
+
 export async function bulkGetRouteStats(
   origin: string,
 ): Promise<Map<string, RouteStats>> {
   const results = new Map<string, RouteStats>();
 
   try {
-    const result = await serverDatabases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.priceHistoryStats,
-      [Query.equal('origin', origin), Query.limit(500)],
-    );
+    const { data, error } = await supabase
+      .from(TABLES.priceHistoryStats)
+      .select('*')
+      .eq('origin', origin)
+      .limit(500);
+    if (error) throw error;
 
-    for (const doc of result.documents) {
-      const stats: RouteStats = {
-        routeKey: doc.route_key as string,
-        origin: doc.origin as string,
-        destinationIata: doc.destination_iata as string,
-        medianPrice: doc.median_price as number,
-        p20Price: doc.p20_price as number,
-        p5Price: doc.p5_price as number,
-        p80Price: doc.p80_price as number,
-        minPriceEver: doc.min_price_ever as number,
-        maxPriceEver: doc.max_price_ever as number,
-        sampleCount: doc.sample_count as number,
-        last30dAvg: doc.last_30d_avg as number,
-        lastUpdated: doc.last_updated as string,
-      };
+    for (const doc of data ?? []) {
+      const stats = docToStats(doc);
       results.set(stats.routeKey, stats);
       statsCache.set(stats.routeKey, stats);
     }
@@ -303,9 +246,8 @@ export async function bulkGetRouteStats(
   return results;
 }
 
-/**
- * Clear the in-memory cache (call at start of each cron run).
- */
+// ─── Clear cache ─────────────────────────────────────────────────────
+
 export function clearStatsCache(): void {
   statsCache.clear();
 }

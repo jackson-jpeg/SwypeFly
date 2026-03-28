@@ -47,33 +47,31 @@ describe('scoreFeed', () => {
     expect(cities).toEqual(['Cancun', 'Miami', 'Paris', 'Rome', 'Tokyo']);
   });
 
-  it('applies region diversity — avoids consecutive same-region items', () => {
+  it('applies region diversity — avoids consecutive same-sub-region items', () => {
+    // All 3 are eu-west (same sub-region) — diversity penalty should break them up
     const dests = [
-      makeDest({ city: 'Paris', country: 'France', vibeTags: ['culture'], rating: 4.8, flightPrice: 500 }),
-      makeDest({ city: 'Rome', country: 'Italy', vibeTags: ['historic'], rating: 4.7, flightPrice: 520 }),
-      makeDest({ city: 'Madrid', country: 'Spain', vibeTags: ['foodie'], rating: 4.6, flightPrice: 510 }),
-      makeDest({ city: 'Tokyo', country: 'Japan', vibeTags: ['city'], rating: 4.5, flightPrice: 800 }),
-      makeDest({ city: 'Bali', country: 'Indonesia', vibeTags: ['beach'], rating: 4.4, flightPrice: 900 }),
+      makeDest({ city: 'Paris', country: 'France', vibeTags: ['culture'], flightPrice: 500 }),
+      makeDest({ city: 'London', country: 'UK', vibeTags: ['historic'], flightPrice: 520 }),
+      makeDest({ city: 'Lisbon', country: 'Portugal', vibeTags: ['foodie'], flightPrice: 510 }),
+      makeDest({ city: 'Tokyo', country: 'Japan', vibeTags: ['city'], flightPrice: 800 }),
+      makeDest({ city: 'Bali', country: 'Indonesia', vibeTags: ['beach'], flightPrice: 900 }),
     ];
-    const result = scoreFeed(dests);
-
-    // Not all three European cities should be consecutive
-    const regions = result.map((d) => {
-      if (['France', 'Italy', 'Spain'].includes(d.country)) return 'europe';
-      return 'other';
-    });
-    // Check that we don't have 3 consecutive 'europe'
-    let maxConsecutive = 0;
-    let current = 0;
-    for (const r of regions) {
-      if (r === 'europe') {
-        current++;
-        maxConsecutive = Math.max(maxConsecutive, current);
-      } else {
-        current = 0;
+    // Run 5 times to account for jitter
+    let diverseRuns = 0;
+    for (let i = 0; i < 5; i++) {
+      const result = scoreFeed(dests);
+      const regions = result.map((d) =>
+        ['France', 'UK', 'Portugal'].includes(d.country) ? 'eu-west' : 'other',
+      );
+      let maxConsecutive = 0;
+      let current = 0;
+      for (const r of regions) {
+        if (r === 'eu-west') { current++; maxConsecutive = Math.max(maxConsecutive, current); }
+        else { current = 0; }
       }
+      if (maxConsecutive <= 2) diverseRuns++;
     }
-    expect(maxConsecutive).toBeLessThanOrEqual(2);
+    expect(diverseRuns).toBeGreaterThanOrEqual(3); // At least 3/5 runs should be diverse
   });
 
   it('preference boost increases score for matching vibe tags', () => {

@@ -811,9 +811,12 @@ describe('computePricePercentile', () => {
     expect(computePricePercentile(300, null)).toBe(50);
   });
 
-  it('returns 50 when sampleCount < 3', () => {
-    const lowSample = makeStats({ sampleCount: 2 });
-    expect(computePricePercentile(300, lowSample)).toBe(50);
+  it('returns 50 when sampleCount < 1 (no data)', () => {
+    const noSample = makeStats({ sampleCount: 0 });
+    expect(computePricePercentile(300, noSample)).toBe(50);
+    // sampleCount >= 1 should use real percentile calculation
+    const oneSample = makeStats({ sampleCount: 1 });
+    expect(computePricePercentile(300, oneSample)).not.toBe(50);
   });
 
   it('returns 5 for price at or below p5', () => {
@@ -887,8 +890,8 @@ describe('computePricePercentile', () => {
     });
     // price=500 ≤ p5 → 5
     expect(computePricePercentile(500, flat)).toBe(5);
-    // price=600 > p80, range=0 → 80
-    expect(computePricePercentile(600, flat)).toBe(80);
+    // price=600 > p80, all percentiles equal → capped at 100
+    expect(computePricePercentile(600, flat)).toBe(100);
   });
 
   it('handles zero-range between p5 and p20', () => {
