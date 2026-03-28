@@ -310,7 +310,7 @@ actor APIClient {
                 case .httpError(let code, _):
                     // 401: token expired — clear auth and notify UI (must be on main thread)
                     if code == 401 {
-                        Task { @MainActor in
+                        await MainActor.run {
                             APIClient.authToken = nil
                             NotificationCenter.default.post(name: APIClient.sessionExpired, object: nil)
                         }
