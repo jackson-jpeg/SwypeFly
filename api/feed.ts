@@ -1788,8 +1788,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       scored = softShuffle(scored, rand, 5);
     }
 
-    let page = scored.slice(cursor, cursor + PAGE_SIZE).map((d) => toFrontend(d, origin));
-    const nextCursor = cursor + PAGE_SIZE < scored.length ? String(cursor + PAGE_SIZE) : null;
+    // First page (cursor=0) loads 20 deals for a buffer; subsequent pages load 10
+    const effectivePageSize = cursor === 0 ? PAGE_SIZE * 2 : PAGE_SIZE;
+    let page = scored.slice(cursor, cursor + effectivePageSize).map((d) => toFrontend(d, origin));
+    const nextCursor = cursor + effectivePageSize < scored.length ? String(cursor + effectivePageSize) : null;
 
     // Separate destinations with and without prices
     const withPrice = page.filter((d) => d.flightPrice && d.flightPrice > 0);

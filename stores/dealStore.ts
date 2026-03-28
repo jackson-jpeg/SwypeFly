@@ -181,6 +181,27 @@ export const useDealStore = create<DealState>()((set, get) => ({
       const raw: ApiDestination[] = data.destinations || data.deals || data;
       const deals = raw.map((d) => apiToBoardDeal(d, origin));
       set({ deals, isLoading: false, lastFetchedAt: Date.now() });
+
+      // Background prefetch: start loading page 2 immediately so users
+      // never hit a wall while scrolling. Fire-and-forget.
+      if (deals.length >= 10) {
+        const nextCursor = data.nextCursor;
+        if (nextCursor) {
+          cursor = parseInt(nextCursor, 10);
+          const p2 = new URLSearchParams({ origin, cursor: nextCursor, ...filters });
+          fetch(`${API_BASE}/api/feed?${p2}`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((d2) => {
+              if (!d2) return;
+              const raw2: ApiDestination[] = d2.destinations || d2.deals || d2;
+              if (raw2.length > 0) {
+                const more = raw2.map((d) => apiToBoardDeal(d, origin));
+                set({ deals: [...get().deals, ...more] });
+              }
+            })
+            .catch(() => {}); // Non-fatal — user can still manually load more
+        }
+      }
     } catch (e) {
       const msg = (e as Error).message;
       const friendly = msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch')

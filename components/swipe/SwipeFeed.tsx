@@ -108,10 +108,22 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
   }, [router, departureCode]);
 
   const handleEndReached = useCallback(async () => {
+    if (loadingMore) return; // Prevent double-fetch
     setLoadingMore(true);
     await fetchMore(departureCode, toQueryParams());
     setLoadingMore(false);
-  }, [fetchMore, departureCode, toQueryParams]);
+  }, [fetchMore, departureCode, toQueryParams, loadingMore]);
+
+  // Prefetch next page proactively when user reaches 60% of current page
+  // This eliminates the "wall" — content is ready before they get there
+  useEffect(() => {
+    if (deals.length === 0 || loadingMore) return;
+    const prefetchThreshold = Math.floor(deals.length * 0.6);
+    if (visibleIndex >= prefetchThreshold) {
+      setLoadingMore(true);
+      fetchMore(departureCode, toQueryParams()).finally(() => setLoadingMore(false));
+    }
+  }, [visibleIndex, deals.length]);
 
   const handleStartOver = useCallback(() => {
     listRef.current?.scrollToIndex({ index: 0, animated: true });
@@ -172,7 +184,7 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
           />
         }
         onEndReached={handleEndReached}
-        onEndReachedThreshold={2}
+        onEndReachedThreshold={5}
         removeClippedSubviews={Platform.OS !== 'web'}
         maxToRenderPerBatch={3}
         windowSize={5}
@@ -181,8 +193,11 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
         viewabilityConfig={viewabilityConfig}
         ListFooterComponent={
           loadingMore ? (
-            <View style={styles.footer}>
-              <ActivityIndicator color={colors.yellow} size="small" />
+            <View style={styles.loadingSkeleton}>
+              <View style={styles.loadingPulse}>
+                <ActivityIndicator color={colors.yellow} size="large" />
+                <Text style={styles.loadingText}>Finding more deals...</Text>
+              </View>
             </View>
           ) : deals.length > 0 ? (
             <View style={styles.endOfDeck}>
@@ -236,6 +251,22 @@ const styles = StyleSheet.create({
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingSkeleton: {
+    height: SCREEN_H,
+    backgroundColor: colors.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingPulse: {
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.muted,
+    letterSpacing: 0.5,
   },
 
   // Card counter
