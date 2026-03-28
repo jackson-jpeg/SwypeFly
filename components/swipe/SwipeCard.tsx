@@ -75,14 +75,25 @@ function getDealContext(deal: BoardDeal): string | null {
     parts.push('weekend getaway');
   }
 
+  // Savings context
   if (deal.savingsPercent && deal.savingsPercent >= 20) {
     parts.push(`${deal.savingsPercent}% cheaper than usual`);
   } else if (deal.savingsPercent && deal.savingsPercent >= 10) {
     parts.push(`${deal.savingsPercent}% off`);
+  } else if (deal.usualPrice && deal.price && deal.price < deal.usualPrice) {
+    // Even small savings — compute client-side if server didn't
+    const pct = Math.round(((deal.usualPrice - deal.price) / deal.usualPrice) * 100);
+    if (pct >= 5) parts.push(`${pct}% below avg`);
   }
 
   if (deal.isNonstop) {
     parts.push('nonstop');
+  }
+
+  // Deal tier context when no savings available
+  if (parts.length === 0) {
+    if (deal.dealTier === 'amazing') parts.push('top deal');
+    else if (deal.dealTier === 'great') parts.push('great value');
   }
 
   if (deal.price && deal.price < 150) {
