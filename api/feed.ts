@@ -120,7 +120,7 @@ async function fetchLivePriceForDest(
   }
 }
 
-const ON_DEMAND_CONCURRENCY = 5;
+const ON_DEMAND_CONCURRENCY = 15;
 
 async function fillMissingPrices(
   page: ReturnType<typeof toFrontend>[],
@@ -143,9 +143,9 @@ async function fillMissingPrices(
         if (result) priceResults.set(d.iataCode, result);
       }),
     );
-    // Brief pause between chunks to respect Duffel rate limits
+    // Brief pause between chunks to respect Duffel rate limits (100ms instead of 500ms — concurrent cap already handles load)
     if (chunks.indexOf(chunk) < chunks.length - 1) {
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 100));
     }
   }
 
@@ -811,19 +811,15 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
         if (error) return { documents: [] };
         return { documents: data ?? [] };
       }),
-    // Fetch images in two batches to avoid Supabase's 1000-row default limit
-    Promise.all([
-      supabase
-        .from(TABLES.destinationImages)
-        .select('*')
-        .range(0, 999)
-        .then(({ data }) => data ?? []),
-      supabase
-        .from(TABLES.destinationImages)
-        .select('*')
-        .range(1000, 1999)
-        .then(({ data }) => data ?? []),
-    ]).then(([batch1, batch2]) => ({ documents: [...batch1, ...batch2] })),
+    // Fetch all images in a single query (limit 3000 covers all destinations)
+    supabase
+      .from(TABLES.destinationImages)
+      .select('*')
+      .limit(3000)
+      .then(({ data, error }) => {
+        if (error) return { documents: [] };
+        return { documents: data ?? [] };
+      }),
     bulkGetRouteStats(origin),
   ]);
 
@@ -1144,7 +1140,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
     description: d.description,
     // image_url already prioritizes Unsplash over Google Places (set in merge above)
     imageUrl: d.image_url || d.image_urls?.[0],
-    imageUrls: d.image_urls,
+    // imageUrls omitted from feed — single URL is sufficient for card rendering
     // Only send prices we can trust:
     // - live_price (from Duffel cached_prices or Travelpayouts calendar) = good
     // - flight_price (from destinations table, possibly months old) = unreliable, omit
@@ -1164,12 +1160,8 @@ function toFrontend(d: ScoredDest, origin?: string) {
     hotelPriceSource: d.live_hotel_price != null
       ? (d.hotel_price_source as 'duffel' | 'liteapi' | 'estimate')
       : 'estimate',
-    hotels: d.hotels_data ?? undefined,
-    available_flight_days: d.available_flight_days || undefined,
-    latitude: d.latitude ?? undefined,
-    longitude: d.longitude ?? undefined,
-    itinerary: d.itinerary || undefined,
-    restaurants: d.restaurants || undefined,
+    // Heavy fields omitted from feed — fetched on-demand via /api/destination
+    // hotels, available_flight_days, latitude, longitude, itinerary, restaurants
     departureDate: d.departure_date || undefined,
     returnDate: d.return_date || undefined,
     tripDurationDays: d.trip_duration_days ?? undefined,
@@ -1180,9 +1172,8 @@ function toFrontend(d: ScoredDest, origin?: string) {
       d.previous_price && d.live_price != null && d.previous_price > 0
         ? Math.round(((d.previous_price - d.live_price) / d.previous_price) * 100)
         : undefined,
-    offerJson: d.offer_json || undefined,
+    // offerJson omitted from feed — large JSON blob only needed during booking
     offerExpiresAt: d.offer_expires_at || undefined,
-    tpFoundAt: d.tp_found_at || undefined,
     airlineLogoUrl: d.live_airline
       ? `https://pics.avs.io/200/80/${d.live_airline}.png`
       : undefined,
@@ -1206,7 +1197,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
     usualPrice: d.usual_price ?? undefined,
     savingsAmount: d.savings_amount ?? undefined,
     savingsPercent: d.savings_percent ?? undefined,
-    priceHistory: d.price_history ?? undefined,
+    priceHistory: d.price_history?.slice(-7) ?? undefined,
     nearbyOrigin: d.nearby_origin ?? undefined,
     nearbyOriginLabel: d.nearby_origin_label ?? undefined,
   };

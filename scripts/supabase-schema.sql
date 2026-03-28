@@ -123,6 +123,10 @@ CREATE TABLE IF NOT EXISTS cached_prices (
 CREATE INDEX IF NOT EXISTS idx_price_origin ON cached_prices(origin);
 CREATE INDEX IF NOT EXISTS idx_price_origin_dest ON cached_prices(origin, destination_iata);
 CREATE INDEX IF NOT EXISTS idx_price_fetched ON cached_prices(fetched_at);
+-- Compound index for feed queries that filter by origin + sort by departure_date
+CREATE INDEX IF NOT EXISTS idx_price_origin_departure ON cached_prices(origin, departure_date);
+-- Compound index for destinations with active filter + iata lookup
+CREATE INDEX IF NOT EXISTS idx_dest_active_iata ON destinations(is_active, iata_code);
 
 -- 6. Cached Hotel Prices
 CREATE TABLE IF NOT EXISTS cached_hotel_prices (
@@ -273,6 +277,7 @@ CREATE INDEX IF NOT EXISTS idx_cal_origin ON price_calendar(origin);
 CREATE INDEX IF NOT EXISTS idx_cal_origin_dest ON price_calendar(origin, destination_iata);
 CREATE INDEX IF NOT EXISTS idx_cal_origin_dest_date ON price_calendar(origin, destination_iata, date);
 CREATE INDEX IF NOT EXISTS idx_cal_deal_score ON price_calendar(deal_score DESC);
+CREATE INDEX IF NOT EXISTS idx_cal_origin_score ON price_calendar(origin, deal_score DESC);
 CREATE INDEX IF NOT EXISTS idx_cal_fetched ON price_calendar(fetched_at);
 
 -- 14. Price History Stats
