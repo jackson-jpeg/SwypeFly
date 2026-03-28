@@ -76,12 +76,12 @@ async function getDestMeta(): Promise<Map<string, DestMeta>> {
 // Pro plan allows up to 300s for serverless functions
 export const maxDuration = 300;
 
-// With parallel searches (5 concurrent), each chunk takes ~3s.
-// 30 destinations = 6 chunks × ~3s + 5s delays = ~48s search + DB overhead.
-const BATCH_SIZE = 30;
+// With parallel searches (15 concurrent), each chunk takes ~3s.
+// 60 destinations = 4 chunks × ~3s + 1s delays = ~15s search + DB overhead.
+const BATCH_SIZE = 60;
 
-// Concurrent Duffel searches per chunk (Duffel rate limit: 60 req/min)
-const CONCURRENCY = 5;
+// Concurrent Duffel searches per chunk (Duffel rate limit: 60 req/min — 15 concurrent stays under limit)
+const CONCURRENCY = 15;
 
 // 5% threshold for price direction tracking
 const PRICE_CHANGE_THRESHOLD = 0.05;
@@ -385,9 +385,9 @@ async function refreshBatch(
       }
     }
 
-    // Rate limit: 5-second delay between chunks to respect Duffel limits
+    // Rate limit: 1-second delay between chunks (concurrency cap already limits Duffel load)
     if (i + CONCURRENCY < batch.length) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
