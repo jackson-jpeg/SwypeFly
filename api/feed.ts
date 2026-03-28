@@ -1913,20 +1913,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const withPrice = page.filter((d) => d.flightPrice && d.flightPrice > 0);
     const withoutPrice = page.filter((d) => !d.flightPrice || d.flightPrice <= 0);
 
-    // If we have enough priced destinations, skip on-demand Duffel (saves 10-15s)
-    // Otherwise, fill missing prices for a better user experience
-    if (withPrice.length >= 5) {
+    if (withPrice.length >= 10) {
+      // Plenty of priced destinations — show them all, skip on-demand Duffel
       page = withPrice;
+    } else if (withPrice.length >= 5 && withoutPrice.length > 0) {
+      // Enough to show but could use more — backfill on-demand for missing ones
+      // Use a short timeout so we don't block too long
+      const timeout = new Promise<null>((r) => setTimeout(() => r(null), 4000));
+      const fillResult = Promise.race([fillMissingPrices(withoutPrice, origin), timeout]);
+      const filled = await fillResult;
+      if (filled) {
+        const filledWithPrice = filled.filter((d) => d.flightPrice && d.flightPrice > 0);
+        page = [...withPrice, ...filledWithPrice];
+      } else {
+        page = withPrice; // Timeout — just use what we have
+      }
     } else {
-      // Not enough cached prices — do on-demand Duffel pricing
+      // Very few cached prices — do full on-demand Duffel pricing
       page = await fillMissingPrices(page, origin);
       page = page.filter((d) => d.flightPrice && d.flightPrice > 0);
     }
 
-    // Fire-and-forget: backfill prices for uncached destinations in background
-    // (they'll be cached for next request)
-    if (withoutPrice.length > 0) {
-      fillMissingPrices(withoutPrice, origin).catch(() => {});
+    // Fire-and-forget: backfill remaining unprice destinations
+    const stillUnpriced = page.length < effectivePageSize
+      ? withoutPrice.filter((d) => !page.some((p) => p.iataCode === d.iataCode))
+      : withoutPrice;
+    if (stillUnpriced.length > 0) {
+      fillMissingPrices(stillUnpriced, origin).catch(() => {});
     }
 
     const cacheTime = sessionId ? 0 : 60;
