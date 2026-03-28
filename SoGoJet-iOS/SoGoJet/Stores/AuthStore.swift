@@ -1,6 +1,22 @@
 import Foundation
 import Observation
 import AuthenticationServices
+import UIKit
+
+// MARK: - OAuth Presentation Context
+
+/// Provides the window anchor for ASWebAuthenticationSession.
+/// Required on iOS 18+ or the OAuth popup immediately fails with error 2.
+final class OAuthPresentationContext: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = OAuthPresentationContext()
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?
+            .windows.first(where: { $0.isKeyWindow })
+            ?? ASPresentationAnchor()
+    }
+}
 
 // MARK: - Auth Store
 // Manages user authentication via Sign in with Apple, Google, and TikTok.
@@ -122,6 +138,7 @@ final class AuthStore: NSObject {
         }
 
         session.prefersEphemeralWebBrowserSession = false
+        session.presentationContextProvider = OAuthPresentationContext.shared
         session.start()
     }
 
