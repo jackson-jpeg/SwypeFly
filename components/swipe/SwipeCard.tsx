@@ -140,7 +140,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
           src={upgradeUnsplashUrl(imageUri, 1600)}
           srcSet={`${upgradeUnsplashUrl(imageUri, 1080)} 1080w, ${upgradeUnsplashUrl(imageUri, 1600)} 1600w, ${upgradeUnsplashUrl(imageUri, 2400)} 2400w`}
           sizes="100vw"
-          alt=""
+          alt={`${deal.destination}, ${deal.country}`}
           loading="eager"
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />

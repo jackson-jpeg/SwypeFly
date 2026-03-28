@@ -198,17 +198,21 @@ export const useDealStore = create<DealState>()((set, get) => ({
         ...filters,
       });
       const res = await fetch(`${API_BASE}/api/feed?${params}`);
-      if (!res.ok) { set({ isLoading: false }); return; }
+      if (!res.ok) {
+        set({ isLoading: false, error: `Failed to load more (${res.status})` });
+        return;
+      }
       const data = await res.json();
       const raw: ApiDestination[] = data.destinations || data.deals || data;
       if (raw.length > 0) {
         const newDeals = raw.map((d) => apiToBoardDeal(d, origin));
-        set({ deals: [...get().deals, ...newDeals], isLoading: false });
+        set({ deals: [...get().deals, ...newDeals], isLoading: false, error: null });
       } else {
         set({ isLoading: false });
       }
-    } catch {
-      set({ isLoading: false });
+    } catch (e) {
+      const msg = (e as Error).message;
+      set({ isLoading: false, error: msg.includes('fetch') ? 'Network error' : msg });
     }
   },
 }));

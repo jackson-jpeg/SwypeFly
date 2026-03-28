@@ -93,6 +93,10 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <Head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="description" content="Swipe through stunning destinations and find the cheapest flights from your city. SoGoJet — your AI-powered travel deal finder." />
+        <meta name="theme-color" content="#0A0806" />
         <title>SoGoJet — Discover Cheap Flights</title>
         {/* Vintage terminal CSS effects to match iOS aesthetic */}
         <style>{`

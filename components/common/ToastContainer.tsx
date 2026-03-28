@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useToastStore, type Toast, type ToastType } from '../../stores/toastStore';
 import { colors, fonts, spacing } from '../../theme/tokens';
 
-const ICON_MAP: Record<ToastType, string> = {
+const ICON_MAP: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
   success: 'checkmark-circle',
   error: 'alert-circle',
   info: 'information-circle',
@@ -43,7 +43,7 @@ function ToastItem({ toast }: { toast: Toast }) {
   return (
     <Animated.View style={[styles.toast, { opacity, transform: [{ translateY }] }]}>
       <Pressable style={styles.toastInner} onPress={() => dismiss(toast.id)}>
-        <Ionicons name={ICON_MAP[toast.type] as any} size={18} color={iconColor} />
+        <Ionicons name={ICON_MAP[toast.type]} size={18} color={iconColor} />
         <Text style={styles.toastText} numberOfLines={2}>{toast.message}</Text>
       </Pressable>
     </Animated.View>
