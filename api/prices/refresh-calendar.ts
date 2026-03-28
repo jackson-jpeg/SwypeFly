@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../../services/supabaseServer';
-import { fetchAllCheapPrices } from '../../services/travelpayouts';
+import { fetchAllCheapPrices, fetchLatestPrices, fetchByPriceRange } from '../../services/travelpayouts';
 import { logApiError } from '../../utils/apiLogger';
 import { evaluateDealQuality, US_AIRPORTS } from '../../utils/dealQuality';
 import {
@@ -233,11 +233,43 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
     rejected: 0,
   };
 
-  // Step 1: Get bulk cheap prices for all destinations from this origin
-  const bulkPrices = await fetchAllCheapPrices(origin);
+  // Step 1: Get prices from multiple Travelpayouts endpoints in parallel
+  const [bulkPrices, latestPrices, budgetDeals] = await Promise.all([
+    fetchAllCheapPrices(origin),
+    fetchLatestPrices(origin).catch(() => new Map()),
+    fetchByPriceRange(origin, 1, 350).catch(() => []),  // Sub-$350 surprises
+  ]);
+
+  // Merge: bulk is primary, supplement with latest 48h prices and budget discoveries
+  for (const [dest, info] of latestPrices) {
+    if (!bulkPrices.has(dest) || info.price < (bulkPrices.get(dest)?.price ?? Infinity)) {
+      bulkPrices.set(dest, {
+        destination: dest,
+        price: info.price,
+        airline: info.airline,
+        departureAt: '',
+        returnAt: '',
+        foundAt: new Date().toISOString(),
+      });
+    }
+  }
+  for (const deal of budgetDeals) {
+    const dest = deal.destination;
+    if (!bulkPrices.has(dest) || deal.price < (bulkPrices.get(dest)?.price ?? Infinity)) {
+      bulkPrices.set(dest, {
+        destination: dest,
+        price: deal.price,
+        airline: deal.airline,
+        departureAt: deal.departureDate,
+        returnAt: deal.returnDate,
+        foundAt: new Date().toISOString(),
+      });
+    }
+  }
+
   result.bulkDestinations = bulkPrices.size;
   console.info(
-    `[refresh-calendar] ${origin}: ${bulkPrices.size} destinations from bulk prices`,
+    `[refresh-calendar] ${origin}: ${bulkPrices.size} destinations (bulk + latest + budget)`,
   );
 
   if (bulkPrices.size === 0) return result;
