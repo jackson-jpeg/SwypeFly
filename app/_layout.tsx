@@ -157,7 +157,7 @@ export default function RootLayout() {
         <meta name="twitter:title" content="SoGoJet — Discover Cheap Flights" />
         <meta name="twitter:image" content="https://sogojet.com/api/og" />
         <meta name="theme-color" content="#0A0806" />
-        <meta name="apple-itunes-app" content="app-id=com.sogojet.app" />
+        <meta name="apple-itunes-app" content="app-id=6746076960" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/assets/icon-180.png" sizes="180x180" />
         <link

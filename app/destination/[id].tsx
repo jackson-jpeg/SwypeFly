@@ -703,10 +703,10 @@ export default function DestinationDetailScreen() {
   );
 }
 
-function DetailItem({ icon, label, value }: { icon: string; label: string; value: string }) {
+function DetailItem({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
   return (
     <View style={styles.detailItem}>
-      <Ionicons name={icon as any} size={16} color={colors.green} />
+      <Ionicons name={icon} size={16} color={colors.green} />
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
     </View>
