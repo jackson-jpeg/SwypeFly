@@ -92,7 +92,7 @@ struct DealCard: View {
                     VStack(alignment: .leading, spacing: 6) {
                         SplitFlapRow(
                             text: deal.city.uppercased(),
-                            maxLength: 12,
+                            maxLength: 16,
                             size: .md,
                             color: Color.sgWhite,
                             alignment: .leading,
@@ -134,7 +134,7 @@ struct DealCard: View {
                         }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, 170)
                 }
 
                 // Swipe hint — only on the first card, auto-dismisses
@@ -311,15 +311,15 @@ struct DealCard: View {
         return deal.priceFormatted
     }
 
-    /// Whether the displayed price is confirmed (live override) or an estimate.
+    /// Whether the displayed price is confirmed (live Duffel search) or an estimate.
     private var priceIsConfirmed: Bool {
-        livePriceOverride != nil
+        livePriceOverride != nil || deal.priceSource == "duffel"
     }
 
     private var priceBadge: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            // All feed prices are now live Duffel fares
-            if deal.hasPrice {
+            // Only show "live fare" for confirmed Duffel prices, not cached estimates
+            if priceIsConfirmed {
                 HStack(spacing: 3) {
                     Circle()
                         .fill(Color.sgDealAmazing)
@@ -327,6 +327,15 @@ struct DealCard: View {
                     Text("live fare")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(Color.sgDealAmazing)
+                }
+            } else if deal.hasPrice {
+                HStack(spacing: 3) {
+                    Circle()
+                        .fill(Color.sgYellow)
+                        .frame(width: 5, height: 5)
+                    Text("est. fare")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.sgYellow)
                 }
             }
 
