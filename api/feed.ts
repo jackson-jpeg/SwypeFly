@@ -7,7 +7,7 @@ import { verifyClerkToken } from '../utils/clerkAuth';
 import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
 import { searchFlights } from '../services/duffel';
 import { cors } from './_cors.js';
-import { bulkGetRouteStats } from '../utils/priceStats';
+import { bulkGetRouteStats, getRouteStats } from '../utils/priceStats';
 import { nearbyAirports } from '../data/airports';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 
@@ -172,11 +172,27 @@ async function fillMissingPrices(
     }
   }
 
-  // Merge live prices into the page
-  return page.map((d) => {
+  // Merge live prices into the page + compute savings from route stats
+  return Promise.all(page.map(async (d) => {
     if (d.flightPrice && d.flightPrice > 0) return d;
     const live = priceResults.get(d.iataCode);
-    if (!live) return d; // Duffel had no results for this route
+    if (!live) return d;
+
+    // Compute savings using route stats
+    let usualPrice = d.usualPrice;
+    let savingsAmount = d.savingsAmount;
+    let savingsPercent = d.savingsPercent;
+    if (!usualPrice) {
+      const stats = await getRouteStats(origin, d.iataCode);
+      if (stats && stats.sampleCount >= 1) {
+        usualPrice = stats.medianPrice;
+        if (live.price < usualPrice) {
+          savingsAmount = usualPrice - live.price;
+          savingsPercent = Math.round((savingsAmount / usualPrice) * 100);
+        }
+      }
+    }
+
     return {
       ...d,
       flightPrice: live.price,
@@ -188,8 +204,11 @@ async function fillMissingPrices(
       departureDate: live.departureDate,
       returnDate: live.returnDate,
       tripDurationDays: 7,
+      usualPrice,
+      savingsAmount,
+      savingsPercent,
     };
-  });
+  }));
 }
 
 // ─── Seeded PRNG (consistent within a day, fresh next day) ──────────
@@ -1389,19 +1408,8 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       nature_score: (d.nature_score as number) || 0,
       food_score: (d.food_score as number) || 0,
       popularity_score: (d.popularity_score as number) || 0,
-      // Only show fresh Duffel prices — these are real live fares that match booking.
-      // Filter out stale prices (>48h old) and non-Duffel sources (Amadeus, Travelpayouts).
-      live_price: (() => {
-        if (!lp?.price) return null;
-        // Only trust Duffel prices
-        if (lp.source !== 'duffel') return null;
-        // Skip prices older than 48 hours
-        if (lp.fetched_at) {
-          const age = Date.now() - new Date(lp.fetched_at).getTime();
-          if (age > 48 * 60 * 60 * 1000) return null;
-        }
-        return lp.price;
-      })(),
+      // Use the pre-computed live Duffel price (fresh, <48h, source=duffel)
+      live_price: liveDuffelPrice,
       live_airline: lp?.source === 'duffel' ? (lp?.airline ?? '') : '',
       live_duration: lp?.source === 'duffel' ? (lp?.duration ?? '') : '',
       price_source: lp?.source === 'duffel' ? lp.source : undefined,
