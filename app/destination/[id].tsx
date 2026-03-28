@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Head from 'expo-router/head';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -300,8 +301,20 @@ export default function DestinationDetailScreen() {
     transform: [{ translateY: Animated.multiply(scrollY, -0.35) }],
   } : {};
 
+  const pageTitle = `${deal.destination}, ${deal.country} — ${deal.priceFormatted || 'Flights'} | SoGoJet`;
+  const pageDesc = deal.tagline || `Find cheap flights to ${deal.destination} from ${departureCode}`;
+
   return (
     <View style={styles.container}>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
+        <meta property="og:image" content={`${API_BASE}/api/og?id=${deal.id}`} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Head>
       <Animated.ScrollView
         bounces={false}
         showsVerticalScrollIndicator={false}

@@ -25,6 +25,20 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
+function upgradeImageUrl(url: string, width: number): string {
+  if (!url || !url.includes('unsplash.com')) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('w', String(width));
+    u.searchParams.set('q', '85');
+    u.searchParams.set('auto', 'format');
+    u.searchParams.set('fit', 'crop');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + n);
@@ -372,7 +386,9 @@ export default function TripScreen() {
           <View style={styles.heroImage}>
             {Platform.OS === 'web' ? (
               <img
-                src={deal.imageUrl}
+                src={upgradeImageUrl(deal.imageUrl, 1200)}
+                srcSet={`${upgradeImageUrl(deal.imageUrl, 800)} 800w, ${upgradeImageUrl(deal.imageUrl, 1200)} 1200w`}
+                sizes="100vw"
                 alt={deal.destinationFull || deal.destination}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
               />
