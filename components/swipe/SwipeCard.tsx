@@ -389,6 +389,18 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
                 <Ionicons name="open-outline" size={18} color={colors.green} />
                 <Text style={[styles.actionsItemText, { color: colors.green }]}>View on Aviasales</Text>
               </Pressable>
+            ) : Platform.OS === 'web' ? (
+              <Pressable
+                style={[styles.actionsItem, { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  const url = `${process.env.EXPO_PUBLIC_API_BASE || ''}/api/share-card?id=${deal.id}&format=twitter`;
+                  if (typeof window !== 'undefined') window.open(url, '_blank');
+                  setShowActions(false);
+                }}
+              >
+                <Ionicons name="image-outline" size={18} color={colors.orange} />
+                <Text style={[styles.actionsItemText, { color: colors.orange }]}>Share card image</Text>
+              </Pressable>
             ) : (
               <View style={[styles.actionsItem, { borderBottomWidth: 0, opacity: 0.4 }]}>
                 <Ionicons name="notifications-outline" size={18} color={colors.muted} />

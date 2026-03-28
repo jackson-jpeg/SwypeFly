@@ -380,6 +380,15 @@ export default function SavedScreen() {
           <Text style={styles.emptySubtitle}>
             Tap the heart on any deal to save it here
           </Text>
+          <Pressable
+            style={styles.exploreBtn}
+            onPress={() => router.replace('/(tabs)')}
+            accessibilityRole="button"
+            accessibilityLabel="Go explore deals"
+          >
+            <Ionicons name="compass-outline" size={18} color={colors.bg} />
+            <Text style={styles.exploreBtnText}>Explore Deals</Text>
+          </Pressable>
         </View>
       ) : (
         <FlatList
@@ -558,5 +567,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  exploreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.yellow,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  exploreBtnText: {
+    fontFamily: fonts.display,
+    fontSize: 16,
+    color: colors.bg,
+    letterSpacing: 0.5,
   },
 });
