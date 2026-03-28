@@ -50,3 +50,6 @@ export const spacing = {
   lg: 24,
   xl: 40,
 } as const;
+
+// App Store link — update the ID once the app is published on App Store Connect
+export const APP_STORE_URL = 'https://apps.apple.com/app/sogojet/id6746076960';

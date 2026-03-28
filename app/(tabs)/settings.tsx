@@ -314,7 +314,7 @@ export default function SettingsScreen() {
           <Pressable
             style={[styles.row, { backgroundColor: colors.yellow + '10', borderColor: colors.yellow + '30' }]}
             onPress={() => {
-              if (typeof window !== 'undefined') window.open('https://apps.apple.com/app/sogojet/id0000000000', '_blank');
+              if (typeof window !== 'undefined') window.open('https://apps.apple.com/app/sogojet/id6746076960', '_blank');
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>

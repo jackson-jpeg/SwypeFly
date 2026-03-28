@@ -663,7 +663,7 @@ export default function DestinationDetailScreen() {
               style={styles.appCtaButton}
               onPress={() => {
                 if (typeof window !== 'undefined') {
-                  window.open('https://apps.apple.com/app/sogojet/id0000000000', '_blank');
+                  window.open('https://apps.apple.com/app/sogojet/id6746076960', '_blank');
                 }
               }}
             >

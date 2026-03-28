@@ -81,7 +81,7 @@ export default function AppDownloadBanner() {
 
       {/* CTA */}
       <a
-        href="https://apps.apple.com/app/sogojet/id0000000000"
+        href="https://apps.apple.com/app/sogojet/id6746076960"
         target="_blank"
         rel="noopener noreferrer"
         style={{
