@@ -10,27 +10,28 @@ struct DepartureBoardProvider: TimelineProvider {
     }
 
     // MARK: Snapshot (Widget Gallery)
-    func getSnapshot(in context: Context, completion: @escaping (FlightEntry) -> Void) {
+    func getSnapshot(in context: Context, completion: @escaping @Sendable (FlightEntry) -> Void) {
         if context.isPreview {
             completion(FlightEntry.snapshot)
             return
         }
 
         // Try a quick fetch for the snapshot
-        Task {
+        let comp = completion
+        Task { @MainActor in
             let code = SharedDefaults.departureCode
             let flights = await WidgetAPIClient.fetchFlights(origin: code, limit: 7)
             if flights.isEmpty {
-                completion(FlightEntry.snapshot)
+                comp(FlightEntry.snapshot)
             } else {
-                completion(FlightEntry(date: .now, flights: flights, departureCode: code))
+                comp(FlightEntry(date: .now, flights: flights, departureCode: code))
             }
         }
     }
 
     // MARK: Timeline
-    func getTimeline(in context: Context, completion: @escaping (Timeline<FlightEntry>) -> Void) {
-        Task {
+    func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<FlightEntry>) -> Void) {
+        Task { @MainActor in
             let code = SharedDefaults.departureCode
             let allFlights = await WidgetAPIClient.fetchFlights(origin: code, limit: 12)
 
