@@ -10,7 +10,8 @@ import os
 
 private let logger = Logger(subsystem: "com.sogojet.app", category: "diagnostics")
 
-class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MXMetricManagerSubscriber {
+@MainActor
+class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, @preconcurrency UNUserNotificationCenterDelegate, @preconcurrency MXMetricManagerSubscriber {
     /// Stores the shortcut action type when the app is launched from a quick action.
     nonisolated(unsafe) static var pendingShortcutType: String?
 

@@ -1,6 +1,7 @@
 import Network
 import Observation
 
+@MainActor
 @Observable
 final class NetworkMonitor {
     private(set) var isConnected = true
@@ -8,8 +9,9 @@ final class NetworkMonitor {
 
     init() {
         monitor.pathUpdateHandler = { [weak self] path in
+            let connected = path.status == .satisfied
             Task { @MainActor in
-                self?.isConnected = path.status == .satisfied
+                self?.isConnected = connected
             }
         }
         monitor.start(queue: .main)
