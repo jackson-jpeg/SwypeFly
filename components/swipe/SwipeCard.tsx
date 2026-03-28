@@ -75,6 +75,7 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
   const imageUri = deal.imageUrl || FALLBACK_IMAGE;
   const saveScale = useRef(new Animated.Value(1)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
+  const hintBounce = useRef(new Animated.Value(0)).current;
   const [showActions, setShowActions] = useState(false);
   const toggleVibe = useFilterStore((s) => s.toggleVibe);
 
@@ -85,6 +86,19 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
       Animated.timing(cardOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start();
     }
   }, [animate]);
+
+  // Bounce scroll hint on first card
+  useEffect(() => {
+    if (!isFirst) return;
+    const bounce = Animated.loop(
+      Animated.sequence([
+        Animated.timing(hintBounce, { toValue: -8, duration: 600, useNativeDriver: true }),
+        Animated.timing(hintBounce, { toValue: 0, duration: 600, useNativeDriver: true }),
+      ]),
+    );
+    const timer = setTimeout(() => bounce.start(), 1500);
+    return () => { clearTimeout(timer); bounce.stop(); };
+  }, [isFirst]);
 
   const handleLongPress = useCallback(() => {
     setShowActions(true);
@@ -369,12 +383,14 @@ export default function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onB
         </Pressable>
       )}
 
-      {/* Scroll hint on first card */}
+      {/* Scroll hint on first card — bouncing chevron */}
       {isFirst && (
-        <View style={styles.scrollHint}>
+        <Animated.View style={[styles.scrollHint, { transform: [{ translateY: hintBounce }] }]}>
           <Ionicons name="chevron-up" size={20} color={colors.faint} />
-          <Text style={styles.scrollHintText}>Swipe up for more</Text>
-        </View>
+          <Text style={styles.scrollHintText}>
+            {Platform.OS === 'web' ? 'Scroll or press ↓ for more' : 'Swipe up for more'}
+          </Text>
+        </Animated.View>
       )}
     </Pressable>
   );

@@ -462,6 +462,29 @@ export default function DestinationDetailScreen() {
           )}
         </View>
 
+        {/* Flight route visual */}
+        <View style={styles.routeCard}>
+          <View style={styles.routeEndpoint}>
+            <Text style={styles.routeCode}>{departureCode}</Text>
+            <Text style={styles.routeLabel}>Origin</Text>
+          </View>
+          <View style={styles.routeLine}>
+            <View style={styles.routeDot} />
+            <View style={styles.routeDash} />
+            <Ionicons name="airplane" size={16} color={colors.yellow} />
+            <View style={styles.routeDash} />
+            <View style={styles.routeDot} />
+          </View>
+          <View style={styles.routeEndpoint}>
+            <Text style={styles.routeCode}>{deal.iataCode || '???'}</Text>
+            <Text style={styles.routeLabel}>{deal.destination}</Text>
+          </View>
+          <View style={styles.routeMeta}>
+            <Text style={styles.routeMetaText}>{deal.airline} · {deal.flightDuration}</Text>
+            {deal.isNonstop && <Text style={[styles.routeMetaText, { color: colors.dealAmazing }]}>Nonstop</Text>}
+          </View>
+        </View>
+
         {/* Trip details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>TRIP DETAILS</Text>
@@ -1027,6 +1050,60 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 12,
     color: colors.whiteDim,
+  },
+
+  // Route card
+  routeCard: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.cell,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    gap: 8,
+  },
+  routeEndpoint: {
+    alignItems: 'center',
+  },
+  routeCode: {
+    fontFamily: fonts.display,
+    fontSize: 28,
+    color: colors.white,
+    letterSpacing: 2,
+  },
+  routeLabel: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  routeLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginVertical: 4,
+  },
+  routeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.yellow + '60',
+  },
+  routeDash: {
+    width: 40,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  routeMeta: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 2,
+  },
+  routeMetaText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
   },
 
   // Similar destinations

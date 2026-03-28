@@ -195,12 +195,15 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
         }
       />
 
-      {/* Card counter */}
+      {/* Card counter + keyboard hints */}
       {deals.length > 1 && (
         <View style={styles.counter} pointerEvents="none">
           <Text style={styles.counterText}>
             {visibleIndex + 1} / {deals.length}
           </Text>
+          {Platform.OS === 'web' && (
+            <Text style={styles.kbHint}>↑↓ navigate · S save · Enter details</Text>
+          )}
         </View>
       )}
     </View>
@@ -235,6 +238,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.muted,
     letterSpacing: 1,
+  },
+  kbHint: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    color: colors.faint,
+    marginTop: 2,
   },
 
   // End of deck
