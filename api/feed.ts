@@ -758,7 +758,7 @@ function scoreFeedGeneric(
     recentPriceBrackets.unshift(priceBracket(pick.live_price ?? pick.flight_price));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
-    if (recentCountries.length > 5) recentCountries.pop();
+    if (recentCountries.length > 6) recentCountries.pop();
     if (recentPriceBrackets.length > 2) recentPriceBrackets.pop();
   }
 
@@ -1138,7 +1138,7 @@ function scorePersonalized(
     recentPriceBrackets.unshift(priceBracket(pick.live_price ?? pick.flight_price));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
-    if (recentCountries.length > 5) recentCountries.pop();
+    if (recentCountries.length > 6) recentCountries.pop();
     if (recentPriceBrackets.length > 2) recentPriceBrackets.pop();
   }
 
