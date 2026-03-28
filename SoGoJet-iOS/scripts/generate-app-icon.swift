@@ -1,5 +1,6 @@
 #!/usr/bin/env swift
 // Generates the SoGoJet app icon — black split-flap "GO" on white background
+// BLACK AND WHITE ONLY — no gold, no color
 // Usage: swift scripts/generate-app-icon.swift
 
 import Foundation
@@ -16,13 +17,12 @@ func c(_ r: Int, _ g: Int, _ b: Int, _ a: Double = 1.0) -> CGColor {
     CGColor(srgbRed: CGFloat(r)/255.0, green: CGFloat(g)/255.0, blue: CGFloat(b)/255.0, alpha: a)
 }
 
-// White background, dark flipboard cells
-let whiteBg = c(0xFF, 0xFF, 0xFF)
-let cellDark = c(0x12, 0x12, 0x12)
-let cellBorder = c(0x2A, 0x2A, 0x2A)
-let gapDark = c(0x08, 0x08, 0x08)
-let gold = c(0xF7, 0xE8, 0xA0)
-let goldGlow = c(0xF7, 0xE8, 0xA0, 0.35)
+let white = c(0xFF, 0xFF, 0xFF)
+let black = c(0x0A, 0x0A, 0x0A)
+let darkGray = c(0x1A, 0x1A, 0x1A)
+let midGray = c(0x30, 0x30, 0x30)
+let gapBlack = c(0x06, 0x06, 0x06)
+let letterWhite = c(0xF5, 0xF5, 0xF5)
 
 let colorSpace = CGColorSpaceCreateDeviceRGB()
 
@@ -33,11 +33,11 @@ guard let ctx = CGContext(
     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
 ) else { fatalError("Cannot create context") }
 
-// Fill white background
-ctx.setFillColor(whiteBg)
+// White background
+ctx.setFillColor(white)
 ctx.fill(CGRect(origin: .zero, size: cgSize))
 
-// Draw two split-flap cells side by side for "G" and "O"
+// Two split-flap cells for "G" and "O"
 let cellW: CGFloat = 340
 let cellH: CGFloat = 440
 let gap: CGFloat = 24
@@ -50,42 +50,32 @@ for i in 0..<2 {
 
     // Shadow
     ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -8), blur: 24, color: c(0, 0, 0, 0.3))
+    ctx.setShadow(offset: CGSize(width: 0, height: -6), blur: 20, color: c(0, 0, 0, 0.25))
 
-    // Cell background
+    // Cell background — black
     let cellRect = CGRect(x: x, y: originY, width: cellW, height: cellH)
     let cellPath = CGPath(roundedRect: cellRect, cornerWidth: 28, cornerHeight: 28, transform: nil)
-    ctx.setFillColor(cellDark)
+    ctx.setFillColor(black)
     ctx.addPath(cellPath)
     ctx.fillPath()
     ctx.restoreGState()
 
-    // Cell border
-    ctx.setStrokeColor(cellBorder)
+    // Cell border — dark gray
+    ctx.setStrokeColor(midGray)
     ctx.setLineWidth(2)
     ctx.addPath(cellPath)
     ctx.strokePath()
 
-    // Split-flap gap line (horizontal center)
+    // Split-flap gap line
     let gapY = originY + cellH / 2
-    ctx.setFillColor(gapDark)
+    ctx.setFillColor(gapBlack)
     ctx.fill(CGRect(x: x, y: gapY - 2, width: cellW, height: 4))
-
-    // Gold glow behind letter
-    ctx.saveGState()
-    ctx.addPath(cellPath)
-    ctx.clip()
-    let glowRect = CGRect(x: x + cellW/4, y: originY + cellH/4, width: cellW/2, height: cellH/2)
-    ctx.setFillColor(goldGlow)
-    ctx.fillEllipse(in: glowRect.insetBy(dx: -60, dy: -60))
-    ctx.restoreGState()
 }
 
-// Draw "G" and "O" in gold Bebas Neue
+// Draw "G" and "O" in WHITE on the black cells
 let letters = ["G", "O"]
 let fontSize: CGFloat = 360
 
-// Try Bebas Neue first, fall back to system heavy
 let fontName = "BebasNeue-Regular" as CFString
 let font = CTFontCreateWithName(fontName, fontSize, nil)
 let fallbackFont = CTFontCreateWithName("HelveticaNeue-Bold" as CFString, fontSize, nil)
@@ -95,13 +85,12 @@ for (i, letter) in letters.enumerated() {
     let x = originX + CGFloat(i) * (cellW + gap)
     let attrs: [NSAttributedString.Key: Any] = [
         .font: useFont,
-        .foregroundColor: NSColor(cgColor: gold)!,
+        .foregroundColor: NSColor(cgColor: letterWhite)!,
     ]
     let attrStr = NSAttributedString(string: letter, attributes: attrs)
     let line = CTLineCreateWithAttributedString(attrStr)
     let bounds = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
 
-    // Center letter in cell
     let textX = x + (cellW - bounds.width) / 2 - bounds.origin.x
     let textY = originY + (cellH - bounds.height) / 2 - bounds.origin.y
 
@@ -118,4 +107,4 @@ guard let dest = CGImageDestinationCreateWithURL(outputURL as CFURL, UTType.png.
 }
 CGImageDestinationAddImage(dest, image, nil)
 guard CGImageDestinationFinalize(dest) else { fatalError("Cannot write PNG") }
-print("✓ Generated app icon: \(outputURL.path)")
+print("Generated: \(outputURL.path)")
