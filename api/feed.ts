@@ -677,10 +677,15 @@ function scoreFeedGeneric(
         if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
       }
 
-      // Country diversity: strongly penalize same country within 5 cards
+      // Country diversity: hard cap at 2 per 6 cards + soft penalty
+      const countryCount = recentCountries.slice(0, 6).filter((c) => c === country).length;
       let countryPenalty = 0;
-      for (let j = 0; j < Math.min(recentCountries.length, 5); j++) {
-        if (recentCountries[j] === country) countryPenalty += 0.45 * (1 - j / 5);
+      if (countryCount >= 2) {
+        countryPenalty = 1.5; // Effectively skip — only override-able by extreme discovery
+      } else {
+        for (let j = 0; j < Math.min(recentCountries.length, 5); j++) {
+          if (recentCountries[j] === country) countryPenalty += 0.45 * (1 - j / 5);
+        }
       }
 
       let vibePenalty = 0;
@@ -689,8 +694,9 @@ function scoreFeedGeneric(
       }
       const jitter = rand() * 0.12;
 
-      // Penalty for very expensive flights (>$600)
-      const expensivePenalty = effectivePrice > 600 ? (effectivePrice - 600) / 1500 : 0;
+      // Penalty for expensive flights, bonus for budget flights
+      const expensivePenalty = effectivePrice > 600 ? (effectivePrice - 600) / 1200 : 0;
+      const budgetBoost = effectivePrice > 0 && effectivePrice < 350 ? 0.10 : 0;
 
       // Deal quality bonus from deal engine
       const qualityBonus = d.deal_score != null ? (d.deal_score / 100) * 0.12 : 0;
@@ -706,6 +712,7 @@ function scoreFeedGeneric(
         + (signals?.valueDensity ?? 0)             // Bang for your buck
         + (signals?.convenience ?? 0)              // Nonstop/short flights
         + (signals?.weekendGetaway ?? 0)           // Spontaneous trip potential
+        + budgetBoost                              // Boost affordable flights
         + qualityBonus                             // Comfortable flights
         - regionPenalty * 0.18                     // Don't show same region
         - countryPenalty                           // Don't show same country
@@ -1073,8 +1080,11 @@ function scorePersonalized(
       for (let j = 0; j < recentRegions.length; j++) {
         if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
       }
+      const countryCount2 = recentCountries.slice(0, 6).filter((c) => c === country).length;
       let countryPenalty = 0;
-      for (let j = 0; j < Math.min(recentCountries.length, 5); j++) {
+      if (countryCount2 >= 2) {
+        countryPenalty = 1.5;
+      } else for (let j = 0; j < Math.min(recentCountries.length, 5); j++) {
         if (recentCountries[j] === country) countryPenalty += 0.40 * (1 - j / 5);
       }
       let vibePenalty = 0;
