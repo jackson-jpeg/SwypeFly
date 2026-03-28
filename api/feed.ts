@@ -669,10 +669,10 @@ function scoreFeedGeneric(
         if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
       }
 
-      // Country diversity: penalize same country back-to-back
+      // Country diversity: strongly penalize same country within 5 cards
       let countryPenalty = 0;
-      for (let j = 0; j < Math.min(recentCountries.length, 3); j++) {
-        if (recentCountries[j] === country) countryPenalty += 0.3 * (1 - j / 3);
+      for (let j = 0; j < Math.min(recentCountries.length, 5); j++) {
+        if (recentCountries[j] === country) countryPenalty += 0.45 * (1 - j / 5);
       }
 
       let vibePenalty = 0;
@@ -743,7 +743,7 @@ function scoreFeedGeneric(
     recentPriceBrackets.unshift(priceBracket(pick.live_price ?? pick.flight_price));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
-    if (recentCountries.length > 3) recentCountries.pop();
+    if (recentCountries.length > 5) recentCountries.pop();
     if (recentPriceBrackets.length > 2) recentPriceBrackets.pop();
   }
 
@@ -953,9 +953,24 @@ function scorePersonalized(
   const userVec = getUserPrefVector(prefs);
   const recentRegions: string[] = [];
   const recentVibes: string[] = [];
+  const recentCountries: string[] = [];
+  const recentPriceBrackets: string[] = [];
   const WINDOW = 4;
 
-  // Seed with the destination that best matches user preferences
+  const priceBracket = (p: number): string => {
+    if (p < 200) return 'steal';
+    if (p < 400) return 'budget';
+    if (p < 700) return 'mid';
+    return 'premium';
+  };
+
+  const currentMonth = new Date().getMonth();
+  const monthNames = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
+  ];
+  const currentMonthName = monthNames[currentMonth];
+
   // Seed with best combo of preference match + discovery value
   let bestSeedIdx = 0;
   let bestSeedScore = -Infinity;
@@ -989,34 +1004,25 @@ function scorePersonalized(
       const effectivePrice = d.live_price ?? d.flight_price;
       const region = getRegion(d);
       const vibe = getVibeBucket(d.vibe_tags);
+      const country = (d.country as string) || '';
+      const bracket = priceBracket(effectivePrice);
 
-      // Preference similarity (0-1)
+      // Preference similarity (0-1) — primary personalization signal
       const prefScore = cosineSimilarity(userVec, getDestFeatureVector(d));
 
-      // Price score (0-1, lower price = higher score)
+      // Price score (0-1, lower = better)
       const priceScore = 1 - (effectivePrice - minPrice) / priceRange;
 
-      // Diversity penalties
-      let regionPenalty = 0;
-      for (let j = 0; j < recentRegions.length; j++) {
-        if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
-      }
-      let vibePenalty = 0;
-      for (let j = 0; j < recentVibes.length; j++) {
-        if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
-      }
-
-      const jitter = rand() * 0.10;
-
-      // Discovery: price anomaly bonus (even personalized users love a steal)
+      // Discovery: price anomaly bonus
       let discoveryBonus = 0;
       const usual = d.usual_price as number | undefined;
       if (effectivePrice > 0 && usual && usual > 0) {
         const pctBelow = (usual - effectivePrice) / usual;
-        if (pctBelow > 0.15) discoveryBonus = Math.min(0.30, pctBelow);
+        if (pctBelow > 0.12) discoveryBonus = Math.min(0.35, pctBelow * 1.2);
       }
+      if (d.flash_deal) discoveryBonus += 0.20;
 
-      // Trend: dropping prices are more exciting
+      // Trend: dropping prices
       let trendBonus = 0;
       const history = d.price_history as number[] | undefined;
       if (history && history.length >= 2) {
@@ -1030,25 +1036,59 @@ function scorePersonalized(
         }
       }
 
-      // Quiz bonus (additive, optional)
-      const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
+      // Seasonality
+      let seasonalityBonus = 0;
+      const bestMonths = (d.best_months as string[] | undefined) ?? [];
+      if (bestMonths.length > 0) {
+        const lower = bestMonths.map((m: string) => m.toLowerCase());
+        if (lower.includes(currentMonthName)) seasonalityBonus = 0.10;
+      }
 
-      // Convenience bonus for personalized users (they value comfort more)
+      // Convenience
       let convenienceBonus = 0;
       const isNonstop = d.is_nonstop as boolean | undefined;
       const totalStops = d.total_stops as number | undefined;
-      if (isNonstop) convenienceBonus = 0.10;
+      if (isNonstop) convenienceBonus = 0.12;
       else if (totalStops === 1) convenienceBonus = 0.03;
       else if (totalStops != null && totalStops >= 2) convenienceBonus = -0.05;
 
+      // Value density
+      let valueDensity = 0;
+      const tripDays = (d.trip_duration_days as number) ?? 5;
+      if (effectivePrice > 0 && tripDays > 0) {
+        const ppd = effectivePrice / tripDays;
+        valueDensity = Math.max(0, Math.min(0.10, (1 - ppd / 200) * 0.10));
+      }
+
+      // Diversity penalties (all 4 dimensions)
+      let regionPenalty = 0;
+      for (let j = 0; j < recentRegions.length; j++) {
+        if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
+      }
+      let countryPenalty = 0;
+      for (let j = 0; j < Math.min(recentCountries.length, 5); j++) {
+        if (recentCountries[j] === country) countryPenalty += 0.40 * (1 - j / 5);
+      }
+      let vibePenalty = 0;
+      for (let j = 0; j < recentVibes.length; j++) {
+        if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
+      }
+
+      const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
+      const jitter = rand() * 0.08;
+
       const score =
-        prefScore * 0.25
-        + priceScore * 0.12
-        + discoveryBonus
-        + trendBonus
-        + convenienceBonus
-        - regionPenalty * 0.18
-        - vibePenalty * 0.08
+        prefScore * 0.22                           // Preference alignment
+        + priceScore * 0.10                        // Affordable
+        + discoveryBonus                           // Price anomalies
+        + trendBonus                               // Dropping prices
+        + seasonalityBonus                         // Right time to visit
+        + convenienceBonus                         // Nonstop/short flights
+        + valueDensity                             // Bang for buck
+        - regionPenalty * 0.16                     // Region diversity
+        - countryPenalty                           // Country diversity
+        - vibePenalty * 0.08                       // Vibe diversity
+        - (recentPriceBrackets[0] === bracket ? 0.05 : 0) // Price range variety
         + jitter
         + quizBonus;
 
@@ -1058,14 +1098,30 @@ function scorePersonalized(
       }
     }
 
-    // 10% exploration: pick a random item instead of the highest-scoring one
-    const pickIdx = rand() < 0.1 ? Math.floor(rand() * remaining.length) : bestIdx;
+    // 12% exploration weighted by discovery signals
+    let pickIdx = bestIdx;
+    if (rand() < 0.12) {
+      const candidates = remaining.map((d, i) => {
+        const usual = d.usual_price as number | undefined;
+        const price = d.live_price ?? d.flight_price;
+        const disc = (usual && price > 0 && usual > price) ? (usual - price) / usual : 0;
+        return { i, w: Math.max(0.01, disc + (price < 400 ? 0.15 : 0)) };
+      });
+      const totalW = candidates.reduce((s, c) => s + c.w, 0);
+      let r = rand() * totalW;
+      for (const c of candidates) { r -= c.w; if (r <= 0) { pickIdx = c.i; break; } }
+    }
+
     const pick = remaining.splice(pickIdx, 1)[0];
     result.push(pick);
     recentRegions.unshift(getRegion(pick));
     recentVibes.unshift(getVibeBucket(pick.vibe_tags));
+    recentCountries.unshift((pick.country as string) || '');
+    recentPriceBrackets.unshift(priceBracket(pick.live_price ?? pick.flight_price));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
+    if (recentCountries.length > 5) recentCountries.pop();
+    if (recentPriceBrackets.length > 2) recentPriceBrackets.pop();
   }
 
   return result;

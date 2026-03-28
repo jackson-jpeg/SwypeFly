@@ -239,9 +239,10 @@ function computeSeasonScore(bestMonths?: string[]): number {
 // ─── Deal tier classification ────────────────────────────────────────
 
 function classifyDealTier(dealScore: number): DealQualityResult['dealTier'] {
-  if (dealScore >= 85) return 'amazing';
-  if (dealScore >= 70) return 'great';
-  if (dealScore >= 50) return 'good';
+  // Tightened thresholds: "amazing" should be top ~10%, not top 50%
+  if (dealScore >= 90) return 'amazing';
+  if (dealScore >= 75) return 'great';
+  if (dealScore >= 55) return 'good';
   if (dealScore >= 30) return 'fair';
   return 'rejected';
 }
