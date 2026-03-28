@@ -1445,10 +1445,12 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       : (cp?.total_travel_minutes != null && cp.total_travel_minutes >= 0) ? cp.total_travel_minutes : undefined;
 
     // Compute savings from route stats
-    // Use the SAME price the user sees (live_price logic: fresh Duffel only)
+    // Compute the price the user actually sees
     const iata = d.iata_code as string;
     const routeKey = `${origin}-${iata}`;
     const routeStats = routeStatsMap.get(routeKey);
+
+    // Fresh Duffel price (bookable, <48h old)
     const liveDuffelPrice = (() => {
       if (!lp?.price || lp.source !== 'duffel') return null;
       if (lp.fetched_at) {
@@ -1457,7 +1459,11 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       }
       return lp.price;
     })();
-    const effectivePrice = liveDuffelPrice ?? cp?.price ?? null;
+
+    // Best available price: Duffel live > any cached price > calendar
+    // For savings, use the best price regardless of source
+    const bestCachedPrice = lp?.price ?? null;
+    const effectivePrice = liveDuffelPrice ?? bestCachedPrice ?? cp?.price ?? null;
     let usualPrice: number | null = null;
     let savingsAmount: number | null = null;
     let savingsPercent: number | null = null;
@@ -1501,12 +1507,12 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       nature_score: (d.nature_score as number) || 0,
       food_score: (d.food_score as number) || 0,
       popularity_score: (d.popularity_score as number) || 0,
-      // Use the pre-computed live Duffel price (fresh, <48h, source=duffel)
-      live_price: liveDuffelPrice,
-      live_airline: lp?.source === 'duffel' ? (lp?.airline ?? '') : '',
-      live_duration: lp?.source === 'duffel' ? (lp?.duration ?? '') : '',
-      price_source: lp?.source === 'duffel' ? lp.source : undefined,
-      price_fetched_at: lp?.source === 'duffel' ? (lp?.fetched_at ?? undefined) : undefined,
+      // Best available price: Duffel live (bookable) > cached price > calendar
+      live_price: liveDuffelPrice ?? bestCachedPrice ?? (cp?.price ?? null),
+      live_airline: lp?.airline ?? '',
+      live_duration: lp?.duration ?? '',
+      price_source: lp?.source ?? (cp ? 'travelpayouts' : undefined),
+      price_fetched_at: lp?.fetched_at ?? undefined,
       // Prefer Duffel dates (match the price shown) over calendar dates
       departure_date: lp?.departure_date ?? cp?.date,
       return_date: lp?.return_date ?? cp?.return_date,
