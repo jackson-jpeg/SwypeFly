@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -106,12 +106,15 @@ export default function DepartureBoard({ deals, onTapDeal, isLoading = false }: 
     [activeDeal, boardIndex, jumpToBoard, onTapDeal, detailOpacity],
   );
 
-  const swipeUpGesture = Gesture.Pan()
-    .onEnd((event) => {
-      if (event.translationY < -50 && event.velocityY < -200) {
-        runOnJS(handleNextFlight)();
-      }
-    });
+  const swipeUpGesture = useMemo(() =>
+    Gesture.Pan()
+      .onEnd((event) => {
+        if (event.translationY < -50 && event.velocityY < -200) {
+          runOnJS(handleNextFlight)();
+        }
+      }),
+    [handleNextFlight],
+  );
 
   const handleBookIt = useCallback(() => {
     if (!activeDeal?.affiliateUrl) return;

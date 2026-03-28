@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { Pressable, Text, StyleSheet, Animated } from 'react-native';
 import { colors, fonts } from '../../theme/tokens';
 
@@ -9,7 +9,7 @@ interface FilterPillProps {
   accessibilityLabel?: string;
 }
 
-export default function FilterPill({ label, isActive, onPress, accessibilityLabel }: FilterPillProps) {
+function FilterPill({ label, isActive, onPress, accessibilityLabel }: FilterPillProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -73,3 +73,5 @@ const styles = StyleSheet.create({
     color: '#FFF8F0',
   },
 });
+
+export default memo(FilterPill);

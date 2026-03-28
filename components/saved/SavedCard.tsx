@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Dimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,9 +56,19 @@ interface SavedCardProps {
   onBook?: () => void;
 }
 
-export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }: SavedCardProps) {
+function SavedCard({ deal, index = 0, onPress, onRemove, onBook }: SavedCardProps) {
   const countdown = daysUntil(deal.departureDate);
   const tierColor = deal.dealTier ? DEAL_TIER_COLORS[deal.dealTier] : null;
+
+  // Memoize dynamic styles to prevent re-render churn
+  const tierStyle = useMemo(() =>
+    tierColor ? { backgroundColor: tierColor + '25', borderColor: tierColor + '50' } : undefined,
+    [tierColor],
+  );
+  const tierTextStyle = useMemo(() =>
+    tierColor ? { color: tierColor } : undefined,
+    [tierColor],
+  );
 
   return (
     <Pressable
@@ -96,8 +107,8 @@ export default function SavedCard({ deal, index = 0, onPress, onRemove, onBook }
         <View style={styles.topBadges}>
           {/* Deal tier badge */}
           {tierColor && deal.dealTier !== 'fair' && (
-            <View style={[styles.tierBadge, { backgroundColor: tierColor + '25', borderColor: tierColor + '50' }]}>
-              <Text style={[styles.tierText, { color: tierColor }]}>
+            <View style={[styles.tierBadge, tierStyle]}>
+              <Text style={[styles.tierText, tierTextStyle]}>
                 {deal.savingsPercent && deal.savingsPercent > 0
                   ? `${deal.savingsPercent}% OFF`
                   : deal.dealTier === 'amazing' ? 'AMAZING' : deal.dealTier === 'great' ? 'GREAT' : 'GOOD'}
@@ -352,3 +363,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 });
+
+export default memo(SavedCard);

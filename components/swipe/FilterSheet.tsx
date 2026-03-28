@@ -155,15 +155,10 @@ export default function FilterSheet() {
     close();
   };
 
-  // Web: escape key
+  // Cleanup debounce timer on unmount
   useEffect(() => {
-    if (Platform.OS !== 'web' || !isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [isOpen]);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
 
   if (!isOpen) return null;
 
