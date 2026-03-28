@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDealStore } from '../../stores/dealStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useFilterStore } from '../../stores/filterStore';
 import SwipeFeed from '../../components/swipe/SwipeFeed';
+import DepartureBoard from '../../components/board/DepartureBoard';
 import SkeletonCard from '../../components/swipe/SkeletonCard';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
 import FilterButton from '../../components/swipe/FilterButton';
@@ -16,9 +18,11 @@ import { nearbyAirports } from '../../data/airports';
 const IMMERSE_AFTER_SWIPES = 2;
 
 export default function FeedScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { deals, isLoading, error, fetchDeals } = useDealStore();
   const departureCode = useSettingsStore((s) => s.departureCode);
+  const preferredView = useSettingsStore((s) => s.preferredView);
   const toQueryParams = useFilterStore((s) => s.toQueryParams);
   const clearFilters = useFilterStore((s) => s.clearAll);
   const isSheetOpen = useFilterStore((s) => s.isOpen);
@@ -153,6 +157,12 @@ export default function FeedScreen() {
             </Text>
           </View>
         </View>
+      ) : preferredView === 'board' ? (
+        <DepartureBoard
+          deals={deals}
+          onTapDeal={(deal) => router.push(`/destination/${deal.id}`)}
+          isLoading={isLoading}
+        />
       ) : (
         <SwipeFeed onVisibleIndexChange={handleVisibleIndexChange} />
       )}
