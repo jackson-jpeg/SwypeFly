@@ -71,7 +71,9 @@ export default function FeedScreen() {
       ? Math.round(withSavings.reduce((sum, d) => sum + (d.savingsPercent || 0), 0) / withSavings.length)
       : 0;
     const amazingCount = deals.filter((d) => d.dealTier === 'amazing' || d.dealTier === 'great').length;
-    return { total: deals.length, avgSavings, amazingCount };
+    const under300 = deals.filter((d) => d.price && d.price < 300).length;
+    const cheapest = deals.reduce((min, d) => d.price && d.price > 0 && d.price < min ? d.price : min, Infinity);
+    return { total: deals.length, avgSavings, amazingCount, under300, cheapest: cheapest === Infinity ? null : cheapest };
   }, [deals]);
 
   // Clear filters when departure city changes (fresh context)
@@ -101,9 +103,11 @@ export default function FeedScreen() {
         <Animated.View style={[styles.header, { paddingTop: insets.top + 8, opacity: headerOpacity }]}>
           <View>
             <Text style={styles.logo}>✈ SOGOJET</Text>
-            {dealStats && dealStats.avgSavings > 0 && (
+            {dealStats && (
               <Text style={styles.dealCounter}>
-                {dealStats.total} deals · avg {dealStats.avgSavings}% off
+                {dealStats.cheapest ? `From $${dealStats.cheapest}` : `${dealStats.total} deals`}
+                {dealStats.under300 > 0 ? ` · ${dealStats.under300} under $300` : ''}
+                {dealStats.avgSavings > 0 ? ` · avg ${dealStats.avgSavings}% off` : ''}
                 {lastFetchedAt ? ` · ${formatFreshness(lastFetchedAt)}` : ''}
               </Text>
             )}

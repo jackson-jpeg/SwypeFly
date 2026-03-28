@@ -50,13 +50,31 @@ const DEAL_TIER_COLORS: Record<string, string> = {
 
 function getDealBadgeText(deal: BoardDeal): string | null {
   if (!deal.dealTier || deal.dealTier === 'fair') return null;
-  if (deal.savingsPercent && deal.savingsPercent > 0) {
+  if (deal.savingsPercent && deal.savingsPercent >= 30) {
     return `${deal.savingsPercent}% BELOW AVG`;
   }
   if (deal.dealTier === 'amazing') return 'INCREDIBLE DEAL';
   if (deal.dealTier === 'great') return 'GREAT DEAL';
   if (deal.dealTier === 'good') return 'GOOD PRICE';
   return null;
+}
+
+/** Generate a "why this deal" context string for discovery */
+function getDealContext(deal: BoardDeal): string | null {
+  const parts: string[] = [];
+  if (deal.savingsPercent && deal.savingsPercent >= 20) {
+    parts.push(`${deal.savingsPercent}% cheaper than usual`);
+  }
+  if (deal.isNonstop) {
+    parts.push('nonstop');
+  }
+  if (deal.price && deal.price < 200) {
+    parts.push('under $200');
+  } else if (deal.price && deal.price < 350) {
+    parts.push('budget-friendly');
+  }
+  if (parts.length === 0) return null;
+  return parts.join(' · ');
 }
 
 interface SwipeCardProps {
@@ -263,6 +281,14 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
 
         {/* Tagline */}
         <Text style={styles.tagline} numberOfLines={2}>{deal.tagline}</Text>
+
+        {/* Deal context — why this deal is special */}
+        {getDealContext(deal) && (
+          <View style={styles.dealContextRow}>
+            <Ionicons name="sparkles" size={12} color={colors.dealAmazing} />
+            <Text style={styles.dealContextText}>{getDealContext(deal)}</Text>
+          </View>
+        )}
 
         {/* Flight info row — flight code in split-flap */}
         <View style={styles.infoRow}>
@@ -565,6 +591,18 @@ const styles = StyleSheet.create({
     color: colors.whiteDim,
     marginTop: spacing.sm,
     lineHeight: 22,
+  },
+  dealContextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 6,
+  },
+  dealContextText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    color: colors.dealAmazing,
+    letterSpacing: 0.3,
   },
 
   // Info chips

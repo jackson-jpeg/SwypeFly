@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 type PriceRange = 'under300' | '300to500' | '500to1k' | 'over1k' | null;
 type Duration = 'weekend' | 'week' | 'extended' | null;
+type SortPreset = 'default' | 'cheapest' | 'best-deals' | 'trending';
 
 const PRICE_MAP: Record<string, { minPrice?: string; maxPrice?: string }> = {
   under300: { maxPrice: '300' },
@@ -16,6 +17,7 @@ interface FilterState {
   vibes: string[];
   duration: Duration;
   search: string;
+  sortPreset: SortPreset;
   isOpen: boolean;
 
   setPriceRange: (range: PriceRange) => void;
@@ -23,6 +25,7 @@ interface FilterState {
   toggleVibe: (vibe: string) => void;
   setDuration: (duration: Duration) => void;
   setSearch: (query: string) => void;
+  setSortPreset: (preset: SortPreset) => void;
   clearAll: () => void;
   open: () => void;
   close: () => void;
@@ -36,6 +39,7 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
   vibes: [],
   duration: null,
   search: '',
+  sortPreset: 'default',
   isOpen: false,
 
   setPriceRange: (range) => {
@@ -64,7 +68,9 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
 
   setSearch: (query) => set({ search: query }),
 
-  clearAll: () => set({ priceRange: null, regions: [], vibes: [], duration: null, search: '' }),
+  setSortPreset: (preset) => set({ sortPreset: preset }),
+
+  clearAll: () => set({ priceRange: null, regions: [], vibes: [], duration: null, search: '', sortPreset: 'default' }),
 
   open: () => set({ isOpen: true }),
   close: () => set({ isOpen: false }),
@@ -81,7 +87,7 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
   },
 
   toQueryParams: () => {
-    const { priceRange, regions, vibes, duration, search } = get();
+    const { priceRange, regions, vibes, duration, search, sortPreset } = get();
     const params: Record<string, string> = {};
 
     if (priceRange) {
@@ -94,6 +100,7 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
     if (vibes.length > 0) params.vibeFilter = vibes.join(',');
     if (duration) params.durationFilter = duration;
     if (search.trim()) params.search = search.trim();
+    if (sortPreset !== 'default') params.sortPreset = sortPreset;
 
     return params;
   },

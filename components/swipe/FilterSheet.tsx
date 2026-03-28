@@ -1,5 +1,6 @@
 // components/swipe/FilterSheet.tsx
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   View,
   Text,
@@ -73,6 +74,8 @@ export default function FilterSheet() {
   const setDuration = useFilterStore((s) => s.setDuration);
   const search = useFilterStore((s) => s.search);
   const setSearch = useFilterStore((s) => s.setSearch);
+  const sortPreset = useFilterStore((s) => s.sortPreset);
+  const setSortPreset = useFilterStore((s) => s.setSortPreset);
   const clearAll = useFilterStore((s) => s.clearAll);
   const toQueryParams = useFilterStore((s) => s.toQueryParams);
   const departureCode = useSettingsStore((s) => s.departureCode);
@@ -183,6 +186,34 @@ export default function FilterSheet() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Sort presets */}
+          <View style={searchStyles.sortRow}>
+            {([
+              { key: 'default' as const, label: 'For You', icon: 'sparkles-outline' },
+              { key: 'cheapest' as const, label: 'Cheapest', icon: 'cash-outline' },
+              { key: 'best-deals' as const, label: 'Best Deals', icon: 'flame-outline' },
+              { key: 'trending' as const, label: 'Trending', icon: 'trending-up-outline' },
+            ] as const).map((preset) => (
+              <Pressable
+                key={preset.key}
+                onPress={() => setSortPreset(preset.key)}
+                style={[searchStyles.sortPill, sortPreset === preset.key && searchStyles.sortPillActive]}
+                accessibilityRole="button"
+                accessibilityLabel={`Sort by ${preset.label}`}
+                accessibilityState={{ selected: sortPreset === preset.key }}
+              >
+                <Ionicons
+                  name={preset.icon as keyof typeof Ionicons.glyphMap}
+                  size={14}
+                  color={sortPreset === preset.key ? colors.bg : colors.muted}
+                />
+                <Text style={[searchStyles.sortPillText, sortPreset === preset.key && searchStyles.sortPillTextActive]}>
+                  {preset.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
           {/* Search bar */}
           <TextInput
             style={searchStyles.input}
@@ -394,6 +425,35 @@ const styles = StyleSheet.create({
 });
 
 const searchStyles = StyleSheet.create({
+  sortRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: spacing.md,
+  },
+  sortPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'transparent',
+  },
+  sortPillActive: {
+    backgroundColor: colors.yellow,
+    borderColor: colors.yellow,
+  },
+  sortPillText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
+  },
+  sortPillTextActive: {
+    color: colors.bg,
+    fontFamily: fonts.bodyBold,
+  },
   input: {
     backgroundColor: colors.cell,
     borderWidth: 1,
