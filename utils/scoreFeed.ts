@@ -1,85 +1,69 @@
 import type { Destination } from '../types/destination';
 
 /**
- * Region mapping based on continent column (if available) or country fallback.
- * Used to ensure users don't see 5 Caribbean beaches in a row.
+ * Sub-region mapping — matches the server's 16 sub-regions for consistent diversity.
  */
+const COUNTRY_REGION: Record<string, string> = {
+  france: 'eu-west', spain: 'eu-west', portugal: 'eu-west', uk: 'eu-west', ireland: 'eu-west', belgium: 'eu-west', netherlands: 'eu-west',
+  italy: 'eu-med', greece: 'eu-med', croatia: 'eu-med', turkey: 'eu-med', malta: 'eu-med', montenegro: 'eu-med', cyprus: 'eu-med',
+  iceland: 'eu-north', norway: 'eu-north', sweden: 'eu-north', denmark: 'eu-north', finland: 'eu-north', switzerland: 'eu-north', austria: 'eu-north', germany: 'eu-north',
+  thailand: 'asia-se', vietnam: 'asia-se', cambodia: 'asia-se', singapore: 'asia-se', malaysia: 'asia-se',
+  indonesia: 'asia-island', philippines: 'asia-island', maldives: 'asia-island',
+  japan: 'asia-east', 'south korea': 'asia-east', taiwan: 'asia-east',
+  india: 'asia-south', nepal: 'asia-south',
+  mexico: 'latam-mex', 'costa rica': 'latam-central', panama: 'latam-central',
+  colombia: 'latam-south', peru: 'latam-south', ecuador: 'latam-south',
+  brazil: 'latam-brazil', argentina: 'latam-brazil', chile: 'latam-brazil',
+  jamaica: 'caribbean', 'dominican republic': 'caribbean', bahamas: 'caribbean', 'puerto rico': 'caribbean',
+  morocco: 'africa', 'south africa': 'africa', kenya: 'africa', egypt: 'africa',
+  uae: 'middle-east', israel: 'middle-east', jordan: 'middle-east',
+  australia: 'oceania', 'new zealand': 'oceania',
+  usa: 'domestic', canada: 'americas',
+};
+
 function getRegion(dest: Destination): string {
-  // Prefer continent field if available (set by migration)
-  const continent = (dest as unknown as Record<string, unknown>).continent as string | undefined;
-  if (continent) {
-    const c = continent.toLowerCase();
-    if (c.includes('caribbean')) return 'caribbean';
-    if (c.includes('south america') || c.includes('central america')) return 'latam';
-    if (c.includes('europe')) return 'europe';
-    if (c.includes('asia')) return 'asia';
-    if (c.includes('africa') || c.includes('middle east')) return 'africa-me';
-    if (c.includes('north america')) {
-      return dest.country.toLowerCase() === 'usa' ? 'domestic' : 'americas';
-    }
-    if (c.includes('oceania')) return 'oceania';
-    return 'other';
-  }
-
-  // Fallback: country-based mapping
   const country = dest.country.toLowerCase();
-  if (['indonesia', 'japan', 'thailand', 'singapore', 'south korea', 'vietnam', 'maldives'].includes(country)) return 'asia';
-  if (['greece', 'croatia', 'italy', 'portugal', 'iceland', 'switzerland', 'spain', 'france'].includes(country)) return 'europe';
-  if (['morocco', 'south africa', 'uae'].includes(country)) return 'africa-me';
-  if (['peru', 'argentina', 'brazil', 'colombia', 'costa rica'].includes(country)) return 'latam';
-  if (['jamaica', 'dominican republic', 'bahamas', 'cuba', 'puerto rico'].includes(country)) return 'caribbean';
-  if (country === 'usa') return 'domestic';
-  if (['new zealand', 'australia'].includes(country)) return 'oceania';
-  if (['canada', 'mexico'].includes(country)) return 'americas';
-  return 'other';
+  return COUNTRY_REGION[country] ?? 'other';
 }
 
 /**
- * Returns the primary vibe "bucket" for diversity purposes.
- * We only look at the first vibe tag to keep it simple.
+ * Multi-tag vibe bucketing — matches server's 10 buckets.
  */
+const VIBE_BUCKETS: Record<string, string[]> = {
+  'beach-tropical': ['beach', 'tropical'],
+  'beach-luxury': ['luxury', 'romantic', 'beach'],
+  'mountain-adventure': ['mountain', 'adventure', 'winter', 'hiking'],
+  'nature-relaxation': ['nature', 'wellness', 'relaxation'],
+  'city-nightlife': ['city', 'nightlife', 'urban'],
+  'city-culture': ['culture', 'historic', 'foodie', 'art'],
+  'island-escape': ['island', 'tropical', 'diving'],
+  'budget-backpacker': ['budget', 'backpacker', 'adventure'],
+  'luxury-romantic': ['luxury', 'romantic', 'spa'],
+  'off-beaten-path': ['offbeat', 'unique', 'hidden'],
+};
+
 function getVibeBucket(dest: Destination): string {
-  const primary = dest.vibeTags[0];
-  if (['beach', 'tropical'].includes(primary)) return 'beach';
-  if (['mountain', 'nature', 'adventure', 'winter'].includes(primary)) return 'outdoor';
-  if (['city', 'nightlife'].includes(primary)) return 'urban';
-  if (['culture', 'historic', 'foodie'].includes(primary)) return 'cultural';
-  if (['romantic', 'luxury'].includes(primary)) return 'premium';
-  return 'other';
+  if (!dest.vibeTags || dest.vibeTags.length === 0) return 'other';
+  const tagSet = new Set(dest.vibeTags.map((t) => t.toLowerCase()));
+  let bestBucket = 'other';
+  let bestScore = 0;
+  for (const [bucket, keywords] of Object.entries(VIBE_BUCKETS)) {
+    const matches = keywords.filter((k) => tagSet.has(k)).length;
+    const score = matches / keywords.length + matches * 0.1;
+    if (score > bestScore) { bestScore = score; bestBucket = bucket; }
+  }
+  return bestBucket;
 }
 
 /**
- * Freshness boost: recently fetched prices get a higher score.
- * Prices fetched within the last hour get the maximum boost.
- */
-function getFreshnessBoost(dest: Destination): number {
-  if (!dest.priceFetchedAt) return 0;
-  const ageMs = Date.now() - new Date(dest.priceFetchedAt).getTime();
-  const ageHours = ageMs / (1000 * 60 * 60);
-  if (ageHours < 1) return 1.0;
-  if (ageHours < 4) return 0.7;
-  if (ageHours < 12) return 0.4;
-  if (ageHours < 24) return 0.2;
-  return 0;
-}
-
-/**
- * Deal quality boost: price drops get the highest boost.
- */
-function getDealBoost(dest: Destination): number {
-  if (dest.priceDirection === 'down') return 1.0;
-  if (dest.priceDirection === 'stable') return 0.3;
-  return 0; // price went up — no boost
-}
-
-/**
- * Diversity-aware feed sort.
+ * Diversity-aware feed sort with discovery signals.
  *
- * Strategy: greedy pick that maximizes distance from recently shown
- * regions and vibes, while still giving a slight edge to cheaper flights.
- *
- * Not ML — just weighted scoring with a penalty for consecutive
- * same-region or same-vibe destinations.
+ * Matches the server-side scoring engine:
+ * - Discovery: price anomaly detection, hidden gem bonus
+ * - Trend: price direction signals
+ * - Convenience: nonstop/short flights
+ * - Diversity: region, country, vibe penalties
+ * - Value density: price per day
  */
 export function scoreFeed(destinations: Destination[], savedVibeTags?: string[]): Destination[] {
   if (destinations.length <= 1) return destinations;
@@ -94,11 +78,17 @@ export function scoreFeed(destinations: Destination[], savedVibeTags?: string[])
 
   const recentRegions: string[] = [];
   const recentVibes: string[] = [];
+  const recentCountries: string[] = [];
   const WINDOW = 4;
 
+  // Seed with most compelling deal (discovery + affordability + quality)
   remaining.sort((a, b) => {
-    const scoreA = 1 / (a.flightPrice / 1000);
-    const scoreB = 1 / (b.flightPrice / 1000);
+    const pa = a.flightPrice;
+    const pb = b.flightPrice;
+    const discA = a.savingsPercent && a.savingsPercent > 15 ? a.savingsPercent / 100 : 0;
+    const discB = b.savingsPercent && b.savingsPercent > 15 ? b.savingsPercent / 100 : 0;
+    const scoreA = discA + (pa > 0 ? 1 - pa / (maxPrice || 1) : 0) * 0.3 + ((a.dealScore ?? 0) / 100) * 0.2;
+    const scoreB = discB + (pb > 0 ? 1 - pb / (maxPrice || 1) : 0) * 0.3 + ((b.dealScore ?? 0) / 100) * 0.2;
     return scoreB - scoreA;
   });
 
@@ -115,40 +105,83 @@ export function scoreFeed(destinations: Destination[], savedVibeTags?: string[])
       const d = remaining[i];
       const region = getRegion(d);
       const vibe = getVibeBucket(d);
+      const country = d.country.toLowerCase();
 
       const priceScore = 1 - (d.flightPrice - minPrice) / priceRange;
 
+      // Discovery bonus: savings below usual price
+      let discoveryBonus = 0;
+      if (d.savingsPercent && d.savingsPercent > 10) {
+        discoveryBonus = Math.min(0.40, (d.savingsPercent / 100) * 1.2);
+      }
+
+      // Deal quality bonus
+      const qualityBonus = d.dealScore != null ? (d.dealScore / 100) * 0.12 : 0;
+
+      // Convenience: nonstop flights get a boost
+      let convenienceBonus = 0;
+      if (d.isNonstop) convenienceBonus = 0.10;
+      else if (d.totalStops === 1) convenienceBonus = 0.03;
+      else if (d.totalStops != null && d.totalStops >= 2) convenienceBonus = -0.05;
+
+      // Value density
+      let valueDensity = 0;
+      const tripDays = d.tripDurationDays ?? 5;
+      if (d.flightPrice > 0 && tripDays > 0) {
+        const ppd = d.flightPrice / tripDays;
+        valueDensity = Math.max(0, Math.min(0.12, (1 - ppd / 200) * 0.12));
+      }
+
+      // Price trend
+      let trendBonus = 0;
+      if (d.priceDirection === 'down') trendBonus = 0.12;
+      else if (d.priceDirection === 'stable') trendBonus = 0.03;
+
+      // Diversity penalties
       let regionPenalty = 0;
       for (let j = 0; j < recentRegions.length; j++) {
-        if (recentRegions[j] === region) {
-          regionPenalty += 1 - j / WINDOW;
-        }
+        if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
       }
-
+      let countryPenalty = 0;
+      for (let j = 0; j < Math.min(recentCountries.length, 3); j++) {
+        if (recentCountries[j] === country) countryPenalty += 0.3 * (1 - j / 3);
+      }
       let vibePenalty = 0;
       for (let j = 0; j < recentVibes.length; j++) {
-        if (recentVibes[j] === vibe) {
-          vibePenalty += 1 - j / WINDOW;
-        }
+        if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
 
-      // Preference boost: overlap between destination vibes and user's saved vibes
+      // Preference boost from saved vibes
       let preferenceBoost = 0;
       if (savedVibeTags && savedVibeTags.length > 0) {
         const overlap = d.vibeTags.filter((v) => savedVibeTags.includes(v)).length;
-        preferenceBoost = Math.min(overlap / savedVibeTags.length, 1);
+        preferenceBoost = Math.min(overlap / savedVibeTags.length, 1) * 0.20;
       }
 
-      const freshnessBoost = getFreshnessBoost(d);
-      const dealBoost = getDealBoost(d);
+      // Freshness boost
+      let freshnessBoost = 0;
+      if (d.priceFetchedAt) {
+        const ageHours = (Date.now() - new Date(d.priceFetchedAt).getTime()) / 3600000;
+        if (ageHours < 1) freshnessBoost = 0.10;
+        else if (ageHours < 6) freshnessBoost = 0.06;
+        else if (ageHours < 24) freshnessBoost = 0.02;
+      }
+
+      const jitter = Math.random() * 0.12;
 
       const score =
-        priceScore * 0.25 +
-        -regionPenalty * 0.25 +
-        -vibePenalty * 0.10 +
-        preferenceBoost * 0.20 +
-        freshnessBoost * 0.15 +
-        dealBoost * 0.05;
+        priceScore * 0.20
+        + discoveryBonus
+        + qualityBonus
+        + convenienceBonus
+        + valueDensity
+        + trendBonus
+        + freshnessBoost
+        + preferenceBoost
+        - regionPenalty * 0.18
+        - countryPenalty
+        - vibePenalty * 0.08
+        + jitter;
 
       if (score > bestScore) {
         bestScore = score;
@@ -156,13 +189,27 @@ export function scoreFeed(destinations: Destination[], savedVibeTags?: string[])
       }
     }
 
-    const pick = remaining.splice(bestIdx, 1)[0];
-    result.push(pick);
+    // 12% exploration weighted by discovery signals
+    let pickIdx = bestIdx;
+    if (Math.random() < 0.12) {
+      const affordable = remaining
+        .map((d, i) => ({ i, w: (d.savingsPercent ?? 0) / 100 + (d.flightPrice < 400 ? 0.2 : 0) }))
+        .filter((x) => x.w > 0);
+      if (affordable.length > 0) {
+        const totalW = affordable.reduce((s, c) => s + c.w, 0);
+        let r = Math.random() * totalW;
+        for (const c of affordable) { r -= c.w; if (r <= 0) { pickIdx = c.i; break; } }
+      }
+    }
 
+    const pick = remaining.splice(pickIdx, 1)[0];
+    result.push(pick);
     recentRegions.unshift(getRegion(pick));
     recentVibes.unshift(getVibeBucket(pick));
+    recentCountries.unshift(pick.country.toLowerCase());
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
+    if (recentCountries.length > 3) recentCountries.pop();
   }
 
   return result;

@@ -62,19 +62,38 @@ function getDealBadgeText(deal: BoardDeal): string | null {
 /** Generate a "why this deal" context string for discovery */
 function getDealContext(deal: BoardDeal): string | null {
   const parts: string[] = [];
+
+  // Weekend getaway detection (client-side)
+  if (deal.price && deal.price < 250 && deal.tripDays >= 2 && deal.tripDays <= 4) {
+    parts.push('weekend getaway');
+  }
+
   if (deal.savingsPercent && deal.savingsPercent >= 20) {
     parts.push(`${deal.savingsPercent}% cheaper than usual`);
+  } else if (deal.savingsPercent && deal.savingsPercent >= 10) {
+    parts.push(`${deal.savingsPercent}% off`);
   }
+
   if (deal.isNonstop) {
     parts.push('nonstop');
   }
-  if (deal.price && deal.price < 200) {
-    parts.push('under $200');
-  } else if (deal.price && deal.price < 350) {
+
+  if (deal.price && deal.price < 150) {
+    parts.push('steal');
+  } else if (deal.price && deal.price < 250) {
+    parts.push('under $250');
+  } else if (deal.price && deal.price < 400) {
     parts.push('budget-friendly');
   }
+
+  // Value density context
+  if (deal.price && deal.tripDays > 0) {
+    const ppd = Math.round(deal.price / deal.tripDays);
+    if (ppd <= 40) parts.push(`$${ppd}/day`);
+  }
+
   if (parts.length === 0) return null;
-  return parts.join(' · ');
+  return parts.slice(0, 3).join(' · '); // Max 3 context items
 }
 
 interface SwipeCardProps {

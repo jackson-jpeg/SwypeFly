@@ -483,6 +483,8 @@ function scoreFeedGeneric(
     trend: number;         // Dropping price = exciting
     seasonality: number;   // In-season destinations rank higher
     valueDensity: number;  // Price per day (lower = better value)
+    convenience: number;   // Flight duration + stops (shorter/nonstop = better)
+    weekendGetaway: number; // Short cheap domestic = spontaneous trip potential
   }>();
 
   const currentMonth = new Date().getMonth();
@@ -497,13 +499,15 @@ function scoreFeedGeneric(
     const price = d.live_price ?? d.flight_price;
     let discovery = 0;
     let trend = 0;
+    let convenience = 0;
+    let weekendGetaway = 0;
     let seasonality = 0;
     let valueDensity = 0;
 
     // Discovery: route-aware price anomaly detection
     const usual = d.usual_price as number | undefined;
-    const region = getRegion(d);
-    const isDomestic = region === 'domestic';
+    const destRegion = getRegion(d);
+    const isDomestic = destRegion === 'domestic';
     if (price > 0 && usual && usual > 0) {
       const pctBelow = (usual - price) / usual;
       // Domestic routes have smaller swings — lower threshold
@@ -556,7 +560,33 @@ function scoreFeedGeneric(
       valueDensity = Math.max(0, Math.min(0.15, (1 - ppd / 200) * 0.15));
     }
 
-    signalMap.set(d.id, { discovery, trend, seasonality, valueDensity });
+    // Convenience: shorter flights with fewer stops are less painful
+    const duration = d.live_duration as string | undefined;
+    const isNonstop = d.is_nonstop as boolean | undefined;
+    const totalStops = d.total_stops as number | undefined;
+    if (isNonstop) {
+      convenience = 0.12; // Nonstop is a strong positive signal
+    } else if (totalStops === 1) {
+      convenience = 0.04; // 1 stop is acceptable
+    } else if (totalStops != null && totalStops >= 2) {
+      convenience = -0.05; // 2+ stops is a negative
+    }
+    // Short flight duration bonus (under 5h = easy day trip feel)
+    if (duration) {
+      const hours = parseInt(duration, 10);
+      if (!isNaN(hours) && hours <= 5) convenience += 0.05;
+    }
+
+    // Weekend getaway detection: short, cheap, domestic = spontaneous trip
+    if (destRegion === 'domestic' || destRegion === 'caribbean' || destRegion === 'latam-mex') {
+      if (price > 0 && price < 250 && tripDays >= 2 && tripDays <= 4) {
+        weekendGetaway = 0.15; // Strong boost for spontaneous weekend trips
+      } else if (price > 0 && price < 350 && tripDays >= 2 && tripDays <= 5) {
+        weekendGetaway = 0.08; // Moderate boost for affordable short trips
+      }
+    }
+
+    signalMap.set(d.id, { discovery, trend, seasonality, valueDensity, convenience, weekendGetaway });
   }
 
   // Seed with the most compelling "wow" deal — uses all pre-computed signals
@@ -567,9 +597,11 @@ function scoreFeedGeneric(
     const pb = b.live_price ?? b.flight_price;
     // Seed score: discovery + affordability + quality (not just cheapest popular)
     const seedA = (sa?.discovery ?? 0) + (pa > 0 ? 1 - pa / (maxPrice || 1) : 0) * 0.3
-      + (sa?.trend ?? 0) + (sa?.seasonality ?? 0) + ((a.deal_score ?? 0) / 100) * 0.2;
+      + (sa?.trend ?? 0) + (sa?.seasonality ?? 0) + (sa?.convenience ?? 0)
+      + (sa?.weekendGetaway ?? 0) + ((a.deal_score ?? 0) / 100) * 0.2;
     const seedB = (sb?.discovery ?? 0) + (pb > 0 ? 1 - pb / (maxPrice || 1) : 0) * 0.3
-      + (sb?.trend ?? 0) + (sb?.seasonality ?? 0) + ((b.deal_score ?? 0) / 100) * 0.2;
+      + (sb?.trend ?? 0) + (sb?.seasonality ?? 0) + (sb?.convenience ?? 0)
+      + (sb?.weekendGetaway ?? 0) + ((b.deal_score ?? 0) / 100) * 0.2;
     return seedB - seedA;
   });
 
@@ -627,6 +659,8 @@ function scoreFeedGeneric(
         + (signals?.trend ?? 0)                    // Dropping prices are exciting
         + (signals?.seasonality ?? 0)              // Right time to visit
         + (signals?.valueDensity ?? 0)             // Bang for your buck
+        + (signals?.convenience ?? 0)              // Nonstop/short flights
+        + (signals?.weekendGetaway ?? 0)           // Spontaneous trip potential
         + qualityBonus                             // Comfortable flights
         - regionPenalty * 0.18                     // Don't show same region
         - countryPenalty                           // Don't show same country
@@ -641,16 +675,25 @@ function scoreFeedGeneric(
       }
     }
 
-    // 15% exploration: pick a random affordable item instead of top-scored
+    // 15% exploration: pick signal-weighted random instead of top-scored
+    // Biases toward high-discovery/high-trend items that scoring might miss
     let pickIdx = bestIdx;
     if (rand() < 0.15) {
-      // Weighted random toward cheaper options for exploration picks
-      const affordable = remaining.map((d, i) => ({ i, p: d.live_price ?? d.flight_price }))
-        .filter((x) => x.p > 0 && x.p < 500);
-      if (affordable.length > 0) {
-        pickIdx = affordable[Math.floor(rand() * affordable.length)].i;
-      } else {
-        pickIdx = Math.floor(rand() * remaining.length);
+      // Build exploration candidates weighted by discovery + trend signals
+      const candidates = remaining.map((d, i) => {
+        const s = signalMap.get(d.id);
+        const p = d.live_price ?? d.flight_price;
+        // Exploration weight: discovery matters most, plus affordability
+        const w = (s?.discovery ?? 0) * 2 + (s?.trend ?? 0) + (s?.weekendGetaway ?? 0)
+          + (p > 0 && p < 400 ? 0.2 : 0);
+        return { i, w: Math.max(0.01, w) }; // minimum weight so everything has a chance
+      });
+      // Weighted random selection
+      const totalW = candidates.reduce((s, c) => s + c.w, 0);
+      let r = rand() * totalW;
+      for (const c of candidates) {
+        r -= c.w;
+        if (r <= 0) { pickIdx = c.i; break; }
       }
     }
 
@@ -867,12 +910,22 @@ function scorePersonalized(
   const WINDOW = 4;
 
   // Seed with the destination that best matches user preferences
+  // Seed with best combo of preference match + discovery value
   let bestSeedIdx = 0;
-  let bestSeedSim = -Infinity;
+  let bestSeedScore = -Infinity;
   for (let i = 0; i < remaining.length; i++) {
-    const sim = cosineSimilarity(userVec, getDestFeatureVector(remaining[i]));
-    if (sim > bestSeedSim) {
-      bestSeedSim = sim;
+    const d = remaining[i];
+    const sim = cosineSimilarity(userVec, getDestFeatureVector(d));
+    const usual = d.usual_price as number | undefined;
+    const price = d.live_price ?? d.flight_price;
+    let discoveryBonus = 0;
+    if (price > 0 && usual && usual > 0) {
+      const pctBelow = (usual - price) / usual;
+      if (pctBelow > 0.15) discoveryBonus = Math.min(0.30, pctBelow);
+    }
+    const seedScore = sim * 0.6 + discoveryBonus + ((d.deal_score ?? 0) / 100) * 0.15;
+    if (seedScore > bestSeedScore) {
+      bestSeedScore = seedScore;
       bestSeedIdx = i;
     }
   }
@@ -934,11 +987,20 @@ function scorePersonalized(
       // Quiz bonus (additive, optional)
       const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
 
+      // Convenience bonus for personalized users (they value comfort more)
+      let convenienceBonus = 0;
+      const isNonstop = d.is_nonstop as boolean | undefined;
+      const totalStops = d.total_stops as number | undefined;
+      if (isNonstop) convenienceBonus = 0.10;
+      else if (totalStops === 1) convenienceBonus = 0.03;
+      else if (totalStops != null && totalStops >= 2) convenienceBonus = -0.05;
+
       const score =
-        prefScore * 0.30
-        + priceScore * 0.15
+        prefScore * 0.25
+        + priceScore * 0.12
         + discoveryBonus
         + trendBonus
+        + convenienceBonus
         - regionPenalty * 0.18
         - vibePenalty * 0.08
         + jitter
