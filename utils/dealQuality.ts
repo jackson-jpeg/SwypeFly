@@ -36,8 +36,9 @@ const MAJOR_CARRIER_CODES = new Set([
 // time rejection filter. Routes not listed skip that filter.
 
 const DIRECT_FLIGHT_ESTIMATES: Record<string, number> = {
-  // Domestic
-  'US-US': 180,       // average US domestic
+  // Domestic — use higher estimate (cross-country, not just regional hops)
+  'US-US': 270,       // ~4.5h avg (covers BOS-LAX, JFK-SFO etc)
+  'US-HI': 600,       // ~10h (Hawaii from mainland)
   // Transatlantic
   'US-EU': 540,       // ~9h
   'US-UK': 480,       // ~8h
@@ -46,18 +47,21 @@ const DIRECT_FLIGHT_ESTIMATES: Record<string, number> = {
   'US-MX': 240,       // ~4h
   'US-CA': 300,       // ~5h (Central America)
   // South America
-  'US-SA': 540,       // ~9h
+  'US-SA': 600,       // ~10h (was 9h — covers southern cone)
   // Asia
   'US-AS': 840,       // ~14h
   // Middle East
   'US-ME': 720,       // ~12h
   // Africa
-  'US-AF': 660,       // ~11h
+  'US-AF': 720,       // ~12h (was 11h — covers South Africa)
   // Oceania
   'US-OC': 960,       // ~16h
 };
 
+const HAWAII_AIRPORTS = new Set(['HNL', 'OGG', 'KOA', 'LIH']);
+
 function getRegionCode(iata: string, country?: string): string {
+  if (HAWAII_AIRPORTS.has(iata)) return 'HI';
   if (US_AIRPORTS.has(iata)) return 'US';
   // Rough mapping — could be refined with a full DB lookup
   const c = (country || '').toLowerCase();
@@ -155,7 +159,7 @@ function hardReject(input: DealQualityInput): string | null {
 
   if (input.totalTravelTimeMinutes != null) {
     const directEst = estimateDirectMinutes(input.originIata, input.destinationIata, input.destinationCountry);
-    if (directEst && input.totalTravelTimeMinutes > directEst * 3) {
+    if (directEst && input.totalTravelTimeMinutes > directEst * 3.5) {
       return 'travel_time_excessive';
     }
   }

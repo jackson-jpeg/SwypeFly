@@ -97,6 +97,87 @@ export const nearbyAirports: Record<string, { code: string; label: string }[]> =
     { code: 'BNA', label: 'Nashville (4h drive)' },
     { code: 'CLT', label: 'Charlotte (4h drive)' },
   ],
+  DEN: [
+    { code: 'COS', label: 'Colorado Springs (1h drive)' },
+    { code: 'ABQ', label: 'Albuquerque (6h drive)' },
+  ],
+  PHX: [
+    { code: 'TUS', label: 'Tucson (2h drive)' },
+    { code: 'LAS', label: 'Las Vegas (5h drive)' },
+  ],
+  LAS: [
+    { code: 'PHX', label: 'Phoenix (5h drive)' },
+    { code: 'LAX', label: 'Los Angeles (4h drive)' },
+    { code: 'SAN', label: 'San Diego (5h drive)' },
+  ],
+  MSP: [
+    { code: 'MSN', label: 'Madison (4h drive)' },
+    { code: 'MKE', label: 'Milwaukee (5h drive)' },
+  ],
+  DTW: [
+    { code: 'CLE', label: 'Cleveland (3h drive)' },
+    { code: 'ORD', label: 'Chicago (4h drive)' },
+  ],
+  CLT: [
+    { code: 'RDU', label: 'Raleigh-Durham (2.5h drive)' },
+    { code: 'ATL', label: 'Atlanta (4h drive)' },
+    { code: 'GSP', label: 'Greenville (2h drive)' },
+  ],
+  PHL: [
+    { code: 'EWR', label: 'Newark (1.5h drive)' },
+    { code: 'BWI', label: 'Baltimore (1.5h drive)' },
+    { code: 'JFK', label: 'New York JFK (2h drive)' },
+  ],
+  MSY: [
+    { code: 'IAH', label: 'Houston (5h drive)' },
+    { code: 'BTR', label: 'Baton Rouge (1.5h drive)' },
+  ],
+  SAN: [
+    { code: 'LAX', label: 'Los Angeles (2h drive)' },
+    { code: 'LAS', label: 'Las Vegas (5h drive)' },
+  ],
+  PDX: [
+    { code: 'SEA', label: 'Seattle (3h drive)' },
+  ],
+  SLC: [
+    { code: 'BOI', label: 'Boise (5h drive)' },
+  ],
+  RDU: [
+    { code: 'CLT', label: 'Charlotte (2.5h drive)' },
+    { code: 'RIC', label: 'Richmond (3h drive)' },
+  ],
+  BNA: [
+    { code: 'ATL', label: 'Atlanta (4h drive)' },
+    { code: 'CLT', label: 'Charlotte (5h drive)' },
+  ],
+  AUS: [
+    { code: 'SAT', label: 'San Antonio (1.5h drive)' },
+    { code: 'DFW', label: 'Dallas (3h drive)' },
+    { code: 'IAH', label: 'Houston (2.5h drive)' },
+  ],
+  STL: [
+    { code: 'ORD', label: 'Chicago (5h drive)' },
+    { code: 'MCI', label: 'Kansas City (4h drive)' },
+  ],
+  PIT: [
+    { code: 'CLE', label: 'Cleveland (2h drive)' },
+    { code: 'BWI', label: 'Baltimore (4h drive)' },
+  ],
+  CLE: [
+    { code: 'PIT', label: 'Pittsburgh (2h drive)' },
+    { code: 'DTW', label: 'Detroit (3h drive)' },
+  ],
+  MCI: [
+    { code: 'STL', label: 'St. Louis (4h drive)' },
+  ],
+  IND: [
+    { code: 'ORD', label: 'Chicago (3h drive)' },
+    { code: 'CVG', label: 'Cincinnati (2h drive)' },
+  ],
+  SJC: [
+    { code: 'SFO', label: 'San Francisco (45 min)' },
+    { code: 'OAK', label: 'Oakland (30 min)' },
+  ],
 };
 
 export const airports: Airport[] = [

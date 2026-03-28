@@ -475,22 +475,8 @@ function scoreFeedGeneric(
   const recentVibes: string[] = [];
   const WINDOW = 4;
 
-  // Seed with an affordable, interesting destination (not the most expensive)
-  remaining.sort((a, b) => {
-    const pa = a.live_price ?? a.flight_price;
-    const pb = b.live_price ?? b.flight_price;
-    // Affordable + popular = best seed
-    const scoreA = (pa > 0 ? 1 - pa / (maxPrice || 1) : 0) + (a.popularity_score ?? 0) * 0.3;
-    const scoreB = (pb > 0 ? 1 - pb / (maxPrice || 1) : 0) + (b.popularity_score ?? 0) * 0.3;
-    return scoreB - scoreA;
-  });
-
-  const seed = remaining.shift()!;
-  result.push(seed);
-  recentRegions.push(getRegion(seed));
-  recentVibes.push(getVibeBucket(seed.vibe_tags));
-
   // ── Pre-compute scoring signals per destination ──────────────────────
+  // (Must happen before seed selection so the seed uses discovery/trend data)
 
   const signalMap = new Map<string, {
     discovery: number;     // Price anomaly + hidden gem bonus
@@ -572,6 +558,25 @@ function scoreFeedGeneric(
 
     signalMap.set(d.id, { discovery, trend, seasonality, valueDensity });
   }
+
+  // Seed with the most compelling "wow" deal — uses all pre-computed signals
+  remaining.sort((a, b) => {
+    const sa = signalMap.get(a.id);
+    const sb = signalMap.get(b.id);
+    const pa = a.live_price ?? a.flight_price;
+    const pb = b.live_price ?? b.flight_price;
+    // Seed score: discovery + affordability + quality (not just cheapest popular)
+    const seedA = (sa?.discovery ?? 0) + (pa > 0 ? 1 - pa / (maxPrice || 1) : 0) * 0.3
+      + (sa?.trend ?? 0) + (sa?.seasonality ?? 0) + ((a.deal_score ?? 0) / 100) * 0.2;
+    const seedB = (sb?.discovery ?? 0) + (pb > 0 ? 1 - pb / (maxPrice || 1) : 0) * 0.3
+      + (sb?.trend ?? 0) + (sb?.seasonality ?? 0) + ((b.deal_score ?? 0) / 100) * 0.2;
+    return seedB - seedA;
+  });
+
+  const seed = remaining.shift()!;
+  result.push(seed);
+  recentRegions.push(getRegion(seed));
+  recentVibes.push(getVibeBucket(seed.vibe_tags));
 
   const recentCountries: string[] = [];
 

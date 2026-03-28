@@ -159,22 +159,22 @@ describe('evaluateDealQuality — hard rejection filters', () => {
     expect(result.rejectReason).toBeNull();
   });
 
-  it('rejects excessive travel time (>3x direct estimate)', () => {
-    // US-UK direct estimate is 480 min; 3x = 1440
+  it('rejects excessive travel time (>3.5x direct estimate)', () => {
+    // US-UK direct estimate is 480 min; 3.5x = 1680
     const result = evaluateDealQuality(
       makeDeal({
         originIata: 'JFK',
         destinationIata: 'LHR',
         destinationCountry: 'United Kingdom',
-        totalTravelTimeMinutes: 1500,
+        totalTravelTimeMinutes: 1700,
       }),
     );
     expect(result.pass).toBe(false);
     expect(result.rejectReason).toBe('travel_time_excessive');
   });
 
-  it('allows travel time just under 3x direct estimate', () => {
-    // 3x of 480 = 1440
+  it('allows travel time just under 3.5x direct estimate', () => {
+    // 3.5x of 480 = 1680
     const result = evaluateDealQuality(
       makeDeal({
         originIata: 'JFK',
