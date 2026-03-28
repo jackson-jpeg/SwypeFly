@@ -268,11 +268,11 @@ export function evaluateDealQuality(input: DealQualityInput): DealQualityResult 
   // Price score: inverse of percentile (lower percentile = better deal)
   const priceScore = Math.max(0, 100 - pricePercentile);
 
-  // Composite deal score
+  // Composite deal score — quality weighted heavily to avoid painful flights
   const dealScore = Math.round(
-    priceScore * 0.35 +
-    qualityScore * 0.25 +
-    popularityScore * 0.15 +
+    priceScore * 0.30 +
+    qualityScore * 0.35 +
+    popularityScore * 0.10 +
     recencyScore * 0.15 +
     seasonScore * 0.10
   );

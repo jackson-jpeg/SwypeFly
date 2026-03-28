@@ -21,13 +21,36 @@ export const maxDuration = 60;
 // search Duffel live, cache the result, and return the real fare.
 // This ensures every card in the feed shows a real bookable price.
 
+/**
+ * Generate multiple date windows for smarter price discovery.
+ * Instead of searching only 2 weeks out on a Wednesday, we search:
+ * - 2-3 weeks out (midweek) — typical sweet spot for deals
+ * - 4-6 weeks out (midweek) — advance purchase discount window
+ * - 6-8 weeks out (weekend) — flexibility window
+ * Trip lengths: 5-7 days (not too short, not too long)
+ */
 function getFeedSearchDates(): { departureDate: string; returnDate: string } {
   const now = new Date();
-  const twoWeeksOut = new Date(now.getTime() + 14 * 86400000);
-  const dayOfWeek = twoWeeksOut.getDay();
-  const daysUntilWed = (3 - dayOfWeek + 7) % 7 || 7;
-  const departure = new Date(twoWeeksOut.getTime() + daysUntilWed * 86400000);
-  const returnDate = new Date(departure.getTime() + 7 * 86400000);
+
+  // Pick one of 3 windows randomly for diversity across requests
+  const windows = [
+    { minDays: 14, maxDays: 21, tripDays: 7 },  // 2-3 weeks, 1 week trip
+    { minDays: 28, maxDays: 42, tripDays: 5 },  // 4-6 weeks, 5 day trip
+    { minDays: 42, maxDays: 56, tripDays: 6 },  // 6-8 weeks, 6 day trip
+  ];
+  const window = windows[Math.floor(Math.random() * windows.length)];
+
+  const daysOut = window.minDays + Math.floor(Math.random() * (window.maxDays - window.minDays));
+  const departure = new Date(now.getTime() + daysOut * 86400000);
+
+  // Prefer midweek departures (Tue-Thu) — cheapest days to fly
+  const day = departure.getDay();
+  if (day === 0) departure.setDate(departure.getDate() + 2); // Sun → Tue
+  else if (day === 1) departure.setDate(departure.getDate() + 1); // Mon → Tue
+  else if (day === 5) departure.setDate(departure.getDate() - 1); // Fri → Thu
+  else if (day === 6) departure.setDate(departure.getDate() + 3); // Sat → Tue
+
+  const returnDate = new Date(departure.getTime() + window.tripDays * 86400000);
   return {
     departureDate: departure.toISOString().split('T')[0],
     returnDate: returnDate.toISOString().split('T')[0],
