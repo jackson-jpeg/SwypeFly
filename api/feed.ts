@@ -228,6 +228,14 @@ function seededRandom(seed: string): () => number {
 
 // ─── Region / Vibe helpers ──────────────────────────────────────────
 
+// Normalize country names for consistent diversity tracking
+function normalizeCountry(c: string): string {
+  const l = c.toLowerCase().trim();
+  if (l === 'united states' || l === 'united states of america' || l === 'us virgin islands') return 'usa';
+  if (l === 'united kingdom' || l === 'england' || l === 'scotland' || l === 'wales') return 'uk';
+  return l;
+}
+
 // ─── Sub-region mapping for feed diversity ──────────────────────────
 // 16 sub-regions prevent showing 4 European cities in a row or
 // 3 Southeast Asian destinations back-to-back.
@@ -657,7 +665,7 @@ function scoreFeedGeneric(
       const effectivePrice = d.live_price ?? d.flight_price;
       const region = getRegion(d);
       const vibe = getVibeBucket(d.vibe_tags);
-      const country = (d.country as string) || '';
+      const country = normalizeCountry((d.country as string) || '');
       const signals = signalMap.get(d.id);
       const bracket = priceBracket(effectivePrice);
 
@@ -739,7 +747,7 @@ function scoreFeedGeneric(
     result.push(pick);
     recentRegions.unshift(getRegion(pick));
     recentVibes.unshift(getVibeBucket(pick.vibe_tags));
-    recentCountries.unshift((pick.country as string) || '');
+    recentCountries.unshift(normalizeCountry((pick.country as string) || ''));
     recentPriceBrackets.unshift(priceBracket(pick.live_price ?? pick.flight_price));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
@@ -1004,7 +1012,7 @@ function scorePersonalized(
       const effectivePrice = d.live_price ?? d.flight_price;
       const region = getRegion(d);
       const vibe = getVibeBucket(d.vibe_tags);
-      const country = (d.country as string) || '';
+      const country = normalizeCountry((d.country as string) || '');
       const bracket = priceBracket(effectivePrice);
 
       // Preference similarity (0-1) — primary personalization signal
@@ -1116,7 +1124,7 @@ function scorePersonalized(
     result.push(pick);
     recentRegions.unshift(getRegion(pick));
     recentVibes.unshift(getVibeBucket(pick.vibe_tags));
-    recentCountries.unshift((pick.country as string) || '');
+    recentCountries.unshift(normalizeCountry((pick.country as string) || ''));
     recentPriceBrackets.unshift(priceBracket(pick.live_price ?? pick.flight_price));
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
