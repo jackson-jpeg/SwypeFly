@@ -465,6 +465,27 @@ function scoreFeedGeneric(
   recentRegions.push(getRegion(seed));
   recentVibes.push(getVibeBucket(seed.vibe_tags));
 
+  // Pre-compute discovery bonus: destinations with prices way below their usual price
+  // are "surprise finds" — exactly what users come here for
+  const discoveryBonusMap = new Map<string, number>();
+  for (const d of remaining) {
+    const price = d.live_price ?? d.flight_price;
+    const usual = d.usual_price as number | undefined;
+    if (price > 0 && usual && usual > 0) {
+      const pctBelow = (usual - price) / usual;
+      // >20% below usual = strong discovery bonus (scaled 0-0.4)
+      if (pctBelow > 0.2) discoveryBonusMap.set(d.id, Math.min(0.4, pctBelow));
+    }
+    // Low popularity destinations get a discovery boost — they're the hidden gems
+    const pop = (d.popularity_score as number) ?? 0.5;
+    if (pop < 0.3 && price > 0 && price < 500) {
+      const existing = discoveryBonusMap.get(d.id) ?? 0;
+      discoveryBonusMap.set(d.id, existing + 0.15); // hidden gem bonus
+    }
+  }
+
+  const recentCountries: string[] = [];
+
   while (remaining.length > 0) {
     let bestIdx = 0;
     let bestScore = -Infinity;
@@ -474,26 +495,50 @@ function scoreFeedGeneric(
       const effectivePrice = d.live_price ?? d.flight_price;
       const region = getRegion(d);
       const vibe = getVibeBucket(d.vibe_tags);
+      const country = (d.country as string) || '';
 
       const priceScore = 1 - (effectivePrice - minPrice) / priceRange;
+
+      // Region diversity: penalize seeing same region repeatedly
       let regionPenalty = 0;
       for (let j = 0; j < recentRegions.length; j++) {
         if (recentRegions[j] === region) regionPenalty += 1 - j / WINDOW;
       }
+
+      // Country diversity: penalize same country back-to-back (stronger than region)
+      let countryPenalty = 0;
+      for (let j = 0; j < Math.min(recentCountries.length, 3); j++) {
+        if (recentCountries[j] === country) countryPenalty += 0.3 * (1 - j / 3);
+      }
+
       let vibePenalty = 0;
       for (let j = 0; j < recentVibes.length; j++) {
         if (recentVibes[j] === vibe) vibePenalty += 1 - j / WINDOW;
       }
-      const jitter = rand() * 0.20;
+      const jitter = rand() * 0.15;
 
-      // Penalty for very expensive flights (>$800) — these aren't "wow" discoveries
-      const expensivePenalty = effectivePrice > 800 ? (effectivePrice - 800) / 2000 : 0;
+      // Penalty for very expensive flights (>$600) — discovery is about accessible deals
+      const expensivePenalty = effectivePrice > 600 ? (effectivePrice - 600) / 1500 : 0;
+
+      // Discovery bonus: price anomalies and hidden gems
+      const discoveryBonus = discoveryBonusMap.get(d.id) ?? 0;
+
+      // Deal quality bonus: flights that are cheap AND comfortable
+      const qualityBonus = d.deal_score != null ? (d.deal_score / 100) * 0.15 : 0;
 
       // Quiz personalization bonus (additive, optional)
       const quizBonus = hasQuizPrefs ? computeQuizBonus(d, quizPrefs!, minPrice, maxPrice) : 0;
 
       const score =
-        priceScore * 0.40 - regionPenalty * 0.25 - vibePenalty * 0.10 - expensivePenalty + jitter + quizBonus;
+        priceScore * 0.30
+        + discoveryBonus
+        + qualityBonus
+        - regionPenalty * 0.20
+        - countryPenalty
+        - vibePenalty * 0.10
+        - expensivePenalty
+        + jitter
+        + quizBonus;
 
       if (score > bestScore) {
         bestScore = score;
@@ -501,14 +546,27 @@ function scoreFeedGeneric(
       }
     }
 
-    // 10% exploration: pick a random item instead of the highest-scoring one
-    const pickIdx = rand() < 0.1 ? Math.floor(rand() * remaining.length) : bestIdx;
+    // 15% exploration: pick a random affordable item instead of top-scored
+    let pickIdx = bestIdx;
+    if (rand() < 0.15) {
+      // Weighted random toward cheaper options for exploration picks
+      const affordable = remaining.map((d, i) => ({ i, p: d.live_price ?? d.flight_price }))
+        .filter((x) => x.p > 0 && x.p < 500);
+      if (affordable.length > 0) {
+        pickIdx = affordable[Math.floor(rand() * affordable.length)].i;
+      } else {
+        pickIdx = Math.floor(rand() * remaining.length);
+      }
+    }
+
     const pick = remaining.splice(pickIdx, 1)[0];
     result.push(pick);
     recentRegions.unshift(getRegion(pick));
     recentVibes.unshift(getVibeBucket(pick.vibe_tags));
+    recentCountries.unshift((pick.country as string) || '');
     if (recentRegions.length > WINDOW) recentRegions.pop();
     if (recentVibes.length > WINDOW) recentVibes.pop();
+    if (recentCountries.length > 3) recentCountries.pop();
   }
 
   return result;
