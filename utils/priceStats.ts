@@ -29,6 +29,15 @@ export interface RouteStats {
 // ─── In-memory cache (per lambda invocation) ─────────────────────────
 
 const statsCache = new Map<string, RouteStats | null>();
+let statsCacheTs = 0;
+const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 min — auto-clear stale null entries
+
+function checkStatsCacheFreshness() {
+  if (Date.now() - statsCacheTs > STATS_CACHE_TTL) {
+    statsCache.clear();
+    statsCacheTs = Date.now();
+  }
+}
 
 function docToStats(doc: Record<string, unknown>): RouteStats {
   return {
@@ -53,6 +62,7 @@ export async function getRouteStats(
   origin: string,
   destinationIata: string,
 ): Promise<RouteStats | null> {
+  checkStatsCacheFreshness();
   const key = `${origin}-${destinationIata}`;
   if (statsCache.has(key)) return statsCache.get(key)!;
 
@@ -224,6 +234,7 @@ export async function updateRouteStats(
 export async function bulkGetRouteStats(
   origin: string,
 ): Promise<Map<string, RouteStats>> {
+  checkStatsCacheFreshness();
   const results = new Map<string, RouteStats>();
 
   try {
