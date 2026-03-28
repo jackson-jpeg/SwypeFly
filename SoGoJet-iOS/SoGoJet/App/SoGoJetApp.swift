@@ -70,7 +70,7 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
         }
     }
 
-    func didReceive(_ payloads: [MXDiagnosticPayload]) {
+    nonisolated func didReceive(_ payloads: [MXDiagnosticPayload]) {
         for payload in payloads {
             logger.error("[MetricKit] Diagnostic (crash/hang): \(String(data: payload.jsonRepresentation(), encoding: .utf8) ?? "unreadable")")
         }
