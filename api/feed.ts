@@ -1483,13 +1483,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let page = scored.slice(cursor, cursor + PAGE_SIZE).map((d) => toFrontend(d, origin));
     const nextCursor = cursor + PAGE_SIZE < scored.length ? String(cursor + PAGE_SIZE) : null;
 
-    // On-demand pricing: fill any cards missing a live Duffel price.
-    // This ensures every card in the feed shows a real bookable fare.
-    page = await fillMissingPrices(page, origin);
+    // Separate destinations with and without prices
+    const withPrice = page.filter((d) => d.flightPrice && d.flightPrice > 0);
+    const withoutPrice = page.filter((d) => !d.flightPrice || d.flightPrice <= 0);
 
-    // Filter out destinations where Duffel had no results at all
-    // (route not served, etc.) — don't show a card with no price
-    page = page.filter((d) => d.flightPrice && d.flightPrice > 0);
+    // If we have enough priced destinations, skip on-demand Duffel (saves 10-15s)
+    // Otherwise, fill missing prices for a better user experience
+    if (withPrice.length >= 5) {
+      page = withPrice;
+    } else {
+      // Not enough cached prices — do on-demand Duffel pricing
+      page = await fillMissingPrices(page, origin);
+      page = page.filter((d) => d.flightPrice && d.flightPrice > 0);
+    }
+
+    // Fire-and-forget: backfill prices for uncached destinations in background
+    // (they'll be cached for next request)
+    if (withoutPrice.length > 0) {
+      fillMissingPrices(withoutPrice, origin).catch(() => {});
+    }
 
     const cacheTime = sessionId ? 0 : 60;
     res.setHeader(
