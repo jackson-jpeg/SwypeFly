@@ -209,61 +209,86 @@ function seededRandom(seed: string): () => number {
 
 // ─── Region / Vibe helpers ──────────────────────────────────────────
 
-function getRegion(d: ScoredDest): string {
-  if (d.continent) {
-    const c = d.continent.toLowerCase();
-    if (c.includes('caribbean')) return 'caribbean';
-    if (c.includes('south america') || c.includes('central america')) return 'latam';
-    if (c.includes('europe')) return 'europe';
-    if (c.includes('asia')) return 'asia';
-    if (c.includes('africa') || c.includes('middle east')) return 'africa-me';
-    if (c.includes('north america')) {
-      return d.country.toLowerCase() === 'usa' ? 'domestic' : 'americas';
-    }
-    if (c.includes('oceania')) return 'oceania';
-    return 'other';
-  }
+// ─── Sub-region mapping for feed diversity ──────────────────────────
+// 16 sub-regions prevent showing 4 European cities in a row or
+// 3 Southeast Asian destinations back-to-back.
 
-  const country = d.country.toLowerCase();
-  if (
-    ['indonesia', 'japan', 'thailand', 'singapore', 'south korea', 'vietnam', 'maldives'].includes(
-      country,
-    )
-  )
-    return 'asia';
-  if (
-    [
-      'greece',
-      'croatia',
-      'italy',
-      'portugal',
-      'iceland',
-      'switzerland',
-      'spain',
-      'france',
-    ].includes(country)
-  )
-    return 'europe';
-  if (['morocco', 'south africa', 'uae'].includes(country)) return 'africa-me';
-  if (['peru', 'argentina', 'brazil', 'colombia', 'costa rica'].includes(country)) return 'latam';
-  if (
-    ['jamaica', 'dominican republic', 'bahamas', 'cuba', 'puerto rico'].includes(country)
-  )
-    return 'caribbean';
-  if (country === 'usa') return 'domestic';
-  if (['new zealand', 'australia'].includes(country)) return 'oceania';
-  if (['canada', 'mexico'].includes(country)) return 'americas';
+const COUNTRY_REGION: Record<string, string> = {
+  // Europe — split into 3 sub-regions by proximity + vibe
+  france: 'eu-west', spain: 'eu-west', portugal: 'eu-west', uk: 'eu-west', ireland: 'eu-west', belgium: 'eu-west', netherlands: 'eu-west',
+  italy: 'eu-med', greece: 'eu-med', croatia: 'eu-med', turkey: 'eu-med', malta: 'eu-med', montenegro: 'eu-med', albania: 'eu-med', cyprus: 'eu-med',
+  iceland: 'eu-north', norway: 'eu-north', sweden: 'eu-north', denmark: 'eu-north', finland: 'eu-north', switzerland: 'eu-north', austria: 'eu-north', germany: 'eu-north', 'czech republic': 'eu-north', poland: 'eu-north', hungary: 'eu-north',
+  // Asia — split into 4 sub-regions
+  thailand: 'asia-se', vietnam: 'asia-se', cambodia: 'asia-se', myanmar: 'asia-se', laos: 'asia-se', singapore: 'asia-se', malaysia: 'asia-se',
+  indonesia: 'asia-island', philippines: 'asia-island', maldives: 'asia-island', 'sri lanka': 'asia-island', fiji: 'asia-island',
+  japan: 'asia-east', 'south korea': 'asia-east', taiwan: 'asia-east', china: 'asia-east', 'hong kong': 'asia-east',
+  india: 'asia-south', nepal: 'asia-south', bangladesh: 'asia-south',
+  // Latin America — split into 3 sub-regions
+  mexico: 'latam-mex', belize: 'latam-mex', guatemala: 'latam-mex', 'costa rica': 'latam-central', panama: 'latam-central', honduras: 'latam-central', nicaragua: 'latam-central', 'el salvador': 'latam-central',
+  colombia: 'latam-south', peru: 'latam-south', ecuador: 'latam-south', bolivia: 'latam-south',
+  brazil: 'latam-brazil', argentina: 'latam-brazil', chile: 'latam-brazil', uruguay: 'latam-brazil',
+  // Caribbean
+  jamaica: 'caribbean', 'dominican republic': 'caribbean', bahamas: 'caribbean', cuba: 'caribbean', 'puerto rico': 'caribbean', 'trinidad and tobago': 'caribbean', barbados: 'caribbean', aruba: 'caribbean', 'st lucia': 'caribbean',
+  // Africa & Middle East — split into 2
+  morocco: 'africa', 'south africa': 'africa', kenya: 'africa', tanzania: 'africa', egypt: 'africa', ghana: 'africa', ethiopia: 'africa',
+  uae: 'middle-east', israel: 'middle-east', jordan: 'middle-east', qatar: 'middle-east', oman: 'middle-east', 'saudi arabia': 'middle-east',
+  // Oceania
+  australia: 'oceania', 'new zealand': 'oceania',
+  // North America
+  usa: 'domestic', canada: 'americas',
+};
+
+function getRegion(d: ScoredDest): string {
+  const country = ((d.country as string) || '').toLowerCase();
+  if (COUNTRY_REGION[country]) return COUNTRY_REGION[country];
+
+  // Fallback to continent
+  if (d.continent) {
+    const c = (d.continent as string).toLowerCase();
+    if (c.includes('caribbean')) return 'caribbean';
+    if (c.includes('south america') || c.includes('central america')) return 'latam-south';
+    if (c.includes('europe')) return 'eu-west';
+    if (c.includes('asia')) return 'asia-se';
+    if (c.includes('africa') || c.includes('middle east')) return 'africa';
+    if (c.includes('north america')) return country === 'usa' ? 'domestic' : 'americas';
+    if (c.includes('oceania')) return 'oceania';
+  }
   return 'other';
 }
 
+// ─── Vibe bucketing — multi-tag matching for better diversity ─────────
+// Uses ALL tags (not just primary) to compute the best-fit bucket.
+// 10 buckets provide much finer diversity than the original 6.
+
+const VIBE_BUCKET_TAGS: Record<string, string[]> = {
+  'beach-tropical': ['beach', 'tropical'],
+  'beach-luxury': ['luxury', 'romantic', 'beach'],
+  'mountain-adventure': ['mountain', 'adventure', 'winter', 'hiking'],
+  'nature-relaxation': ['nature', 'wellness', 'relaxation'],
+  'city-nightlife': ['city', 'nightlife', 'urban'],
+  'city-culture': ['culture', 'historic', 'foodie', 'art'],
+  'island-escape': ['island', 'tropical', 'diving', 'snorkeling'],
+  'budget-backpacker': ['budget', 'backpacker', 'adventure'],
+  'luxury-romantic': ['luxury', 'romantic', 'spa', 'honeymoon'],
+  'off-beaten-path': ['offbeat', 'unique', 'hidden', 'authentic'],
+};
+
 function getVibeBucket(tags: string[]): string {
-  const primary = tags[0];
-  if (['beach', 'tropical'].includes(primary)) return 'beach';
-  if (['mountain', 'nature', 'adventure', 'winter'].includes(primary)) return 'outdoor';
-  if (['city', 'nightlife'].includes(primary)) return 'urban';
-  if (['culture', 'historic', 'foodie'].includes(primary)) return 'cultural';
-  if (['romantic', 'luxury'].includes(primary)) return 'premium';
-  return 'other';
+  if (!tags || tags.length === 0) return 'other';
+  const tagSet = new Set(tags.map((t) => t.toLowerCase()));
+
+  let bestBucket = 'other';
+  let bestScore = 0;
+  for (const [bucket, keywords] of Object.entries(VIBE_BUCKET_TAGS)) {
+    const matches = keywords.filter((k) => tagSet.has(k)).length;
+    // Weight by match ratio + bonus for total matches
+    const score = matches / keywords.length + matches * 0.1;
+    if (score > bestScore) {
+      bestScore = score;
+      bestBucket = bucket;
+    }
+  }
+  return bestBucket;
 }
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -406,20 +431,20 @@ function computeQuizBonus(d: ScoredDest, prefs: QuizPrefs, minPrice: number, max
     }
   }
 
-  // Preferred vibes bonus (+0.20)
+  // Preferred vibes bonus (uncapped — scales with match quality)
   if (prefs.preferredVibes && prefs.preferredVibes.length > 0) {
-    const destTags = d.vibe_tags.map((t) => t.toLowerCase());
+    const destTags = new Set(d.vibe_tags.map((t) => t.toLowerCase()));
     let vibeMatches = 0;
+    let totalExpanded = 0;
     for (const pref of prefs.preferredVibes) {
-      // Expand quiz vibe to destination tags
       const matchTags = QUIZ_VIBE_MAP[pref] || [pref];
-      if (matchTags.some((t) => destTags.includes(t))) {
-        vibeMatches++;
-      }
+      totalExpanded += matchTags.length;
+      vibeMatches += matchTags.filter((t) => destTags.has(t)).length;
     }
-    if (vibeMatches > 0) {
-      // Scale: 1 match = +0.12, 2+ matches = up to +0.20
-      bonus += Math.min(vibeMatches * 0.10, 0.20);
+    if (vibeMatches > 0 && totalExpanded > 0) {
+      // Scale by match ratio: 100% match = +0.40, 50% = +0.20, 25% = +0.10
+      const matchRatio = vibeMatches / totalExpanded;
+      bonus += matchRatio * 0.40;
     }
   }
 
@@ -489,17 +514,31 @@ function scoreFeedGeneric(
     let seasonality = 0;
     let valueDensity = 0;
 
-    // Discovery: price anomaly detection
+    // Discovery: route-aware price anomaly detection
     const usual = d.usual_price as number | undefined;
+    const region = getRegion(d);
+    const isDomestic = region === 'domestic';
     if (price > 0 && usual && usual > 0) {
       const pctBelow = (usual - price) / usual;
-      if (pctBelow > 0.15) discovery += Math.min(0.45, pctBelow * 1.2);
+      // Domestic routes have smaller swings — lower threshold
+      const threshold = isDomestic ? 0.08 : 0.15;
+      if (pctBelow > threshold) discovery += Math.min(0.50, pctBelow * 1.3);
     }
 
-    // Discovery: hidden gem bonus (low popularity + affordable)
+    // Discovery: hidden gem bonus — relative to region avg, not hard dollar cap
     const pop = (d.popularity_score as number) ?? 0.5;
-    if (pop < 0.3 && price > 0 && price < 500) discovery += 0.15;
-    if (pop < 0.15 && price > 0 && price < 400) discovery += 0.10; // extra rare destination
+    const regionAvg = isDomestic ? 250 : 500;
+    const isAffordableForRegion = price > 0 && price < regionAvg * 1.2;
+    if (pop < 0.3 && isAffordableForRegion) discovery += 0.15;
+    if (pop < 0.15 && price > 0 && price < regionAvg) discovery += 0.12; // ultra-rare gem
+
+    // Discovery: novelty bonus — recently found prices are more exciting
+    const foundAt = d.tp_found_at as string | undefined;
+    if (foundAt) {
+      const ageHours = (Date.now() - new Date(foundAt).getTime()) / (1000 * 60 * 60);
+      if (ageHours < 6) discovery += 0.08;  // Found in last 6 hours
+      else if (ageHours < 24) discovery += 0.04; // Found in last day
+    }
 
     // Trend: use price_history to detect dropping prices
     const history = d.price_history as number[] | undefined;
