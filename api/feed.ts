@@ -540,7 +540,7 @@ function scoreFeedGeneric(
 
     // Trend: use price_history to detect dropping prices
     const history = d.price_history as number[] | undefined;
-    if (history && history.length >= 3) {
+    if (history && history.length >= 2) {
       const recent = history.slice(-3);
       const older = history.slice(0, Math.max(1, history.length - 3));
       const recentAvg = recent.reduce((s, p) => s + p, 0) / recent.length;
@@ -981,7 +981,7 @@ function scorePersonalized(
       // Trend: dropping prices are more exciting
       let trendBonus = 0;
       const history = d.price_history as number[] | undefined;
-      if (history && history.length >= 3) {
+      if (history && history.length >= 2) {
         const recent = history.slice(-3);
         const older = history.slice(0, Math.max(1, history.length - 3));
         const recentAvg = recent.reduce((s, p) => s + p, 0) / recent.length;
@@ -1156,23 +1156,39 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     });
   }
 
-  // Build price history per destination (sorted by date — for sparkline trends)
+  // Build price history per destination from BOTH calendar + cached prices
+  // This gives the trend signal enough data points to detect price drops
   const priceHistoryMap = new Map<string, number[]>();
-  const calendarByDest = new Map<string, Array<{ date: string; price: number }>>();
+  const historyByDest = new Map<string, Array<{ date: string; price: number }>>();
+
+  // Add calendar prices
   for (const p of calendarDocs) {
     const dest = p.destination_iata as string;
-    if (!calendarByDest.has(dest)) calendarByDest.set(dest, []);
-    calendarByDest.get(dest)!.push({ date: p.date as string, price: p.price as number });
+    if (!historyByDest.has(dest)) historyByDest.set(dest, []);
+    historyByDest.get(dest)!.push({ date: (p.date as string) || (p.fetched_at as string) || '', price: p.price as number });
   }
-  for (const [dest, entries] of calendarByDest) {
-    // Sort by date ascending, take up to 14 price points
-    const sorted = entries.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 14);
-    if (sorted.length >= 3) {
+
+  // Add cached Duffel prices (independent observations, often different dates)
+  const prices = priceResult.documents;
+  for (const p of prices) {
+    const dest = p.destination_iata as string;
+    if (!historyByDest.has(dest)) historyByDest.set(dest, []);
+    historyByDest.get(dest)!.push({
+      date: (p.fetched_at as string) || (p.departure_date as string) || '',
+      price: p.price as number,
+    });
+  }
+
+  for (const [dest, entries] of historyByDest) {
+    // Sort by date ascending, dedupe by date, take up to 14 price points
+    const sorted = entries
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .filter((e, i, arr) => i === 0 || e.date !== arr[i - 1].date) // dedupe same date
+      .slice(-14); // keep most recent 14
+    if (sorted.length >= 2) { // lowered from 3 → 2 so more destinations get trend data
       priceHistoryMap.set(dest, sorted.map((e) => e.price));
     }
   }
-
-  const prices = priceResult.documents;
 
   const priceMap = new Map<
     string,
@@ -1301,15 +1317,20 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       restaurants = undefined;
     }
 
-    // Deal quality: prefer calendar (TP) deal data, fall back to cached_prices (Duffel)
+    // Deal quality: prefer calendar for scoring, Duffel for flight segments
+    // Calendar hardcodes is_nonstop=false and total_stops=-1, so Duffel is better for those
     const dealScore = cp?.deal_score ?? lp?.deal_score;
     const dealTier = cp?.deal_tier ?? lp?.deal_tier;
     const qualityScore = cp?.quality_score ?? lp?.quality_score;
     const pricePercentile = cp?.price_percentile ?? lp?.price_percentile;
-    const isNonstop = cp?.is_nonstop ?? lp?.is_nonstop;
-    const totalStops = cp?.total_stops ?? lp?.total_stops;
-    const maxLayoverMin = cp?.max_layover_minutes ?? lp?.max_layover_minutes;
-    const totalTravelMin = cp?.total_travel_minutes ?? lp?.total_travel_minutes;
+    // Prefer Duffel for flight quality data (calendar has no real segment info)
+    const isNonstop = lp?.is_nonstop ?? (cp?.is_nonstop === true ? true : undefined);
+    const totalStops = (lp?.total_stops != null && lp.total_stops >= 0) ? lp.total_stops
+      : (cp?.total_stops != null && cp.total_stops >= 0) ? cp.total_stops : undefined;
+    const maxLayoverMin = (lp?.max_layover_minutes != null && lp.max_layover_minutes >= 0) ? lp.max_layover_minutes
+      : (cp?.max_layover_minutes != null && cp.max_layover_minutes >= 0) ? cp.max_layover_minutes : undefined;
+    const totalTravelMin = (lp?.total_travel_minutes != null && lp.total_travel_minutes >= 0) ? lp.total_travel_minutes
+      : (cp?.total_travel_minutes != null && cp.total_travel_minutes >= 0) ? cp.total_travel_minutes : undefined;
 
     // Compute savings from route stats
     const iata = d.iata_code as string;

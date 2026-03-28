@@ -150,7 +150,13 @@ async function upsertCalendarEntry(
   const meta = (await getDestMeta()).get(destIata);
   const isDomestic = US_AIRPORTS.has(origin) && US_AIRPORTS.has(destIata);
 
-  // Get price stats for percentile calculation
+  // IMPORTANT: Update route stats FIRST so new routes immediately have
+  // statistical context for percentile calculation, discovery scoring,
+  // and flash deal detection. Without this, first-time routes get
+  // usual_price=undefined and all discovery signals return 0.
+  await updateRouteStats(origin, destIata, price).catch(() => {});
+
+  // Now get stats (which include the price we just recorded)
   const stats = await getRouteStats(origin, destIata);
   const pricePercentile = computePricePercentile(price, stats);
 
@@ -173,9 +179,6 @@ async function upsertCalendarEntry(
   if (!dealResult.pass) {
     return `rejected:${dealResult.rejectReason}`;
   }
-
-  // Update route stats with this price observation (non-blocking)
-  updateRouteStats(origin, destIata, price).catch(() => {});
 
   // ── Price drop detection ────────────────────────────────────────────
   // Compare new price against previous stored price and usual price to
