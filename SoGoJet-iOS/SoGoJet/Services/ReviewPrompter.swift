@@ -1,6 +1,7 @@
 import Foundation
 import StoreKit
 import UIKit
+import SwiftUI
 
 // MARK: - Review Prompter
 // Strategically asks for App Store reviews after positive moments.
@@ -73,15 +74,13 @@ final class ReviewPrompter {
 
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastPromptDate)
 
-        // Use the active window scene for the review request.
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive })
-        else { return }
-
         // Slight delay so the prompt doesn't collide with UI transitions.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            SKStoreReviewController.requestReview(in: scene)
+            if let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) {
+                AppStore.requestReview(in: scene)
+            }
         }
     }
 
