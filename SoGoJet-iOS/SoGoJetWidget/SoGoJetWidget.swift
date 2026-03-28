@@ -31,13 +31,15 @@ struct DepartureBoardProvider: TimelineProvider {
 
     // MARK: Timeline
     func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<FlightEntry>) -> Void) {
+        let family = context.family // Capture before Task to avoid sending non-Sendable context
+        let comp = completion
         Task { @MainActor in
             let code = SharedDefaults.departureCode
             let allFlights = await WidgetAPIClient.fetchFlights(origin: code, limit: 12)
 
             if allFlights.isEmpty {
                 // API failed — rotate samples so widget still feels alive
-                let rowCount = context.family == .systemLarge ? 5 : 3
+                let rowCount = family == .systemLarge ? 5 : 3
                 let samples = WidgetFlight.samples
                 var fallbackEntries: [FlightEntry] = []
                 let now = Date()
@@ -52,7 +54,7 @@ struct DepartureBoardProvider: TimelineProvider {
                     ))
                 }
                 let timeline = Timeline(entries: fallbackEntries, policy: .after(Date().addingTimeInterval(900)))
-                completion(timeline)
+                comp(timeline)
                 return
             }
 
@@ -60,7 +62,7 @@ struct DepartureBoardProvider: TimelineProvider {
             // WidgetKit coalesces rapid updates, so space them 3+ min apart.
             // With 12 flights and showing 3-5 at a time, this creates a
             // "scrolling departure board" effect throughout the hour.
-            let rowCount = context.family == .systemLarge ? 5 : 3
+            let rowCount = family == .systemLarge ? 5 : 3
             var entries: [FlightEntry] = []
             let now = Date()
             let rotationCount = max(allFlights.count / rowCount, 4)
@@ -79,7 +81,7 @@ struct DepartureBoardProvider: TimelineProvider {
             // Refresh when all rotations have played (or max 1 hour)
             let refreshDate = now.addingTimeInterval(Double(rotationCount) * 180)
             let timeline = Timeline(entries: entries, policy: .after(refreshDate))
-            completion(timeline)
+            comp(timeline)
         }
     }
 
