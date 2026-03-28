@@ -1340,7 +1340,7 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     let usualPrice: number | null = null;
     let savingsAmount: number | null = null;
     let savingsPercent: number | null = null;
-    if (routeStats && effectivePrice != null && routeStats.sampleCount >= 3) {
+    if (routeStats && effectivePrice != null && routeStats.sampleCount >= 1) {
       usualPrice = routeStats.medianPrice;
       if (effectivePrice < usualPrice) {
         savingsAmount = usualPrice - effectivePrice;
