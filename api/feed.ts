@@ -1333,11 +1333,19 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       : (cp?.total_travel_minutes != null && cp.total_travel_minutes >= 0) ? cp.total_travel_minutes : undefined;
 
     // Compute savings from route stats
-    // Use the actual price the user will see (Duffel live > calendar > estimate)
+    // Use the SAME price the user sees (live_price logic: fresh Duffel only)
     const iata = d.iata_code as string;
     const routeKey = `${origin}-${iata}`;
     const routeStats = routeStatsMap.get(routeKey);
-    const effectivePrice = lp?.price ?? cp?.price ?? null;
+    const liveDuffelPrice = (() => {
+      if (!lp?.price || lp.source !== 'duffel') return null;
+      if (lp.fetched_at) {
+        const age = Date.now() - new Date(lp.fetched_at).getTime();
+        if (age > 48 * 60 * 60 * 1000) return null;
+      }
+      return lp.price;
+    })();
+    const effectivePrice = liveDuffelPrice ?? cp?.price ?? null;
     let usualPrice: number | null = null;
     let savingsAmount: number | null = null;
     let savingsPercent: number | null = null;

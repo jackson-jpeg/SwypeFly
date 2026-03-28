@@ -273,13 +273,13 @@ export function evaluateDealQuality(input: DealQualityInput): DealQualityResult 
   const priceScore = Math.max(0, 100 - pricePercentile);
 
   // Composite deal score — quality weighted heavily to avoid painful flights
-  const dealScore = Math.round(
+  const dealScore = Math.min(100, Math.max(0, Math.round(
     priceScore * 0.30 +
     qualityScore * 0.35 +
     popularityScore * 0.10 +
     recencyScore * 0.15 +
     seasonScore * 0.10
-  );
+  )));
 
   // Savings percent: how far below median (percentile 50 = 0% savings)
   const savingsPercent = pricePercentile < 50
