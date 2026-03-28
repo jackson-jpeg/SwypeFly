@@ -72,8 +72,9 @@ struct OnboardingView: View {
                 let response: TopDealsResponse = try await APIClient.shared.fetch(
                     .topDeals(origin: settings.departureCode, limit: 5)
                 )
-                if !response.deals.isEmpty {
-                    liveShowcases = response.deals.map { deal in
+                let validDeals = response.deals.filter { !$0.city.isEmpty && $0.city.lowercased() != "unknown" && $0.price > 0 }
+                if !validDeals.isEmpty {
+                    liveShowcases = validDeals.map { deal in
                         OnboardingShowcase(
                             code: deal.iata,
                             city: deal.city.uppercased(),
@@ -86,7 +87,9 @@ struct OnboardingView: View {
             } catch {
                 // Fall back to feed deals if top-deals fails
                 await feedStore.fetchDeals(origin: settings.departureCode)
-                let fallbackDeals = Array(feedStore.deals.prefix(5))
+                let fallbackDeals = feedStore.deals
+                    .filter { !$0.city.isEmpty && $0.city.lowercased() != "unknown" && $0.displayPrice ?? 0 > 0 }
+                    .prefix(5)
                 if !fallbackDeals.isEmpty {
                     liveShowcases = fallbackDeals.map { deal in
                         OnboardingShowcase(
@@ -98,6 +101,7 @@ struct OnboardingView: View {
                         )
                     }
                 }
+                // If still no valid deals, fallbackShowcases will be used automatically
             }
         }
     }
