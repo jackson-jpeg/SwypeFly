@@ -120,7 +120,7 @@ export default function RootLayout() {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
-            z-index: 99999;
+            z-index: 1;
             background: repeating-linear-gradient(
               to bottom,
               transparent 0px,
@@ -136,6 +136,10 @@ export default function RootLayout() {
           ::-webkit-scrollbar-thumb:hover { background: #3A3228; }
           /* Selection color */
           ::selection { background: rgba(247,232,160,0.25); color: #F7E8A0; }
+          /* Respect reduced motion preference */
+          @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+          }
         `}</style>
         <meta
           name="description"
