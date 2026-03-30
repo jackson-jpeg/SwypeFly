@@ -32,8 +32,22 @@ enum SplitFlapSize {
     var cornerRadius: CGFloat { 4 }
 }
 
+// MARK: - Scramble Config
+// Monochrome palette — white flashes on dark cells during the scramble phase.
+
+private let scrambleColors: [Color] = [
+    Color(hex: 0xF5F5F5),  // white
+    Color(hex: 0xCCCCCC),  // light grey
+    Color(hex: 0x888888),  // mid grey
+    Color(hex: 0xF5F5F5),  // white
+    Color(hex: 0x555555),  // dark grey
+    Color(hex: 0xCCCCCC),  // light grey
+]
+
+private let scrambleCharset: [Character] = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$.-!?")
+
 // MARK: - Split Flap Character
-// True split-flap: top half flips down to reveal new char, bottom half snaps in place.
+// Two-phase animation: scramble (rapid random chars with color flashes) → mechanical flip to target.
 
 struct SplitFlapChar: View {
     let character: Character
@@ -49,6 +63,13 @@ struct SplitFlapChar: View {
     @State private var flipPhase: FlipPhase = .idle
     @State private var hasInitialized = false
     @State private var sequenceID = 0
+
+    // Scramble state
+    @State private var scrambleChar: Character = " "
+    @State private var scrambleColor: Color = .clear
+    @State private var isScrambling = false
+    @State private var scrambleTask: Task<Void, Never>?
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     enum FlipPhase {
@@ -72,26 +93,49 @@ struct SplitFlapChar: View {
     private var topBackgroundChar: Character { flipPhase == .idle ? displayedChar : incomingChar }
     private var bottomBackgroundChar: Character { flipPhase == .idle ? displayedChar : displayedChar }
 
+    /// The character to show in the cell — scramble char during scramble, otherwise displayed char.
+    private var visibleChar: Character {
+        isScrambling ? scrambleChar : displayedChar
+    }
+
+    /// Background tint — flash color during scramble, clear otherwise.
+    private var cellBackground: Color {
+        isScrambling ? scrambleColor : Color.sgCell
+    }
+
+    /// Text color — black on white/light scramble backgrounds for contrast, otherwise the prop color.
+    private var visibleTextColor: Color {
+        isScrambling ? Color(hex: 0x0A0A0A) : color
+    }
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: size.cornerRadius)
-                .fill(Color.sgCell)
+                .fill(cellBackground)
 
-            flapHalf(char: bottomBackgroundChar, isTop: false, angle: 0)
-                .offset(y: halfH / 2 + gap / 2)
+            if isScrambling {
+                // Scramble mode: single flat character, no split halves
+                Text(String(scrambleChar))
+                    .font(charFont)
+                    .foregroundStyle(visibleTextColor)
+            } else {
+                // Normal split-flap mode
+                flapHalf(char: bottomBackgroundChar, isTop: false, angle: 0)
+                    .offset(y: halfH / 2 + gap / 2)
 
-            flapHalf(char: topBackgroundChar, isTop: true, angle: 0)
-                .offset(y: -(halfH / 2 + gap / 2))
+                flapHalf(char: topBackgroundChar, isTop: true, angle: 0)
+                    .offset(y: -(halfH / 2 + gap / 2))
 
-            flapHalf(char: displayedChar, isTop: true, angle: topAngle)
-                .offset(y: -(halfH / 2 + gap / 2))
+                flapHalf(char: displayedChar, isTop: true, angle: topAngle)
+                    .offset(y: -(halfH / 2 + gap / 2))
 
-            flapHalf(char: incomingChar, isTop: false, angle: bottomAngle)
-                .offset(y: halfH / 2 + gap / 2)
+                flapHalf(char: incomingChar, isTop: false, angle: bottomAngle)
+                    .offset(y: halfH / 2 + gap / 2)
 
-            Rectangle()
-                .fill(Color.sgBorder.opacity(0.8))
-                .frame(height: 0.5)
+                Rectangle()
+                    .fill(Color.sgBorder.opacity(0.8))
+                    .frame(height: 0.5)
+            }
         }
         .frame(width: size.cellWidth, height: size.cellHeight)
         .dynamicTypeSize(.large) // Lock split-flap cells — pixel-precise sizing must not scale
@@ -121,6 +165,9 @@ struct SplitFlapChar: View {
         .onChange(of: trigger) { _, _ in
             guard hasInitialized, animate, !reduceMotion else { return }
             replayCurrentCharacter()
+        }
+        .onDisappear {
+            scrambleTask?.cancel()
         }
         .accessibilityHidden(true)
     }
@@ -158,6 +205,8 @@ struct SplitFlapChar: View {
     }
 
     private func setStatic(_ newValue: Character) {
+        scrambleTask?.cancel()
+        isScrambling = false
         sequenceID += 1
         displayedChar = newValue
         pendingChar = nil
@@ -171,28 +220,71 @@ struct SplitFlapChar: View {
             return
         }
 
+        scrambleTask?.cancel()
         sequenceID += 1
         queuedChar = nil
         pendingChar = character
         displayedChar = " "
         flipPhase = .idle
-        startFlip(sequence: sequenceID)
+        startScrambleThenFlip(sequence: sequenceID)
     }
 
     private func enqueueCharacter(_ newValue: Character) {
-        guard newValue != displayedChar || flipPhase != .idle else { return }
+        guard newValue != displayedChar || flipPhase != .idle || isScrambling else { return }
 
         if newValue == " " {
             setStatic(" ")
             return
         }
 
-        if flipPhase == .idle, pendingChar == nil {
+        if flipPhase == .idle, pendingChar == nil, !isScrambling {
             pendingChar = newValue
             sequenceID += 1
-            startFlip(sequence: sequenceID)
+            startScrambleThenFlip(sequence: sequenceID)
         } else {
             queuedChar = newValue
+        }
+    }
+
+    // MARK: - Scramble → Flip
+
+    /// Scramble phase: rapid random characters with color flashes, then transition to mechanical flip.
+    private func startScrambleThenFlip(sequence: Int) {
+        guard pendingChar != nil else { return }
+
+        let iterationCount = Int.random(in: 8...12)
+        let intervalNs: UInt64 = 55_000_000 // 55ms per iteration
+
+        scrambleTask?.cancel()
+        scrambleTask = Task { @MainActor in
+            // Wait for stagger delay
+            if delay > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard !Task.isCancelled, sequence == sequenceID else { return }
+            }
+
+            isScrambling = true
+
+            for i in 0..<iterationCount {
+                guard !Task.isCancelled, sequence == sequenceID else {
+                    isScrambling = false
+                    return
+                }
+
+                scrambleChar = scrambleCharset.randomElement() ?? "X"
+                scrambleColor = scrambleColors[i % scrambleColors.count]
+
+                try? await Task.sleep(nanoseconds: intervalNs)
+            }
+
+            guard !Task.isCancelled, sequence == sequenceID else {
+                isScrambling = false
+                return
+            }
+
+            // End scramble, begin mechanical flip
+            isScrambling = false
+            startFlip(sequence: sequence)
         }
     }
 
@@ -200,7 +292,7 @@ struct SplitFlapChar: View {
         guard pendingChar != nil else { return }
 
         withAnimation(
-            .easeIn(duration: 0.12).delay(delay),
+            .easeIn(duration: 0.12),
             completionCriteria: .logicallyComplete
         ) {
             guard sequence == sequenceID else { return }
@@ -235,7 +327,7 @@ struct SplitFlapChar: View {
         self.queuedChar = nil
         pendingChar = queuedChar
         sequenceID += 1
-        startFlip(sequence: sequenceID)
+        startScrambleThenFlip(sequence: sequenceID)
     }
 }
 

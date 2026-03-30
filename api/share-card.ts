@@ -5,6 +5,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+function withMarkup(price: number): number {
+  return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -191,7 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         deals.push({
           origin: doc.origin || 'JFK',
           city: doc.city || 'Unknown',
-          price: doc.price || 0,
+          price: doc.price ? withMarkup(doc.price as number) : 0,
           savingsPercent: doc.savings_percent || null,
           dealTier: doc.deal_tier || 'fair',
           isNonstop: doc.is_nonstop || false,
@@ -244,7 +249,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const city = dest.city || 'Amazing Destination';
     const country = dest.country || '';
-    const price = dest.live_price ?? dest.flight_price ?? 0;
+    const rawPrice = (dest.live_price ?? dest.flight_price ?? 0) as number;
+    const price = rawPrice > 0 ? withMarkup(rawPrice) : 0;
     const imageUrl = encodeURI(
       dest.image_url || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80',
     );

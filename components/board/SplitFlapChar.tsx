@@ -3,9 +3,21 @@ import { View, Text, StyleSheet } from 'react-native';
 import { colors, fonts } from '../../theme/tokens';
 import { lightHaptic } from '../../utils/haptics';
 
-const CHAR_POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-const CYCLE_INTERVAL = 100; // ms between random chars (was 60 — reduced CPU from ~4000 to ~2400 updates/sec)
-const DEFAULT_DURATION = 400; // total cycling time (was 500 — settle faster)
+const CHAR_POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$.-!?';
+const SCRAMBLE_INTERVAL = 55; // ms between random chars during scramble phase
+const SCRAMBLE_ITERATIONS_MIN = 8;
+const SCRAMBLE_ITERATIONS_MAX = 12;
+
+// Monochrome palette — white/grey flashes on dark cells during the scramble phase.
+const SCRAMBLE_COLORS = [
+  '#F5F5F5', // white
+  '#CCCCCC', // light grey
+  '#888888', // mid grey
+  '#F5F5F5', // white
+  '#555555', // dark grey
+  '#CCCCCC', // light grey
+];
+const SCRAMBLE_TEXT_COLOR = '#0A0A0A'; // dark text on light scramble backgrounds
 
 interface SplitFlapCharProps {
   target: string;
@@ -28,7 +40,7 @@ const SIZES = {
 function SplitFlapChar({
   target,
   delay,
-  duration = DEFAULT_DURATION,
+  duration,
   size,
   color,
   animate,
@@ -36,46 +48,72 @@ function SplitFlapChar({
   onSettled,
 }: SplitFlapCharProps) {
   const [displayChar, setDisplayChar] = useState(target || ' ');
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const settleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [bgColor, setBgColor] = useState<string | null>(null);
+  const [textColor, setTextColor] = useState(color);
+  const cleanupRef = useRef<(() => void) | null>(null);
   const isSpace = target === ' ' || target === '';
 
   useEffect(() => {
     // Clean up previous animation
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
+    cleanupRef.current?.();
+    cleanupRef.current = null;
 
     if (!animate || isSpace) {
       setDisplayChar(target || ' ');
+      setBgColor(null);
+      setTextColor(color);
       return;
     }
 
-    // Start cycling after delay
-    timeoutRef.current = setTimeout(() => {
-      // Cycle through random characters
-      intervalRef.current = setInterval(() => {
-        setDisplayChar(CHAR_POOL[Math.floor(Math.random() * CHAR_POOL.length)]);
-      }, CYCLE_INTERVAL);
+    let cancelled = false;
+    const iterations =
+      SCRAMBLE_ITERATIONS_MIN +
+      Math.floor(Math.random() * (SCRAMBLE_ITERATIONS_MAX - SCRAMBLE_ITERATIONS_MIN + 1));
 
-      // Settle on target after duration (or cycle indefinitely if no target)
-      if (target) {
-        settleTimeoutRef.current = setTimeout(() => {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          setDisplayChar(target);
-          if (isFirstInColumn) lightHaptic();
-          onSettled?.();
-        }, duration);
-      }
+    const delayTimeout = setTimeout(() => {
+      if (cancelled) return;
+
+      let i = 0;
+      const scrambleInterval = setInterval(() => {
+        if (cancelled) {
+          clearInterval(scrambleInterval);
+          return;
+        }
+
+        if (i < iterations) {
+          // Scramble phase: random char + monochrome color flash
+          setDisplayChar(CHAR_POOL[Math.floor(Math.random() * CHAR_POOL.length)]);
+          setBgColor(SCRAMBLE_COLORS[i % SCRAMBLE_COLORS.length]);
+          setTextColor(SCRAMBLE_TEXT_COLOR);
+          i++;
+        } else {
+          // Settle: show target character, restore normal styling
+          clearInterval(scrambleInterval);
+          if (!cancelled) {
+            setDisplayChar(target);
+            setBgColor(null);
+            setTextColor(color);
+            if (isFirstInColumn) lightHaptic();
+            onSettled?.();
+          }
+        }
+      }, SCRAMBLE_INTERVAL);
+
+      cleanupRef.current = () => {
+        clearInterval(scrambleInterval);
+      };
     }, delay);
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
+    cleanupRef.current = () => {
+      clearTimeout(delayTimeout);
     };
-  }, [target, animate, delay, duration, isFirstInColumn, onSettled, isSpace]);
+
+    return () => {
+      cancelled = true;
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+    };
+  }, [target, animate, delay, size, color, isFirstInColumn, onSettled, isSpace]);
 
   const dims = SIZES[size];
   const borderRadius = Math.max(2, dims.width * 0.08);
@@ -108,12 +146,15 @@ function SplitFlapChar({
           height: dims.height,
           borderRadius,
           borderWidth,
+          backgroundColor: bgColor || colors.cell,
         },
       ]}
     >
-      <Text style={[styles.text, { fontSize: dims.fontSize, color }]}>{displayChar}</Text>
-      {/* Flap split line */}
-      <View style={[styles.splitLine, { height: splitLineHeight }]} />
+      <Text style={[styles.text, { fontSize: dims.fontSize, color: textColor }]}>
+        {displayChar}
+      </Text>
+      {/* Flap split line — hide during scramble for cleaner flash effect */}
+      {!bgColor && <View style={[styles.splitLine, { height: splitLineHeight }]} />}
     </View>
   );
 }

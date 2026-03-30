@@ -6,6 +6,11 @@ import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+function withMarkup(price: number): number {
+  return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
@@ -51,11 +56,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         country: doc.country || '',
         iata: doc.destination_iata || '',
         origin: doc.origin || '',
-        price: doc.price || 0,
+        price: doc.price ? withMarkup(doc.price as number) : 0,
         dealScore: doc.deal_score || 0,
         dealTier: doc.deal_tier || 'fair',
         savingsPercent: doc.savings_percent || null,
-        usualPrice: doc.usual_price || null,
+        usualPrice: doc.usual_price ? withMarkup(doc.usual_price as number) : null,
         isNonstop: doc.is_nonstop || false,
         airline: doc.airline || '',
         departureDate: doc.departure_date || doc.date || '',

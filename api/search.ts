@@ -7,6 +7,10 @@ import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors';
 
 const STUB_MODE = !process.env.DUFFEL_API_KEY;
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+function withMarkup(price: number): number {
+  return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
+}
 
 // ─── Date strategy (same as cron: ~2 weeks out, shifted to next Wednesday) ──
 
@@ -87,7 +91,7 @@ function buildResponse(doc: Record<string, unknown>, cached: boolean) {
   }
 
   return {
-    price: doc.price as number,
+    price: withMarkup(doc.price as number),
     currency: (doc.currency as string) || 'USD',
     airline: (doc.airline as string) || '',
     airlineCode: (doc.airline_code as string) || '',

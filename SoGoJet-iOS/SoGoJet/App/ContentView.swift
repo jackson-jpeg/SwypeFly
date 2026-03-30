@@ -66,8 +66,7 @@ struct ContentView: View {
         }
         .tint(Color.sgYellow)
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling app-wide for layout safety
-        .toolbarBackground(.visible, for: .tabBar)
-        .toolbarBackground(Color.sgBg, for: .tabBar)
+        .modifier(GlassTabBarModifier())
         .sheet(item: $router.activeSheet, onDismiss: {
             router.handleSheetDismissed()
         }) { sheet in
@@ -190,5 +189,21 @@ struct ContentView: View {
                 }
             }
         )
+    }
+}
+
+// MARK: - Liquid Glass Tab Bar
+
+/// Uses liquid glass for the tab bar on iOS 26+, solid dark background on earlier versions.
+private struct GlassTabBarModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .toolbarBackground(.hidden, for: .tabBar)
+        } else {
+            content
+                .toolbarBackground(.visible, for: .tabBar)
+                .toolbarBackground(Color.sgBg, for: .tabBar)
+        }
     }
 }

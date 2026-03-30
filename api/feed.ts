@@ -12,6 +12,13 @@ import { nearbyAirports } from '../data/airports';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 
 const PAGE_SIZE = 10;
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+
+/** Apply booking markup so displayed prices match checkout. */
+function applyMarkup(price: number | null | undefined): number | null {
+  if (price == null) return null;
+  return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
+}
 
 // On-demand pricing may need up to ~30s for 10 destinations (5 concurrent × 2-3s each)
 export const maxDuration = 60;
@@ -145,11 +152,20 @@ async function fetchLivePriceForDest(
 
 const ON_DEMAND_CONCURRENCY = 15;
 
+const STALE_PRICE_MS = 60 * 60 * 1000; // 1 hour — prices older than this get refreshed on-demand
+
+function isPriceStale(fetchedAt: string | undefined): boolean {
+  if (!fetchedAt) return true;
+  return Date.now() - new Date(fetchedAt).getTime() > STALE_PRICE_MS;
+}
+
 async function fillMissingPrices(
   page: ReturnType<typeof toFrontend>[],
   origin: string,
 ): Promise<ReturnType<typeof toFrontend>[]> {
-  const missing = page.filter((d) => !d.flightPrice || d.flightPrice <= 0);
+  const missing = page.filter(
+    (d) => !d.flightPrice || d.flightPrice <= 0 || isPriceStale(d.priceFetchedAt),
+  );
   if (missing.length === 0) return page;
 
   // Search missing destinations in parallel, capped at ON_DEMAND_CONCURRENCY
@@ -174,9 +190,8 @@ async function fillMissingPrices(
 
   // Merge live prices into the page + compute savings from route stats
   return Promise.all(page.map(async (d) => {
-    if (d.flightPrice && d.flightPrice > 0) return d;
     const live = priceResults.get(d.iataCode);
-    if (!live) return d;
+    if (!live) return d; // No fresh price available — keep existing
 
     // Compute savings using route stats
     let usualPrice = d.usualPrice;
@@ -193,10 +208,11 @@ async function fillMissingPrices(
       }
     }
 
+    const markedUpPrice = applyMarkup(live.price);
     return {
       ...d,
-      flightPrice: live.price,
-      livePrice: live.price,
+      flightPrice: markedUpPrice,
+      livePrice: markedUpPrice,
       priceSource: 'duffel' as const,
       priceFetchedAt: live.fetchedAt,
       airline: live.airline || d.airline,
@@ -204,7 +220,7 @@ async function fillMissingPrices(
       departureDate: live.departureDate,
       returnDate: live.returnDate,
       tripDurationDays: 7,
-      usualPrice,
+      usualPrice: usualPrice ? applyMarkup(usualPrice) : usualPrice,
       savingsAmount,
       savingsPercent,
     };
@@ -1467,11 +1483,18 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     let usualPrice: number | null = null;
     let savingsAmount: number | null = null;
     let savingsPercent: number | null = null;
+    let typicalPriceLow: number | null = null;
+    let typicalPriceHigh: number | null = null;
     if (routeStats && effectivePrice != null && routeStats.sampleCount >= 1) {
       usualPrice = routeStats.medianPrice;
       if (effectivePrice < usualPrice) {
         savingsAmount = usualPrice - effectivePrice;
         savingsPercent = Math.round((savingsAmount / usualPrice) * 100);
+      }
+      // Google Flights-style typical range (p20–p80)
+      if (routeStats.sampleCount >= 3) {
+        typicalPriceLow = routeStats.p20Price;
+        typicalPriceHigh = routeStats.p80Price;
       }
     }
 
@@ -1543,6 +1566,8 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       usual_price: usualPrice,
       savings_amount: savingsAmount,
       savings_percent: savingsPercent,
+      typical_price_low: typicalPriceLow,
+      typical_price_high: typicalPriceHigh,
       price_history: priceHistoryMap.get(d.iata_code as string),
     };
   });
@@ -1564,17 +1589,16 @@ function toFrontend(d: ScoredDest, origin?: string) {
     // image_url already prioritizes Unsplash over Google Places (set in merge above)
     imageUrl: d.image_url || d.image_urls?.[0],
     // imageUrls omitted from feed — single URL is sufficient for card rendering
-    // Only send prices we can trust:
-    // - live_price (from Duffel cached_prices or Travelpayouts calendar) = good
-    // - flight_price (from destinations table, possibly months old) = unreliable, omit
-    flightPrice: d.live_price ?? null,
+    // Apply booking markup to feed prices so the card price matches what users
+    // pay at checkout. Without this, every booking appears X% more expensive.
+    flightPrice: applyMarkup(d.live_price ?? d.flight_price),
     hotelPricePerNight: d.live_hotel_price ?? d.hotel_price_per_night,
     currency: d.currency,
     vibeTags: d.vibe_tags,
     bestMonths: d.best_months,
     averageTemp: d.average_temp,
     flightDuration: d.live_duration || d.flight_duration,
-    livePrice: d.live_price,
+    livePrice: applyMarkup(d.live_price),
     priceSource: d.live_price != null
       ? (d.price_source as 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate')
       : 'estimate',
@@ -1590,7 +1614,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
     tripDurationDays: d.trip_duration_days ?? undefined,
     airline: d.live_airline || undefined,
     priceDirection: (d.price_direction as 'up' | 'down' | 'stable') || undefined,
-    previousPrice: d.previous_price ?? undefined,
+    previousPrice: applyMarkup(d.previous_price) ?? undefined,
     priceDropPercent:
       d.previous_price && d.live_price != null && d.previous_price > 0
         ? Math.round(((d.previous_price - d.live_price) / d.previous_price) * 100)
@@ -1617,9 +1641,12 @@ function toFrontend(d: ScoredDest, origin?: string) {
     isNonstop: d.is_nonstop ?? undefined,
     totalStops: d.total_stops != null && d.total_stops >= 0 ? d.total_stops : undefined,
     maxLayoverMinutes: d.max_layover_minutes != null && d.max_layover_minutes >= 0 ? d.max_layover_minutes : undefined,
-    usualPrice: d.usual_price ?? undefined,
+    usualPrice: d.usual_price ? applyMarkup(d.usual_price) : undefined,
     savingsAmount: d.savings_amount ?? undefined,
     savingsPercent: d.savings_percent ?? undefined,
+    // Google Flights-style "Typical: $245–$415" range (p20–p80 with markup)
+    typicalPriceLow: d.typical_price_low ? applyMarkup(d.typical_price_low) : undefined,
+    typicalPriceHigh: d.typical_price_high ? applyMarkup(d.typical_price_high) : undefined,
     priceHistory: d.price_history?.slice(-7) ?? undefined,
     nearbyOrigin: d.nearby_origin ?? undefined,
     nearbyOriginLabel: d.nearby_origin_label ?? undefined,
@@ -1784,9 +1811,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (vibeFilter) {
       const vibes = vibeFilter.split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
-      destinations = destinations.filter((d) =>
-        d.vibe_tags.some((t) => vibes.includes(t.toLowerCase())),
-      );
+      // "nonstop" is a flight attribute, not a vibe tag — handle separately
+      const wantsNonstop = vibes.includes('nonstop');
+      const tagVibes = vibes.filter((v) => v !== 'nonstop');
+      if (wantsNonstop) {
+        destinations = destinations.filter((d) => d.is_nonstop === true);
+      }
+      if (tagVibes.length > 0) {
+        destinations = destinations.filter((d) =>
+          d.vibe_tags.some((t) => tagVibes.includes(t.toLowerCase())),
+        );
+      }
     }
 
     if (maxPrice != null) {
@@ -1914,8 +1949,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const withoutPrice = page.filter((d) => !d.flightPrice || d.flightPrice <= 0);
 
     if (withPrice.length >= 10) {
-      // Plenty of priced destinations — show them all, skip on-demand Duffel
+      // Plenty of priced destinations — show them, but refresh stale ones in background
       page = withPrice;
+      const stale = withPrice.filter((d) => isPriceStale(d.priceFetchedAt));
+      if (stale.length > 0) {
+        // Fire-and-forget: refresh stale prices so NEXT page load is fresh
+        fillMissingPrices(stale, origin).catch(() => {});
+      }
     } else if (withPrice.length >= 5 && withoutPrice.length > 0) {
       // Enough to show but could use more — backfill on-demand for missing ones
       // Use a short timeout so we don't block too long

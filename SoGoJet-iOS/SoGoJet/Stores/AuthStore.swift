@@ -7,14 +7,26 @@ import UIKit
 
 /// Provides the window anchor for ASWebAuthenticationSession.
 /// Required on iOS 18+ or the OAuth popup immediately fails with error 2.
-final class OAuthPresentationContext: NSObject, ASWebAuthenticationPresentationContextProviding {
+final class OAuthPresentationContext: NSObject,
+    ASWebAuthenticationPresentationContextProviding,
+    ASAuthorizationControllerPresentationContextProviding
+{
     static let shared = OAuthPresentationContext()
-    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+
+    private var anchor: ASPresentationAnchor {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .first(where: { $0.activationState == .foregroundActive })?
             .windows.first(where: { $0.isKeyWindow })
             ?? ASPresentationAnchor()
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        anchor
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        anchor
     }
 }
 
@@ -39,6 +51,10 @@ final class AuthStore: NSObject {
         didSet { APIClient.authToken = authToken }
     }
 
+    /// Strong references to keep auth sessions alive during async flows
+    private var currentAuthController: ASAuthorizationController?
+    private var currentWebAuthSession: ASWebAuthenticationSession?
+
     private let tokenKey = "sg_auth_token"
     private let userIdKey = "sg_user_id"
     private let userNameKey = "sg_user_name"
@@ -59,9 +75,28 @@ final class AuthStore: NSObject {
 
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.delegate = self
+        controller.presentationContextProvider = OAuthPresentationContext.shared
+        currentAuthController = controller
         controller.performRequests()
         isLoading = true
         authError = nil
+    }
+
+    /// Handle an already-completed Apple credential (from SignInWithAppleButton).
+    func handleAppleCredential(_ credential: ASAuthorizationAppleIDCredential) {
+        isLoading = true
+        authError = nil
+        let identityToken = credential.identityToken ?? Data()
+        let email = credential.email
+        let fullName = credential.fullName
+
+        Task {
+            await authenticateWithBackend(
+                identityToken: identityToken,
+                fullName: fullName,
+                email: email
+            )
+        }
     }
 
     // MARK: Sign In with OAuth (Google, TikTok)
@@ -94,6 +129,7 @@ final class AuthStore: NSObject {
         ) { [weak self] callbackURL, error in
             Task { @MainActor in
                 guard let self else { return }
+                self.currentWebAuthSession = nil
 
                 if let error {
                     self.isLoading = false
@@ -139,6 +175,7 @@ final class AuthStore: NSObject {
 
         session.prefersEphemeralWebBrowserSession = false
         session.presentationContextProvider = OAuthPresentationContext.shared
+        currentWebAuthSession = session
         session.start()
     }
 
@@ -288,29 +325,11 @@ final class AuthStore: NSObject {
             print("[Auth] Signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email")) clerk_id=\(response.userId)")
             #endif
         } catch {
-            // Fallback: use Apple token directly if backend auth fails
             #if DEBUG
-            print("[Auth] Backend auth failed, using Apple token: \(error.localizedDescription)")
+            print("[Auth] Backend auth failed: \(error.localizedDescription)")
             #endif
-            let name = [fullName?.givenName, fullName?.familyName]
-                .compactMap { $0 }
-                .joined(separator: " ")
-
-            self.authToken = tokenString
-            self.userId = "apple_\(tokenString.prefix(20))"
-            self.userName = name.isEmpty ? nil : name
-            self.userEmail = email
-            self.isAuthenticated = true
             self.isLoading = false
-
-            if let userId = self.userId {
-                saveSession(
-                    token: tokenString,
-                    userId: userId,
-                    name: self.userName,
-                    email: self.userEmail
-                )
-            }
+            self.authError = "Sign in failed — server error. Try Google or continue as guest."
         }
     }
 }
@@ -332,6 +351,7 @@ extension AuthStore: ASAuthorizationControllerDelegate {
         didCompleteWithAuthorization authorization: ASAuthorization
     ) {
         Task { @MainActor in
+            currentAuthController = nil
             if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
                 let identityToken = credential.identityToken ?? Data()
                 let email = credential.email
@@ -351,14 +371,22 @@ extension AuthStore: ASAuthorizationControllerDelegate {
         didCompleteWithError error: Error
     ) {
         Task { @MainActor in
+            currentAuthController = nil
             isLoading = false
             if (error as? ASAuthorizationError)?.code == .canceled {
                 // User canceled — don't show error
                 return
             }
-            authError = "Sign in failed. Please try again."
+            let nsError = error as NSError
+            if nsError.domain == "com.apple.AuthenticationServices.AuthorizationError" && nsError.code == 1000 {
+                authError = "Apple Sign In unavailable. Try Google, or check that Sign in with Apple is enabled in Xcode → Signing & Capabilities."
+            } else {
+                authError = "Sign in failed. Please try again."
+            }
             #if DEBUG
-            print("[Auth] Error: \(error.localizedDescription)")
+            print("[Auth] Error: \(error.localizedDescription) (domain=\(nsError.domain) code=\(nsError.code))")
+            print("[Auth] Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
+            print("[Auth] Hint: Ensure 'Sign in with Apple' capability is in Xcode → Signing & Capabilities, then clean build (Cmd+Shift+K) and rebuild.")
             #endif
         }
     }

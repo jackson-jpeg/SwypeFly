@@ -608,6 +608,41 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Write the live price back to cached_prices so the feed stays current.
+    // Without this, the feed shows stale prices until the next cron refresh.
+    if (offers.length > 0) {
+      const cheapest = offers[0];
+      const rawPrice = cheapest._duffelBasePrice ?? cheapest.totalAmount;
+      const outSlice = (result.offers?.[0] as Record<string, any>)?.slices?.[0];
+      let duration = '';
+      if (outSlice?.duration) {
+        const match = (outSlice.duration as string).match(/PT(\d+)H(\d+)?M?/);
+        if (match) duration = `${match[1]}h ${match[2] || '0'}m`;
+      }
+      const airline = outSlice?.segments?.[0]?.marketing_carrier?.iata_code ?? '';
+      supabase
+        .from(TABLES.cachedPrices)
+        .upsert(
+          {
+            origin: v.data.origin.toUpperCase(),
+            destination_iata: v.data.destination.toUpperCase(),
+            price: rawPrice,
+            currency: 'USD',
+            airline,
+            duration,
+            source: 'duffel',
+            fetched_at: new Date().toISOString(),
+            departure_date: v.data.departureDate,
+            return_date: v.data.returnDate || null,
+          },
+          { onConflict: 'origin,destination_iata' },
+        )
+        .then(
+          () => { console.log(`[booking] Updated cached price: ${v.data.origin}->${v.data.destination} = $${rawPrice}`); },
+          (err: unknown) => { console.warn('[booking] Cache write-back failed:', err instanceof Error ? err.message : err); },
+        );
+    }
+
     return res.status(200).json({ offers, priceDiscrepancy });
   } catch (err: any) {
     logApiError('api/booking/search', err);

@@ -11,6 +11,7 @@ import SkeletonCard from '../../components/swipe/SkeletonCard';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
 import FilterButton from '../../components/swipe/FilterButton';
 import FilterSheet from '../../components/swipe/FilterSheet';
+import QuickFilters from '../../components/swipe/QuickFilters';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { nearbyAirports } from '../../data/airports';
 
@@ -36,6 +37,12 @@ export default function FeedScreen() {
   const toQueryParams = useFilterStore((s) => s.toQueryParams);
   const clearFilters = useFilterStore((s) => s.clearAll);
   const isSheetOpen = useFilterStore((s) => s.isOpen);
+  // Track filter state for auto-refetch on quick filter chip changes
+  const priceRange = useFilterStore((s) => s.priceRange);
+  const filterRegions = useFilterStore((s) => s.regions);
+  const filterVibes = useFilterStore((s) => s.vibes);
+  const filterDuration = useFilterStore((s) => s.duration);
+  const sortPreset = useFilterStore((s) => s.sortPreset);
   const prevDepartureRef = useRef(departureCode);
 
   // Immersion mode state
@@ -84,17 +91,18 @@ export default function FeedScreen() {
     }
   }, [departureCode]);
 
-  // Single fetch effect: runs on mount, departure change, and filter sheet close.
-  // Debounce to prevent double-fire when departure change triggers both effects.
+  // Fetch on mount, departure change, filter sheet close, or quick filter change.
+  // 400ms debounce for filter changes (rapid chip tapping), 50ms for sheet close/departure.
   const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filterKey = `${priceRange}|${filterRegions.join(',')}|${filterVibes.join(',')}|${filterDuration}|${sortPreset}`;
   useEffect(() => {
-    if (isSheetOpen) return; // Don't fetch while user is editing filters
+    if (isSheetOpen) return; // Don't fetch while user is editing filters in sheet
     if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
     fetchTimerRef.current = setTimeout(() => {
       fetchDeals(departureCode, toQueryParams());
-    }, 50); // 50ms debounce collapses rapid successive triggers
+    }, 400);
     return () => { if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current); };
-  }, [departureCode, isSheetOpen]);
+  }, [departureCode, isSheetOpen, filterKey]);
 
   return (
     <View style={styles.container}>
@@ -118,6 +126,11 @@ export default function FeedScreen() {
           </View>
         </Animated.View>
       </Pressable>
+
+      {/* Google Flights-style quick filter chips — always visible below header */}
+      <Animated.View style={[styles.quickFilterBar, { top: insets.top + 56, opacity: headerOpacity }]}>
+        <QuickFilters />
+      </Animated.View>
 
       {/* Content */}
       {isLoading ? (
@@ -197,6 +210,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  quickFilterBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 9,
   },
   header: {
     flexDirection: 'row',

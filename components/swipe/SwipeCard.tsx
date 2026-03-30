@@ -90,10 +90,17 @@ function getDealContext(deal: BoardDeal): string | null {
     parts.push('nonstop');
   }
 
-  // Deal tier context when no savings available
-  if (parts.length === 0) {
-    if (deal.dealTier === 'amazing') parts.push('top deal');
-    else if (deal.dealTier === 'great') parts.push('great value');
+  // Google Flights-style price context
+  if (deal.price && deal.typicalPriceLow && deal.price < deal.typicalPriceLow) {
+    const belowBy = deal.typicalPriceLow - deal.price;
+    parts.push(`$${belowBy} below typical`);
+  } else if (deal.pricePercentile != null) {
+    if (deal.pricePercentile <= 15) parts.push('price is low');
+    else if (deal.pricePercentile <= 40) parts.push('good price');
+    else if (deal.pricePercentile >= 75) parts.push('price is high');
+  } else if (parts.length === 0) {
+    if (deal.dealTier === 'amazing') parts.push('price is low');
+    else if (deal.dealTier === 'great') parts.push('good price');
   }
 
   if (deal.price && deal.price < 150) {
@@ -264,12 +271,28 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
             animate={animate}
           />
           <Text style={styles.priceLabel}>round trip</Text>
+          {/* Price freshness indicator */}
+          {deal.priceFetchedAt && (() => {
+            const ms = Date.now() - new Date(deal.priceFetchedAt!).getTime();
+            if (ms < 0 || isNaN(ms)) return null;
+            const mins = Math.floor(ms / 60000);
+            const hrs = Math.floor(mins / 60);
+            const days = Math.floor(hrs / 24);
+            const label = days >= 1 ? `${days}d ago` : hrs >= 1 ? `${hrs}h ago` : mins >= 1 ? `${mins}m ago` : 'just now';
+            return <Text style={styles.priceFreshness}>Seen {label}</Text>;
+          })()}
           {/* Price anchoring — usual price + savings */}
           {deal.usualPrice != null && deal.savingsAmount != null && deal.savingsAmount > 0 && (
             <View style={styles.savingsRow}>
               <Text style={styles.usualPrice}>${deal.usualPrice}</Text>
               <Text style={styles.savingsText}>Save ${deal.savingsAmount}</Text>
             </View>
+          )}
+          {/* Google Flights-style typical range */}
+          {deal.typicalPriceLow != null && deal.typicalPriceHigh != null && (
+            <Text style={styles.typicalRange}>
+              Typical: ${deal.typicalPriceLow}–${deal.typicalPriceHigh}
+            </Text>
           )}
           {/* Price trend sparkline */}
           {deal.priceHistory && deal.priceHistory.length >= 3 && deal.price != null && (
@@ -567,6 +590,18 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  priceFreshness: {
+    fontFamily: fonts.body,
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
+  },
+  typicalRange: {
+    fontFamily: fonts.body,
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.45)',
+    marginTop: 3,
   },
   savingsRow: {
     alignItems: 'center',

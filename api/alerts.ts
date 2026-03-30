@@ -7,6 +7,12 @@ import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { cors } from './_cors.js';
 
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+
+function withMarkup(price: number): number {
+  return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
+}
+
 // ─── Price history helpers ──────────────────────────────────────────────────
 
 interface PriceSnapshot {
@@ -269,7 +275,7 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
               await sendAlertEmail(
                 alert.email as string,
                 alert.destination_id as string,
-                currentPrice as number,
+                withMarkup(currentPrice as number),
                 alert.target_price as number,
               );
             } catch (emailErr) {

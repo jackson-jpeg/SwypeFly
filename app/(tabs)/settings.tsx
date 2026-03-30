@@ -135,6 +135,14 @@ export default function SettingsScreen() {
     successHaptic();
   }, [settings]);
 
+  const handleUnitsToggle = useCallback(
+    (metric: boolean) => {
+      settings.setUsesMetric(metric);
+      successHaptic();
+    },
+    [settings],
+  );
+
   return (
     <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
@@ -228,6 +236,37 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Pressable>
+
+      {/* ── Units ── */}
+      <Text style={styles.sectionLabel}>UNITS</Text>
+      <View style={styles.row}>
+        <View>
+          <Text style={styles.rowLabel}>Measurement</Text>
+          <Text style={styles.rowHint}>
+            {settings.usesMetric
+              ? 'Temperatures in °C, distances in km'
+              : 'Temperatures in °F, distances in miles'}
+          </Text>
+        </View>
+        <View style={styles.pillToggle}>
+          <Pressable
+            style={[styles.pill, !settings.usesMetric && styles.pillActive]}
+            onPress={() => handleUnitsToggle(false)}
+          >
+            <Text style={[styles.pillText, !settings.usesMetric && styles.pillTextActive]}>
+              °F / mi
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.pill, settings.usesMetric && styles.pillActive]}
+            onPress={() => handleUnitsToggle(true)}
+          >
+            <Text style={[styles.pillText, settings.usesMetric && styles.pillTextActive]}>
+              °C / km
+            </Text>
+          </Pressable>
+        </View>
+      </View>
 
       {/* ── Notifications ── */}
       <Text style={styles.sectionLabel}>NOTIFICATIONS</Text>
@@ -428,7 +467,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   pillActive: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.yellow,
   },
   pillText: {
     fontFamily: fonts.bodyBold,

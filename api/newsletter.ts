@@ -67,7 +67,7 @@ async function getTopDeals(limit: number): Promise<DealRow[]> {
       city: doc.city || 'Unknown',
       country: doc.country || '',
       iata: doc.destination_iata || '',
-      price: doc.price || 0,
+      price: doc.price ? Math.round((doc.price as number) * (1 + parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3') / 100)) : 0,
       usualPrice: doc.usual_price || null,
       savingsPercent: doc.savings_percent || null,
       dealTier: doc.deal_tier || 'fair',

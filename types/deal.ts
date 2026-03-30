@@ -10,6 +10,7 @@ export interface BoardDeal {
   priceFormatted: string;
   status: 'DEAL' | 'HOT' | 'NEW';
   priceSource: string;
+  priceFetchedAt?: string;
   airline: string;
   departureDate: string;
   returnDate: string;
@@ -36,6 +37,9 @@ export interface BoardDeal {
   usualPrice?: number;
   savingsAmount?: number;
   savingsPercent?: number;
+  // Google Flights-style typical price range for this route (p20–p80)
+  typicalPriceLow?: number;
+  typicalPriceHigh?: number;
   // Price trend (recent daily prices for sparkline)
   priceHistory?: number[];
   // Nearby airport fallback

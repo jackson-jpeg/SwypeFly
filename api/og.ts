@@ -47,7 +47,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         countryStr = escapeHtml(dest.country || '');
         tagline = escapeHtml(dest.tagline || '');
         imageUrl = encodeURI(dest.image_url || imageUrl);
-        const effectivePrice = dest.live_price ?? dest.flight_price;
+        const rawPrice = dest.live_price ?? dest.flight_price;
+        const markupPercent = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+        const effectivePrice = rawPrice ? Math.round(rawPrice * (1 + markupPercent / 100)) : null;
         priceStr = effectivePrice ? `$${effectivePrice}` : '';
         flightDuration = dest.flight_duration || '';
         const hotelPrice = dest.hotel_price_per_night || 0;

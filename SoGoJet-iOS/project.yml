@@ -31,7 +31,7 @@ settings:
 packages:
   stripe-ios:
     url: https://github.com/stripe/stripe-ios.git
-    from: "23.0.0"
+    from: "24.0.0"
 schemes:
   SoGoJet:
     build:

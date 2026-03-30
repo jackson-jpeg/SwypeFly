@@ -67,10 +67,14 @@ struct AuthView: View {
                             request.requestedScopes = [.fullName, .email]
                         } onCompletion: { result in
                             switch result {
-                            case .success(let auth):
-                                handleAppleSignIn(auth)
-                            case .failure:
-                                break // handled by delegate
+                            case .success(let authorization):
+                                if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
+                                    auth.handleAppleCredential(credential)
+                                }
+                            case .failure(let error):
+                                if (error as? ASAuthorizationError)?.code != .canceled {
+                                    auth.authError = "Sign in failed. Please try again."
+                                }
                             }
                         }
                         .signInWithAppleButtonStyle(.white)
@@ -226,17 +230,6 @@ struct AuthView: View {
         }
     }
 
-    // MARK: - Apple Sign In
-
-    private func handleAppleSignIn(_ authorization: ASAuthorization) {
-        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-              credential.identityToken != nil else { return }
-
-        Task {
-            // The AuthStore's delegate methods handle the actual authentication
-            auth.signInWithApple()
-        }
-    }
 }
 
 #Preview {

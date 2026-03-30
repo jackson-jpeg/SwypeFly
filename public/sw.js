@@ -1,5 +1,5 @@
 // SoGoJet Service Worker — cache-first for assets, network-first for pages
-const CACHE_NAME = 'sogojet-v2';
+const CACHE_NAME = 'sogojet-v3';
 const STATIC_ASSETS = ['/', '/index.html'];
 
 // Offline fallback HTML

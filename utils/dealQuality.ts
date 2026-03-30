@@ -200,6 +200,44 @@ function computeQualityScore(input: DealQualityInput): number {
   return Math.max(0, Math.min(100, score));
 }
 
+// ─── Advance purchase score ─────────────────────────────────────────
+// Google's data shows ~52 days out is optimal for domestic. 3-8 weeks is
+// the sweet spot. Last-minute bookings average 15-25% premium.
+
+function computeAdvancePurchaseScore(departureDate: string): number {
+  const dep = new Date(departureDate + 'T00:00:00Z');
+  const daysOut = Math.round((dep.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+  if (daysOut < 3) return 10;      // Last-minute — expensive, risky availability
+  if (daysOut < 7) return 30;      // Under a week — premium pricing
+  if (daysOut < 14) return 55;     // 1-2 weeks — slightly above typical
+  if (daysOut < 21) return 75;     // 3 weeks — entering sweet spot
+  if (daysOut < 56) return 100;    // 3-8 weeks — optimal booking window
+  if (daysOut < 90) return 85;     // 2-3 months — good but less selection
+  if (daysOut < 180) return 65;    // 3-6 months — fares not fully loaded
+  return 40;                        // 6+ months — too far out, fares often higher
+}
+
+// ─── Day-of-week score ──────────────────────────────────────────────
+// Midweek departures (Tue-Thu) are consistently 15-20% cheaper than
+// weekend departures. Google's QPX engine weighs this heavily.
+
+function computeDayOfWeekScore(departureDate: string): number {
+  const dep = new Date(departureDate + 'T00:00:00Z');
+  const dow = dep.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+
+  switch (dow) {
+    case 2: return 100; // Tuesday — cheapest
+    case 3: return 95;  // Wednesday — 2nd cheapest
+    case 4: return 85;  // Thursday — still good
+    case 1: return 75;  // Monday — moderate
+    case 5: return 55;  // Friday — premium starts
+    case 0: return 45;  // Sunday — expensive
+    case 6: return 35;  // Saturday — most expensive
+    default: return 60;
+  }
+}
+
 // ─── Recency score ───────────────────────────────────────────────────
 
 function computeRecencyScore(foundAt?: string): number {
@@ -269,17 +307,24 @@ export function evaluateDealQuality(input: DealQualityInput): DealQualityResult 
   const recencyScore = computeRecencyScore(input.foundAt);
   const seasonScore = computeSeasonScore(input.bestMonths);
   const popularityScore = Math.round((input.popularityScore ?? 0.5) * 100);
+  const advancePurchaseScore = computeAdvancePurchaseScore(input.departureDate);
+  const dayOfWeekScore = computeDayOfWeekScore(input.departureDate);
 
   // Price score: inverse of percentile (lower percentile = better deal)
   const priceScore = Math.max(0, 100 - pricePercentile);
 
-  // Composite deal score — quality weighted heavily to avoid painful flights
+  // Composite deal score — Google-style multi-factor ranking.
+  // Price is king (35%), but quality prevents painful flights (25%),
+  // advance purchase and day-of-week capture booking timing (15%),
+  // recency ensures freshness (10%), season and popularity round it out.
   const dealScore = Math.min(100, Math.max(0, Math.round(
-    priceScore * 0.30 +
-    qualityScore * 0.35 +
-    popularityScore * 0.10 +
-    recencyScore * 0.15 +
-    seasonScore * 0.10
+    priceScore * 0.35 +
+    qualityScore * 0.25 +
+    advancePurchaseScore * 0.08 +
+    dayOfWeekScore * 0.07 +
+    recencyScore * 0.10 +
+    seasonScore * 0.08 +
+    popularityScore * 0.07
   )));
 
   // Savings percent: how far below median (percentile 50 = 0% savings)

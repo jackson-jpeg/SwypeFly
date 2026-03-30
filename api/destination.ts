@@ -6,6 +6,91 @@ import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const PRICE_STALE_MS = 60 * 60 * 1000; // 1 hour
+
+/** Apply booking markup so displayed prices match checkout. */
+function withMarkup(price: number | null | undefined): number | null {
+  if (price == null) return null;
+  return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
+}
+
+/** Check if a cached price is stale (older than PRICE_STALE_MS). */
+function isPriceStale(fetchedAt: string | undefined | null): boolean {
+  if (!fetchedAt) return true;
+  return Date.now() - new Date(fetchedAt).getTime() > PRICE_STALE_MS;
+}
+
+/**
+ * Background refresh: run a Duffel search and update cached_prices.
+ * Fire-and-forget — doesn't block the response.
+ */
+function backgroundPriceRefresh(origin: string, destIata: string) {
+  (async () => {
+    try {
+      const { searchFlights } = await import('../services/duffel.js');
+      // Pick dates 2-4 weeks out, midweek, 7-day trip
+      const now = new Date();
+      const offset = 14 + Math.floor(Math.random() * 14);
+      const dep = new Date(now.getTime() + offset * 86400000);
+      // Nudge to Tuesday-Thursday
+      const dow = dep.getDay();
+      if (dow === 0) dep.setDate(dep.getDate() + 2);
+      else if (dow === 6) dep.setDate(dep.getDate() + 3);
+      else if (dow === 5) dep.setDate(dep.getDate() + 4);
+      else if (dow === 1) dep.setDate(dep.getDate() + 1);
+      const ret = new Date(dep.getTime() + 7 * 86400000);
+      const depStr = dep.toISOString().slice(0, 10);
+      const retStr = ret.toISOString().slice(0, 10);
+
+      const result = await searchFlights({
+        origin,
+        destination: destIata,
+        departureDate: depStr,
+        returnDate: retStr,
+        passengers: [{ type: 'adult' }],
+        cabinClass: 'economy',
+      });
+
+      const cheapest = (result.offers || []).sort(
+        (a: { total_amount: string }, b: { total_amount: string }) =>
+          parseFloat(a.total_amount) - parseFloat(b.total_amount),
+      )[0] as Record<string, any> | undefined;
+      if (!cheapest) return;
+
+      const price = Math.round(parseFloat(cheapest.total_amount));
+      const outSlice = cheapest.slices?.[0];
+      let duration = '';
+      if (outSlice?.duration) {
+        const match = (outSlice.duration as string).match(/PT(\d+)H(\d+)?M?/);
+        if (match) duration = `${match[1]}h ${match[2] || '0'}m`;
+      }
+      const airline = outSlice?.segments?.[0]?.marketing_carrier?.iata_code ?? '';
+
+      await supabase.from(TABLES.cachedPrices).upsert(
+        {
+          origin,
+          destination_iata: destIata,
+          price,
+          currency: 'USD',
+          airline,
+          duration,
+          source: 'duffel',
+          fetched_at: new Date().toISOString(),
+          departure_date: depStr,
+          return_date: retStr,
+          trip_duration_days: 7,
+        },
+        { onConflict: 'origin,destination_iata' },
+      );
+      console.log(`[destination] Background refresh: ${origin}->${destIata} = $${price}`);
+    } catch (err) {
+      // Silent fail — this is a best-effort background task
+      console.warn(`[destination] Background refresh failed for ${origin}->${destIata}:`, err instanceof Error ? err.message : err);
+    }
+  })();
+}
+
 // ─── Price calendar handler ──────────────────────────────────────────
 
 async function handleCalendar(req: VercelRequest, res: VercelResponse) {
@@ -41,7 +126,7 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
     if (monthDocs.length > 0) {
       const calendar = monthDocs.map((d) => ({
         date: d.date as string,
-        price: d.price as number,
+        price: withMarkup(d.price as number) ?? (d.price as number),
         airline: (d.airline as string) || '',
         transferCount: 0,
       }));
@@ -58,10 +143,15 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
     }
 
     // Fallback: live Travelpayouts call
-    const calendar = await fetchPriceCalendar(origin, destination, 'USD', month);
-    if (calendar.length === 0) {
+    const rawCalendar = await fetchPriceCalendar(origin, destination, 'USD', month);
+    if (rawCalendar.length === 0) {
       return res.status(200).json({ calendar: [], cheapestDate: null, cheapestPrice: null });
     }
+
+    const calendar = rawCalendar.map((entry) => ({
+      ...entry,
+      price: withMarkup(entry.price) ?? entry.price,
+    }));
 
     const cheapest = calendar.reduce((min, entry) =>
       entry.price < min.price ? entry : min, calendar[0]);
@@ -86,10 +176,15 @@ async function handleMonthly(req: VercelRequest, res: VercelResponse) {
   const { origin, destination } = v.data;
 
   try {
-    const monthly = await fetchMonthlyPrices(origin, destination, 'USD');
-    if (monthly.length === 0) {
+    const rawMonthly = await fetchMonthlyPrices(origin, destination, 'USD');
+    if (rawMonthly.length === 0) {
       return res.status(200).json({ months: [], cheapestMonth: null, cheapestPrice: null });
     }
+
+    const monthly = rawMonthly.map((entry) => ({
+      ...entry,
+      price: withMarkup(entry.price) ?? entry.price,
+    }));
 
     const cheapest = monthly.reduce((min, entry) =>
       entry.price < min.price ? entry : min, monthly[0]);
@@ -114,7 +209,11 @@ async function handleWeekMatrix(req: VercelRequest, res: VercelResponse) {
   const { origin, destination, departDate, returnDate } = v.data;
 
   try {
-    const matrix = await fetchWeekMatrix(origin, destination, departDate, returnDate);
+    const rawMatrix = await fetchWeekMatrix(origin, destination, departDate, returnDate);
+    const matrix = rawMatrix.map((entry) => ({
+      ...entry,
+      price: withMarkup(entry.price) ?? entry.price,
+    }));
     const cheapest = matrix.length > 0 ? matrix[0] : null;
 
     res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate=14400');
@@ -297,6 +396,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // No cached prices
     }
 
+    // If cached price is stale (>2h old), trigger a background Duffel search.
+    // This is fire-and-forget — the current response uses the stale price,
+    // but the next visitor will see the fresh one. Costs nothing on cache hit,
+    // ~1 Duffel call per stale destination view.
+    if (origin && dest.iata_code && isPriceStale(price?.fetched_at as string | undefined)) {
+      backgroundPriceRefresh(origin, dest.iata_code as string);
+    }
+
     // Fetch other prices, hotel price, refreshed images, and similar destinations in parallel
     const [allPricesResult, hotelPriceResult, imageResult, similarResult] = await Promise.all([
       Promise.resolve(
@@ -334,7 +441,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const similarDestinations = similarResult.map((d) => ({
       id: d.id as string,
       city: d.city as string,
-      flightPrice: (d.flight_price as number) ?? 0,
+      flightPrice: withMarkup((d.flight_price as number) ?? 0) ?? 0,
       imageUrl: (d.image_url as string) ?? '',
     }));
 
@@ -361,14 +468,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       description: dest.description,
       imageUrl: (refreshedImage?.url_regular as string) || dest.image_url,
       imageUrls: dest.image_urls,
-      flightPrice: (price?.price as number) ?? dest.flight_price,
+      flightPrice: withMarkup((price?.price as number) ?? dest.flight_price),
       hotelPricePerNight: (hotelPrice?.price_per_night as number) ?? dest.hotel_price_per_night,
       currency: dest.currency,
       vibeTags: dest.vibe_tags,
       bestMonths: dest.best_months,
       averageTemp: dest.average_temp,
       flightDuration: (price?.duration as string) || dest.flight_duration,
-      livePrice: (price?.price as number) ?? null,
+      livePrice: withMarkup((price?.price as number) ?? null),
       priceSource: price ? ((price.source as string) || 'estimate') : 'estimate',
       priceFetchedAt: (price?.fetched_at as string) || undefined,
       liveHotelPrice: (hotelPrice?.price_per_night as number) ?? null,

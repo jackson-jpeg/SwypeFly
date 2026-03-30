@@ -157,7 +157,8 @@ describe('GET /api/feed', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
     expect(body.destinations).toHaveLength(1);
-    expect(body.destinations[0].flightPrice).toBe(200);
+    // flight_price=200 + 3% markup = 206
+    expect(body.destinations[0].flightPrice).toBe(206);
   });
 
   it('applies vibeFilter', async () => {
@@ -196,9 +197,10 @@ describe('GET /api/feed', () => {
     await handler(req, res);
 
     const body = res.json.mock.calls[0][0];
-    expect(body.destinations[0].flightPrice).toBe(200);
-    expect(body.destinations[1].flightPrice).toBe(500);
-    expect(body.destinations[2].flightPrice).toBe(800);
+    // 3% markup: 200→206, 500→515, 800→824
+    expect(body.destinations[0].flightPrice).toBe(206);
+    expect(body.destinations[1].flightPrice).toBe(515);
+    expect(body.destinations[2].flightPrice).toBe(824);
   });
 
   it('handles pagination with cursor', async () => {
@@ -247,8 +249,9 @@ describe('GET /api/feed', () => {
     await handler(req, res);
 
     const body = res.json.mock.calls[0][0];
-    expect(body.destinations[0].livePrice).toBe(299);
-    expect(body.destinations[0].flightPrice).toBe(299);
+    // live_price=299 + 3% markup = 308
+    expect(body.destinations[0].livePrice).toBe(308);
+    expect(body.destinations[0].flightPrice).toBe(308);
     expect(body.destinations[0].airline).toBe('TAP');
     expect(body.destinations[0].priceDirection).toBe('down');
   });
@@ -338,8 +341,9 @@ describe('GET /api/feed', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
     expect(body.destinations).toHaveLength(2);
-    expect(body.destinations[0].flightPrice).toBe(500);
-    expect(body.destinations[1].flightPrice).toBe(900);
+    // 3% markup: 500→515, 900→927
+    expect(body.destinations[0].flightPrice).toBe(515);
+    expect(body.destinations[1].flightPrice).toBe(927);
   });
 
   it('combines minPrice and maxPrice for price range', async () => {
@@ -361,8 +365,9 @@ describe('GET /api/feed', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
     expect(body.destinations).toHaveLength(2);
-    expect(body.destinations[0].flightPrice).toBe(300);
-    expect(body.destinations[1].flightPrice).toBe(600);
+    // 3% markup: 300→309, 600→618
+    expect(body.destinations[0].flightPrice).toBe(309);
+    expect(body.destinations[1].flightPrice).toBe(618);
   });
 
   it('sets no-store for session-based requests', async () => {

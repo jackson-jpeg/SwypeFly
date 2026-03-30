@@ -13,6 +13,7 @@ const PRICE_MAP: Record<string, { minPrice?: string; maxPrice?: string }> = {
 
 interface FilterState {
   priceRange: PriceRange;
+  maxBudget: number | null; // Custom max budget in dollars (Google Flights-style slider)
   regions: string[];
   vibes: string[];
   duration: Duration;
@@ -21,6 +22,7 @@ interface FilterState {
   isOpen: boolean;
 
   setPriceRange: (range: PriceRange) => void;
+  setMaxBudget: (budget: number | null) => void;
   toggleRegion: (region: string) => void;
   toggleVibe: (vibe: string) => void;
   setDuration: (duration: Duration) => void;
@@ -35,6 +37,7 @@ interface FilterState {
 
 export const useFilterStore = create<FilterState>()((set, get) => ({
   priceRange: null,
+  maxBudget: null,
   regions: [],
   vibes: [],
   duration: null,
@@ -43,7 +46,11 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
   isOpen: false,
 
   setPriceRange: (range) => {
-    set({ priceRange: get().priceRange === range ? null : range });
+    set({ priceRange: get().priceRange === range ? null : range, maxBudget: null });
+  },
+
+  setMaxBudget: (budget) => {
+    set({ maxBudget: budget, priceRange: null }); // Custom budget overrides preset range
   },
 
   toggleRegion: (region) => {
@@ -70,15 +77,15 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
 
   setSortPreset: (preset) => set({ sortPreset: preset }),
 
-  clearAll: () => set({ priceRange: null, regions: [], vibes: [], duration: null, search: '', sortPreset: 'default' }),
+  clearAll: () => set({ priceRange: null, maxBudget: null, regions: [], vibes: [], duration: null, search: '', sortPreset: 'default' }),
 
   open: () => set({ isOpen: true }),
   close: () => set({ isOpen: false }),
 
   activeCount: () => {
-    const { priceRange, regions, vibes, duration, search } = get();
+    const { priceRange, maxBudget, regions, vibes, duration, search } = get();
     let count = 0;
-    if (priceRange) count++;
+    if (priceRange || maxBudget) count++;
     count += regions.length;
     count += vibes.length;
     if (duration) count++;
@@ -87,10 +94,12 @@ export const useFilterStore = create<FilterState>()((set, get) => ({
   },
 
   toQueryParams: () => {
-    const { priceRange, regions, vibes, duration, search, sortPreset } = get();
+    const { priceRange, maxBudget, regions, vibes, duration, search, sortPreset } = get();
     const params: Record<string, string> = {};
 
-    if (priceRange) {
+    if (maxBudget != null) {
+      params.maxPrice = String(maxBudget);
+    } else if (priceRange) {
       const mapped = PRICE_MAP[priceRange];
       if (mapped.minPrice) params.minPrice = mapped.minPrice;
       if (mapped.maxPrice) params.maxPrice = mapped.maxPrice;

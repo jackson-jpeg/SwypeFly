@@ -104,7 +104,8 @@ describe('GET /api/og', () => {
     const html = res.send.mock.calls[0][0] as string;
     expect(html).toContain('Tokyo');
     expect(html).toContain('Japan');
-    expect(html).toContain('$650');
+    // flight_price=650 + 3% markup = 670
+    expect(html).toContain('$670');
   });
 
   it('uses live_price over flight_price when available', async () => {
@@ -122,7 +123,8 @@ describe('GET /api/og', () => {
     await handler(req, res);
 
     const html = res.send.mock.calls[0][0] as string;
-    expect(html).toContain('$299');
+    // live_price=299 + 3% markup = 308
+    expect(html).toContain('$308');
     expect(html).not.toContain('$450');
   });
 

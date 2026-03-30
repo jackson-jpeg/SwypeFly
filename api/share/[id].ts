@@ -4,6 +4,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../../services/supabaseServer';
 import { cors } from '../_cors.js';
 
+const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
@@ -36,7 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const city = escapeHtml(dest.city || 'Amazing Destination');
     const country = escapeHtml(dest.country || '');
     const tagline = escapeHtml(dest.tagline || 'Discover cheap flights');
-    const price = dest.flight_price || '';
+    const rawPrice = dest.flight_price as number | null;
+    const price = rawPrice ? Math.round(rawPrice * (1 + BOOKING_MARKUP_PERCENT / 100)) : '';
     const priceText = price ? ` from $${price}` : '';
 
     const html = `<!DOCTYPE html>

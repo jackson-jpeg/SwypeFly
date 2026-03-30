@@ -276,7 +276,7 @@ struct SettingsView: View {
                     viewModeButton(id: "grid", label: "Swipe Feed", icon: "rectangle.portrait.on.rectangle.portrait")
                     viewModeButton(id: "list", label: "Board", icon: "rectangle.grid.1x2")
                 }
-                .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
+                .modifier(GlassSegmentModifier())
 
                 Text(settings.preferredView == "list"
                      ? "Compact rows in a departure-board layout."
@@ -321,7 +321,7 @@ struct SettingsView: View {
                     unitButton(metric: false, label: "°F / mi", icon: "ruler")
                     unitButton(metric: true, label: "°C / km", icon: "ruler")
                 }
-                .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
+                .modifier(GlassSegmentModifier())
 
                 Text(settings.usesMetric
                      ? "Temperatures in Celsius, distances in kilometers."
@@ -404,6 +404,7 @@ struct SettingsView: View {
                 .tint(Color.sgYellow)
                 .accessibilityLabel("Toggle \(title)")
         }
+        .contentShape(Rectangle())
     }
 
     // MARK: - Saved
@@ -527,11 +528,7 @@ struct SettingsView: View {
                 .accessibilityLabel("Delete your account and all data")
             }
             .padding(Spacing.md)
-            .background(Color.sgRed.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg)
-                    .strokeBorder(Color.sgRed.opacity(0.15), lineWidth: 1)
-            )
+            .modifier(GlassDangerModifier())
         }
         .padding(.top, Spacing.md)
         .alert("Delete Account?", isPresented: $showDeleteAccountConfirmation) {
@@ -557,11 +554,7 @@ struct SettingsView: View {
                 content()
             }
             .padding(Spacing.md)
-            .background(Color.sgWhite.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg)
-                    .strokeBorder(Color.sgBorder, lineWidth: 1)
-            )
+            .modifier(GlassSectionModifier())
         }
     }
 
@@ -617,6 +610,55 @@ struct SettingsView: View {
         let visiblePrefix = String(local.prefix(2))
         let maskCount = max(local.count - visiblePrefix.count, 2)
         return "\(visiblePrefix)\(String(repeating: "*", count: maskCount))@\(parts[1])"
+    }
+}
+
+// MARK: - Liquid Glass Section Modifier
+
+/// Liquid glass tinted red for danger zone, falling back to solid red tint.
+private struct GlassDangerModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular.tint(Color.sgRed.opacity(0.1)), in: .rect(cornerRadius: Radius.lg))
+        } else {
+            content
+                .background(Color.sgRed.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.lg)
+                        .strokeBorder(Color.sgRed.opacity(0.15), lineWidth: 1)
+                )
+        }
+    }
+}
+
+/// Liquid glass for segmented pickers, falling back to solid border on older iOS.
+private struct GlassSegmentModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular.tint(Color.sgWhite.opacity(0.04)), in: .rect(cornerRadius: Radius.md))
+        } else {
+            content
+                .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
+        }
+    }
+}
+
+/// Uses liquid glass on iOS 26+, falls back to a subtle tinted card on earlier versions.
+private struct GlassSectionModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular.tint(Color.sgWhite.opacity(0.06)), in: .rect(cornerRadius: Radius.lg))
+        } else {
+            content
+                .background(Color.sgWhite.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.lg)
+                        .strokeBorder(Color.sgBorder, lineWidth: 1)
+                )
+        }
     }
 }
 
