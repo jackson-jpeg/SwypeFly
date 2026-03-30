@@ -13,6 +13,7 @@ struct AuthView: View {
     @State private var animateSubtitle = false
     @State private var showButtons = false
     @State private var currentWord = 0
+    @State private var cyclingTask: Task<Void, Never>?
 
     private let rotatingWords = ["EXPLORE", "DISCOVER", "ESCAPE", "WANDER", "FLY"]
 
@@ -184,7 +185,7 @@ struct AuthView: View {
                         }
                     }
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.sgMuted.opacity(0.5))
+                    .foregroundStyle(Color.sgMuted.opacity(0.8))
                     .tint(Color.sgYellow)
                     .padding(.horizontal, 40)
                     .padding(.bottom, 16)
@@ -193,6 +194,10 @@ struct AuthView: View {
         }
         .onAppear {
             startAnimationSequence()
+        }
+        .onDisappear {
+            cyclingTask?.cancel()
+            cyclingTask = nil
         }
     }
 
@@ -219,7 +224,8 @@ struct AuthView: View {
     }
 
     private func startWordRotation() {
-        Task {
+        cyclingTask?.cancel()
+        cyclingTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 2_500_000_000)
                 guard !Task.isCancelled else { break }

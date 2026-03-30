@@ -186,6 +186,7 @@ struct SwipeableCardStack: View {
                 isSaved: isSaved(deal.id),
                 isFirst: currentIndex == 0,
                 animate: true,
+                animationTrigger: currentIndex,
                 onSave: { onSave(deal) },
                 onTap: { onTap(deal) },
                 onVibeFilter: onVibeFilter

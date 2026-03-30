@@ -54,6 +54,7 @@ final class AuthStore: NSObject {
     /// Strong references to keep auth sessions alive during async flows
     private var currentAuthController: ASAuthorizationController?
     private var currentWebAuthSession: ASWebAuthenticationSession?
+    private var errorClearTask: Task<Void, Never>?
 
     private let tokenKey = "sg_auth_token"
     private let userIdKey = "sg_user_id"
@@ -136,7 +137,7 @@ final class AuthStore: NSObject {
                     if (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin {
                         return // User canceled
                     }
-                    self.authError = "Sign in failed. Please try again."
+                    self.setErrorWithAutoClear("Sign in failed. Please try again.")
                     #if DEBUG
                     print("[Auth] OAuth error: \(error.localizedDescription)")
                     #endif
@@ -146,7 +147,7 @@ final class AuthStore: NSObject {
                 guard let callbackURL,
                       let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false) else {
                     self.isLoading = false
-                    self.authError = "Sign in failed. Please try again."
+                    self.setErrorWithAutoClear("Sign in failed. Please try again.")
                     return
                 }
 
@@ -168,7 +169,7 @@ final class AuthStore: NSObject {
                     print("[Auth] OAuth callback URL: \(callbackURL)")
                     #endif
                     self.isLoading = false
-                    self.authError = "Sign in failed. Please try again."
+                    self.setErrorWithAutoClear("Sign in failed. Please try again.")
                 }
             }
         }
@@ -207,7 +208,7 @@ final class AuthStore: NSObject {
             print("[Auth] OAuth token exchange failed: \(error.localizedDescription)")
             #endif
             self.isLoading = false
-            self.authError = "Sign in failed. Please try again."
+            self.setErrorWithAutoClear("Sign in failed. Please try again.")
         }
     }
 
@@ -239,7 +240,7 @@ final class AuthStore: NSObject {
             print("[Auth] OAuth code exchange failed: \(error.localizedDescription)")
             #endif
             self.isLoading = false
-            self.authError = "Sign in failed. Please try again."
+            self.setErrorWithAutoClear("Sign in failed. Please try again.")
         }
     }
 
@@ -329,18 +330,30 @@ final class AuthStore: NSObject {
             print("[Auth] Backend auth failed: \(error.localizedDescription)")
             #endif
             self.isLoading = false
-            self.authError = "Sign in failed — server error. Try Google or continue as guest."
+            self.setErrorWithAutoClear("Sign in failed — server error. Try Google or continue as guest.")
         }
     }
-}
 
-// MARK: - Auth Response
+    /// Set authError and auto-clear after 8 seconds.
+    private func setErrorWithAutoClear(_ message: String) {
+        authError = message
+        errorClearTask?.cancel()
+        errorClearTask = Task {
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
+            guard !Task.isCancelled else { return }
+            authError = nil
+        }
+    }
 
-private struct AuthResponse: Codable {
-    let sessionToken: String
-    let userId: String
-    let email: String?
-    let name: String?
+    // MARK: - Auth Response
+
+    private struct AuthResponse: Codable {
+        let sessionToken: String
+        let userId: String
+        let email: String?
+        let name: String?
+    }
+
 }
 
 // MARK: - ASAuthorizationControllerDelegate
@@ -379,9 +392,9 @@ extension AuthStore: ASAuthorizationControllerDelegate {
             }
             let nsError = error as NSError
             if nsError.domain == "com.apple.AuthenticationServices.AuthorizationError" && nsError.code == 1000 {
-                authError = "Apple Sign In unavailable. Try Google, or check that Sign in with Apple is enabled in Xcode → Signing & Capabilities."
+                self.setErrorWithAutoClear("Apple Sign In unavailable. Try Google or continue as guest.")
             } else {
-                authError = "Sign in failed. Please try again."
+                self.setErrorWithAutoClear("Sign in failed. Please try again.")
             }
             #if DEBUG
             print("[Auth] Error: \(error.localizedDescription) (domain=\(nsError.domain) code=\(nsError.code))")

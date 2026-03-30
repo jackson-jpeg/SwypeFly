@@ -278,6 +278,8 @@ final class FeedStore {
 
         var remaining: [[String: String]] = []
         for swipe in queue {
+            // Stop flushing if token was cleared (e.g. 401 on a previous swipe)
+            guard APIClient.authToken != nil else { break }
             guard let dealId = swipe["dealId"], let action = swipe["action"] else { continue }
             let attempts = Int(swipe["attempts"] ?? "0") ?? 0
             // Drop swipes that have failed too many times

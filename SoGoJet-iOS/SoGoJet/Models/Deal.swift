@@ -125,7 +125,7 @@ extension Deal {
     /// vs a confirmed live price (from Duffel).
     var isEstimatedPrice: Bool {
         // If we have a livePrice from Duffel, it's confirmed
-        if livePrice != nil && livePrice! > 0 { return false }
+        if (livePrice ?? 0) > 0 { return false }
         // flightPrice from Travelpayouts is always an estimate
         return flightPrice != nil
     }
@@ -136,6 +136,13 @@ extension Deal {
         if isEstimatedPrice {
             return "seen at $\(Int(price))"
         }
+        return "from $\(Int(price))"
+    }
+
+    /// Short price label without "from" prefix — used in split-flap board rows
+    /// where space is tight and the prefix is shown separately.
+    var priceShort: String {
+        guard let price = displayPrice, price > 0 else { return "—" }
         return "$\(Int(price))"
     }
 
@@ -202,6 +209,36 @@ extension Deal {
     }
 
     /// Price trend direction based on priceDirection field or previousPrice comparison
+    /// Google Flights-style price level indicator using route percentile data.
+    var priceLevelLabel: String? {
+        if let pct = pricePercentile {
+            if pct <= 15 { return "Price is low" }
+            if pct <= 40 { return "Good price" }
+            if pct >= 75 { return "Price is high" }
+            return nil // typical range, don't show
+        }
+        // Fallback to deal tier
+        switch dealTier {
+        case .amazing: return "Price is low"
+        case .great: return "Good price"
+        default: return nil
+        }
+    }
+
+    /// Color for the price level label.
+    var priceLevelColor: String {
+        if let pct = pricePercentile {
+            if pct <= 15 { return "green" }
+            if pct <= 40 { return "yellow" }
+            if pct >= 75 { return "red" }
+        }
+        switch dealTier {
+        case .amazing: return "green"
+        case .great: return "yellow"
+        default: return "muted"
+        }
+    }
+
     var priceTrend: PriceTrend {
         if let direction = priceDirection?.lowercased() {
             if direction.contains("down") || direction.contains("drop") { return .down }

@@ -73,7 +73,7 @@ struct TripView: View {
         }
 
         // Find the next Friday that's at least 21 days away
-        let threeWeeksOut = calendar.date(byAdding: .day, value: 21, to: Date())!
+        let threeWeeksOut = calendar.date(byAdding: .day, value: 21, to: Date()) ?? Date()
         let nextFriday = calendar.nextDate(
             after: threeWeeksOut,
             matching: DateComponents(weekday: 6),

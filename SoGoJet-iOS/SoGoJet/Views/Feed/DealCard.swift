@@ -118,7 +118,7 @@ struct DealCard: View {
                                             .background(Color.sgYellow.opacity(0.25))
                                             .overlay(
                                                 Capsule()
-                                                    .strokeBorder(Color.sgYellow.opacity(0.3), lineWidth: 0.5)
+                                                    .strokeBorder(Color.sgYellow.opacity(0.6), lineWidth: 0.5)
                                             )
                                             .clipShape(Capsule())
                                     }
@@ -262,7 +262,7 @@ struct DealCard: View {
             .overlay {
                 Text(deal.city.uppercased())
                     .font(SGFont.display(size: 48))
-                    .foregroundStyle(Color.sgMuted.opacity(0.3))
+                    .foregroundStyle(Color.sgMuted.opacity(0.6))
             }
     }
 
@@ -281,7 +281,7 @@ struct DealCard: View {
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(isSaved ? Color.sgYellow : Color.sgWhite)
                 .frame(width: 44, height: 44)
-                .background(Color.black.opacity(0.3))
+                .background(Color.black.opacity(0.6))
                 .clipShape(Circle())
                 .scaleEffect(heartBounce ? 1.3 : 1.0)
                 .animation(.spring(response: 0.3, dampingFraction: 0.5), value: heartBounce)
@@ -364,11 +364,22 @@ struct DealCard: View {
             .background(deal.tierColor)
             .clipShape(Capsule())
 
-            // Price freshness timestamp for estimated prices
-            if deal.isEstimatedPrice, let freshness = deal.priceFreshnessLabel {
+            // Price freshness timestamp — always show so users know how old the price is
+            if let freshness = deal.priceFreshnessLabel {
                 Text(freshness)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.5))
+            }
+
+            // Google Flights-style price level indicator
+            if let level = deal.priceLevelLabel {
+                let levelColor: Color = deal.priceLevelColor == "green" ? .sgDealAmazing
+                    : deal.priceLevelColor == "yellow" ? .sgYellow
+                    : deal.priceLevelColor == "red" ? .sgRed
+                    : .sgMuted
+                Text(level)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(levelColor)
             }
         }
     }
