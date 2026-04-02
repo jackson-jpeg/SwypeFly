@@ -13,6 +13,9 @@ if (!config.resolver.sourceExts.includes('cjs')) {
 }
 
 // Enable package exports for tree-shaking (reduces web bundle size)
+// Use 'require' condition to avoid ESM files containing import.meta
+// (import.meta is invalid in non-module scripts that Metro/Expo emit)
 config.resolver.unstable_enablePackageExports = true;
+config.resolver.unstable_conditionNames = ['react-native', 'require', 'default'];
 
 module.exports = config;
