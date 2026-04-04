@@ -54,6 +54,15 @@ final class BookingStore {
     /// Seconds remaining until the current offer expires. Nil if no expiration is known.
     var offerSecondsRemaining: TimeInterval?
 
+    /// Whether this booking is for an international flight (requires passport).
+    var isInternational: Bool {
+        guard let country = deal?.country else { return false }
+        let domesticNames = ["United States", "US", "USA", "U.S.", "U.S.A.",
+                             "Puerto Rico", "USVI", "US Virgin Islands",
+                             "Guam", "American Samoa"]
+        return !domesticNames.contains { country.localizedCaseInsensitiveCompare($0) == .orderedSame }
+    }
+
     /// Whether the current offer has expired.
     var isOfferExpired: Bool {
         guard let remaining = offerSecondsRemaining else { return false }
@@ -93,10 +102,18 @@ final class BookingStore {
     /// Payment intent ID returned by the server. Used when creating the Duffel order.
     private var currentPaymentIntentId: String?
 
-    private static let stripePublishableKey = "pk_live_51T6cxRLUI2d6YDhKrt7A8IB5xJOyuHYiS81B35aZQ5tkZqFzpgwUCG8ASqobPkg1MEwsHYTlZbpIaqQgYepRd8Jw00jnVCCaZj"
+    private static var stripePublishableKey: String {
+        let remoteKey = RemoteConfig.shared.stripePublishableKey
+        if !remoteKey.isEmpty { return remoteKey }
+        #if DEBUG
+        return "pk_live_51T6cxRLUI2d6YDhKrt7A8IB5xJOyuHYiS81B35aZQ5tkZqFzpgwUCG8ASqobPkg1MEwsHYTlZbpIaqQgYepRd8Jw00jnVCCaZj"
+        #else
+        return ""
+        #endif
+    }
 
-    private static let recentSearchesKey = "SGRecentSearches"
-    private static let lastPassengerKey = "SGLastPassengerData"
+    private static let recentSearchesKey = StorageKeys.Booking.recentSearches
+    private static let lastPassengerKey = StorageKeys.Booking.lastPassenger
     private static let maxRecentSearches = 8
 
     // MARK: Derived
@@ -126,6 +143,7 @@ final class BookingStore {
     /// Start the booking flow for a deal.
     /// Cleans up any lingering state (including Live Activity) from a previous booking.
     func start(deal: Deal) {
+        Analytics.track(.bookingStarted, properties: ["city": deal.city, "dealId": deal.id])
         invalidatePendingRequests()
         stopOfferExpirationTimer()
 
@@ -199,7 +217,8 @@ final class BookingStore {
                     returnDate: returnDate,
                     passengers: passengerCount,
                     cabinClass: cabinClass.rawValue,
-                    priceHint: deal?.displayPrice
+                    priceHint: deal?.displayPrice,
+                    cachedOfferId: deal?.cachedOfferId
                 )
             )
             guard activeSearchRequestID == requestID else { return }
@@ -306,7 +325,8 @@ final class BookingStore {
                     message: "This fare refreshed while loading seats. You're now seeing the current live price.",
                     feedPrice: oldPrice,
                     bookingPrice: newPrice,
-                    percentDiff: percentDiff
+                    percentDiff: percentDiff,
+                    feedDatesMatch: nil
                 )
             }
         } catch {
@@ -367,7 +387,13 @@ final class BookingStore {
             currentPaymentIntentId = paymentIntent.paymentIntentId
 
             // Configure Stripe PaymentSheet
-            STPAPIClient.shared.publishableKey = Self.stripePublishableKey
+            let stripeKey = Self.stripePublishableKey
+            guard !stripeKey.isEmpty else {
+                paymentError = "Payment is temporarily unavailable. Please try again later."
+                HapticEngine.error()
+                return
+            }
+            STPAPIClient.shared.publishableKey = stripeKey
 
             var config = PaymentSheet.Configuration()
             config.merchantDisplayName = "SoGoJet"
@@ -475,6 +501,10 @@ final class BookingStore {
             step = .confirmed(reference: order.bookingReference)
             HapticEngine.success()
             ReviewPrompter.shared.recordBookingCompleted()
+            Analytics.track(.bookingCompleted, properties: [
+                "reference": order.bookingReference,
+                "destination": searchDestination ?? "",
+            ])
         } catch {
             guard activeCheckoutRequestID == requestID else { return }
             if await recoverFromOrderFailure(error) {
@@ -606,7 +636,8 @@ final class BookingStore {
                     message: payload.error,
                     feedPrice: oldPrice,
                     bookingPrice: newPrice,
-                    percentDiff: percentDiff
+                    percentDiff: percentDiff,
+                    feedDatesMatch: nil
                 )
                 lastTripOptions = [refreshed.offer]
                 step = .trip(options: [refreshed.offer])
@@ -746,9 +777,7 @@ final class BookingStore {
                 content: .init(state: state, staleDate: Date().addingTimeInterval(120))
             )
         } catch {
-            #if DEBUG
-            print("[LiveActivity] Failed to start: \(error)")
-            #endif
+            SGLogger.booking.debug("LiveActivity failed to start: \(error)")
         }
     }
 

@@ -4,6 +4,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
+import { env } from '../utils/env';
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -46,12 +47,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cityStr = escapeHtml(dest.city || cityStr);
         countryStr = escapeHtml(dest.country || '');
         tagline = escapeHtml(dest.tagline || '');
-        imageUrl = encodeURI(dest.image_url || imageUrl);
+        try {
+          const parsedUrl = new URL(dest.image_url || imageUrl);
+          if (parsedUrl.protocol === 'https:') imageUrl = escapeHtml(parsedUrl.href);
+        } catch { /* invalid URL — keep default image */ }
         const rawPrice = dest.live_price ?? dest.flight_price;
-        const markupPercent = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
-        const effectivePrice = rawPrice ? Math.round(rawPrice * (1 + markupPercent / 100)) : null;
+        const effectivePrice = rawPrice ? Math.round(rawPrice * (1 + env.BOOKING_MARKUP_PERCENT / 100)) : null;
         priceStr = effectivePrice ? `$${effectivePrice}` : '';
-        flightDuration = dest.flight_duration || '';
+        flightDuration = escapeHtml(dest.flight_duration || '');
         const hotelPrice = dest.hotel_price_per_night || 0;
         costLevel = hotelPrice <= 60 ? '$' : hotelPrice <= 120 ? '$$' : hotelPrice <= 200 ? '$$$' : '$$$$';
       }
@@ -66,8 +69,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .limit(1);
         if (calendarRows && calendarRows.length > 0) {
           const pd = calendarRows[0];
-          dealTier = (pd.deal_tier as string) || '';
-          savingsPercent = (pd.savings_percent as number) || 0;
+          const dbTier = (pd.deal_tier as string) || '';
+          if (dbTier in TIER_COLORS) dealTier = dbTier;
+          savingsPercent = Math.max(0, Math.min(100, (pd.savings_percent as number) || 0));
         }
       } catch {
         // OK — proceed without deal data
@@ -84,11 +88,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (image) {
     try {
       const parsed = new URL(String(image));
-      if (parsed.protocol === 'https:') imageUrl = encodeURI(String(image));
+      if (parsed.protocol === 'https:') imageUrl = escapeHtml(parsed.href);
     } catch { /* invalid URL — keep default image */ }
   }
-  if (req.query.dealTier) dealTier = String(req.query.dealTier);
-  if (req.query.savingsPercent) savingsPercent = parseInt(String(req.query.savingsPercent), 10) || 0;
+  if (req.query.dealTier) {
+    const tier = String(req.query.dealTier);
+    if (tier in TIER_COLORS) dealTier = tier;
+  }
+  if (req.query.savingsPercent) savingsPercent = Math.max(0, Math.min(100, parseInt(String(req.query.savingsPercent), 10) || 0));
 
   const metaRow = [countryStr, flightDuration, costLevel].filter(Boolean).join('  ·  ');
 

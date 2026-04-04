@@ -112,7 +112,8 @@ struct TripPlanPDFRenderer {
 
         // Date generated
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM d, yyyy"
+        dateFormatter.dateStyle = .long
+        dateFormatter.timeStyle = .none
         let dateStr = "Generated \(dateFormatter.string(from: Date()))"
         let dateAttrs: [NSAttributedString.Key: Any] = [
             .font: fontRegular(11),
@@ -177,7 +178,7 @@ struct TripPlanPDFRenderer {
         // Price (right-aligned)
         let priceText: String
         if let price = deal.displayPrice, price > 0 {
-            priceText = deal.isEstimatedPrice ? "seen at $\(Int(price))" : "$\(Int(price))"
+            priceText = "$\(Int(price))"
         } else {
             priceText = "Check price"
         }
@@ -330,7 +331,8 @@ struct TripPlanPDFRenderer {
 
         // Page info right-aligned
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "M/d/yyyy"
+        dateFormatter.dateStyle = .short
+        dateFormatter.timeStyle = .none
         let dateText = dateFormatter.string(from: Date())
         let dateSize = (dateText as NSString).size(withAttributes: footerAttrs)
         (dateText as NSString).draw(

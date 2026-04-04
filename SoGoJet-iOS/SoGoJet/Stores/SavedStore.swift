@@ -13,7 +13,7 @@ final class SavedStore {
     // MARK: State
     var savedDeals: [Deal] = []
 
-    private let storageKey = "sg_saved_deals"
+    private let storageKey = StorageKeys.Saved.deals
 
     init() {
         loadFromDisk()
@@ -47,6 +47,7 @@ final class SavedStore {
             savedDeals.remove(at: idx)
             saveToDisk()
             deindexFromSpotlight(deal.id)
+            Analytics.track(.dealUnsaved, properties: ["city": deal.city, "dealId": deal.id])
             // Fire-and-forget: sync unsave to backend
             Task {
                 let _: EmptyResponse? = try? await APIClient.shared.fetch(.savedUnsave(dealId: deal.id))
@@ -58,6 +59,7 @@ final class SavedStore {
             indexInSpotlight(deal)
             HapticEngine.success()
             ReviewPrompter.shared.recordSave(totalSavedCount: savedDeals.count)
+            Analytics.track(.dealSaved, properties: ["city": deal.city, "dealId": deal.id])
             // Fire-and-forget: sync save to backend
             Task {
                 let _: EmptyResponse? = try? await APIClient.shared.fetch(.savedSave(dealId: deal.id))
@@ -104,7 +106,7 @@ final class SavedStore {
             departureDate: old.departureDate, returnDate: old.returnDate,
             tripDurationDays: old.tripDurationDays, airline: old.airline,
             priceDirection: old.priceDirection, previousPrice: old.previousPrice,
-            priceDropPercent: old.priceDropPercent, offerJson: old.offerJson,
+            priceDropPercent: old.priceDropPercent, cachedOfferId: old.cachedOfferId, offerJson: old.offerJson,
             offerExpiresAt: old.offerExpiresAt, airlineLogoUrl: old.airlineLogoUrl,
             cheapestDate: old.cheapestDate, cheapestReturnDate: old.cheapestReturnDate,
             affiliateUrl: old.affiliateUrl, priceHistory: old.priceHistory,
@@ -152,9 +154,9 @@ final class SavedStore {
                     }
                 }
             } catch {
-                #if DEBUG
-                print("[SavedStore] syncFromServer failed: \(error.localizedDescription)")
-                #endif
+                SGLogger.saved.debug("syncFromServer failed: \(error.localizedDescription)")
+                // Notify the UI so a toast can be shown
+                NotificationCenter.default.post(name: .sogojetSyncFailed, object: nil)
             }
         }
     }

@@ -5,6 +5,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { z } from 'zod';
+import { sendError } from '../utils/apiResponse';
 
 const subscribeSchema = z.object({
   email: z.string().email().max(254),
@@ -33,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ─── Unsubscribe (GET) ──────────────────────────────────────────
   if (req.method === 'GET' && req.query.action === 'unsubscribe') {
     const email = String(req.query.email || '').toLowerCase().trim();
-    if (!email) return res.status(400).json({ error: 'Email required' });
+    if (!email) return sendError(res, 400, 'VALIDATION_ERROR', 'Email required');
 
     try {
       const { data: existing } = await supabase
@@ -62,22 +63,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 </html>`);
     } catch (err) {
       console.error('[subscribe] Unsubscribe error:', err);
-      return res.status(500).json({ error: 'Internal error' });
+      return sendError(res, 500, 'INTERNAL_ERROR', 'Internal error');
     }
   }
 
   // ─── Subscribe (POST) ──────────────────────────────────────────
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'POST only');
 
   // Rate limit
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 'unknown';
   if (!checkRateLimit(ip)) {
-    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests. Try again later.');
   }
 
   const parsed = subscribeSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid email address' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid email address');
   }
 
   const email = parsed.data.email.toLowerCase().trim();
@@ -120,6 +121,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error('[subscribe] Error:', err);
-    return res.status(500).json({ error: 'Internal error' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Internal error');
   }
 }

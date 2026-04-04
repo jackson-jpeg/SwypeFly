@@ -3,8 +3,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../../services/supabaseServer';
 import { cors } from '../_cors.js';
+import { env } from '../../utils/env';
+import { sendError } from '../../utils/apiResponse';
 
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -17,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Validate destination ID to prevent open redirect
   if (!/^[a-zA-Z0-9_-]{1,64}$/.test(destId)) {
-    return res.status(400).json({ error: 'Invalid destination ID' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid destination ID');
   }
 
   const ua = (req.headers['user-agent'] || '').toLowerCase();

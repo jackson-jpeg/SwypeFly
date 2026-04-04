@@ -3,7 +3,9 @@ import SwiftUI
 struct PassengerForm: View {
     @Environment(BookingStore.self) private var store
     @Environment(AuthStore.self) private var auth
+    @Environment(TravelerStore.self) private var travelerStore
 
+    @State private var showTravelerPicker = false
     @State private var title: PassengerTitle = .mr
     @State private var givenName = ""
     @State private var familyName = ""
@@ -24,14 +26,26 @@ struct PassengerForm: View {
     }
 
     private var isValid: Bool {
-        !givenName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        && !familyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        && !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        && isValidEmail(email)
-        && phone.trimmingCharacters(in: .whitespacesAndNewlines).count >= 5
-        && dateOfBirth < Date()
-        && dobWasChanged
-        && gender != .notSpecified
+        let baseValid = !givenName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !familyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && isValidEmail(email)
+            && phone.trimmingCharacters(in: .whitespacesAndNewlines).count >= 5
+            && dateOfBirth < Date()
+            && dobWasChanged
+            && gender != .notSpecified
+
+        // International flights require passport details
+        if store.isInternational {
+            return baseValid
+                && passportNumber.trimmingCharacters(in: .whitespacesAndNewlines).count >= 5
+                && nationality.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
+        }
+        return baseValid
+    }
+
+    private var isPassportInvalid: Bool {
+        store.isInternational && passportNumber.trimmingCharacters(in: .whitespacesAndNewlines).count < 5
     }
 
     private var isGivenNameInvalid: Bool {
@@ -69,6 +83,9 @@ struct PassengerForm: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 header
+                if auth.isAuthenticated && !travelerStore.travelers.isEmpty {
+                    savedTravelerPicker
+                }
                 travelerTicket
                 identityDeck
                 documentsDeck
@@ -99,6 +116,11 @@ struct PassengerForm: View {
         .onAppear {
             seedFromStoreIfNeeded()
         }
+        .task {
+            if auth.isAuthenticated && travelerStore.travelers.isEmpty {
+                await travelerStore.fetchTravelers()
+            }
+        }
     }
 
     private var header: some View {
@@ -107,6 +129,77 @@ struct PassengerForm: View {
             subtitle: "Enter details as they appear on your passport or ID."
         )
         .padding(.top, Spacing.sm)
+    }
+
+    private var savedTravelerPicker: some View {
+        Menu {
+            ForEach(travelerStore.travelers) { traveler in
+                Button {
+                    loadTraveler(traveler)
+                } label: {
+                    Label(traveler.fullName, systemImage: traveler.isPrimary ? "star.circle.fill" : "person.circle")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "person.crop.rectangle.stack")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Use Saved Traveler")
+                    .font(SGFont.bodyBold(size: 14))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+            }
+            .foregroundStyle(Color.sgYellow)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(Color.sgYellow.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md)
+                    .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
+            )
+        }
+    }
+
+    private func loadTraveler(_ traveler: SavedTraveler) {
+        HapticEngine.success()
+        if let raw = traveler.title,
+           let t = PassengerTitle(rawValue: raw.capitalized) {
+            title = t
+        }
+        givenName = traveler.givenName
+        familyName = traveler.familyName
+        email = traveler.email ?? ""
+        phone = traveler.phoneNumber ?? ""
+        nationality = traveler.nationality
+
+        if let dob = traveler.bornOn, !dob.isEmpty {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd"
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            if let date = fmt.date(from: dob) {
+                dateOfBirth = date
+                dobWasChanged = true
+            }
+        }
+
+        if let g = traveler.gender {
+            switch g.lowercased() {
+            case "male", "m": gender = .male
+            case "female", "f": gender = .female
+            case "other": gender = .other
+            default: break
+            }
+        }
+
+        passportNumber = traveler.passportNumber ?? ""
+        if let exp = traveler.passportExpiry, !exp.isEmpty {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd"
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            if let date = fmt.date(from: exp) {
+                passportExpiry = date
+            }
+        }
     }
 
     private var travelerTicket: some View {
@@ -233,12 +326,19 @@ struct PassengerForm: View {
     private var documentsDeck: some View {
         VintageTerminalPanel(
             title: "Travel Documents",
-            subtitle: "Optional — may be required for international flights.",
-            stamp: "Docs",
-            tone: .ivory
+            subtitle: store.isInternational
+                ? "Required for international flights."
+                : "Optional — may be required for international flights.",
+            stamp: store.isInternational ? "Required" : "Docs",
+            tone: store.isInternational ? .amber : .ivory
         ) {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                fieldShell(label: "Passport number", hint: "Leave blank if you want to finish this booking first and add it later.") {
+                fieldShell(
+                    label: store.isInternational ? "Passport number *" : "Passport number",
+                    hint: store.isInternational
+                        ? (hasAttemptedSubmit && isPassportInvalid ? "⚠ Passport number is required for international flights." : "Required for international travel.")
+                        : "Leave blank if you want to finish this booking first and add it later."
+                ) {
                     TextField("", text: $passportNumber, prompt: Text("123456789").foregroundStyle(Color.sgMuted))
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()

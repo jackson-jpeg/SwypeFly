@@ -49,13 +49,9 @@ enum DealNotificationManager {
 
         do {
             try await center.add(request)
-            #if DEBUG
-            print("[Notifications] Scheduled daily deal: \(deal.city) from $\(deal.price)")
-            #endif
+            SGLogger.notifications.debug("Scheduled daily deal: \(deal.city) from $\(deal.price)")
         } catch {
-            #if DEBUG
-            print("[Notifications] Failed to schedule daily deal: \(error.localizedDescription)")
-            #endif
+            SGLogger.notifications.error("Failed to schedule daily deal: \(error.localizedDescription)")
         }
     }
 

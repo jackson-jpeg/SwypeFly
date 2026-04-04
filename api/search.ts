@@ -1,13 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { searchFlights } from '../services/duffel';
+import type { Offer, OfferRequest } from '@duffel/api/types';
+import {
+  compactOfferJson as sharedCompactOfferJson,
+  getOffersFromResult,
+  sortOffersByPrice,
+} from '../utils/duffelMapper';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { searchQuerySchema, validateRequest } from '../utils/validation';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors';
+import { env, STUB_MODE } from '../utils/env';
+import { STALE_PRICE_MS } from '../utils/config';
+import { sendError } from '../utils/apiResponse';
 
-const STUB_MODE = !process.env.DUFFEL_API_KEY;
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 function withMarkup(price: number): number {
   return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
 }
@@ -27,35 +35,11 @@ function getSearchDates(): { departureDate: string; returnDate: string } {
   };
 }
 
-// ─── Compact Duffel offer for caching ───────────────────────────────────────
-
-function compactOfferJson(offer: Record<string, unknown>): string {
-  const compact = {
-    id: offer.id,
-    total_amount: offer.total_amount,
-    total_currency: offer.total_currency,
-    expires_at: offer.expires_at,
-    slices: ((offer.slices as any[]) || []).map((slice: any) => ({
-      segments: ((slice.segments as any[]) || []).map((seg: any) => ({
-        operating_carrier: {
-          name: seg.operating_carrier?.name,
-          iata_code: seg.operating_carrier?.iata_code,
-        },
-        operating_carrier_flight_number: seg.operating_carrier_flight_number,
-        departing_at: seg.departing_at,
-        arriving_at: seg.arriving_at,
-        origin: { iata_code: seg.origin?.iata_code },
-        destination: { iata_code: seg.destination?.iata_code },
-        aircraft: seg.aircraft ? { name: seg.aircraft.name } : null,
-      })),
-    })),
-  };
-  return JSON.stringify(compact);
-}
+// ─── Compact Duffel offer for caching (delegates to shared mapper) ──────────
 
 // ─── Cache freshness check ─────────────────────────────────────────────────
 
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_MS = STALE_PRICE_MS;
 
 function isFreshCache(doc: Record<string, unknown>): boolean {
   const fetchedAt = doc.fetched_at as string | undefined;
@@ -110,12 +94,12 @@ function buildResponse(doc: Record<string, unknown>, cached: boolean) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   // Validate input
   const validation = validateRequest(searchQuerySchema, req.query);
   if (!validation.success) {
-    return res.status(400).json({ error: validation.error });
+    return sendError(res, 400, 'VALIDATION_ERROR', validation.error);
   }
   const { origin, destination } = validation.data;
 
@@ -124,8 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const rateLimit = checkRateLimit(`search:${ip}`, 10, 60_000);
   if (!rateLimit.allowed) {
     const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000);
-    res.setHeader('Retry-After', String(retryAfter));
-    return res.status(429).json({ error: 'Rate limited', retryAfter });
+    return sendError(res, 429, 'RATE_LIMITED', 'Rate limited', { retryAfter });
   }
 
   try {
@@ -149,7 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if ((cachedDocs ?? []).length > 0) {
         return res.status(200).json(buildResponse(cachedDocs![0], true));
       }
-      return res.status(404).json({ error: 'No flights found (search unavailable)' });
+      return sendError(res, 404, 'NOT_FOUND', 'No flights found (search unavailable)');
     }
 
     // Cache miss — perform live Duffel search
@@ -163,16 +146,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       cabinClass: 'economy',
     });
 
-    const offers = (offerResponse as any)?.data ?? [];
+    const offers = getOffersFromResult(offerResponse as OfferRequest);
     if (!offers.length) {
-      return res.status(404).json({ error: 'No flights found' });
+      return sendError(res, 404, 'NOT_FOUND', 'No flights found');
     }
 
     // Find cheapest offer
-    const cheapest = offers.reduce((best: any, offer: any) => {
-      const price = parseFloat(offer.total_amount);
-      return price < parseFloat(best.total_amount) ? offer : best;
-    }, offers[0]);
+    const sorted = sortOffersByPrice(offers);
+    const cheapest = sorted[0];
 
     const outboundSlice = cheapest.slices?.[0];
     const firstSeg = outboundSlice?.segments?.[0];
@@ -191,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       source: 'duffel',
       departure_date: departureDate,
       return_date: returnDate,
-      offer_json: compactOfferJson(cheapest),
+      offer_json: sharedCompactOfferJson(cheapest),
       offer_expires_at: cheapest.expires_at || '',
       fetched_at: new Date().toISOString(),
     };
@@ -221,6 +202,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(buildResponse(responseDoc, false));
   } catch (err) {
     logApiError('search', err);
-    return res.status(500).json({ error: 'Search failed' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Search failed');
   }
 }

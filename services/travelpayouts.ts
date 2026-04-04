@@ -1,4 +1,6 @@
-const TRAVELPAYOUTS_TOKEN = process.env.TRAVELPAYOUTS_API_TOKEN || '';
+import { env } from '../utils/env';
+
+const TRAVELPAYOUTS_TOKEN = env.TRAVELPAYOUTS_API_TOKEN || '';
 const BASE_URL = 'https://api.travelpayouts.com';
 
 interface CityDirectionResult {

@@ -39,6 +39,7 @@ struct PriceDiscrepancy: Codable, Hashable, Sendable {
     let feedPrice: Double
     let bookingPrice: Double
     let percentDiff: Int
+    let feedDatesMatch: Bool?  // nil for backwards compat
 }
 
 enum BookingCabinClass: String, Codable, CaseIterable, Sendable {
@@ -333,6 +334,137 @@ struct SeatMap: Codable, Sendable {
     let exitRows: [Int]
     let aisleAfterColumns: [String]
     let rows: [SeatRow]
+
+    // MARK: - Layout-aware seat classification
+
+    /// Columns that sit next to an aisle (immediately before or after an aisle break).
+    var aisleColumns: Set<String> {
+        let sorted = columns.map { $0.uppercased() }.sorted()
+        let breaks = Set(aisleAfterColumns.map { $0.uppercased() })
+        var result = Set<String>()
+        for (i, col) in sorted.enumerated() {
+            if breaks.contains(col) {
+                result.insert(col)                        // left of aisle
+                if i + 1 < sorted.count {
+                    result.insert(sorted[i + 1])          // right of aisle
+                }
+            }
+        }
+        return result
+    }
+
+    /// Columns at the outer edges of the cabin (first and last in sorted order).
+    var windowColumns: Set<String> {
+        let sorted = columns.map { $0.uppercased() }.sorted()
+        var result = Set<String>()
+        if let first = sorted.first { result.insert(first) }
+        if let last = sorted.last { result.insert(last) }
+        return result
+    }
+
+    /// Determine the seat type for a given column using the actual cabin layout.
+    func seatType(column: String, extraLegroom: Bool) -> SeatInfo.SeatType {
+        if extraLegroom { return .extra }
+        let col = column.uppercased()
+        if windowColumns.contains(col) { return .window }
+        if aisleColumns.contains(col) { return .aisle }
+        return .middle
+    }
+
+    // MARK: - Smart seat scoring
+
+    /// Preference for seat recommendation.
+    enum SeatPreference: String, Codable, Sendable {
+        case window, aisle, cheapest, legroom, frontRow
+    }
+
+    /// Score every available seat and return them ranked best-first.
+    /// Higher score = better seat.
+    func rankedSeats(preference: SeatPreference = .aisle) -> [SeatInfo] {
+        let totalRows = rows.count
+        guard totalRows > 0 else { return [] }
+        let exitSet = Set(exitRows)
+        let allAvailable = rows.flatMap { row in
+            row.seats.filter(\.available).map { (row.rowNumber, $0) }
+        }
+        guard !allAvailable.isEmpty else { return [] }
+
+        // Price stats for normalization
+        let prices = allAvailable.compactMap { $0.1.price }
+        let minPrice = prices.min() ?? 0
+        let maxPrice = prices.max() ?? 1
+        let priceRange = max(maxPrice - minPrice, 1)
+
+        let scored: [(SeatInfo, Double)] = allAvailable.map { rowNum, seat in
+            let type = seatType(column: seat.column, extraLegroom: seat.extraLegroom)
+            var score = 50.0 // base score
+
+            // 1) Position preference (0–30 pts)
+            switch preference {
+            case .window:
+                if type == .window { score += 30 }
+                else if type == .aisle { score += 10 }
+                // middle gets 0
+            case .aisle:
+                if type == .aisle { score += 30 }
+                else if type == .window { score += 10 }
+            case .legroom:
+                if seat.extraLegroom { score += 30 }
+                if type == .aisle { score += 10 }
+                else if type == .window { score += 8 }
+            case .cheapest:
+                // handled by price bonus below
+                break
+            case .frontRow:
+                // handled by row bonus below
+                if type == .aisle { score += 10 }
+                else if type == .window { score += 8 }
+            }
+
+            // 2) Row position (0–20 pts) — front rows are better (faster deplane)
+            let rowIndex = rows.firstIndex { $0.rowNumber == rowNum } ?? totalRows
+            let frontBonus = Double(totalRows - rowIndex) / Double(totalRows) * 20
+            score += frontBonus
+            if preference == .frontRow { score += frontBonus } // double bonus
+
+            // 3) Exit row proximity (0–10 pts) — near exit = more legroom, faster exit
+            if exitSet.contains(rowNum) {
+                score += 10
+            } else {
+                let minDist = exitSet.map { abs($0 - rowNum) }.min() ?? totalRows
+                if minDist <= 2 { score += 5 }
+            }
+
+            // 4) Extra legroom bonus (0–15 pts)
+            if seat.extraLegroom { score += 15 }
+
+            // 5) Price value (0–15 pts) — cheaper is better
+            if let price = seat.price {
+                let normalized = (price - minPrice) / priceRange
+                score += (1.0 - normalized) * 15
+            } else {
+                score += 15 // free seat = best price
+            }
+            if preference == .cheapest {
+                // Additional 20 pts for cheapest preference
+                if let price = seat.price {
+                    let normalized = (price - minPrice) / priceRange
+                    score += (1.0 - normalized) * 20
+                } else {
+                    score += 20
+                }
+            }
+
+            // 6) Avoid middle seats (penalty)
+            if type == .middle { score -= 15 }
+
+            return (seat, score)
+        }
+
+        return scored
+            .sorted { $0.1 > $1.1 }
+            .map(\.0)
+    }
 }
 
 struct SeatRow: Codable, Sendable {
@@ -366,18 +498,15 @@ struct SeatInfo: Codable, Identifiable, Hashable, Sendable {
         rawPrice > 0 ? rawPrice : nil
     }
 
+    /// Seat type — requires SeatMap context for accurate detection.
+    /// Use `seatMap.seatType(column:extraLegroom:)` when a SeatMap is available.
+    /// This fallback uses common 3-3 layout assumptions.
     var type: SeatType {
-        if extraLegroom {
-            return .extra
-        }
-
+        if extraLegroom { return .extra }
         switch column.uppercased() {
-        case "A", "F":
-            return .window
-        case "C", "D":
-            return .aisle
-        default:
-            return .middle
+        case "A", "F", "K": return .window
+        case "C", "D", "G", "H": return .aisle
+        default: return .middle
         }
     }
 
@@ -404,6 +533,117 @@ struct BookedPassenger: Codable, Hashable, Sendable {
     let id: String
     let name: String
     let seatDesignator: String?
+}
+
+// MARK: - Booking History
+
+struct BookingHistoryResponse: Codable, Sendable {
+    let bookings: [BookingHistoryItem]
+}
+
+struct BookingHistoryItem: Codable, Identifiable, Sendable {
+    let id: String
+    let duffelOrderId: String
+    let status: String
+    let totalAmount: Double
+    let currency: String
+    let passengerCount: Int
+    let destinationCity: String
+    let destinationIata: String
+    let originIata: String
+    let departureDate: String
+    let returnDate: String
+    let airline: String
+    let bookingReference: String
+    let createdAt: String
+    let passengers: [BookingHistoryPassenger]
+
+    /// True if the departure date is in the future.
+    var isUpcoming: Bool {
+        guard let date = Self.dateFormatter.date(from: departureDate) else { return false }
+        return date > Date()
+    }
+
+    /// Formatted departure date for display (e.g. "Apr 15, 2026").
+    var formattedDepartureDate: String {
+        guard let date = Self.dateFormatter.date(from: departureDate) else { return departureDate }
+        return Self.displayFormatter.string(from: date)
+    }
+
+    /// Formatted return date for display.
+    var formattedReturnDate: String? {
+        guard !returnDate.isEmpty,
+              let date = Self.dateFormatter.date(from: returnDate) else { return nil }
+        return Self.displayFormatter.string(from: date)
+    }
+
+    /// Formatted price for display.
+    var formattedPrice: String {
+        let symbol = currency == "USD" ? "$" : currency
+        if totalAmount == totalAmount.rounded() {
+            return "\(symbol)\(Int(totalAmount))"
+        }
+        return String(format: "%@%.2f", symbol, totalAmount)
+    }
+
+    /// Status display info.
+    var statusInfo: (label: String, color: String) {
+        switch status.lowercased() {
+        case "confirmed":
+            return ("Confirmed", "green")
+        case "cancelled", "canceled":
+            return ("Cancelled", "red")
+        case "schedule_changed":
+            return ("Schedule Changed", "yellow")
+        case "pending":
+            return ("Pending", "muted")
+        default:
+            return (status.capitalized, "muted")
+        }
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    private static let displayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
+        return f
+    }()
+}
+
+struct BookingHistoryPassenger: Codable, Sendable {
+    let givenName: String
+    let familyName: String
+    let email: String
+}
+
+// MARK: - Flight Status
+
+struct FlightStatusResponse: Codable, Sendable {
+    let bookingId: String
+    let status: String
+    let segments: [FlightStatusSegment]
+    let lastUpdated: String
+}
+
+struct FlightStatusSegment: Codable, Identifiable, Sendable {
+    var id: String { "\(origin)-\(destination)-\(flightNumber)" }
+    let flightNumber: String
+    let origin: String
+    let destination: String
+    let scheduledDeparture: String
+    let estimatedDeparture: String?
+    let scheduledArrival: String?
+    let estimatedArrival: String?
+    let gate: String?
+    let terminal: String?
+    let delayMinutes: Int?
+    let status: String
 }
 
 // MARK: - Helpers

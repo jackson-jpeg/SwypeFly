@@ -381,15 +381,10 @@ struct ShareCardView: View {
 
     private var priceBadge: some View {
         VStack(spacing: 4) {
-            if deal.hasPrice && deal.isEstimatedPrice {
-                Text("seen at")
+            if deal.hasPrice {
+                Text("from")
                     .font(.system(size: isStory ? 16 : 14, weight: .medium))
                     .foregroundStyle(.white.opacity(0.6))
-            }
-            if deal.isEstimatedPrice, let freshness = deal.priceFreshnessLabel {
-                Text(freshness)
-                    .font(.system(size: isStory ? 12 : 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.4))
             }
             HStack(spacing: 6) {
                 if deal.hasPrice {

@@ -92,9 +92,7 @@ enum FareDropMonitor {
             center.add(request)
         }
 
-        #if DEBUG
-        print("[FareDrops] Notified \(drops.count) drops")
-        #endif
+        SGLogger.notifications.debug("Notified \(drops.count) drops")
     }
 
     // MARK: - Background Handler
@@ -106,7 +104,7 @@ enum FareDropMonitor {
         let origin = SharedDefaults.departureCode
 
         // Load saved deals from UserDefaults
-        guard let data = UserDefaults.standard.data(forKey: "sg_saved_deals"),
+        guard let data = UserDefaults.standard.data(forKey: StorageKeys.Saved.deals),
               let deals = try? JSONDecoder().decode([Deal].self, from: data),
               !deals.isEmpty else {
             task.setTaskCompleted(success: true)

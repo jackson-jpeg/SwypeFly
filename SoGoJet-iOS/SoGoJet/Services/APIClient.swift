@@ -45,7 +45,8 @@ actor APIClient {
             returnDate: String?,
             passengers: Int,
             cabinClass: String?,
-            priceHint: Double?
+            priceHint: Double?,
+            cachedOfferId: String?
         )
         case bookingOffer(
             offerId: String,
@@ -72,6 +73,21 @@ actor APIClient {
         case savedList
         case savedSave(dealId: String)
         case savedUnsave(dealId: String)
+        case profile
+        case updateProfile(firstName: String, lastName: String)
+        case bookingHistory
+        case flightStatus(bookingId: String)
+        case travelerList
+        case travelerCreate(TravelerCreateRequest)
+        case travelerUpdate(id: String, TravelerCreateRequest)
+        case travelerDelete(id: String)
+        case aiTripPlan(TripPlanRequest)
+        case hotelSearch(HotelSearchRequest)
+        case hotelQuote(HotelQuoteRequest)
+        case hotelBook(HotelBookRequest)
+        case alertList
+        case alertDelete(id: String)
+        case diagnosticsReport(Data)
 
         var path: String {
             switch self {
@@ -95,6 +111,21 @@ actor APIClient {
                 case .savedList,
                      .savedSave,
                      .savedUnsave:    return "/saved"
+                case .profile,
+                     .updateProfile:  return "/auth"
+                case .bookingHistory: return "/booking"
+                case .flightStatus:   return "/booking"
+                case .travelerList,
+                     .travelerCreate,
+                     .travelerUpdate,
+                     .travelerDelete: return "/travelers"
+                case .aiTripPlan:     return "/ai/trip-plan"
+                case .hotelSearch,
+                     .hotelQuote,
+                     .hotelBook:      return "/booking"
+                case .alertList,
+                     .alertDelete:    return "/alerts"
+                case .diagnosticsReport: return "/diagnostics"
             }
         }
 
@@ -109,9 +140,21 @@ actor APIClient {
                  .auth,
                  .authOAuth,
                  .savedSave,
-                 .savedUnsave:
+                 .savedUnsave,
+                 .travelerCreate,
+                 .aiTripPlan,
+                 .hotelSearch,
+                 .hotelQuote,
+                 .hotelBook,
+                 .diagnosticsReport:
                 return "POST"
-            case .deleteAccount:
+            case .updateProfile:
+                return "PATCH"
+            case .travelerUpdate:
+                return "PATCH"
+            case .deleteAccount,
+                 .travelerDelete,
+                 .alertDelete:
                 return "DELETE"
             default:
                 return "GET"
@@ -198,6 +241,54 @@ actor APIClient {
             case .savedUnsave:
                 return [URLQueryItem(name: "action", value: "unsave")]
 
+            case .profile:
+                return [URLQueryItem(name: "action", value: "profile")]
+
+            case .updateProfile:
+                return [URLQueryItem(name: "action", value: "profile")]
+
+            case .bookingHistory:
+                return [URLQueryItem(name: "action", value: "history")]
+
+            case let .flightStatus(bookingId):
+                return [
+                    URLQueryItem(name: "action", value: "flight-status"),
+                    URLQueryItem(name: "bookingId", value: bookingId),
+                ]
+
+            case .travelerList:
+                return [URLQueryItem(name: "action", value: "list")]
+
+            case .travelerCreate:
+                return [URLQueryItem(name: "action", value: "create")]
+
+            case let .travelerUpdate(id, _):
+                return [
+                    URLQueryItem(name: "action", value: "update"),
+                    URLQueryItem(name: "id", value: id),
+                ]
+
+            case let .travelerDelete(id):
+                return [
+                    URLQueryItem(name: "action", value: "delete"),
+                    URLQueryItem(name: "id", value: id),
+                ]
+
+            case .hotelSearch:
+                return [URLQueryItem(name: "action", value: "hotel-search")]
+
+            case .hotelQuote:
+                return [URLQueryItem(name: "action", value: "hotel-quote")]
+
+            case .hotelBook:
+                return [URLQueryItem(name: "action", value: "hotel-book")]
+
+            case .alertList:
+                return [URLQueryItem(name: "action", value: "list")]
+
+            case .alertDelete:
+                return [URLQueryItem(name: "action", value: "delete")]
+
             default:
                 return []
             }
@@ -216,7 +307,7 @@ actor APIClient {
             case let .subscribe(email):
                 return try? JSONEncoder().encode(["email": email])
 
-            case let .bookingSearch(origin, destination, date, returnDate, passengers, cabinClass, priceHint):
+            case let .bookingSearch(origin, destination, date, returnDate, passengers, cabinClass, priceHint, cachedOfferId):
                 var body: [String: Any] = [
                     "origin": origin,
                     "destination": destination,
@@ -231,6 +322,9 @@ actor APIClient {
                 }
                 if let priceHint {
                     body["priceHint"] = priceHint
+                }
+                if let cachedOfferId {
+                    body["cachedOfferId"] = cachedOfferId
                 }
                 return try? JSONSerialization.data(withJSONObject: body)
 
@@ -268,6 +362,36 @@ actor APIClient {
             case let .savedUnsave(dealId):
                 return try? JSONEncoder().encode(["dealId": dealId])
 
+            case let .updateProfile(firstName, lastName):
+                return try? JSONSerialization.data(withJSONObject: [
+                    "firstName": firstName,
+                    "lastName": lastName,
+                ])
+
+            case let .travelerCreate(request):
+                return try? JSONEncoder().encode(request)
+
+            case let .travelerUpdate(_, request):
+                return try? JSONEncoder().encode(request)
+
+            case let .aiTripPlan(request):
+                return try? JSONEncoder().encode(request)
+
+            case let .hotelSearch(request):
+                return try? JSONEncoder().encode(request)
+
+            case let .hotelQuote(request):
+                return try? JSONEncoder().encode(request)
+
+            case let .hotelBook(request):
+                return try? JSONEncoder().encode(request)
+
+            case let .alertDelete(id):
+                return try? JSONEncoder().encode(["alertId": id])
+
+            case let .diagnosticsReport(payload):
+                return payload
+
             default:
                 return nil
             }
@@ -295,9 +419,7 @@ actor APIClient {
         for attempt in 0...retries {
             // Delay before retry attempts
             if attempt > 0 {
-                #if DEBUG
-                print("[APIClient] Retry attempt \(attempt) for \(endpoint.path)")
-                #endif
+                SGLogger.api.debug("Retry attempt \(attempt) for \(endpoint.path)")
                 try await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)
             }
 
@@ -399,13 +521,67 @@ actor APIClient {
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
-            #if DEBUG
-            print("⚠️ [APIClient] Decoding \(T.self) failed: \(error)")
+            SGLogger.api.warning("Decoding \(T.self) failed: \(error)")
             if let json = String(data: data.prefix(500), encoding: .utf8) {
-                print("⚠️ [APIClient] Response preview: \(json)")
+                SGLogger.api.warning("Response preview: \(json)")
             }
-            #endif
             throw APIError.decodingFailed(error)
+        }
+    }
+
+    // MARK: Streaming Fetch (plain text)
+
+    /// Stream plain text from the trip plan endpoint, yielding chunks as they arrive.
+    func streamTripPlan(_ request: TripPlanRequest) throws -> AsyncThrowingStream<String, Error> {
+        let url = try buildURL(for: .aiTripPlan(request))
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("SoGoJet-iOS/1.0", forHTTPHeaderField: "User-Agent")
+        if let token = APIClient.authToken {
+            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        urlRequest.httpBody = try? JSONEncoder().encode(request)
+
+        let session = self.session
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let (bytes, response) = try await session.bytes(for: urlRequest)
+                    guard let http = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: APIError.invalidResponse)
+                        return
+                    }
+                    guard (200...299).contains(http.statusCode) else {
+                        var body = ""
+                        for try await line in bytes.lines { body += line }
+                        continuation.finish(throwing: APIError.httpError(statusCode: http.statusCode, body: body))
+                        return
+                    }
+                    var buffer = Data()
+                    for try await byte in bytes {
+                        if Task.isCancelled { break }
+                        buffer.append(byte)
+                        // Yield when we have a reasonable chunk or hit a newline
+                        if byte == UInt8(ascii: "\n") || buffer.count >= 64 {
+                            if let text = String(data: buffer, encoding: .utf8) {
+                                continuation.yield(text)
+                            }
+                            buffer.removeAll(keepingCapacity: true)
+                        }
+                    }
+                    // Flush remaining buffer
+                    if !buffer.isEmpty, let text = String(data: buffer, encoding: .utf8) {
+                        continuation.yield(text)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in
+                task.cancel()
+            }
         }
     }
 
@@ -426,7 +602,32 @@ actor APIClient {
     }
 }
 
-// MARK: - API Error
+// MARK: - Profile Response
+
+struct ProfileResponse: Codable, Sendable {
+    let userId: String
+    let firstName: String?
+    let lastName: String?
+    let name: String?
+    let email: String?
+    let imageUrl: String?
+    let createdAt: String?
+}
+
+// MARK: - Traveler Request
+
+struct TravelerCreateRequest: Codable, Sendable {
+    let givenName: String
+    let familyName: String
+    let bornOn: String?
+    let gender: String?
+    let title: String?
+    let email: String?
+    let phoneNumber: String?
+    let passportNumber: String?
+    let passportExpiry: String?
+    let nationality: String?
+}
 
 // MARK: - Empty Response (for endpoints that return {} or minimal JSON)
 

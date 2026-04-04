@@ -1,5 +1,6 @@
 // Dynamic sitemap generator — pulls active destinations from Supabase
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { sendError } from '../utils/apiResponse';
 import { supabase, TABLES } from '../services/supabaseServer';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
@@ -60,6 +61,6 @@ ${destUrls.join('\n')}
     return res.status(200).send(sitemap);
   } catch (err) {
     console.error('[sitemap] Error generating sitemap:', err);
-    return res.status(500).send('Error generating sitemap');
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Error generating sitemap');
   }
 }

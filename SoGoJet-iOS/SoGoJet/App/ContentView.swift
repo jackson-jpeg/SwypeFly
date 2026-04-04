@@ -10,10 +10,15 @@ struct ContentView: View {
     @Environment(NetworkMonitor.self) private var network
     @Environment(AuthStore.self) private var auth
     @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
+    @Environment(TravelerStore.self) private var travelerStore
 
     var body: some View {
         ZStack {
-            if !settings.hasOnboarded {
+            if RemoteConfig.shared.maintenanceMode {
+                maintenanceView
+            } else if RemoteConfig.shared.requiresUpdate {
+                forceUpdateView
+            } else if !settings.hasOnboarded {
                 // New users: onboarding first, no auth gate
                 OnboardingView()
             } else {
@@ -27,6 +32,58 @@ struct ContentView: View {
         .overlay { ToastOverlay() }
     }
 
+    // MARK: - Maintenance Mode
+
+    private var maintenanceView: some View {
+        VStack(spacing: Spacing.lg) {
+            Image(systemName: "wrench.and.screwdriver")
+                .font(.system(size: 48))
+                .foregroundStyle(Color.sgYellow)
+            Text(String(localized: "maintenance.title"))
+                .font(SGFont.display(size: 28))
+                .foregroundStyle(Color.sgWhite)
+            Text(RemoteConfig.shared.maintenanceMessage.isEmpty
+                 ? String(localized: "maintenance.default_message")
+                 : RemoteConfig.shared.maintenanceMessage)
+                .font(SGFont.body(size: 15))
+                .foregroundStyle(Color.sgWhiteDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Spacing.xl)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.sgBg)
+    }
+
+    // MARK: - Force Update
+
+    private var forceUpdateView: some View {
+        VStack(spacing: Spacing.lg) {
+            Image(systemName: "arrow.down.app")
+                .font(.system(size: 48))
+                .foregroundStyle(Color.sgYellow)
+            Text(String(localized: "update.title"))
+                .font(SGFont.display(size: 28))
+                .foregroundStyle(Color.sgWhite)
+            Text(String(localized: "update.message"))
+                .font(SGFont.body(size: 15))
+                .foregroundStyle(Color.sgWhiteDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Spacing.xl)
+            if let url = URL(string: RemoteConfig.shared.forceUpdateUrl), !RemoteConfig.shared.forceUpdateUrl.isEmpty {
+                Link(destination: url) {
+                    Text(String(localized: "update.button"))
+                        .font(SGFont.bodyBold(size: 16))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, Spacing.xl)
+                        .padding(.vertical, Spacing.md)
+                        .background(Color.sgYellow, in: Capsule())
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.sgBg)
+    }
+
     // MARK: - Offline Banner
 
     @ViewBuilder
@@ -35,7 +92,7 @@ struct ContentView: View {
             HStack(spacing: 6) {
                 Image(systemName: "wifi.slash")
                     .font(.caption)
-                Text("No internet connection")
+                Text(String(localized: "network.offline"))
                     .font(.caption.weight(.medium))
             }
             .foregroundStyle(.black)
@@ -130,7 +187,7 @@ struct ContentView: View {
                 .environment(toastManager)
                 .environment(recentlyViewedStore)
                 .presentationDetents([.large])
-                .presentationDragIndicator(.hidden)
+                .presentationDragIndicator(.visible)
                 .presentationBackground(Color.sgBg)
                 .presentationCornerRadius(20)
         case .search:
@@ -172,6 +229,7 @@ struct ContentView: View {
                 .environment(toastManager)
                 .environment(auth)
                 .environment(network)
+                .environment(travelerStore)
         case .onboarding:
             OnboardingView()
                 .environment(settings)

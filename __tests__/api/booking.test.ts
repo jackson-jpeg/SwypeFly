@@ -31,6 +31,19 @@ jest.mock('../../utils/clerkAuth', () => ({
   verifyClerkToken: jest.fn(),
 }));
 
+// Mock env module so we can control STUB_MODE per test
+const mockEnv: Record<string, unknown> = {
+  APPWRITE_ENDPOINT: 'https://test.appwrite.io/v1',
+  APPWRITE_PROJECT_ID: 'test-project',
+  APPWRITE_API_KEY: 'test-key',
+  BOOKING_MARKUP_PERCENT: 3,
+};
+let mockStubMode = true;
+jest.mock('../../utils/env', () => ({
+  get env() { return mockEnv; },
+  get STUB_MODE() { return mockStubMode; },
+}));
+
 // Must import after mocks are set up
 import handler from '../../api/booking';
 import { verifyClerkToken } from '../../utils/clerkAuth';
@@ -65,13 +78,10 @@ describe('POST /api/booking', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetRateLimits();
-    process.env.APPWRITE_ENDPOINT = 'https://test.appwrite.io/v1';
-    process.env.APPWRITE_PROJECT_ID = 'test-project';
-    process.env.APPWRITE_API_KEY = 'test-key';
     // Ensure STUB_MODE is active (no Duffel key)
-    delete process.env.DUFFEL_API_KEY;
+    mockStubMode = true;
     // Ensure not production so stub mode allows payment-intent/create-order
-    process.env.NODE_ENV = 'test';
+    mockEnv.NODE_ENV = 'test';
   });
 
   // ─── Missing/invalid action ──────────────────────────────────────────────
@@ -81,7 +91,10 @@ describe('POST /api/booking', () => {
     const res = makeRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Missing or invalid action parameter' });
+    expect(res.json).toHaveBeenCalledWith({
+      ok: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Missing or invalid action parameter' },
+    });
   });
 
   it('returns 400 for an invalid action', async () => {
@@ -387,7 +400,10 @@ describe('POST /api/booking', () => {
       const res = makeRes();
       await handler(req, res);
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      expect(res.json).toHaveBeenCalledWith({
+        ok: false,
+        error: { code: 'UNAUTHORIZED', message: 'Unauthorized' },
+      });
     });
 
     it('returns order details when authenticated', async () => {
@@ -450,7 +466,7 @@ describe('POST /api/booking', () => {
 
   describe('production stub mode guard', () => {
     it('returns 503 for payment-intent in production stub mode', async () => {
-      process.env.NODE_ENV = 'production';
+      mockEnv.NODE_ENV = 'production';
 
       const req = makeReq({
         method: 'POST',
@@ -462,11 +478,14 @@ describe('POST /api/booking', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(503);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Booking service not configured' });
+      expect(res.json).toHaveBeenCalledWith({
+        ok: false,
+        error: { code: 'SERVICE_UNAVAILABLE', message: 'Booking service not configured' },
+      });
     });
 
     it('returns 503 for create-order in production stub mode', async () => {
-      process.env.NODE_ENV = 'production';
+      mockEnv.NODE_ENV = 'production';
 
       const req = makeReq({
         method: 'POST',
@@ -478,7 +497,10 @@ describe('POST /api/booking', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(503);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Booking service not configured' });
+      expect(res.json).toHaveBeenCalledWith({
+        ok: false,
+        error: { code: 'SERVICE_UNAVAILABLE', message: 'Booking service not configured' },
+      });
     });
   });
 });

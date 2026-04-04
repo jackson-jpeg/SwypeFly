@@ -126,6 +126,15 @@ struct TripView: View {
             && Calendar.current.isDate(returnDate, inSameDayAs: recommended.returnDate)
     }
 
+    /// Whether the current search dates match the deal's advertised price dates.
+    private var isUsingDealDates: Bool {
+        guard let dealDep = deal.bestDepartureDate?.parsedISODate,
+              let dealRet = deal.bestReturnDate?.parsedISODate else { return false }
+        let cal = Calendar.current
+        return cal.isDate(departureDate, inSameDayAs: dealDep)
+            && cal.isDate(returnDate, inSameDayAs: dealRet)
+    }
+
     private var routeSummary: String {
         "\(effectiveOriginCode) to \(deal.iataCode)"
     }
@@ -281,6 +290,35 @@ struct TripView: View {
                     )
                 }
 
+                // Show deal-dates hint when user has changed away from advertised dates
+                if !isUsingDealDates, deal.bestDepartureDate != nil, let price = deal.displayPrice, price > 0 {
+                    Button {
+                        HapticEngine.light()
+                        applyDealRecommendedWindow()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "tag.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Use deal dates for $\(Int(price))")
+                                .font(.system(size: 13, weight: .semibold))
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(Color.green.opacity(0.85))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+                }
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: Spacing.sm) {
                         statChip(label: "Stay", value: "\(tripLengthDays) days", color: Color.sgWhiteDim)
@@ -294,6 +332,7 @@ struct TripView: View {
                     }
                 }
             }
+            .animation(.easeInOut(duration: 0.25), value: isUsingDealDates)
 
             if showAdvancedSearch {
                 quickSearchControls
@@ -311,6 +350,52 @@ struct TripView: View {
                         ForEach(BookingCabinClass.allCases, id: \.self) { cabinClass in
                             cabinChip(for: cabinClass)
                         }
+                    }
+                }
+
+                // Passenger count
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Passengers")
+                            .font(SGFont.bodyBold(size: 12))
+                            .foregroundStyle(Color.sgMuted)
+                            .textCase(.uppercase)
+                            .tracking(1)
+                        Text("Adults")
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgWhiteDim)
+                    }
+
+                    Spacer()
+
+                    HStack(spacing: Spacing.md) {
+                        Button {
+                            if store.passengerCount > 1 { store.passengerCount -= 1 }
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(store.passengerCount > 1 ? Color.sgWhite : Color.sgMuted)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(store.passengerCount <= 1)
+                        .accessibilityLabel("Decrease passenger count")
+
+                        Text("\(store.passengerCount)")
+                            .font(SGFont.display(size: 20))
+                            .foregroundStyle(Color.sgWhite)
+                            .frame(minWidth: 24)
+                            .multilineTextAlignment(.center)
+
+                        Button {
+                            if store.passengerCount < 9 { store.passengerCount += 1 }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(store.passengerCount < 9 ? Color.sgYellow : Color.sgMuted)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(store.passengerCount >= 9)
+                        .accessibilityLabel("Increase passenger count")
                     }
                 }
             }
@@ -1558,6 +1643,12 @@ struct TripView: View {
 
                 Spacer()
 
+                if isUsingDealDates {
+                    Label("Price match", systemImage: "checkmark.seal.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.green)
+                }
+
                 Text("$\(Int(offer.price))")
                     .font(SGFont.price)
                     .foregroundStyle(Color.sgYellow)
@@ -2096,6 +2187,10 @@ struct TripView: View {
             "info.circle.fill"
         }
 
+        let datesNote: String? = discrepancy.feedDatesMatch == false
+            ? "Card price was for different dates."
+            : nil
+
         return HStack(alignment: .top, spacing: Spacing.sm) {
             Image(systemName: iconName)
                 .font(.system(size: 13, weight: .semibold))
@@ -2106,9 +2201,15 @@ struct TripView: View {
                     .font(SGFont.bodyBold(size: 13))
                     .foregroundStyle(Color.sgWhite)
 
-                Text("Seen at $\(Int(discrepancy.feedPrice)) · Live from $\(Int(discrepancy.bookingPrice))")
+                Text("Was $\(Int(discrepancy.feedPrice)) · Now $\(Int(discrepancy.bookingPrice))")
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
+
+                if let note = datesNote {
+                    Text(note)
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgOrange)
+                }
             }
 
             Spacer(minLength: 0)
@@ -2126,8 +2227,8 @@ struct TripView: View {
         let color: Color = dropped ? .sgGreen : .sgYellow
         let icon = dropped ? "arrow.down.circle.fill" : "info.circle.fill"
         let message = dropped
-            ? "Price dropped! Live fares start below the last seen price."
-            : "Live fares from $\(Int(livePrice))"
+            ? "Price dropped! Fares are now cheaper than when you saw this deal."
+            : "Current fares from $\(Int(livePrice))"
 
         return HStack(alignment: .top, spacing: Spacing.sm) {
             Image(systemName: icon)
@@ -2139,7 +2240,7 @@ struct TripView: View {
                     .font(SGFont.bodyBold(size: 13))
                     .foregroundStyle(Color.sgWhite)
 
-                Text("Seen at $\(Int(feedPrice)) · Live from $\(Int(livePrice))")
+                Text("Was $\(Int(feedPrice)) · Now $\(Int(livePrice))")
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             }

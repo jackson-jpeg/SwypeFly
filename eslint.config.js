@@ -42,8 +42,15 @@ module.exports = [
       ...tsPlugin.configs.recommended.rules,
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  // Tests: keep `any` as a warning during transition
+  {
+    files: ['__tests__/**/*.ts', '__tests__/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
   // Terracotta guard: #D4734A may only appear in theme.ts and error-related contexts

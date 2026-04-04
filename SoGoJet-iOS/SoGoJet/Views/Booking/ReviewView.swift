@@ -1,13 +1,16 @@
 import SwiftUI
 import LocalAuthentication
+import AuthenticationServices
 import StripePaymentSheet
 
 struct ReviewView: View {
     @Environment(BookingStore.self) private var store
     @Environment(AuthStore.self) private var auth
 
-    @State private var showSignInRequired = false
+    @State private var showSignInSheet = false
     @State private var isPreparingPayment = false
+    /// When true, automatically proceed to payment after sign-in completes.
+    @State private var proceedAfterSignIn = false
 
     private var offer: TripOption? {
         store.selectedOffer
@@ -21,11 +24,18 @@ struct ReviewView: View {
                 reviewContent
             }
         }
-        .alert("Sign In Required", isPresented: $showSignInRequired) {
-            Button("OK", role: .cancel) {}
-                .accessibilityLabel("Dismiss sign in required alert")
-        } message: {
-            Text("You need to sign in before completing a purchase. Go back to the main screen and sign in first.")
+        .sheet(isPresented: $showSignInSheet) {
+            BookingSignInSheet()
+        }
+        .onChange(of: auth.isAuthenticated) { _, isAuth in
+            if isAuth, proceedAfterSignIn {
+                proceedAfterSignIn = false
+                showSignInSheet = false
+                // Small delay to let the sheet dismiss before starting biometric auth
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    authenticateAndPay()
+                }
+            }
         }
     }
 
@@ -490,9 +500,16 @@ struct ReviewView: View {
     }
 
     private func authenticateAndPay() {
-        // Guest users must sign in before payment
+        // Check remote config — admin can disable bookings without an app update
+        guard RemoteConfig.shared.bookingEnabled else {
+            store.paymentError = "Booking is temporarily unavailable. Please try again later."
+            return
+        }
+
+        // Guest users can sign in right here — no need to leave the booking flow
         guard auth.isAuthenticated else {
-            showSignInRequired = true
+            proceedAfterSignIn = true
+            showSignInSheet = true
             return
         }
 
@@ -799,6 +816,126 @@ private extension String {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Inline Sign-In Sheet (shown during booking)
+
+/// Compact sign-in sheet that lets guests authenticate without leaving the booking flow.
+/// All progress (passenger details, seat selection, etc.) is preserved.
+private struct BookingSignInSheet: View {
+    @Environment(AuthStore.self) private var auth
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Drag handle
+            Capsule()
+                .fill(Color.sgBorder)
+                .frame(width: 36, height: 5)
+                .padding(.top, Spacing.md)
+
+            VStack(spacing: Spacing.sm) {
+                Image(systemName: "person.badge.shield.checkmark.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(Color.sgYellow)
+                    .padding(.top, Spacing.lg)
+
+                Text("Sign In to Pay")
+                    .font(SGFont.display(size: 24))
+                    .foregroundStyle(Color.sgWhite)
+
+                Text("Your booking details are saved.\nSign in to complete your purchase.")
+                    .font(SGFont.body(size: 14))
+                    .foregroundStyle(Color.sgWhiteDim)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+            }
+            .padding(.horizontal, Spacing.lg)
+
+            Spacer().frame(height: Spacing.xl)
+
+            VStack(spacing: 12) {
+                // Sign in with Apple
+                SignInWithAppleButton(.signIn) { request in
+                    request.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    switch result {
+                    case .success(let authorization):
+                        if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
+                            auth.handleAppleCredential(credential)
+                        }
+                    case .failure(let error):
+                        if (error as? ASAuthorizationError)?.code != .canceled {
+                            auth.authError = "Sign in failed. Please try again."
+                        }
+                    }
+                }
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .disabled(auth.isLoading)
+
+                // Sign in with Google
+                Button {
+                    HapticEngine.light()
+                    auth.signInWithGoogle()
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "g.circle.fill")
+                            .font(.system(size: 20))
+                        Text("Continue with Google")
+                            .font(SGFont.bodyBold(size: 16))
+                    }
+                    .foregroundStyle(Color.sgBg)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .disabled(auth.isLoading)
+                .accessibilityLabel("Sign in with Google")
+
+                // Loading indicator
+                if auth.isLoading {
+                    ProgressView()
+                        .tint(Color.sgYellow)
+                        .padding(.top, 8)
+                }
+
+                // Error message
+                if let error = auth.authError {
+                    Text(error)
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgRed)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 4)
+                }
+            }
+            .padding(.horizontal, 32)
+
+            Spacer()
+
+            // Dismiss
+            Button {
+                dismiss()
+            } label: {
+                Text("Not Now")
+                    .font(SGFont.bodyBold(size: 15))
+                    .foregroundStyle(Color.sgMuted)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 32)
+            .padding(.bottom, Spacing.lg)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.sgBg)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.hidden)
+        .interactiveDismissDisabled(auth.isLoading)
     }
 }
 

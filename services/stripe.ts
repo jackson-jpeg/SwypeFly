@@ -2,9 +2,10 @@
 // Payment collection for flight bookings via Stripe.
 
 import Stripe from 'stripe';
+import { env } from '../utils/env';
 
-const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim();
-const STRIPE_WEBHOOK_SECRET = (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
+const STRIPE_SECRET_KEY = (env.STRIPE_SECRET_KEY || '').trim();
+const STRIPE_WEBHOOK_SECRET = (env.STRIPE_WEBHOOK_SECRET || '').trim();
 
 let _stripe: Stripe | null = null;
 
@@ -14,7 +15,7 @@ function getStripe(): Stripe {
       throw new Error('STRIPE_SECRET_KEY is not configured');
     }
     _stripe = new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: '2026-02-25.clover' as any,
+      apiVersion: '2026-02-25.clover',
     });
   }
   return _stripe;

@@ -1,9 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../../services/supabaseServer';
 import { searchFlights } from '../../services/duffel';
+import type { OfferRequest, OfferSlice, OfferSliceSegment } from '@duffel/api/types';
+import {
+  compactOfferJson as sharedCompactOfferJson,
+  getOffersFromResult,
+  sortOffersByPrice,
+} from '../../utils/duffelMapper';
 import { pricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { cors } from '../_cors.js';
+import { withRetry } from '../../utils/retry';
 import {
   evaluateDealQuality,
   extractSegmentData,
@@ -15,6 +22,9 @@ import {
   updateRouteStats,
   clearStatsCache,
 } from '../../utils/priceStats';
+import { env } from '../../utils/env';
+import { REFRESH_BATCH_SIZE, DUFFEL_CONCURRENCY, PRICE_CHANGE_THRESHOLD } from '../../utils/config';
+import { sendError } from '../../utils/apiResponse';
 
 // ─── Price history snapshot (stored in ai_cache with 30-day TTL) ─────
 
@@ -67,8 +77,8 @@ async function getDestMeta(): Promise<Map<string, DestMeta>> {
         bestMonths: (doc.best_months as string[]) || [],
       });
     }
-  } catch {
-    // Non-fatal
+  } catch (err) {
+    console.warn('[refresh] Failed to load destination metadata:', err);
   }
   return destMetaCache;
 }
@@ -77,14 +87,11 @@ async function getDestMeta(): Promise<Map<string, DestMeta>> {
 export const maxDuration = 300;
 
 // With parallel searches (15 concurrent), each chunk takes ~3s.
-// 60 destinations = 4 chunks × ~3s + 1s delays = ~15s search + DB overhead.
-const BATCH_SIZE = 60;
+// 200 destinations = ~14 chunks × ~1s each = ~14s search + DB overhead — well within 60s limit.
+const BATCH_SIZE = REFRESH_BATCH_SIZE;
 
 // Concurrent Duffel searches per chunk (Duffel rate limit: 60 req/min — 15 concurrent stays under limit)
-const CONCURRENCY = 15;
-
-// 5% threshold for price direction tracking
-const PRICE_CHANGE_THRESHOLD = 0.05;
+const CONCURRENCY = DUFFEL_CONCURRENCY;
 
 // ─── Top-10 fallback airports ────────────────────────────────────────
 
@@ -101,8 +108,8 @@ async function getActiveOrigins(): Promise<string[]> {
     for (const doc of data ?? []) {
       if (doc.departure_code) origins.add(doc.departure_code as string);
     }
-  } catch {
-    // user_preferences collection may not have data yet
+  } catch (err) {
+    console.warn('[refresh] Failed to fetch user departure codes:', err);
   }
   return Array.from(origins);
 }
@@ -121,8 +128,8 @@ async function pickNextOrigins(count: number): Promise<string[]> {
       .limit(500);
     if (error) throw error;
     statusDocs = data ?? [];
-  } catch {
-    // No cached prices yet
+  } catch (err) {
+    console.warn('[refresh] Failed to fetch cached price timestamps:', err);
   }
 
   const lastRefreshed = new Map<string, string>();
@@ -165,31 +172,7 @@ function getSearchDates(): { departureDate: string; returnDate: string } {
   };
 }
 
-// ─── Compact offer JSON for caching ──────────────────────────────────
-
-function compactOfferJson(offer: Record<string, unknown>): string {
-  const compact = {
-    id: offer.id,
-    total_amount: offer.total_amount,
-    total_currency: offer.total_currency,
-    expires_at: offer.expires_at,
-    slices: ((offer.slices as any[]) || []).map((slice: any) => ({
-      segments: ((slice.segments as any[]) || []).map((seg: any) => ({
-        operating_carrier: {
-          name: seg.operating_carrier?.name,
-          iata_code: seg.operating_carrier?.iata_code,
-        },
-        operating_carrier_flight_number: seg.operating_carrier_flight_number,
-        departing_at: seg.departing_at,
-        arriving_at: seg.arriving_at,
-        origin: { iata_code: seg.origin?.iata_code },
-        destination: { iata_code: seg.destination?.iata_code },
-        aircraft: seg.aircraft ? { name: seg.aircraft.name } : null,
-      })),
-    })),
-  };
-  return JSON.stringify(compact);
-}
+// compactOfferJson is now imported from shared duffelMapper
 
 // ─── Refresh a batch of destinations for one origin via Duffel ───────
 
@@ -216,21 +199,23 @@ async function refreshOneDest(
 
   // Duffel search
   try {
-    const result = await searchFlights({
-      origin,
-      destination: dest,
-      departureDate,
-      returnDate,
-      passengers: [{ type: 'adult' }],
-      cabinClass: 'economy',
-    });
+    const result = await withRetry(
+      () =>
+        searchFlights({
+          origin,
+          destination: dest,
+          departureDate,
+          returnDate,
+          passengers: [{ type: 'adult' }],
+          cabinClass: 'economy',
+        }),
+      { maxRetries: 2, baseDelayMs: 1000, label: `duffel:${origin}->${dest}` },
+    );
 
-    const offers = (result as any).offers as any[] | undefined;
-    if (offers && offers.length > 0) {
-      offers.sort(
-        (a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount),
-      );
-      const cheapest = offers[0];
+    const offers = getOffersFromResult(result as OfferRequest);
+    if (offers.length > 0) {
+      const sorted = sortOffersByPrice(offers);
+      const cheapest = sorted[0];
 
       price = Math.round(parseFloat(cheapest.total_amount));
       offerExpiresAt = cheapest.expires_at || '';
@@ -249,7 +234,7 @@ async function refreshOneDest(
         retDate = lastSeg.departing_at.split('T')[0];
       }
 
-      offerJson = compactOfferJson(cheapest);
+      offerJson = sharedCompactOfferJson(cheapest);
       if (offerJson.length > 10000) {
         offerJson = offerJson.slice(0, 10000);
       }
@@ -312,7 +297,9 @@ async function refreshOneDest(
   }
 
   // Update route stats with this price (non-blocking)
-  updateRouteStats(origin, dest, price).catch(() => {});
+  updateRouteStats(origin, dest, price).catch((err) =>
+    console.warn(`[refresh] updateRouteStats failed for ${origin}->${dest}:`, err),
+  );
 
   const data: Record<string, unknown> = {
     origin,
@@ -418,8 +405,8 @@ async function pickStalestDestinations(
         docId: doc.id,
       });
     }
-  } catch {
-    // No existing prices for this origin
+  } catch (err) {
+    console.warn(`[refresh] Failed to fetch existing prices for ${origin}:`, err);
   }
 
   // Build staleness map: iata -> fetched_at timestamp
@@ -435,8 +422,8 @@ async function pickStalestDestinations(
     for (const doc of data ?? []) {
       fetchedAtMap.set(doc.destination_iata as string, doc.fetched_at as string);
     }
-  } catch {
-    // No data yet
+  } catch (err) {
+    console.warn(`[refresh] Failed to fetch staleness data for ${origin}:`, err);
   }
 
   // Sort: never-refreshed first, then oldest fetched_at
@@ -458,18 +445,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
 
   // Verify authorization: Vercel cron sends CRON_SECRET, manual calls need Authorization header
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = env.CRON_SECRET;
   if (!cronSecret) {
-    return res.status(503).json({ error: 'CRON_SECRET not configured' });
+    return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'CRON_SECRET not configured');
   }
   const authHeader = req.headers.authorization;
   const provided = authHeader?.replace('Bearer ', '') || '';
   if (provided !== cronSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
   }
 
   const v = validateRequest(pricesQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const originParam = v.data.origin || '';
 
   try {
@@ -502,7 +489,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const org of origins) {
       // Pick the stalest BATCH_SIZE destinations for targeted Duffel searches
       const { batch, currentPriceMap } = await pickStalestDestinations(org, allIatasList, BATCH_SIZE);
-      console.info(`[refresh] Duffel batch for ${org}: ${batch.join(', ')}`);
+      console.info(`[refresh] Duffel batch for ${org}: ${batch.length} destinations`);
 
       const result = await refreshBatch(org, batch, currentPriceMap);
       results.push(result);
@@ -517,6 +504,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logApiError('api/prices/refresh', err);
-    return res.status(500).json({ error: 'Price refresh failed', detail: message });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Price refresh failed', { detail: message });
   }
 }

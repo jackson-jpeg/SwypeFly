@@ -191,6 +191,7 @@ export const bookingSearchSchema = z.object({
   })).min(1).max(9),
   cabinClass: z.enum(['economy', 'premium_economy', 'business', 'first']).optional(),
   priceHint: z.number().positive().optional(),
+  cachedOfferId: z.string().min(1).max(200).optional(),
 });
 
 export const bookingOfferSchema = z.object({
@@ -250,6 +251,23 @@ export const hotelBookSchema = z.object({
   guestName: z.string().min(1).max(200),
   guestEmail: z.string().email().max(255),
 });
+
+// ─── Traveler endpoints ─────────────────────────────────────────────
+
+export const travelerCreateSchema = z.object({
+  givenName: z.string().min(1).max(100),
+  familyName: z.string().min(1).max(100),
+  bornOn: z.string().max(10).optional(),
+  gender: z.string().max(20).optional(),
+  title: z.string().max(10).optional(),
+  email: z.string().email().max(255).optional(),
+  phoneNumber: z.string().max(30).optional(),
+  passportNumber: z.string().max(30).optional(),
+  passportExpiry: z.string().max(10).optional(),
+  nationality: z.string().max(3).optional(),
+});
+
+export const travelerUpdateSchema = travelerCreateSchema.partial();
 
 // ─── Validate helper ─────────────────────────────────────────────────
 

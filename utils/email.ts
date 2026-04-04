@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { env } from './env';
 
 // ---------------------------------------------------------------------------
 // Email utility for SoGoJet — uses Resend as the provider.
@@ -16,7 +17,7 @@ const BRAND = {
 };
 
 function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY?.trim();
+  const key = env.RESEND_API_KEY?.trim();
   if (!key) {
     console.warn('[email] RESEND_API_KEY not set — skipping email send');
     return null;
@@ -25,7 +26,7 @@ function getResend(): Resend | null {
 }
 
 function fromAddress(): string {
-  return process.env.FROM_EMAIL?.trim() || 'noreply@sogojet.com';
+  return env.FROM_EMAIL?.trim() || 'noreply@sogojet.com';
 }
 
 function fromHeader(): string {

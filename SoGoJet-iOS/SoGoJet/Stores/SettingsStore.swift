@@ -12,26 +12,26 @@ import WidgetKit
 final class SettingsStore {
 
     var departureCode: String {
-        didSet { UserDefaults.standard.set(departureCode, forKey: "sg_departure_code") }
+        didSet { UserDefaults.standard.set(departureCode, forKey: StorageKeys.Settings.departureCode) }
     }
 
     var departureCity: String {
-        didSet { UserDefaults.standard.set(departureCity, forKey: "sg_departure_city") }
+        didSet { UserDefaults.standard.set(departureCity, forKey: StorageKeys.Settings.departureCity) }
     }
 
     /// "grid" or "list"
     var preferredView: String {
-        didSet { UserDefaults.standard.set(preferredView, forKey: "sg_preferred_view") }
+        didSet { UserDefaults.standard.set(preferredView, forKey: StorageKeys.Settings.preferredView) }
     }
 
     /// Whether the feed uses swipe-to-save card stack mode vs vertical scroll.
     var swipeMode: Bool {
-        didSet { UserDefaults.standard.set(swipeMode, forKey: "sg_swipe_mode") }
+        didSet { UserDefaults.standard.set(swipeMode, forKey: StorageKeys.Settings.swipeMode) }
     }
 
     var notificationsEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(notificationsEnabled, forKey: "sg_notifications_enabled")
+            UserDefaults.standard.set(notificationsEnabled, forKey: StorageKeys.Settings.notificationsEnabled)
             if notificationsEnabled {
                 DealNotificationManager.requestAndSchedule(departureCode: departureCode)
             } else {
@@ -41,37 +41,37 @@ final class SettingsStore {
     }
 
     var priceAlertsEnabled: Bool {
-        didSet { UserDefaults.standard.set(priceAlertsEnabled, forKey: "sg_price_alerts_enabled") }
+        didSet { UserDefaults.standard.set(priceAlertsEnabled, forKey: StorageKeys.Settings.priceAlertsEnabled) }
     }
 
     var alertEmail: String {
-        didSet { UserDefaults.standard.set(alertEmail, forKey: "sg_alert_email") }
+        didSet { UserDefaults.standard.set(alertEmail, forKey: StorageKeys.Settings.alertEmail) }
     }
 
     var hasOnboarded: Bool {
-        didSet { UserDefaults.standard.set(hasOnboarded, forKey: "sg_has_onboarded") }
+        didSet { UserDefaults.standard.set(hasOnboarded, forKey: StorageKeys.Settings.hasOnboarded) }
     }
 
     /// Whether to display measurements in metric (°C / km) or imperial (°F / mi).
     var usesMetric: Bool {
-        didSet { UserDefaults.standard.set(usesMetric, forKey: "sg_uses_metric") }
+        didSet { UserDefaults.standard.set(usesMetric, forKey: StorageKeys.Settings.usesMetric) }
     }
 
     // MARK: Init — hydrate from UserDefaults
 
     init() {
         let ud = UserDefaults.standard
-        self.departureCode = ud.string(forKey: "sg_departure_code") ?? "TPA"
-        self.departureCity = ud.string(forKey: "sg_departure_city") ?? "Tampa"
-        self.preferredView = ud.string(forKey: "sg_preferred_view") ?? "grid"
-        self.swipeMode = ud.bool(forKey: "sg_swipe_mode")
-        self.notificationsEnabled = ud.bool(forKey: "sg_notifications_enabled")
-        self.priceAlertsEnabled = ud.bool(forKey: "sg_price_alerts_enabled")
-        self.alertEmail = ud.string(forKey: "sg_alert_email") ?? ""
-        self.hasOnboarded = ud.bool(forKey: "sg_has_onboarded")
+        self.departureCode = ud.string(forKey: StorageKeys.Settings.departureCode) ?? "TPA"
+        self.departureCity = ud.string(forKey: StorageKeys.Settings.departureCity) ?? "Tampa"
+        self.preferredView = ud.string(forKey: StorageKeys.Settings.preferredView) ?? "grid"
+        self.swipeMode = ud.bool(forKey: StorageKeys.Settings.swipeMode)
+        self.notificationsEnabled = ud.bool(forKey: StorageKeys.Settings.notificationsEnabled)
+        self.priceAlertsEnabled = ud.bool(forKey: StorageKeys.Settings.priceAlertsEnabled)
+        self.alertEmail = ud.string(forKey: StorageKeys.Settings.alertEmail) ?? ""
+        self.hasOnboarded = ud.bool(forKey: StorageKeys.Settings.hasOnboarded)
 
-        if ud.object(forKey: "sg_uses_metric") != nil {
-            self.usesMetric = ud.bool(forKey: "sg_uses_metric")
+        if ud.object(forKey: StorageKeys.Settings.usesMetric) != nil {
+            self.usesMetric = ud.bool(forKey: StorageKeys.Settings.usesMetric)
         } else {
             self.usesMetric = Locale.current.measurementSystem == .metric
         }

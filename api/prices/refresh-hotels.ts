@@ -4,34 +4,44 @@ import { searchStays } from '../../services/duffel';
 import { hotelPricesQuerySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { cors } from '../_cors.js';
+import { withRetry } from '../../utils/retry';
+import { env, STUB_MODE } from '../../utils/env';
+import {
+  HOTEL_BATCH_SIZE,
+  HOTEL_BATCH_DELAY_MS,
+  HOTEL_SEARCH_RADIUS_KM,
+  HOTEL_STAY_NIGHTS,
+  HOTEL_TOP_RESULTS,
+} from '../../utils/config';
+import { sendError } from '../../utils/apiResponse';
 
 export const maxDuration = 60;
 
-const BATCH_SIZE = 3;
-const BATCH_DELAY_MS = 1500;
-const SEARCH_RADIUS_KM = 10;
-const STAY_NIGHTS = 3;
-const TOP_HOTELS = 5;
+const BATCH_SIZE = HOTEL_BATCH_SIZE;
+const BATCH_DELAY_MS = HOTEL_BATCH_DELAY_MS;
+const SEARCH_RADIUS_KM = HOTEL_SEARCH_RADIUS_KM;
+const STAY_NIGHTS = HOTEL_STAY_NIGHTS;
+const TOP_HOTELS = HOTEL_TOP_RESULTS;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = env.CRON_SECRET;
   if (!cronSecret) {
-    return res.status(503).json({ error: 'CRON_SECRET not configured' });
+    return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'CRON_SECRET not configured');
   }
   const authHeader = req.headers.authorization;
   const provided = authHeader?.replace('Bearer ', '') || '';
   if (provided !== cronSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
   }
 
   // Skip entirely if Duffel not configured
-  if (!process.env.DUFFEL_API_KEY) {
+  if (STUB_MODE) {
     return res.status(200).json({ skipped: true, reason: 'DUFFEL_API_KEY not configured' });
   }
 
   const v = validateRequest(hotelPricesQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const destParam = v.data.destination || '';
 
   try {
@@ -53,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .limit(1);
       if (error) throw error;
       if (!data || data.length === 0) {
-        return res.status(404).json({ error: 'Destination not found' });
+        return sendError(res, 404, 'NOT_FOUND', 'Destination not found');
       }
       destinations = data
         .filter((d) => d.latitude != null && d.longitude != null)
@@ -65,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           longitude: d.longitude as number,
         }));
       if (destinations.length === 0) {
-        return res.status(400).json({ error: 'Destination missing lat/lng — run seed-destination-coords first' });
+        return sendError(res, 400, 'VALIDATION_ERROR', 'Destination missing lat/lng — run seed-destination-coords first');
       }
     } else {
       const { data, error } = await supabase
@@ -104,8 +114,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (const doc of data ?? []) {
         existingMap.set(doc.destination_iata as string, doc.id);
       }
-    } catch {
-      // Collection may be empty
+    } catch (err) {
+      console.warn('[refresh-hotels] Failed to fetch existing hotel price docs:', err);
     }
 
     // Process in batches of 3 with 1500ms delay (rate limit: 60 req/60s shared with flights)
@@ -114,15 +124,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const promises = batch.map(async (d) => {
         try {
-          return await searchStays({
-            latitude: d.latitude,
-            longitude: d.longitude,
-            radius: SEARCH_RADIUS_KM,
-            checkIn: checkinStr,
-            checkOut: checkoutStr,
-            rooms: 1,
-            guests: [{ type: 'adult' }],
-          });
+          return await withRetry(
+            () =>
+              searchStays({
+                latitude: d.latitude,
+                longitude: d.longitude,
+                radius: SEARCH_RADIUS_KM,
+                checkIn: checkinStr,
+                checkOut: checkoutStr,
+                rooms: 1,
+                guests: [{ type: 'adult' }],
+              }),
+            { maxRetries: 2, baseDelayMs: 1000, label: `duffel-stays:${d.iata_code}` },
+          );
         } catch (err) {
           console.warn(`[refresh-hotels] Duffel search failed for ${d.iata_code}:`, err);
           return [];
@@ -213,6 +227,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logApiError('api/prices/refresh-hotels', err);
-    return res.status(500).json({ error: 'Hotel price refresh failed', detail: message });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Hotel price refresh failed', { detail: message });
   }
 }

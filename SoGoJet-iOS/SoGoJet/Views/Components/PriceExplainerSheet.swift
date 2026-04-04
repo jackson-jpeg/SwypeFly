@@ -33,33 +33,34 @@ struct PriceExplainerSheet: View {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 explainerRow(
                     icon: "tag",
-                    title: "\"Seen at\" prices are historical",
-                    body: "Prices labeled \"seen at $X\" are based on recent fare data — the lowest price spotted for this route. They show what the fare was, not what it is right now."
+                    title: "Real flight prices",
+                    body: "Prices shown are the cheapest round-trip fares we found for each destination. We search hundreds of flights to find you the best deals."
                 )
 
                 explainerRow(
                     icon: "arrow.triangle.2.circlepath",
-                    title: "Live prices may be higher or lower",
-                    body: "Airlines update fares constantly. When you search, you'll see today's actual prices. Sometimes they're lower — we'll celebrate that with you."
+                    title: "Prices update frequently",
+                    body: "Airlines change fares constantly. The price you see is based on our most recent search. When you tap to book, we'll confirm the latest fare."
                 )
 
                 explainerRow(
                     icon: "airplane.departure",
-                    title: "Search to see real prices",
-                    body: "Tap \"Search Flights\" to check live fares. That's the price you'll actually pay — no surprises."
+                    title: "What you see is what you get",
+                    body: "We show the same price you'll see at checkout. If the fare changed since we last checked, we'll let you know right away."
                 )
             }
 
             // Visual key
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("PRICE LABELS")
+                Text("PRICE FRESHNESS")
                     .font(SGFont.caption)
                     .foregroundStyle(Color.sgMuted)
                     .tracking(1)
 
                 HStack(spacing: Spacing.md) {
-                    labelExample(prefix: "seen at", price: "$287", note: "Historical")
-                    labelExample(prefix: "live", price: "$312", note: "Confirmed")
+                    freshnessExample(dot: Color.sgDealAmazing, label: "live fare", note: "< 30 min old")
+                    freshnessExample(dot: Color.sgYellow, label: "recent fare", note: "< 1 hour old")
+                    freshnessExample(dot: .orange, label: "est. fare", note: "Older data")
                 }
             }
             .padding(Spacing.md)
@@ -99,15 +100,15 @@ struct PriceExplainerSheet: View {
         }
     }
 
-    private func labelExample(prefix: String, price: String, note: String) -> some View {
+    private func freshnessExample(dot: Color, label: String, note: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
-                Text(prefix)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(prefix == "live" ? Color.sgDealAmazing : Color.sgMuted)
-                Text(price)
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.sgWhite)
+                Circle()
+                    .fill(dot)
+                    .frame(width: 6, height: 6)
+                Text(label)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(dot)
             }
             Text(note)
                 .font(.system(size: 10))
@@ -133,7 +134,7 @@ struct PriceInfoButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Price info")
-        .accessibilityHint("Opens explanation of estimated prices")
+        .accessibilityHint("Opens explanation of price freshness")
         .sheet(isPresented: $showSheet) {
             PriceExplainerSheet()
         }

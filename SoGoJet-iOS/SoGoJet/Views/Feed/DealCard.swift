@@ -127,14 +127,14 @@ struct DealCard: View {
                             }
                         }
 
-                        HStack {
+                        HStack(alignment: .bottom, spacing: 8) {
                             flightTeaser
-                            Spacer()
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             priceBadge
                         }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 170)
+                    .padding(.bottom, 200)
                 }
 
                 // Swipe hint — only on the first card, auto-dismisses
@@ -186,7 +186,7 @@ struct DealCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(deal.city)
                         .font(.headline)
-                    Text("\(deal.country) \(deal.hasPrice ? "-- \(deal.isEstimatedPrice ? "seen at " : "")\(deal.priceFormatted)" : "")")
+                    Text("\(deal.country)\(deal.hasPrice ? " — \(deal.priceFormatted)" : "")")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -303,23 +303,23 @@ struct DealCard: View {
         .clipShape(Capsule())
     }
 
-    /// The price to display — uses live override if available, otherwise deal's price.
+    /// The price to display — uses live override if available, otherwise deal's enhanced label.
     private var effectivePrice: String {
         if let live = livePriceOverride, live > 0 {
             return "$\(Int(live))"
         }
-        return deal.priceFormatted
+        return deal.cardPriceLabelEnhanced
     }
 
-    /// Whether the displayed price is confirmed (live Duffel search) or an estimate.
-    private var priceIsConfirmed: Bool {
-        livePriceOverride != nil || deal.priceSource == "duffel"
+    /// Dynamic max length for split-flap — just enough cells for the price text.
+    private var priceMaxLength: Int {
+        max(effectivePrice.count, 4) // At least 4 cells (e.g. "$271"), up to whatever the price needs
     }
 
     private var priceBadge: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            // Only show "live fare" for confirmed Duffel prices, not cached estimates
-            if priceIsConfirmed {
+            // Confidence indicator — color and label reflect source freshness
+            if livePriceOverride != nil {
                 HStack(spacing: 3) {
                     Circle()
                         .fill(Color.sgDealAmazing)
@@ -327,15 +327,24 @@ struct DealCard: View {
                     Text("live fare")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(Color.sgDealAmazing)
+                        .fixedSize()
                 }
             } else if deal.hasPrice {
+                let confidence = deal.priceConfidence
+                let dotColor: Color = confidence == .live ? .sgDealAmazing
+                    : confidence == .recent ? .sgYellow
+                    : .orange
+                let label: String = confidence == .live ? "live fare"
+                    : confidence == .recent ? "recent fare"
+                    : "est. fare"
                 HStack(spacing: 3) {
                     Circle()
-                        .fill(Color.sgYellow)
+                        .fill(dotColor)
                         .frame(width: 5, height: 5)
-                    Text("est. fare")
+                    Text(label)
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Color.sgYellow)
+                        .foregroundStyle(dotColor)
+                        .fixedSize()
                 }
             }
 
@@ -349,7 +358,7 @@ struct DealCard: View {
 
                 SplitFlapRow(
                     text: effectivePrice,
-                    maxLength: 6,
+                    maxLength: priceMaxLength,
                     size: .md,
                     color: Color.sgWhite,
                     alignment: .trailing,
@@ -363,12 +372,14 @@ struct DealCard: View {
             .padding(.vertical, 8)
             .background(deal.tierColor)
             .clipShape(Capsule())
+            .fixedSize()
 
-            // Price freshness timestamp — always show so users know how old the price is
-            if let freshness = deal.priceFreshnessLabel {
-                Text(freshness)
+            // Compact price age — always show so users know how old the price is
+            if let age = deal.priceAgeMinutes {
+                Text(age < 60 ? "\(age)m ago" : age < 1440 ? "\(age / 60)h ago" : "\(age / 1440)d ago")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.5))
+                    .fixedSize()
             }
 
             // Google Flights-style price level indicator
@@ -380,6 +391,7 @@ struct DealCard: View {
                 Text(level)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(levelColor)
+                    .fixedSize()
             }
         }
     }

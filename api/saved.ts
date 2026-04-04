@@ -5,6 +5,7 @@ import { verifyClerkToken } from '../utils/clerkAuth';
 import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
+import { sendError } from '../utils/apiResponse';
 
 async function handleList(userId: string, res: VercelResponse) {
   const { data, error } = await supabase
@@ -84,7 +85,7 @@ async function handleSavePrefs(userId: string, body: Record<string, unknown>, re
   if (typeof body.onboarding_completed === 'boolean') updates.onboarding_completed = body.onboarding_completed;
 
   if (Object.keys(updates).length === 0) {
-    return res.status(400).json({ error: 'No valid fields to update' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields to update');
   }
 
   const { data: existing, error: findError } = await supabase
@@ -117,11 +118,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
   const rl = checkRateLimit(`saved:${ip}`, 30, 60_000);
   if (!rl.allowed) {
-    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+    const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
   }
 
   const authResult = await verifyClerkToken(req.headers.authorization);
-  if (!authResult) return res.status(401).json({ error: 'Unauthorized' });
+  if (!authResult) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
 
   const action = String(req.query.action || '');
 
@@ -131,12 +133,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return handleList(authResult.userId, res);
       case 'save': {
         const destId = String(req.body?.destination_id || '');
-        if (!destId) return res.status(400).json({ error: 'Missing destination_id' });
+        if (!destId) return sendError(res, 400, 'VALIDATION_ERROR', 'Missing destination_id');
         return handleSave(authResult.userId, destId, res);
       }
       case 'unsave': {
         const destId = String(req.body?.destination_id || '');
-        if (!destId) return res.status(400).json({ error: 'Missing destination_id' });
+        if (!destId) return sendError(res, 400, 'VALIDATION_ERROR', 'Missing destination_id');
         return handleUnsave(authResult.userId, destId, res);
       }
       case 'get-prefs':
@@ -144,10 +146,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'save-prefs':
         return handleSavePrefs(authResult.userId, req.body || {}, res);
       default:
-        return res.status(400).json({ error: 'Use ?action=list|save|unsave|get-prefs|save-prefs' });
+        return sendError(res, 400, 'VALIDATION_ERROR', 'Use ?action=list|save|unsave|get-prefs|save-prefs');
     }
   } catch (err) {
     logApiError('api/saved', err);
-    return res.status(500).json({ error: 'Failed to process saved trips' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to process saved trips');
   }
 }

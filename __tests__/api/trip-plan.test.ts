@@ -19,6 +19,16 @@ jest.mock('../../utils/rateLimit', () => ({
   getClientIp: jest.fn(() => '127.0.0.1'),
 }));
 
+// Mock env so ANTHROPIC_API_KEY is set (handler checks env.ANTHROPIC_API_KEY, not process.env)
+jest.mock('../../utils/env', () => ({
+  env: {
+    ANTHROPIC_API_KEY: 'test-key',
+    SUPABASE_URL: 'http://localhost:54321',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+  },
+  STUB_MODE: true,
+}));
+
 import handler from '../../api/ai/trip-plan';
 import { checkRateLimit } from '../../utils/rateLimit';
 
@@ -53,7 +63,6 @@ function makeRes() {
 describe('POST /api/ai/trip-plan', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.ANTHROPIC_API_KEY = 'test-key';
   });
 
   it('rejects non-POST methods', async () => {

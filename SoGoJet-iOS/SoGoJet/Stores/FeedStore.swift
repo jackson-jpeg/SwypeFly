@@ -37,10 +37,10 @@ final class FeedStore {
 
     // MARK: Filters (persisted to UserDefaults so they survive app restarts)
 
-    private static let pricesKey = "sg_filter_prices"
-    private static let vibesKey = "sg_filter_vibes"
-    private static let regionsKey = "sg_filter_regions"
-    private static let maxPriceKey = "sg_filter_max_price"
+    private static let pricesKey = StorageKeys.Feed.filterPrices
+    private static let vibesKey = StorageKeys.Feed.filterVibes
+    private static let regionsKey = StorageKeys.Feed.filterRegions
+    private static let maxPriceKey = StorageKeys.Feed.filterMaxPrice
 
     var selectedPrices: [String] {
         didSet { UserDefaults.standard.set(selectedPrices, forKey: Self.pricesKey) }
@@ -154,9 +154,7 @@ final class FeedStore {
             }
         } catch {
             guard activeRequestID == requestID, activeOrigin == origin else { return }
-            #if DEBUG
-            print("❌ [FeedStore] fetchDeals failed: \(error)")
-            #endif
+            SGLogger.feed.error("fetchDeals failed: \(error)")
             if loadedDeals.isEmpty, let cached = loadFromDiskCache() {
                 loadedDeals = cached
                 showingCachedData = true

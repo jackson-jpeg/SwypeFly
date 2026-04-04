@@ -17,11 +17,7 @@ final class ReviewPrompter {
 
     // MARK: UserDefaults Keys
 
-    private enum Keys {
-        static let lastPromptDate = "sg_review_last_prompt_date"
-        static let appOpenDays = "sg_review_app_open_days"
-        static let lastRecordedDay = "sg_review_last_recorded_day"
-    }
+    private typealias Keys = StorageKeys.Review
 
     // MARK: Configuration
 

@@ -4,6 +4,7 @@ import CoreSpotlight
 import UserNotifications
 import MetricKit
 import StripePaymentSheet
+import Clerk
 import os
 
 // MARK: - App Delegate (Quick Actions + Notification Handling + Crash Reporting)
@@ -72,7 +73,31 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
 
     nonisolated func didReceive(_ payloads: [MXDiagnosticPayload]) {
         for payload in payloads {
-            logger.error("[MetricKit] Diagnostic (crash/hang): \(String(data: payload.jsonRepresentation(), encoding: .utf8) ?? "unreadable")")
+            let data = payload.jsonRepresentation()
+            logger.error("[MetricKit] Diagnostic (crash/hang): \(String(data: data, encoding: .utf8) ?? "unreadable")")
+
+            // Forward diagnostic payload to backend for real-time crash tracking
+            let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+            let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+            let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
+            var sysInfo = utsname()
+            uname(&sysInfo)
+            let deviceModel = withUnsafePointer(to: &sysInfo.machine) {
+                $0.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) }
+            }
+            let wrapped = DiagnosticReport(
+                type: "metrickit_diagnostic",
+                appVersion: appVersion,
+                buildNumber: buildNumber,
+                osVersion: osVersion,
+                deviceModel: deviceModel,
+                payload: data
+            )
+            if let reportData = try? JSONEncoder().encode(wrapped) {
+                Task {
+                    let _: EmptyResponse? = try? await APIClient.shared.fetch(.diagnosticsReport(reportData), retries: 1)
+                }
+            }
         }
     }
 
@@ -139,14 +164,45 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
     }
 }
 
+/// Wraps a MetricKit diagnostic payload with device/app context for the backend.
+private struct DiagnosticReport: Encodable {
+    let type: String
+    let appVersion: String
+    let buildNumber: String
+    let osVersion: String
+    let deviceModel: String
+    let payload: Data
+
+    enum CodingKeys: String, CodingKey {
+        case type, appVersion, buildNumber, osVersion, deviceModel, payload
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type, forKey: .type)
+        try container.encode(appVersion, forKey: .appVersion)
+        try container.encode(buildNumber, forKey: .buildNumber)
+        try container.encode(osVersion, forKey: .osVersion)
+        try container.encode(deviceModel, forKey: .deviceModel)
+        // Encode payload as base64 string since it's raw JSON bytes
+        try container.encode(payload.base64EncodedString(), forKey: .payload)
+    }
+}
+
 extension Notification.Name {
     static let sogojetNotificationTapped = Notification.Name("sogojetNotificationTapped")
     static let sogojetQuickActionTriggered = Notification.Name("sogojetQuickActionTriggered")
+    static let sogojetSyncFailed = Notification.Name("sogojetSyncFailed")
 }
 
 @main
 struct SoGoJetApp: App {
     @UIApplicationDelegateAdaptor(SoGoJetAppDelegate.self) var appDelegate
+    init() {
+        // Configure Clerk SDK for OAuth (Google, TikTok).
+        Clerk.shared.configure(publishableKey: "pk_live_Y2xlcmsuc29nb2pldC5jb20k")
+    }
+
     @State private var feedStore = FeedStore()
     @State private var savedStore = SavedStore()
     @State private var settingsStore = SettingsStore()
@@ -156,6 +212,11 @@ struct SoGoJetApp: App {
     @State private var networkMonitor = NetworkMonitor()
     @State private var authStore = AuthStore()
     @State private var recentlyViewedStore = RecentlyViewedStore()
+    @State private var bookingHistoryStore = BookingHistoryStore()
+    @State private var travelerStore = TravelerStore()
+    @State private var tripPlanStore = TripPlanStore()
+    @State private var hotelStore = HotelStore()
+    @State private var alertStore = AlertStore()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -170,6 +231,11 @@ struct SoGoJetApp: App {
                 .environment(networkMonitor)
                 .environment(authStore)
                 .environment(recentlyViewedStore)
+                .environment(bookingHistoryStore)
+                .environment(travelerStore)
+                .environment(tripPlanStore)
+                .environment(hotelStore)
+                .environment(alertStore)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     // Wire booking store to push live prices back to feed and saved deals
@@ -179,6 +245,12 @@ struct SoGoJetApp: App {
                     }
                 }
                 .task {
+                    // Load Clerk SDK (required before OAuth sign-in works)
+                    try? await Clerk.shared.load()
+
+                    // Fetch remote config (maintenance mode, feature flags, min version)
+                    await RemoteConfig.shared.fetch()
+
                     // Track distinct usage days for review prompt eligibility
                     ReviewPrompter.shared.recordAppOpen()
 
@@ -235,9 +307,7 @@ struct SoGoJetApp: App {
                     // if the system delivers the URL to the app instead (e.g. the
                     // session was deallocated), we log it and let it pass through.
                     if url.scheme == "sogojet" && url.host == "oauth-callback" {
-                        #if DEBUG
-                        print("[App] Received OAuth callback URL (fallback): \(url)")
-                        #endif
+                        SGLogger.app.debug("Received OAuth callback URL (fallback): \(url)")
                         return
                     }
 
@@ -303,21 +373,24 @@ struct SoGoJetApp: App {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: APIClient.sessionExpired)) { _ in
                     authStore.signOut()
-                    toastManager.show(message: "Session expired. Please sign in again.", type: .info, duration: 4)
+                    toastManager.show(message: String(localized: "session.expired"), type: .info, duration: 4)
                 }
-                .onContinueUserActivity("com.sogojet.search") { _ in
-                    router.handleQuickAction("com.sogojet.search")
+                .onReceive(NotificationCenter.default.publisher(for: .sogojetSyncFailed)) { _ in
+                    toastManager.show(message: String(localized: "sync.failed"), type: .info, duration: 3)
                 }
-                .onContinueUserActivity("com.sogojet.saved") { _ in
-                    router.handleQuickAction("com.sogojet.saved")
+                .onContinueUserActivity(ActivityTypes.search) { _ in
+                    router.handleQuickAction(ActivityTypes.search)
                 }
-                .onContinueUserActivity("com.sogojet.board") { _ in
-                    router.handleQuickAction("com.sogojet.board")
+                .onContinueUserActivity(ActivityTypes.saved) { _ in
+                    router.handleQuickAction(ActivityTypes.saved)
                 }
-                .onContinueUserActivity("com.sogojet.search-flights") { _ in
-                    router.handleQuickAction("com.sogojet.search")
+                .onContinueUserActivity(ActivityTypes.board) { _ in
+                    router.handleQuickAction(ActivityTypes.board)
                 }
-                .onContinueUserActivity("com.sogojet.view-deal") { activity in
+                .onContinueUserActivity(ActivityTypes.searchFlights) { _ in
+                    router.handleQuickAction(ActivityTypes.search)
+                }
+                .onContinueUserActivity(ActivityTypes.viewDeal) { activity in
                     if let dealId = activity.userInfo?["dealId"] as? String {
                         if let deal = feedStore.allDeals.first(where: { $0.id == dealId }) {
                             router.showDeal(deal)

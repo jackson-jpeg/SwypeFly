@@ -1,4 +1,6 @@
-const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || '';
+import { env } from '../utils/env';
+
+const UNSPLASH_ACCESS_KEY = env.UNSPLASH_ACCESS_KEY || '';
 const BASE_URL = 'https://api.unsplash.com';
 
 export interface UnsplashImage {

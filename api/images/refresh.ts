@@ -4,10 +4,13 @@ import { searchDestinationImages } from '../../services/unsplash';
 import type { UnsplashImage } from '../../services/unsplash';
 import { logApiError } from '../../utils/apiLogger';
 import { cors } from '../_cors.js';
+import { env } from '../../utils/env';
+import { IMAGE_BATCH_SIZE } from '../../utils/config';
+import { sendError } from '../../utils/apiResponse';
 
 export const maxDuration = 60;
 
-const DEFAULT_BATCH_SIZE = 8; // destinations per run
+const DEFAULT_BATCH_SIZE = IMAGE_BATCH_SIZE;
 const IMAGES_PER_DEST = 5;
 const UNSPLASH_FETCH_COUNT = 15; // fetch more than we need so we can filter
 const TIME_BUDGET_MS = 45_000; // stay under 60s Vercel limit
@@ -44,14 +47,14 @@ export function scoreImage(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = env.CRON_SECRET;
   if (!cronSecret) {
-    return res.status(503).json({ error: 'CRON_SECRET not configured' });
+    return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'CRON_SECRET not configured');
   }
   const authHeader = req.headers.authorization;
   const provided = authHeader?.replace('Bearer ', '') || '';
   if (provided !== cronSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
   }
 
   try {
@@ -190,6 +193,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logApiError('api/images/refresh', err);
-    return res.status(500).json({ error: 'Image refresh failed' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Image refresh failed');
   }
 }

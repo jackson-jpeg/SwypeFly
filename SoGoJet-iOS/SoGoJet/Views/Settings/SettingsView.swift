@@ -8,10 +8,18 @@ struct SettingsView: View {
     @Environment(Router.self) private var router
     @Environment(\.openURL) private var openURL
     @Environment(AuthStore.self) private var auth
+    @Environment(TravelerStore.self) private var travelerStore
 
     @State private var showClearConfirmation = false
     @State private var showSignOutConfirmation = false
     @State private var showDeleteAccountConfirmation = false
+    @State private var isEditingName = false
+    @State private var editFirstName = ""
+    @State private var editLastName = ""
+    @State private var isSavingProfile = false
+    @State private var profileCreatedAt: String?
+    @State private var showTravelers = false
+    @State private var showPriceAlerts = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -32,6 +40,11 @@ struct SettingsView: View {
                 displaySection
                 unitsSection
                 notificationsSection
+
+                if auth.isAuthenticated {
+                    travelersSection
+                }
+
                 savedSection
                 aboutSection
 
@@ -66,21 +79,105 @@ struct SettingsView: View {
 
             if auth.isAuthenticated {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
-                    if let name = auth.userName {
+                    if isEditingName {
+                        // Inline name edit
+                        VStack(alignment: .leading, spacing: Spacing.sm) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "person.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(Color.sgYellow)
+                                Text("Edit Name")
+                                    .font(SGFont.bodyBold(size: 15))
+                                    .foregroundStyle(Color.sgWhite)
+                            }
+
+                            HStack(spacing: 8) {
+                                TextField("First", text: $editFirstName)
+                                    .font(SGFont.body(size: 14))
+                                    .foregroundStyle(Color.sgWhite)
+                                    .padding(8)
+                                    .background(Color.sgSurface)
+                                    .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.sgBorder))
+
+                                TextField("Last", text: $editLastName)
+                                    .font(SGFont.body(size: 14))
+                                    .foregroundStyle(Color.sgWhite)
+                                    .padding(8)
+                                    .background(Color.sgSurface)
+                                    .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.sgBorder))
+                            }
+
+                            HStack(spacing: 8) {
+                                Button {
+                                    isEditingName = false
+                                } label: {
+                                    Text("Cancel")
+                                        .font(SGFont.bodyBold(size: 13))
+                                        .foregroundStyle(Color.sgMuted)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 8)
+                                        .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
+                                }
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    Task { await saveProfileName() }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        if isSavingProfile {
+                                            ProgressView()
+                                                .tint(Color.sgBg)
+                                                .scaleEffect(0.8)
+                                        }
+                                        Text("Save")
+                                            .font(SGFont.bodyBold(size: 13))
+                                    }
+                                    .foregroundStyle(Color.sgBg)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(isSavingProfile || editFirstName.trimmingCharacters(in: .whitespaces).isEmpty)
+                            }
+                        }
+                    } else {
+                        // Display mode
                         HStack(spacing: 8) {
                             Image(systemName: "person.circle.fill")
                                 .font(.system(size: 24))
                                 .foregroundStyle(Color.sgYellow)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(name)
-                                    .font(SGFont.bodyBold(size: 15))
-                                    .foregroundStyle(Color.sgWhite)
+                                if let name = auth.userName {
+                                    Text(name)
+                                        .font(SGFont.bodyBold(size: 15))
+                                        .foregroundStyle(Color.sgWhite)
+                                }
                                 if let email = auth.userEmail {
                                     Text(email)
                                         .font(SGFont.body(size: 12))
                                         .foregroundStyle(Color.sgMuted)
                                 }
+                                if let created = profileCreatedAt {
+                                    Text("Member since \(created)")
+                                        .font(SGFont.body(size: 11))
+                                        .foregroundStyle(Color.sgMuted.opacity(0.7))
+                                }
                             }
+                            Spacer()
+                            Button {
+                                editFirstName = auth.userName?.components(separatedBy: " ").first ?? ""
+                                editLastName = auth.userName?.components(separatedBy: " ").dropFirst().joined(separator: " ") ?? ""
+                                isEditingName = true
+                            } label: {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.sgYellow)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Edit your name")
                         }
                     }
 
@@ -97,8 +194,8 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Sign out of your account")
-
                 }
+                .task { await loadProfile() }
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "person.circle")
@@ -199,6 +296,46 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You can still browse deals as a guest, but you won't be able to book flights.")
+        }
+    }
+
+    // MARK: - Profile
+
+    private func loadProfile() async {
+        do {
+            let profile: ProfileResponse = try await APIClient.shared.fetch(.profile)
+            if let createdAt = profile.createdAt {
+                let isoFormatter = ISO8601DateFormatter()
+                if let date = isoFormatter.date(from: createdAt) {
+                    let displayFormatter = DateFormatter()
+                    displayFormatter.dateFormat = "MMM yyyy"
+                    profileCreatedAt = displayFormatter.string(from: date)
+                }
+            }
+        } catch {
+            // Non-critical — silently ignore
+        }
+    }
+
+    private func saveProfileName() async {
+        isSavingProfile = true
+        defer { isSavingProfile = false }
+
+        let first = editFirstName.trimmingCharacters(in: .whitespaces)
+        let last = editLastName.trimmingCharacters(in: .whitespaces)
+
+        do {
+            let profile: ProfileResponse = try await APIClient.shared.fetch(
+                .updateProfile(firstName: first, lastName: last)
+            )
+            // Update AuthStore with new name
+            await MainActor.run {
+                auth.userName = profile.name
+                isEditingName = false
+            }
+            HapticEngine.success()
+        } catch {
+            HapticEngine.error()
         }
     }
 
@@ -382,6 +519,34 @@ struct SettingsView: View {
                         .foregroundStyle(Color.sgMuted)
                         .padding(.leading, 28)
                 }
+
+                Divider().overlay(Color.sgBorder)
+
+                Button {
+                    HapticEngine.light()
+                    showPriceAlerts = true
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "bell.badge")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.sgYellow)
+                            .frame(width: 20)
+
+                        Text("Manage Alerts")
+                            .font(SGFont.bodyBold(size: 14))
+                            .foregroundStyle(Color.sgWhite)
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showPriceAlerts) {
+                    PriceAlertsListView()
+                }
             }
         }
     }
@@ -405,6 +570,58 @@ struct SettingsView: View {
                 .accessibilityLabel("Toggle \(title)")
         }
         .contentShape(Rectangle())
+    }
+
+    // MARK: - Travelers
+
+    private var travelersSection: some View {
+        settingsSection("Saved Travelers") {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                if travelerStore.travelers.isEmpty {
+                    Text("Save traveler details for faster booking.")
+                        .font(SGFont.body(size: 13))
+                        .foregroundStyle(Color.sgMuted)
+                } else {
+                    HStack {
+                        Text("\(travelerStore.travelers.count)")
+                            .font(SGFont.cardTitle)
+                            .foregroundStyle(Color.sgYellow)
+                        Text(travelerStore.travelers.count == 1 ? "traveler saved" : "travelers saved")
+                            .font(SGFont.body(size: 14))
+                            .foregroundStyle(Color.sgMuted)
+                        Spacer()
+                    }
+                }
+
+                Button {
+                    showTravelers = true
+                } label: {
+                    HStack(spacing: Spacing.xs) {
+                        Image(systemName: "person.2.fill")
+                            .font(.system(size: 12))
+                        Text(travelerStore.travelers.isEmpty ? "Add Traveler" : "Manage Travelers")
+                            .font(SGFont.bodyBold(size: 14))
+                    }
+                    .foregroundStyle(Color.sgYellow)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color.sgYellow.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.md))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md)
+                            .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $showTravelers) {
+            TravelerListView()
+        }
+        .task {
+            if travelerStore.travelers.isEmpty {
+                await travelerStore.fetchTravelers()
+            }
+        }
     }
 
     // MARK: - Saved

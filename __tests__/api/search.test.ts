@@ -1,7 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Set before import so STUB_MODE = false in tests (we mock Duffel ourselves)
-process.env.DUFFEL_API_KEY = 'test-key';
+// Mock env module so STUB_MODE = false in tests (we mock Duffel ourselves)
+jest.mock('../../utils/env', () => ({
+  env: {
+    SUPABASE_URL: 'http://localhost:54321',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+    DUFFEL_API_KEY: 'test-key',
+    APPWRITE_ENDPOINT: 'https://test.appwrite.io/v1',
+    APPWRITE_PROJECT_ID: 'test-project',
+    APPWRITE_API_KEY: 'test-key',
+    BOOKING_MARKUP_PERCENT: 3,
+  },
+  STUB_MODE: false,
+}));
 
 const mockListDocuments = jest.fn();
 const mockCreateDocument = jest.fn();
@@ -212,7 +223,7 @@ describe('GET /api/search', () => {
     await handler(makeReq(), res);
 
     expect(res._status).toBe(404);
-    expect(res._json).toEqual({ error: 'No flights found' });
+    expect(res._json).toEqual({ ok: false, error: { code: 'NOT_FOUND', message: 'No flights found' } });
   });
 
   it('returns 500 on Duffel error', async () => {
@@ -223,7 +234,7 @@ describe('GET /api/search', () => {
     await handler(makeReq(), res);
 
     expect(res._status).toBe(500);
-    expect(res._json).toEqual({ error: 'Search failed' });
+    expect(res._json).toEqual({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Search failed' } });
   });
 
   it('updates existing cached doc instead of creating new one', async () => {

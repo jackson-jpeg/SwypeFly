@@ -26,75 +26,60 @@ func color(_ r: Int, _ g: Int, _ b: Int, _ a: CGFloat = 1) -> CGColor {
   CGColor(srgbRed: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: a)
 }
 
-let bg = color(0x0A, 0x08, 0x06)
-let bgLift = color(0x15, 0x11, 0x0D)
-let cellTopStart = color(0x23, 0x1D, 0x16)
-let cellTopEnd = color(0x1D, 0x18, 0x12)
-let cellBottomStart = color(0x18, 0x13, 0x0F)
-let cellBottomEnd = color(0x12, 0x0F, 0x0B)
-let border = color(0x2A, 0x22, 0x18)
-let splitShadow = color(0x07, 0x05, 0x04, 0.9)
-let splitHighlight = color(0x43, 0x38, 0x2B, 0.65)
-let white = color(0xF2, 0xF2, 0xF2)
-let whiteGlow = color(0xFF, 0xFF, 0xFF, 0.16)
-let flipGhost = color(0x5F, 0x5F, 0x5F, 0.72)
-let softShadow = color(0x00, 0x00, 0x00, 0.45)
+// ─── Color palette ──────────────────────────────────────────────────────────
+
+let bg = color(0x06, 0x05, 0x03)
+
+// Cell face: warm charcoal with clear top/bottom distinction
+let cellTopStart = color(0x30, 0x28, 0x1E)
+let cellTopEnd = color(0x26, 0x20, 0x18)
+let cellBottomStart = color(0x20, 0x1A, 0x14)
+let cellBottomEnd = color(0x18, 0x14, 0x0E)
+
+let borderColor = color(0x3C, 0x30, 0x22)
+let cellEdgeHL = color(0x4A, 0x3C, 0x2C, 0.50)
+let cellInnerSh = color(0x00, 0x00, 0x00, 0.30)
+
+// Split-flap hinge
+let hingeGap = color(0x02, 0x02, 0x01, 0.95)
+let hingeHL = color(0x58, 0x48, 0x34, 0.50)
+
+// Text
+let textColor = color(0xF8, 0xF6, 0xF2)
+let textGlowColor = color(0xFF, 0xFF, 0xFF, 0.22)
+let flipGhostColor = color(0x5F, 0x5F, 0x5F, 0.72)
+let dropShadow = color(0x00, 0x00, 0x00, 0.60)
 
 func gradient(_ colors: [CGColor], locations: [CGFloat]) -> CGGradient {
   CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: locations)!
 }
 
 func makeContext(size: Int, transparent: Bool) -> CGContext {
-  let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
   let ctx = CGContext(
-    data: nil,
-    width: size,
-    height: size,
-    bitsPerComponent: 8,
-    bytesPerRow: 0,
+    data: nil, width: size, height: size,
+    bitsPerComponent: 8, bytesPerRow: 0,
     space: colorSpace,
-    bitmapInfo: bitmapInfo
+    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
   )!
-
+  ctx.setAllowsAntialiasing(true)
+  ctx.setShouldAntialias(true)
+  ctx.interpolationQuality = .high
   if transparent {
     ctx.clear(CGRect(x: 0, y: 0, width: size, height: size))
   }
-
   return ctx
 }
 
-func strokeRoundedRect(_ ctx: CGContext, rect: CGRect, radius: CGFloat, color: CGColor, width: CGFloat) {
-  let path = CGPath(
-    roundedRect: rect,
-    cornerWidth: radius,
-    cornerHeight: radius,
-    transform: nil
-  )
-  ctx.addPath(path)
-  ctx.setStrokeColor(color)
-  ctx.setLineWidth(width)
-  ctx.strokePath()
+func rrPath(_ rect: CGRect, radius: CGFloat) -> CGPath {
+  CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
 }
 
-func fillRoundedRect(_ ctx: CGContext, rect: CGRect, radius: CGFloat, color: CGColor) {
-  let path = CGPath(
-    roundedRect: rect,
-    cornerWidth: radius,
-    cornerHeight: radius,
-    transform: nil
-  )
-  ctx.addPath(path)
-  ctx.setFillColor(color)
-  ctx.fillPath()
-}
-
-func drawLinearGradient(_ ctx: CGContext, rect: CGRect, colors: [CGColor], locations: [CGFloat]) {
+func drawGrad(_ ctx: CGContext, rect: CGRect, colors: [CGColor], locs: [CGFloat]) {
   ctx.saveGState()
   ctx.addRect(rect)
   ctx.clip()
-  let fill = gradient(colors, locations: locations)
   ctx.drawLinearGradient(
-    fill,
+    gradient(colors, locations: locs),
     start: CGPoint(x: rect.midX, y: rect.maxY),
     end: CGPoint(x: rect.midX, y: rect.minY),
     options: [.drawsAfterEndLocation, .drawsBeforeStartLocation]
@@ -102,52 +87,55 @@ func drawLinearGradient(_ ctx: CGContext, rect: CGRect, colors: [CGColor], locat
   ctx.restoreGState()
 }
 
-func drawBackground(_ ctx: CGContext, size: CGFloat) {
-  let rect = CGRect(x: 0, y: 0, width: size, height: size)
-  ctx.setFillColor(bg)
-  ctx.fill(rect)
+// ─── Background ──────────────────────────────────────────────────────────────
 
-  let radial = gradient([whiteGlow, color(0x0A, 0x08, 0x06, 0)], locations: [0, 1])
+func drawBackground(_ ctx: CGContext, size: CGFloat) {
+  ctx.setFillColor(bg)
+  ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
+
+  // Warm center glow
   ctx.saveGState()
   ctx.drawRadialGradient(
-    radial,
-    startCenter: CGPoint(x: size * 0.5, y: size * 0.55),
+    gradient([color(0x28, 0x1F, 0x14, 0.40), color(0x06, 0x05, 0x03, 0)], locations: [0, 1]),
+    startCenter: CGPoint(x: size * 0.5, y: size * 0.50),
     startRadius: 0,
-    endCenter: CGPoint(x: size * 0.5, y: size * 0.55),
-    endRadius: size * 0.38,
+    endCenter: CGPoint(x: size * 0.5, y: size * 0.50),
+    endRadius: size * 0.44,
     options: .drawsAfterEndLocation
   )
   ctx.restoreGState()
 
-  let wash = gradient([bgLift, bg], locations: [0, 1])
+  // Corner vignette
   ctx.saveGState()
-  ctx.setAlpha(0.5)
-  ctx.drawLinearGradient(
-    wash,
-    start: CGPoint(x: size * 0.5, y: size),
-    end: CGPoint(x: size * 0.5, y: size * 0.2),
-    options: [.drawsAfterEndLocation, .drawsBeforeStartLocation]
+  ctx.drawRadialGradient(
+    gradient([color(0x00, 0x00, 0x00, 0), color(0x00, 0x00, 0x00, 0.40)], locations: [0.35, 1.0]),
+    startCenter: CGPoint(x: size * 0.5, y: size * 0.5),
+    startRadius: size * 0.22,
+    endCenter: CGPoint(x: size * 0.5, y: size * 0.5),
+    endRadius: size * 0.72,
+    options: .drawsAfterEndLocation
   )
   ctx.restoreGState()
 }
 
-func drawCenteredText(
+// ─── Text drawing ────────────────────────────────────────────────────────────
+
+func drawText(
   _ ctx: CGContext,
   text: String,
   rect: CGRect,
   fontSize: CGFloat,
-  color: CGColor,
+  col: CGColor,
   tracking: CGFloat = 0
 ) {
   let font = CTFontCreateWithName("Helvetica-Bold" as CFString, fontSize, nil)
-  let attributes: [CFString: Any] = [
+  let attrs: [CFString: Any] = [
     kCTFontAttributeName: font,
-    kCTForegroundColorAttributeName: color,
+    kCTForegroundColorAttributeName: col,
     kCTKernAttributeName: tracking,
   ]
-
-  let attributed = CFAttributedStringCreate(nil, text as CFString, attributes as CFDictionary)!
-  let line = CTLineCreateWithAttributedString(attributed)
+  let attrStr = CFAttributedStringCreate(nil, text as CFString, attrs as CFDictionary)!
+  let line = CTLineCreateWithAttributedString(attrStr)
   let bounds = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
 
   ctx.textPosition = CGPoint(
@@ -157,6 +145,26 @@ func drawCenteredText(
   CTLineDraw(line, ctx)
 }
 
+// ─── Inner shadow ────────────────────────────────────────────────────────────
+
+func drawInnerShadow(_ ctx: CGContext, rect: CGRect, radius: CGFloat, blur: CGFloat, col: CGColor) {
+  let path = rrPath(rect, radius: radius)
+  let outer = rect.insetBy(dx: -blur * 4, dy: -blur * 4)
+  ctx.saveGState()
+  ctx.addPath(path)
+  ctx.clip()
+  let outerPath = CGMutablePath()
+  outerPath.addRect(outer)
+  outerPath.addPath(path)
+  ctx.addPath(outerPath)
+  ctx.setShadow(offset: .zero, blur: blur, color: col)
+  ctx.setFillColor(col)
+  ctx.fillPath(using: .evenOdd)
+  ctx.restoreGState()
+}
+
+// ─── Cell ────────────────────────────────────────────────────────────────────
+
 func drawCell(
   _ ctx: CGContext,
   rect: CGRect,
@@ -164,161 +172,158 @@ func drawCell(
   flipTopText: String? = nil,
   fontSize: CGFloat
 ) {
-  let radius = rect.width * 0.085
-  let borderWidth = max(2, rect.width * 0.008)
-  let splitHeight = max(3, rect.height * 0.012)
-  let topRect = CGRect(x: rect.minX, y: rect.midY, width: rect.width, height: rect.height / 2)
+  let r = rect.width * 0.10
+  let bw = max(2.5, rect.width * 0.008)
+  let sh = max(5, rect.height * 0.020) // split height
+  let topHalf = CGRect(x: rect.minX, y: rect.midY, width: rect.width, height: rect.height / 2)
+  let botHalf = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height / 2)
+  let clip = rrPath(rect, radius: r)
 
-  let clipPath = CGPath(
-    roundedRect: rect,
-    cornerWidth: radius,
-    cornerHeight: radius,
-    transform: nil
-  )
-
+  // ── Fill ──
   ctx.saveGState()
-  ctx.addPath(clipPath)
+  ctx.addPath(clip)
   ctx.clip()
-  drawLinearGradient(ctx, rect: rect, colors: [cellBottomStart, cellBottomEnd], locations: [0, 1])
-  drawLinearGradient(ctx, rect: topRect, colors: [cellTopStart, cellTopEnd], locations: [0, 1])
+  drawGrad(ctx, rect: botHalf, colors: [cellBottomStart, cellBottomEnd], locs: [0, 1])
+  drawGrad(ctx, rect: topHalf, colors: [cellTopStart, cellTopEnd], locs: [0, 1])
   ctx.restoreGState()
 
-  strokeRoundedRect(ctx, rect: rect, radius: radius, color: border, width: borderWidth)
+  // ── Inner shadow ──
+  drawInnerShadow(ctx, rect: rect, radius: r, blur: rect.width * 0.05, col: cellInnerSh)
 
-  let splitRect = CGRect(
-    x: rect.minX + rect.width * 0.03,
-    y: rect.midY - splitHeight / 2,
-    width: rect.width * 0.94,
-    height: splitHeight
-  )
-  ctx.setFillColor(splitShadow)
-  ctx.fill(splitRect)
-
-  ctx.setFillColor(splitHighlight)
-  ctx.fill(
-    CGRect(x: splitRect.minX, y: splitRect.maxY, width: splitRect.width, height: max(1, splitHeight * 0.35))
-  )
-
+  // ── Top edge bevel highlight ──
   ctx.saveGState()
-  ctx.clip(to: rect)
-  ctx.setShadow(offset: .zero, blur: rect.width * 0.05, color: whiteGlow)
-  drawCenteredText(ctx, text: text, rect: rect, fontSize: fontSize, color: white)
+  ctx.addPath(clip)
+  ctx.clip()
+  ctx.setFillColor(cellEdgeHL)
+  ctx.fill(CGRect(x: rect.minX + r * 0.4, y: rect.maxY - 2.0, width: rect.width - r * 0.8, height: 1.5))
   ctx.restoreGState()
 
+  // ── Border ──
+  let inset = rect.insetBy(dx: bw * 0.5, dy: bw * 0.5)
+  ctx.addPath(rrPath(inset, radius: r - bw * 0.5))
+  ctx.setStrokeColor(borderColor)
+  ctx.setLineWidth(bw)
+  ctx.strokePath()
+
+  // ── Split-flap hinge ──
+  // 1) Dark gap
+  let gapRect = CGRect(
+    x: rect.minX + rect.width * 0.01,
+    y: rect.midY - sh / 2,
+    width: rect.width * 0.98,
+    height: sh
+  )
+  ctx.setFillColor(hingeGap)
+  ctx.fill(gapRect)
+
+  // 2) Highlight below gap (light catching bottom flap edge)
+  ctx.setFillColor(hingeHL)
+  ctx.fill(CGRect(x: gapRect.minX, y: gapRect.maxY, width: gapRect.width, height: max(1.5, sh * 0.30)))
+
+  // 3) Shadow above gap (top flap casting shadow)
+  ctx.setFillColor(color(0x00, 0x00, 0x00, 0.20))
+  ctx.fill(CGRect(x: gapRect.minX, y: gapRect.minY - max(1.5, sh * 0.30), width: gapRect.width, height: max(1.5, sh * 0.30)))
+
+  // ── Text: glow pass ──
+  ctx.saveGState()
+  ctx.addPath(clip)
+  ctx.clip()
+  ctx.setShadow(offset: .zero, blur: rect.width * 0.05, color: textGlowColor)
+  drawText(ctx, text: text, rect: rect, fontSize: fontSize, col: textColor)
+  ctx.restoreGState()
+
+  // ── Text: crisp pass ──
+  ctx.saveGState()
+  ctx.addPath(clip)
+  ctx.clip()
+  drawText(ctx, text: text, rect: rect, fontSize: fontSize, col: textColor)
+  ctx.restoreGState()
+
+  // ── Mid-flip overlay ──
   if let flipTopText {
     ctx.saveGState()
-    ctx.clip(to: topRect.insetBy(dx: 0, dy: -rect.height * 0.02))
-    let shifted = rect.offsetBy(dx: 0, dy: rect.height * 0.08)
-    drawCenteredText(
-      ctx,
-      text: flipTopText,
-      rect: shifted,
-      fontSize: fontSize * 0.9,
-      color: flipGhost
-    )
+    ctx.clip(to: topHalf.insetBy(dx: 0, dy: -rect.height * 0.02))
+    drawText(ctx, text: flipTopText, rect: rect.offsetBy(dx: 0, dy: rect.height * 0.08),
+             fontSize: fontSize * 0.9, col: flipGhostColor)
     ctx.restoreGState()
 
     let flapRect = CGRect(
-      x: rect.minX + rect.width * 0.025,
-      y: rect.midY - rect.height * 0.05,
-      width: rect.width * 0.95,
-      height: rect.height * 0.12
+      x: rect.minX + rect.width * 0.015,
+      y: rect.midY - rect.height * 0.06,
+      width: rect.width * 0.97,
+      height: rect.height * 0.14
     )
-    fillRoundedRect(ctx, rect: flapRect, radius: rect.width * 0.025, color: color(0x1B, 0x17, 0x12))
-    strokeRoundedRect(ctx, rect: flapRect, radius: rect.width * 0.025, color: border, width: borderWidth * 0.7)
+    ctx.addPath(rrPath(flapRect, radius: rect.width * 0.02))
+    ctx.setFillColor(color(0x1E, 0x19, 0x13))
+    ctx.fillPath()
+    ctx.addPath(rrPath(flapRect, radius: rect.width * 0.02))
+    ctx.setStrokeColor(borderColor)
+    ctx.setLineWidth(bw * 0.6)
+    ctx.strokePath()
   }
 }
 
-func drawBoardMark(_ ctx: CGContext, size: CGFloat, mode: RenderMode, frame: BoardFrame) {
+// ─── Board composition ──────────────────────────────────────────────────────
+
+func drawBoard(_ ctx: CGContext, size: CGFloat, mode: RenderMode, frame: BoardFrame) {
   let transparent = mode == .transparentMark
-  let markWidth = size * (transparent ? 0.9 : 0.88)
-  let cellWidth = markWidth * 0.488
-  let cellHeight = size * (transparent ? 0.52 : 0.5)
-  let cellGap = markWidth * 0.02
-  let totalWidth = cellWidth * 2 + cellGap
-  let originX = (size - totalWidth) / 2
-  let originY = (size - cellHeight) / 2
-  let shadowBlur = size * (transparent ? 0.018 : 0.024)
+  let mw = size * (transparent ? 0.88 : 0.84)
+  let cw = mw * 0.484
+  let ch = size * (transparent ? 0.50 : 0.48)
+  let gap = mw * 0.030
+  let tw = cw * 2 + gap
+  let ox = (size - tw) / 2
+  let oy = (size - ch) / 2
+  let blur = size * (transparent ? 0.02 : 0.04)
 
-  let firstCell = CGRect(
-    x: originX,
-    y: originY,
-    width: cellWidth,
-    height: cellHeight
-  )
+  let c1 = CGRect(x: ox, y: oy, width: cw, height: ch)
+  let c2 = CGRect(x: c1.maxX + gap, y: oy, width: cw, height: ch)
 
-  let secondCell = CGRect(
-    x: firstCell.maxX + cellGap,
-    y: originY,
-    width: cellWidth,
-    height: cellHeight
-  )
-
+  // Ambient glow behind board
   if !transparent {
-    let halo = CGRect(
-      x: firstCell.minX - size * 0.08,
-      y: firstCell.minY - size * 0.07,
-      width: secondCell.maxX - firstCell.minX + size * 0.16,
-      height: cellHeight + size * 0.14
-    )
     ctx.saveGState()
-    ctx.setAlpha(0.65)
-    let glow = gradient([whiteGlow, color(0x0A, 0x08, 0x06, 0)], locations: [0, 1])
+    let center = CGPoint(x: (c1.minX + c2.maxX) / 2, y: (c1.minY + c1.maxY) / 2)
     ctx.drawRadialGradient(
-      glow,
-      startCenter: CGPoint(x: halo.midX, y: halo.midY),
-      startRadius: 0,
-      endCenter: CGPoint(x: halo.midX, y: halo.midY),
-      endRadius: halo.width * 0.5,
+      gradient([color(0x35, 0x2A, 0x1C, 0.25), color(0x06, 0x05, 0x03, 0)], locations: [0, 1]),
+      startCenter: center, startRadius: 0,
+      endCenter: center, endRadius: tw * 0.6,
       options: .drawsAfterEndLocation
     )
     ctx.restoreGState()
   }
 
+  // G cell
   ctx.saveGState()
-  ctx.setShadow(offset: CGSize(width: 0, height: -size * 0.006), blur: shadowBlur, color: softShadow)
-  drawCell(ctx, rect: firstCell, text: "G", fontSize: cellHeight * 0.7)
-  drawCell(
-    ctx,
-    rect: secondCell,
-    text: "O",
-    flipTopText: frame == .midFlip ? "N" : nil,
-    fontSize: cellHeight * 0.7
-  )
+  ctx.setShadow(offset: CGSize(width: 0, height: -size * 0.010), blur: blur, color: dropShadow)
+  drawCell(ctx, rect: c1, text: "G", fontSize: ch * 0.66)
+  ctx.restoreGState()
+
+  // O cell
+  ctx.saveGState()
+  ctx.setShadow(offset: CGSize(width: 0, height: -size * 0.010), blur: blur, color: dropShadow)
+  drawCell(ctx, rect: c2, text: "O", flipTopText: frame == .midFlip ? "N" : nil, fontSize: ch * 0.66)
   ctx.restoreGState()
 }
 
+// ─── PNG writer ──────────────────────────────────────────────────────────────
+
 func writePNG(_ ctx: CGContext, to url: URL) {
-  guard let image = ctx.makeImage() else {
-    fatalError("Unable to render image for \(url.path)")
-  }
-
+  guard let image = ctx.makeImage() else { fatalError("No image for \(url.path)") }
   fileManager.createFile(atPath: url.path, contents: nil)
-
-  guard let destination = CGImageDestinationCreateWithURL(
-    url as CFURL,
-    UTType.png.identifier as CFString,
-    1,
-    nil
-  ) else {
-    fatalError("Unable to create PNG destination for \(url.path)")
-  }
-
-  CGImageDestinationAddImage(destination, image, nil)
-  guard CGImageDestinationFinalize(destination) else {
-    fatalError("Unable to write PNG to \(url.path)")
-  }
+  guard let dest = CGImageDestinationCreateWithURL(
+    url as CFURL, UTType.png.identifier as CFString, 1, nil
+  ) else { fatalError("No dest for \(url.path)") }
+  CGImageDestinationAddImage(dest, image, nil)
+  guard CGImageDestinationFinalize(dest) else { fatalError("Write failed for \(url.path)") }
 }
+
+// ─── Render + export ─────────────────────────────────────────────────────────
 
 func renderIcon(size: Int, mode: RenderMode, frame: BoardFrame) -> CGContext {
   let transparent = mode == .transparentMark
   let ctx = makeContext(size: size, transparent: transparent)
-
-  if !transparent {
-    drawBackground(ctx, size: CGFloat(size))
-  }
-
-  drawBoardMark(ctx, size: CGFloat(size), mode: mode, frame: frame)
+  if !transparent { drawBackground(ctx, size: CGFloat(size)) }
+  drawBoard(ctx, size: CGFloat(size), mode: mode, frame: frame)
   return ctx
 }
 
@@ -335,11 +340,9 @@ let exports: [(String, Int, RenderMode, BoardFrame)] = [
   ("SoGoJet-iOS/SoGoJet/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png", 1024, .fullBackground, .settled),
 ]
 
-for (relativePath, size, mode, frame) in exports {
-  let outputURL = repoRoot.appendingPathComponent(relativePath)
-  let directory = outputURL.deletingLastPathComponent()
-  try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-  let ctx = renderIcon(size: size, mode: mode, frame: frame)
-  writePNG(ctx, to: outputURL)
-  print("Wrote \(relativePath)")
+for (path, size, mode, frame) in exports {
+  let url = repoRoot.appendingPathComponent(path)
+  try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+  writePNG(renderIcon(size: size, mode: mode, frame: frame), to: url)
+  print("Wrote \(path)")
 }

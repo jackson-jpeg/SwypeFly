@@ -18,6 +18,8 @@ struct DestinationDetailView: View {
     @State private var showBudget: Bool = false
     @State private var showTips: Bool = false
     @State private var showPacking: Bool = false
+    @State private var showTripPlan: Bool = false
+    @State private var showHotelSearch: Bool = false
 
     private var isSaved: Bool {
         savedStore.isSaved(id: deal.id)
@@ -58,6 +60,12 @@ struct DestinationDetailView: View {
         }
         .sheet(item: $shareItem) { item in
             DetailShareSheet(activityItems: item.activityItems)
+        }
+        .sheet(isPresented: $showTripPlan) {
+            TripPlanView(city: deal.city, country: deal.country, destinationId: deal.id)
+        }
+        .sheet(isPresented: $showHotelSearch) {
+            HotelSearchView(deal: deal)
         }
     }
 
@@ -101,13 +109,10 @@ struct DestinationDetailView: View {
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
-                        if deal.isEstimatedPrice {
-                            HStack(spacing: 3) {
-                                Text("seen at")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundStyle(Color.sgWhite.opacity(0.7))
-                                PriceInfoButton()
-                            }
+                        HStack(spacing: 3) {
+                            Text("from")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.sgWhite.opacity(0.7))
                         }
                         Text(deal.priceFormatted)
                             .font(SGFont.bodyBold(size: 24))
@@ -124,6 +129,20 @@ struct DestinationDetailView: View {
                     }
                 }
                 .padding(16)
+            }
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    router.dismissSheet()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(width: 32, height: 32)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                }
+                .padding(.top, 12)
+                .padding(.trailing, 16)
             }
         }
         .frame(height: 320)
@@ -418,11 +437,6 @@ struct DestinationDetailView: View {
                     Annotation(deal.city, coordinate: destCoord) {
                         VStack(spacing: 2) {
                             VStack(spacing: 0) {
-                                if deal.isEstimatedPrice {
-                                    Text("seen at")
-                                        .font(.system(size: 7, weight: .medium))
-                                        .foregroundStyle(Color.sgBg.opacity(0.7))
-                                }
                                 Text(deal.priceFormatted)
                                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                                     .foregroundStyle(Color.sgBg)
@@ -1513,16 +1527,9 @@ struct DestinationDetailView: View {
                 .font(SGFont.bodyBold(size: 14))
                 .foregroundStyle(Color.sgWhite)
                 .lineLimit(1)
-            HStack(spacing: 2) {
-                if otherDeal.isEstimatedPrice {
-                    Text("seen at")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Color.sgMuted)
-                }
-                Text(otherDeal.priceFormatted)
-                    .font(SGFont.bodyBold(size: 13))
-                    .foregroundStyle(Color.sgYellow)
-            }
+            Text(otherDeal.priceFormatted)
+                .font(SGFont.bodyBold(size: 13))
+                .foregroundStyle(Color.sgYellow)
         }
         .frame(width: 140)
         .contentShape(Rectangle())
@@ -1531,7 +1538,7 @@ struct DestinationDetailView: View {
             router.showDeal(otherDeal)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(otherDeal.city), \(otherDeal.isEstimatedPrice ? "seen at " : "")\(otherDeal.priceFormatted)")
+        .accessibilityLabel("\(otherDeal.city), \(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
         .accessibilityAddTraits(.isButton)
     }
@@ -1600,16 +1607,9 @@ struct DestinationDetailView: View {
                 .font(SGFont.bodyBold(size: 14))
                 .foregroundStyle(Color.sgWhite)
                 .lineLimit(1)
-            HStack(spacing: 2) {
-                if otherDeal.isEstimatedPrice {
-                    Text("seen at")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Color.sgMuted)
-                }
-                Text(otherDeal.priceFormatted)
-                    .font(SGFont.bodyBold(size: 13))
-                    .foregroundStyle(Color.sgYellow)
-            }
+            Text(otherDeal.priceFormatted)
+                .font(SGFont.bodyBold(size: 13))
+                .foregroundStyle(Color.sgYellow)
         }
         .frame(width: 140)
         .contentShape(Rectangle())
@@ -1618,7 +1618,7 @@ struct DestinationDetailView: View {
             router.showDeal(otherDeal)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(otherDeal.city), \(distanceKm) kilometers away, \(otherDeal.isEstimatedPrice ? "seen at " : "")\(otherDeal.priceFormatted)")
+        .accessibilityLabel("\(otherDeal.city), \(distanceKm) kilometers away, \(otherDeal.priceFormatted)")
         .accessibilityHint("View deal details")
         .accessibilityAddTraits(.isButton)
     }
@@ -1665,6 +1665,20 @@ struct DestinationDetailView: View {
                 .accessibilityLabel("Share \(deal.city)")
 
                 Button {
+                    HapticEngine.light()
+                    showTripPlan = true
+                } label: {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.sgYellow)
+                        .frame(width: 48, height: 48)
+                        .background(Color.sgSurface)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Plan a trip to \(deal.city)")
+
+                Button {
                     HapticEngine.medium()
                     router.startBooking(deal)
                 } label: {
@@ -1683,28 +1697,47 @@ struct DestinationDetailView: View {
                 .accessibilityLabel("Search flights to \(deal.city)")
             }
 
-            Button {
-                let origin = settingsStore.departureCode
-                let dest = deal.iataCode
-                var targetUrl: URL?
-                if let affiliate = deal.affiliateUrl, !affiliate.isEmpty,
-                   let url = URL(string: affiliate) {
-                    targetUrl = url
-                } else {
-                    let datePart = deal.bestDepartureDate.map { "+on+\($0)" } ?? ""
-                    let query = "flights+from+\(origin)+to+\(dest)\(datePart)"
-                    targetUrl = URL(string: "https://www.google.com/travel/flights?q=\(query)")
+            HStack(spacing: Spacing.lg) {
+                Button {
+                    let origin = settingsStore.departureCode
+                    let dest = deal.iataCode
+                    var targetUrl: URL?
+                    if let affiliate = deal.affiliateUrl, !affiliate.isEmpty,
+                       let url = URL(string: affiliate) {
+                        targetUrl = url
+                    } else {
+                        let datePart = deal.bestDepartureDate.map { "+on+\($0)" } ?? ""
+                        let query = "flights+from+\(origin)+to+\(dest)\(datePart)"
+                        targetUrl = URL(string: "https://www.google.com/travel/flights?q=\(query)")
+                    }
+                    if let url = targetUrl {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text("Compare Prices")
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgMuted)
                 }
-                if let url = targetUrl {
-                    UIApplication.shared.open(url)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Compare prices for flights to \(deal.city)")
+
+                if deal.latitude != nil && deal.longitude != nil {
+                    Button {
+                        HapticEngine.light()
+                        showHotelSearch = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "building.2")
+                                .font(.system(size: 10))
+                            Text("Find Hotels")
+                                .font(SGFont.body(size: 12))
+                        }
+                        .foregroundStyle(Color.sgMuted)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Find hotels in \(deal.city)")
                 }
-            } label: {
-                Text("Compare Prices")
-                    .font(SGFont.body(size: 12))
-                    .foregroundStyle(Color.sgMuted)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Compare prices for flights to \(deal.city)")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

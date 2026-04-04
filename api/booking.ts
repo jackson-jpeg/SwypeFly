@@ -17,9 +17,31 @@ import { verifyClerkToken } from '../utils/clerkAuth';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
+import { env, STUB_MODE } from '../utils/env';
+import type {
+  Offer,
+  OfferSlice,
+  OfferSliceSegment,
+  OfferAvailableService,
+  OfferPassenger,
+  Order,
+  OrderSlice,
+  OrderSliceSegment,
+  OrderPassenger,
+  SeatMap,
+} from '@duffel/api/types';
+import {
+  transformSeatMap,
+  getErrorMessage,
+  getErrorDetail,
+  getFirstDuffelError,
+  mapOrderSlices,
+  mapOrderPassengers,
+  mapOrderToFlightStatusSegments,
+} from '../utils/duffelMapper';
+import { sendError } from '../utils/apiResponse';
 
-const STUB_MODE = !process.env.DUFFEL_API_KEY;
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 
 // ─── Auth helper ─────────────────────────────────────────────────────────────
 
@@ -29,16 +51,15 @@ function getJwt(req: VercelRequest): string | null {
   return authHeader.replace('Bearer ', '');
 }
 
-async function verifyUser(jwt: string) {
+async function verifyUser(jwt: string): Promise<{ $id: string } | null> {
   const result = await verifyClerkToken(`Bearer ${jwt}`);
-  if (!result) throw new Error('Invalid token');
+  if (!result) return null;
   return { $id: result.userId };
 }
 
 // ─── Stub data for when Duffel/Stripe keys are not configured ───────────────
 
 // ─── Transform Duffel response to frontend-friendly camelCase format ─────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseDuration(iso: string): string {
   // Handle ISO 8601 durations like PT4H35M, P1DT8H20M, P2DT3H
   const dm = iso.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/);
@@ -61,18 +82,18 @@ function connectionDuration(arrivalIso: string, departureIso: string): string {
   return `${h}h ${m}m`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformOffer(raw: any, cabinClass = 'economy') {
-  const total = parseFloat(raw.total_amount) || 0;
+type OfferLike = Offer | Omit<Offer, 'available_services'>;
+
+function transformOffer(raw: OfferLike | Record<string, unknown>, cabinClass = 'economy') {
+  const offer = raw as Offer;
+  const total = parseFloat(offer.total_amount) || 0;
   const tax = Math.round(total * 0.19);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const slices = (raw.slices || []).map((s: any) => {
+  const slices = (offer.slices || []).map((s: OfferSlice) => {
     const firstSeg = s.segments?.[0];
     const lastSeg = s.segments?.length > 1 ? s.segments[s.segments.length - 1] : firstSeg;
 
     // Map ALL segments (not just first/last) for connection details
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const segments = (s.segments || []).map((seg: any) => ({
+    const segments = (s.segments || []).map((seg: OfferSliceSegment) => ({
       origin: seg.origin?.iata_code || '',
       originCityName: seg.origin?.city_name || seg.origin?.name || '',
       destination: seg.destination?.iata_code || '',
@@ -85,7 +106,7 @@ function transformOffer(raw: any, cabinClass = 'economy') {
       flightNumber: seg.operating_carrier_flight_number || seg.marketing_carrier_flight_number || '',
       aircraft: seg.aircraft?.name || '',
       aircraftCode: seg.aircraft?.iata_code || '',
-      cabinClass: seg.cabin_class || '',
+      cabinClass: seg.passengers?.[0]?.cabin_class || '',
     }));
 
     // Calculate connection durations between consecutive segments
@@ -96,53 +117,53 @@ function transformOffer(raw: any, cabinClass = 'economy') {
 
     return {
       origin: s.origin?.iata_code ?? '',
-      originCityName: s.origin?.city_name || s.origin?.name || '',
+      originCityName: (s.origin && 'city_name' in s.origin ? s.origin.city_name : null) || s.origin?.name || '',
       destination: s.destination?.iata_code ?? '',
-      destinationCityName: s.destination?.city_name || s.destination?.name || '',
+      destinationCityName: (s.destination && 'city_name' in s.destination ? s.destination.city_name : null) || s.destination?.name || '',
       departureTime: firstSeg?.departing_at ?? '',
       arrivalTime: lastSeg?.arriving_at ?? '',
       duration: parseDuration(s.duration || ''),
       stops: (s.segments?.length || 1) - 1,
-      airline: firstSeg?.operating_carrier?.name ?? raw.owner?.name ?? '',
+      airline: firstSeg?.operating_carrier?.name ?? offer.owner?.name ?? '',
       flightNumber: `${firstSeg?.operating_carrier?.iata_code ?? ''} ${firstSeg?.operating_carrier_flight_number ?? ''}`.trim(),
       aircraft: firstSeg?.aircraft?.name ?? '',
       segments,
       connectionDurations: connections,
     };
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const services = (raw.available_services || []).map((svc: any) => ({
+  const availableServices = 'available_services' in offer ? (offer as Offer).available_services : [];
+  const services = (availableServices || []).map((svc: OfferAvailableService) => ({
     id: svc.id,
     type: svc.type,
-    name: svc.metadata?.type ? `${svc.metadata.type} (${svc.metadata.weight_kg}kg)` : svc.type,
+    name: svc.type === 'baggage'
+      ? `${svc.metadata.type} (${svc.metadata.maximum_weight_kg}kg)`
+      : svc.type,
     amount: parseFloat(svc.total_amount) || 0,
     currency: svc.total_currency || 'USD',
     metadata: svc.metadata,
   }));
 
   // Extract baggage info from first passenger
-  const firstPassenger = raw.passengers?.[0];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baggageIncluded = (firstPassenger?.baggages || []).map((b: any) => ({
+  const firstPassenger = offer.passengers?.[0] as OfferPassenger | undefined;
+  const firstSegPassenger = offer.slices?.[0]?.segments?.[0]?.passengers?.[0];
+  const baggageIncluded = (firstSegPassenger?.baggages || []).map((b) => ({
     type: b.type || '',           // 'carry_on' or 'checked'
     quantity: b.quantity ?? 0,
   }));
 
-  // Extract meal info from first passenger (if available)
-  const mealInfo = firstPassenger?.meal
-    ? { type: firstPassenger.meal.type || '', description: firstPassenger.meal.description || '' }
-    : null;
+  // Meal info is not part of the typed Duffel SDK — leave as null
+  const mealInfo: { type: string; description: string } | null = null;
 
   // Extract booking conditions (refund/change policies)
-  const rawConditions = raw.conditions || {};
+  const offerConditions = offer.conditions;
   const conditions = {
-    refundable: rawConditions.refund_before_departure?.allowed ?? null,
-    refundPenalty: rawConditions.refund_before_departure?.penalty_amount
-      ? `${rawConditions.refund_before_departure.penalty_currency || 'USD'} ${rawConditions.refund_before_departure.penalty_amount}`
+    refundable: offerConditions?.refund_before_departure?.allowed ?? null,
+    refundPenalty: offerConditions?.refund_before_departure?.penalty_amount
+      ? `${offerConditions.refund_before_departure.penalty_currency || 'USD'} ${offerConditions.refund_before_departure.penalty_amount}`
       : null,
-    changeable: rawConditions.change_before_departure?.allowed ?? null,
-    changePenalty: rawConditions.change_before_departure?.penalty_amount
-      ? `${rawConditions.change_before_departure.penalty_currency || 'USD'} ${rawConditions.change_before_departure.penalty_amount}`
+    changeable: offerConditions?.change_before_departure?.allowed ?? null,
+    changePenalty: offerConditions?.change_before_departure?.penalty_amount
+      ? `${offerConditions.change_before_departure.penalty_currency || 'USD'} ${offerConditions.change_before_departure.penalty_amount}`
       : null,
   };
 
@@ -151,15 +172,15 @@ function transformOffer(raw: any, cabinClass = 'economy') {
   const markedUpTotal = total + markupAmount;
 
   return {
-    id: raw.id,
+    id: offer.id,
     totalAmount: markedUpTotal,
-    totalCurrency: raw.total_currency || 'USD',
+    totalCurrency: offer.total_currency || 'USD',
     baseAmount: markedUpTotal - tax,
     taxAmount: tax,
     slices,
-    cabinClass: raw.slices?.[0]?.segments?.[0]?.cabin_class ?? cabinClass,
-    passengers: raw.passengers || [],
-    expiresAt: raw.expires_at ?? new Date(Date.now() + 7 * 86400000).toISOString(),
+    cabinClass: offer.slices?.[0]?.segments?.[0]?.passengers?.[0]?.cabin_class ?? cabinClass,
+    passengers: offer.passengers || [],
+    expiresAt: offer.expires_at ?? new Date(Date.now() + 7 * 86400000).toISOString(),
     availableServices: services,
     baggageIncluded,
     mealInfo,
@@ -407,68 +428,7 @@ function stubGetOrder(orderId: string) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function transformSeatMap(raw: any): { columns: string[]; exitRows: number[]; aisleAfterColumns: string[]; rows: { rowNumber: number; seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string; serviceId: string | null }[] }[] } | null {
-  if (!raw || !Array.isArray(raw)) return null;
-  // Duffel returns an array of seat maps (one per slice); use the first
-  const sliceMap = raw[0];
-  if (!sliceMap?.cabins?.length) return null;
-
-  const cabin = sliceMap.cabins[0]; // primary cabin
-  const allColumns = new Set<string>();
-  const exitRows: number[] = [];
-  const aisleAfterCols = new Set<string>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows: any[] = [];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const row of cabin.rows ?? []) {
-    const rowNumber = row.sections?.[0]?.elements?.[0]?.designator?.match(/^(\d+)/)?.[1];
-    if (!rowNumber) continue;
-    const rn = parseInt(rowNumber);
-    let isExit = false;
-    const seats: { column: string; available: boolean; extraLegroom: boolean; price: number; currency: string; designator: string; serviceId: string | null }[] = [];
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    row.sections?.forEach((section: any, sIdx: number) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const el of section.elements ?? []) {
-        if (el.type !== 'seat') continue;
-        const col = el.designator?.replace(/^\d+/, '') ?? '';
-        allColumns.add(col);
-        const hasExitDisclosure = el.disclosures?.includes('exit_row') ?? false;
-        if (hasExitDisclosure) isExit = true;
-        const seatService = el.available_services?.[0];
-        const price = seatService ? parseFloat(seatService.total_amount) || 0 : 0;
-        const currency = seatService?.total_currency || 'USD';
-        seats.push({
-          column: col,
-          available: Array.isArray(el.available_services) ? el.available_services.length > 0 : false,
-          extraLegroom: hasExitDisclosure || (el.disclosures?.includes('extra_legroom') ?? false),
-          price,
-          currency,
-          designator: el.designator || `${rn}${col}`,
-          serviceId: seatService?.id || null,
-        });
-      }
-      // Track aisles: if there's a next section, the last column of this section is before an aisle
-      if (sIdx < (row.sections?.length ?? 0) - 1 && seats.length > 0) {
-        aisleAfterCols.add(seats[seats.length - 1].column);
-      }
-    });
-
-    if (isExit) exitRows.push(rn);
-    rows.push({ rowNumber: rn, seats });
-  }
-
-  const columns = Array.from(allColumns).sort();
-  return {
-    columns,
-    exitRows,
-    aisleAfterColumns: Array.from(aisleAfterCols).sort(),
-    rows,
-  };
-}
+// transformSeatMap is imported from utils/duffelMapper
 
 // ─── Offer expiration helper ─────────────────────────────────────────────────
 
@@ -512,8 +472,7 @@ async function refreshExpiredOffer(
     }
 
     // Sort by price and pick the cheapest
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    offers.sort((a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount));
+    offers.sort((a, b) => parseFloat(a.total_amount) - parseFloat(b.total_amount));
     const bestOffer = offers[0];
     const newPrice = parseFloat(bestOffer.total_amount) || 0;
 
@@ -532,14 +491,14 @@ async function refreshExpiredOffer(
 // ─── Live action handlers ───────────────────────────────────────────────────
 
 async function handleSearch(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const v = validateRequest(bookingSearchSchema, req.body);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
   // Guard: origin and destination cannot be the same airport
   if (v.data.origin.toUpperCase() === v.data.destination.toUpperCase()) {
-    return res.status(400).json({ error: 'Origin and destination cannot be the same airport' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Origin and destination cannot be the same airport');
   }
 
   if (STUB_MODE) {
@@ -549,22 +508,69 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { searchFlights } = await import('../services/duffel.js');
-    const result = await searchFlights({
-      origin: v.data.origin,
-      destination: v.data.destination,
-      departureDate: v.data.departureDate,
-      returnDate: v.data.returnDate,
-      passengers: v.data.passengers,
-      cabinClass: v.data.cabinClass,
-    });
+    const { searchFlights, getOffer } = await import('../services/duffel.js');
 
-    const offers = (result.offers || [])
-      .sort((a: { total_amount: string }, b: { total_amount: string }) =>
-        parseFloat(a.total_amount) - parseFloat(b.total_amount),
-      )
-      .slice(0, 20)
-      .map((o: Record<string, unknown>) => transformOffer(o, v.data.cabinClass || 'economy'));
+    // ── Try cached offer first ──────────────────────────────────────────
+    // If the feed passed a cached Duffel offer ID, try to fetch it directly.
+    // This gives the user the EXACT same price they saw on the feed.
+    // Duffel offers typically expire in 30-60 minutes, so this works best
+    // when the user taps to book shortly after seeing the deal.
+    let offers: ReturnType<typeof transformOffer>[] = [];
+    let usedCachedOffer = false;
+
+    if (v.data.cachedOfferId) {
+      try {
+        const cachedOffer = await getOffer(v.data.cachedOfferId);
+        if (cachedOffer) {
+          const transformed = transformOffer(cachedOffer as unknown as Record<string, unknown>, v.data.cabinClass || 'economy');
+          offers = [transformed];
+          usedCachedOffer = true;
+          console.info(`[booking] Reused cached offer ${v.data.cachedOfferId}: $${transformed.totalAmount}`);
+        }
+      } catch (err) {
+        // Offer expired or invalid — fall through to fresh search
+        console.info(`[booking] Cached offer ${v.data.cachedOfferId} expired, falling back to fresh search`);
+      }
+    }
+
+    // ── Check if user's dates match the cached price dates ─────────────
+    // If they do and the price still differs, it's a genuine price change.
+    // If they don't, the difference is explained by different travel dates.
+    let feedDatesMatch = false;
+    if (v.data.priceHint && v.data.departureDate && !usedCachedOffer) {
+      try {
+        const { data: cachedPrice } = await supabase
+          .from(TABLES.cachedPrices)
+          .select('departure_date, return_date')
+          .eq('origin', v.data.origin.toUpperCase())
+          .eq('destination_iata', v.data.destination.toUpperCase())
+          .limit(1)
+          .single();
+        if (cachedPrice) {
+          feedDatesMatch = cachedPrice.departure_date === v.data.departureDate
+            && (!v.data.returnDate || cachedPrice.return_date === v.data.returnDate);
+        }
+      } catch { /* ignore — feedDatesMatch stays false */ }
+    }
+
+    // ── Fresh search fallback ───────────────────────────────────────────
+    if (!usedCachedOffer) {
+      const result = await searchFlights({
+        origin: v.data.origin,
+        destination: v.data.destination,
+        departureDate: v.data.departureDate,
+        returnDate: v.data.returnDate,
+        passengers: v.data.passengers,
+        cabinClass: v.data.cabinClass,
+      });
+
+      offers = (result.offers || [])
+        .sort((a: { total_amount: string }, b: { total_amount: string }) =>
+          parseFloat(a.total_amount) - parseFloat(b.total_amount),
+        )
+        .slice(0, 20)
+        .map((o: Record<string, unknown>) => transformOffer(o, v.data.cabinClass || 'economy'));
+    }
 
     // Price discrepancy context: compare cheapest offer to the priceHint from feed
     let priceDiscrepancy: {
@@ -573,6 +579,7 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
       feedPrice: number;
       bookingPrice: number;
       percentDiff: number;
+      feedDatesMatch: boolean;
     } | undefined;
 
     if (v.data.priceHint && offers.length > 0) {
@@ -584,42 +591,52 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
       if (diff <= 0) {
         priceDiscrepancy = {
           tier: 'cheaper',
+          message: usedCachedOffer ? 'Same deal, same price!' : 'This deal is still available!',
+          feedPrice, bookingPrice: cheapest, percentDiff, feedDatesMatch,
+        };
+      } else if (percentDiff <= 5) {
+        // Within 5% — don't alarm the user
+        priceDiscrepancy = {
+          tier: 'similar',
           message: 'This deal is still available!',
-          feedPrice, bookingPrice: cheapest, percentDiff,
+          feedPrice, bookingPrice: cheapest, percentDiff, feedDatesMatch,
         };
       } else if (percentDiff <= 15) {
         priceDiscrepancy = {
           tier: 'similar',
-          message: `Price updated to $${cheapest}`,
-          feedPrice, bookingPrice: cheapest, percentDiff,
+          message: feedDatesMatch
+            ? `Price updated to $${cheapest}`
+            : `$${cheapest} for your selected dates`,
+          feedPrice, bookingPrice: cheapest, percentDiff, feedDatesMatch,
         };
       } else if (percentDiff <= 50) {
         priceDiscrepancy = {
           tier: 'moderate_increase',
-          message: `Live fares are ${percentDiff}% higher than when this deal was spotted.`,
-          feedPrice, bookingPrice: cheapest, percentDiff,
+          message: feedDatesMatch
+            ? `Live fares are ${percentDiff}% higher than when this deal was spotted.`
+            : `Your dates are ${percentDiff}% more than the deal dates. Try the recommended dates for the best fare.`,
+          feedPrice, bookingPrice: cheapest, percentDiff, feedDatesMatch,
         };
       } else {
         priceDiscrepancy = {
           tier: 'significant_increase',
-          message: `Fares have jumped ${percentDiff}% since this deal was spotted. Prices change fast — these are today's live rates.`,
-          feedPrice, bookingPrice: cheapest, percentDiff,
+          message: feedDatesMatch
+            ? `Fares have jumped ${percentDiff}% since this deal was spotted. Prices change fast — these are today's live rates.`
+            : `Your dates are ${percentDiff}% more. Flexible dates? Try the deal's recommended window for the advertised fare.`,
+          feedPrice, bookingPrice: cheapest, percentDiff, feedDatesMatch,
         };
       }
     }
 
     // Write the live price back to cached_prices so the feed stays current.
-    // Without this, the feed shows stale prices until the next cron refresh.
-    if (offers.length > 0) {
+    // Only for fresh searches — cached offer reuse already has fresh data.
+    if (offers.length > 0 && !usedCachedOffer) {
       const cheapest = offers[0];
       const rawPrice = cheapest._duffelBasePrice ?? cheapest.totalAmount;
-      const outSlice = (result.offers?.[0] as Record<string, any>)?.slices?.[0];
-      let duration = '';
-      if (outSlice?.duration) {
-        const match = (outSlice.duration as string).match(/PT(\d+)H(\d+)?M?/);
-        if (match) duration = `${match[1]}h ${match[2] || '0'}m`;
-      }
-      const airline = outSlice?.segments?.[0]?.marketing_carrier?.iata_code ?? '';
+      const outSlice = cheapest.slices?.[0];
+      const firstSeg = outSlice?.segments?.[0];
+      const airline = firstSeg?.airlineCode || '';
+      const duration = outSlice?.duration || '';
       supabase
         .from(TABLES.cachedPrices)
         .upsert(
@@ -644,19 +661,19 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(200).json({ offers, priceDiscrepancy });
-  } catch (err: any) {
+  } catch (err: unknown) {
     logApiError('api/booking/search', err);
-    const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);
-    console.error('[booking/search] Duffel error detail:', JSON.stringify(detail, null, 2));
-    return res.status(500).json({ error: 'Failed to search flights' });
+    const detail = getErrorDetail(err);
+    console.error('[booking/search] Duffel error detail:', detail);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to search flights');
   }
 }
 
 async function handleOffer(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const v = validateRequest(bookingOfferSchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Duffel API key not configured');
@@ -670,7 +687,7 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
       getSeatMap(v.data.offerId).catch(() => null),
     ]);
     return res.status(200).json({ offer: transformOffer(rawOffer), seatMap: transformSeatMap(seatMap) });
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Check if the offer expired — try to refresh if we have route info in query params
     const origin = String(req.query.origin || '');
     const destination = String(req.query.destination || '');
@@ -710,12 +727,12 @@ async function handleOffer(req: VercelRequest, res: VercelResponse) {
     }
 
     logApiError('api/booking/offer', err);
-    return res.status(500).json({ error: 'Failed to get offer details' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to get offer details');
   }
 }
 
 async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Stripe/Duffel API keys not configured');
@@ -727,11 +744,11 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
     let userId = 'guest';
     if (jwt) {
       const user = await verifyUser(jwt);
-      userId = user.$id;
+      if (user) userId = user.$id;
     }
 
     const v = validateRequest(paymentIntentSchema, req.body);
-    if (!v.success) return res.status(400).json({ error: v.error });
+    if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
     // Validate that the client-sent amount matches the actual offer price from Duffel
     try {
@@ -745,25 +762,19 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
       const discrepancy = Math.abs(clientAmount - expectedTotal) / expectedTotal;
       if (discrepancy > 0.005) {
         console.warn(`[booking/payment-intent] Amount mismatch: client=$${clientAmount}, expected=$${expectedTotal} (${(discrepancy * 100).toFixed(1)}% off)`);
-        return res.status(400).json({
-          error: 'Payment amount does not match offer price. Please refresh the offer and try again.',
-          code: 'AMOUNT_MISMATCH',
-          expectedAmount: Math.round(expectedTotal * 100),
-          providedAmount: v.data.amount,
+        return sendError(res, 400, 'AMOUNT_MISMATCH', 'Payment amount does not match offer price. Please refresh the offer and try again.', {
+          detail: `expected=${Math.round(expectedTotal * 100)},provided=${v.data.amount}`,
         });
       }
       // Verify currency matches the offer
       const offerCurrency = offer.total_currency || 'USD';
       if (v.data.currency.toUpperCase() !== offerCurrency.toUpperCase()) {
-        return res.status(400).json({ error: 'Currency mismatch', code: 'CURRENCY_MISMATCH' });
+        return sendError(res, 400, 'CURRENCY_MISMATCH', 'Currency mismatch');
       }
-    } catch (offerErr: any) {
+    } catch (offerErr: unknown) {
       // If the offer can't be fetched (expired, etc.), reject — don't allow blind payment
-      console.warn(`[booking/payment-intent] Could not verify offer ${v.data.offerId}: ${offerErr?.message}`);
-      return res.status(400).json({
-        error: 'Could not verify offer price. The offer may have expired — please search again.',
-        code: 'OFFER_VERIFICATION_FAILED',
-      });
+      console.warn(`[booking/payment-intent] Could not verify offer ${v.data.offerId}: ${getErrorMessage(offerErr)}`);
+      return sendError(res, 400, 'OFFER_VERIFICATION_FAILED', 'Could not verify offer price. The offer may have expired — please search again.');
     }
 
     // For guest checkout, use email from request body as receipt_email
@@ -776,16 +787,16 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
       ...(receiptEmail ? { receipt_email: receiptEmail } : {}),
     });
     return res.status(200).json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logApiError('api/booking/payment-intent', err);
-    const detail = err?.message ?? String(err);
+    const detail = getErrorMessage(err);
     console.error('[booking/payment-intent] Error detail:', detail);
-    return res.status(500).json({ error: `Payment intent failed: ${detail}` });
+    return sendError(res, 500, 'INTERNAL_ERROR', `Payment intent failed: ${detail}`);
   }
 }
 
 async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Duffel API key not configured');
@@ -797,11 +808,11 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     let userId = 'guest';
     if (jwt) {
       const user = await verifyUser(jwt);
-      userId = user.$id;
+      if (user) userId = user.$id;
     }
 
     const v = validateRequest(createOrderSchema, req.body);
-    if (!v.success) return res.status(400).json({ error: v.error });
+    if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
     // Verify payment was actually completed before creating a real ticket
     try {
@@ -809,17 +820,11 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
       if (paymentIntent.status !== 'succeeded') {
         console.warn(`[booking/create-order] Payment not completed: ${paymentIntent.status}`);
-        return res.status(402).json({
-          error: 'Payment required. Please complete payment before booking.',
-          code: 'PAYMENT_REQUIRED',
-        });
+        return sendError(res, 402, 'PAYMENT_REQUIRED', 'Payment required. Please complete payment before booking.');
       }
-    } catch (stripeErr: any) {
-      console.warn(`[booking/create-order] Stripe verification failed: ${stripeErr.message}`);
-      return res.status(402).json({
-        error: 'Could not verify payment. Please try again.',
-        code: 'PAYMENT_VERIFICATION_FAILED',
-      });
+    } catch (stripeErr: unknown) {
+      console.warn(`[booking/create-order] Stripe verification failed: ${getErrorMessage(stripeErr)}`);
+      return sendError(res, 402, 'PAYMENT_VERIFICATION_FAILED', 'Could not verify payment. Please try again.');
     }
 
     // Check if the offer has expired before attempting to create the order
@@ -834,20 +839,17 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
         v.data.returnDate,
       );
       if (refreshResult === null) {
-        return res.status(410).json({
-          error: 'Offer expired and no replacement found. Please search again.',
-          code: 'OFFER_EXPIRED',
-        });
+        return sendError(res, 410, 'OFFER_EXPIRED', 'Offer expired and no replacement found. Please search again.');
       }
       if (refreshResult.priceChanged) {
         // Price changed — inform the client so they can confirm
-        return res.status(409).json({
-          error: 'Offer expired and price has changed',
-          code: 'PRICE_CHANGED',
-          newOfferId: refreshResult.newOfferId,
-          oldPrice: refreshResult.oldPrice,
-          newPrice: refreshResult.newPrice,
-          priceChanged: true,
+        return sendError(res, 409, 'PRICE_CHANGED', 'Offer expired and price has changed', {
+          detail: JSON.stringify({
+            newOfferId: refreshResult.newOfferId,
+            oldPrice: refreshResult.oldPrice,
+            newPrice: refreshResult.newPrice,
+            priceChanged: true,
+          }),
         });
       }
       activeOfferId = refreshResult.newOfferId;
@@ -857,7 +859,7 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     const { refundPaymentIntent } = await import('../services/stripe.js');
 
     // Re-fetch the offer to get the authoritative currency — don't trust client-sent value
-    let offerCheck: any = null;
+    let offerCheck: Offer | null = null;
     try {
       offerCheck = await getOffer(activeOfferId);
     } catch (_e) {
@@ -872,16 +874,14 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       // Price changed since payment was created — refund and tell client
       await refundPaymentIntent(v.data.paymentIntentId);
       console.warn(`[booking/create-order] Price changed: offer=$${offerCheck.total_amount}, payment=$${paymentAmount} — refunded ${v.data.paymentIntentId}`);
-      return res.status(409).json({
-        error: 'Price changed since payment was initiated. You have been refunded.',
-        code: 'PRICE_CHANGED',
-        newPrice: offerCheck.total_amount,
+      return sendError(res, 409, 'PRICE_CHANGED', 'Price changed since payment was initiated. You have been refunded.', {
+        detail: JSON.stringify({ newPrice: offerCheck.total_amount }),
       });
     }
 
     // Wrap entire post-payment section — ANY failure triggers a refund
     try {
-      const duffelOrder: any = await createOrder({
+      const duffelOrder: Order = await createOrder({
         offerId: activeOfferId,
         passengers: v.data.passengers,
         selectedServices: v.data.selectedServices,
@@ -947,6 +947,33 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
         // Don't throw on passenger insert — booking exists, this is supplementary
       }
 
+      // Auto-seed primary traveler on first booking (non-blocking)
+      try {
+        const firstPax = v.data.passengers[0];
+        if (firstPax && userId !== 'guest') {
+          const { count: existingCount } = await supabase
+            .from(TABLES.savedTravelers)
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userId);
+          if ((existingCount ?? 0) === 0) {
+            await supabase.from(TABLES.savedTravelers).insert({
+              user_id: userId,
+              given_name: firstPax.given_name,
+              family_name: firstPax.family_name,
+              born_on: firstPax.born_on || null,
+              gender: firstPax.gender || null,
+              title: firstPax.title || null,
+              email: firstPax.email || null,
+              phone_number: firstPax.phone_number || null,
+              nationality: firstPax.nationality || 'US',
+              is_primary: true,
+            });
+          }
+        }
+      } catch {
+        // Non-critical — don't fail the booking
+      }
+
       // Send confirmation email (non-blocking)
       try {
         const { sendBookingConfirmationEmail } = await import('../utils/email.js');
@@ -974,69 +1001,49 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
         orderId: booking.id,
         bookingReference: bookingRef,
         status: 'confirmed' as const,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        passengers: (duffelOrder.passengers ?? []).map((p: any) => ({
-          id: p.id,
-          name: `${p.given_name} ${p.family_name}`,
-          seatDesignator: p.seat?.designator,
-        })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        slices: (duffelOrder.slices ?? []).map((s: any) => ({
-          origin: s.origin?.iata_code ?? '',
-          destination: s.destination?.iata_code ?? '',
-          departureTime: s.segments?.[0]?.departing_at ?? '',
-          arrivalTime: s.segments?.[0]?.arriving_at ?? '',
-          duration: parseDuration(s.duration || ''),
-          stops: (s.segments?.length || 1) - 1,
-          airline: s.segments?.[0]?.operating_carrier?.name ?? '',
-          flightNumber: `${s.segments?.[0]?.operating_carrier?.iata_code ?? ''} ${s.segments?.[0]?.operating_carrier_flight_number ?? ''}`.trim(),
-          aircraft: s.segments?.[0]?.aircraft?.name ?? '',
-        })),
+        passengers: mapOrderPassengers(duffelOrder.passengers ?? []),
+        slices: mapOrderSlices(duffelOrder.slices ?? []),
         totalPaid: parseFloat(duffelOrder.total_amount) || 0,
         currency: duffelOrder.total_currency || 'USD',
       };
 
       return res.status(200).json(responseData);
-    } catch (postPaymentErr: any) {
+    } catch (postPaymentErr: unknown) {
       // ANY failure after payment verification → refund
       try {
         await refundPaymentIntent(v.data.paymentIntentId);
         console.error(`[booking/create-order] Refunded ${v.data.paymentIntentId} after failure:`, postPaymentErr);
-      } catch (refundErr: any) {
-        console.error(`[booking/create-order] CRITICAL: Refund FAILED for ${v.data.paymentIntentId}: ${refundErr?.message}`);
+      } catch (refundErr: unknown) {
+        console.error(`[booking/create-order] CRITICAL: Refund FAILED for ${v.data.paymentIntentId}: ${getErrorMessage(refundErr)}`);
         logApiError('api/booking/create-order-refund-failed', refundErr);
       }
       throw postPaymentErr; // re-throw to outer handler
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     logApiError('api/booking/create-order', err);
-    // Duffel SDK errors have `errors` array; Stripe/general errors use `message`
-    const duffelErrors = err?.errors ?? err?.response?.data?.errors;
-    const detail = duffelErrors
-      ? JSON.stringify(duffelErrors)
-      : err?.message || err?.statusCode || String(err);
+    const detail = getErrorDetail(err);
     console.error('[booking/create-order] Error detail:', detail);
 
     // User-friendly error messages for known Duffel issues
-    const firstError = Array.isArray(duffelErrors) ? duffelErrors[0] : null;
+    const firstError = getFirstDuffelError(err);
     if (firstError?.code === 'insufficient_balance') {
-      return res.status(503).json({ error: 'Booking temporarily unavailable — please try again later' });
+      return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Booking temporarily unavailable — please try again later');
     }
     if (firstError?.code === 'invalid_phone_number') {
-      return res.status(400).json({ error: 'Invalid phone number — use international format like +12125551234' });
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid phone number — use international format like +12125551234');
     }
     if (firstError?.code === 'not_found' && firstError?.source?.field === 'selected_offers') {
-      return res.status(410).json({ error: 'This offer has expired. Please search again.' });
+      return sendError(res, 410, 'OFFER_EXPIRED', 'This offer has expired. Please search again.');
     }
-    return res.status(500).json({ error: 'Booking failed — please try again' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Booking failed — please try again');
   }
 }
 
 async function handleGetOrder(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const jwt = getJwt(req);
-  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+  if (!jwt) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — Duffel API key not configured');
@@ -1045,21 +1052,22 @@ async function handleGetOrder(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await verifyUser(jwt);
+    const user = await verifyUser(jwt);
+    if (!user) return sendError(res, 401, 'UNAUTHORIZED', 'Invalid session');
     const v = validateRequest(bookingOrderSchema, req.query);
-    if (!v.success) return res.status(400).json({ error: v.error });
+    if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
     const { getOrder } = await import('../services/duffel.js');
     const order = await getOrder(v.data.orderId);
     return res.status(200).json({ order });
   } catch (err) {
     logApiError('api/booking/order', err);
-    return res.status(500).json({ error: 'Failed to get order details' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to get order details');
   }
 }
 
 async function handleWebhook(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — webhook ignored, Stripe not configured');
@@ -1068,7 +1076,7 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
 
   const signature = req.headers['stripe-signature'];
   if (!signature || typeof signature !== 'string') {
-    return res.status(400).json({ error: 'Missing stripe-signature header' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Missing stripe-signature header');
   }
 
   try {
@@ -1104,27 +1112,27 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ received: true });
   } catch (err) {
     logApiError('api/booking/webhook', err);
-    return res.status(400).json({ error: 'Webhook verification failed' });
+    return sendError(res, 400, 'UNAUTHORIZED', 'Webhook verification failed');
   }
 }
 
 // ─── Duffel webhook handler ──────────────────────────────────────────────────
 
-const DUFFEL_WEBHOOK_SECRET = (process.env.DUFFEL_WEBHOOK_SECRET || '').trim();
+const DUFFEL_WEBHOOK_SECRET = (env.DUFFEL_WEBHOOK_SECRET || '').trim();
 
 async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   // Reject webhooks if signature verification is not configured
   if (!DUFFEL_WEBHOOK_SECRET) {
     console.error('[booking/duffel-webhook] DUFFEL_WEBHOOK_SECRET not configured — rejecting unsigned webhook');
-    return res.status(500).json({ error: 'Webhook signature verification not configured' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Webhook signature verification not configured');
   }
 
   // Duffel sends a signature in the x-duffel-signature header
   const signature = req.headers['x-duffel-signature'];
   if (!signature || typeof signature !== 'string') {
-    return res.status(400).json({ error: 'Missing x-duffel-signature header' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Missing x-duffel-signature header');
   }
 
   // Read raw body for signature verification
@@ -1138,7 +1146,7 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
     .digest('hex');
   if (signature !== expected) {
     console.warn('[booking/duffel-webhook] Invalid signature');
-    return res.status(401).json({ error: 'Invalid webhook signature' });
+    return sendError(res, 401, 'UNAUTHORIZED', 'Invalid webhook signature');
   }
 
   try {
@@ -1240,20 +1248,87 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ received: true });
   } catch (err) {
     logApiError('api/booking/duffel-webhook', err);
-    return res.status(400).json({ error: 'Webhook processing failed' });
+    return sendError(res, 400, 'INTERNAL_ERROR', 'Webhook processing failed');
+  }
+}
+
+// ─── Flight status ──────────────────────────────────────────────────────────
+
+async function handleFlightStatus(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+
+  const jwt = getJwt(req);
+  if (!jwt) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
+
+  try {
+    const user = await verifyUser(jwt);
+    if (!user) return sendError(res, 401, 'UNAUTHORIZED', 'Invalid session');
+
+    const bookingId = String(req.query.bookingId || '');
+    if (!bookingId) return sendError(res, 400, 'VALIDATION_ERROR', 'Missing bookingId');
+
+    // Look up booking to get duffel order ID
+    const { data: booking, error: bookingErr } = await supabase
+      .from(TABLES.bookings)
+      .select('duffel_order_id, status')
+      .eq('id', bookingId)
+      .eq('user_id', user.$id)
+      .single();
+
+    if (bookingErr || !booking) {
+      return sendError(res, 404, 'NOT_FOUND', 'Booking not found');
+    }
+
+    const duffelOrderId = booking.duffel_order_id as string;
+
+    if (STUB_MODE || !duffelOrderId) {
+      // Return stub status based on booking DB status
+      return res.status(200).json({
+        bookingId,
+        status: booking.status === 'confirmed' ? 'on_time' : (booking.status as string) ?? 'unknown',
+        segments: [],
+        lastUpdated: new Date().toISOString(),
+      });
+    }
+
+    // Fetch live order from Duffel
+    const { getOrder } = await import('../services/duffel.js');
+    const order = await getOrder(duffelOrderId);
+
+    // Extract segment status from Duffel order
+    const segments = mapOrderToFlightStatusSegments(
+      order as Order,
+      booking.status as string,
+    );
+
+    // Determine overall status
+    let overallStatus = 'on_time';
+    if (booking.status === 'cancelled') overallStatus = 'cancelled';
+    else if (booking.status === 'schedule_changed') overallStatus = 'delayed';
+
+    return res.status(200).json({
+      bookingId,
+      status: overallStatus,
+      segments,
+      lastUpdated: new Date().toISOString(),
+    });
+  } catch (err) {
+    logApiError('api/booking/flight-status', err);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to fetch flight status');
   }
 }
 
 // ─── Booking history ─────────────────────────────────────────────────────────
 
 async function handleHistory(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const jwt = getJwt(req);
-  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+  if (!jwt) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
 
   try {
     const user = await verifyUser(jwt);
+    if (!user) return sendError(res, 401, 'UNAUTHORIZED', 'Invalid session');
 
     const { data: bookingDocs, error: historyErr } = await supabase
       .from(TABLES.bookings)
@@ -1304,7 +1379,7 @@ async function handleHistory(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ bookings });
   } catch (err) {
     logApiError('api/booking/history', err);
-    return res.status(500).json({ error: 'Failed to fetch bookings' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to fetch bookings');
   }
 }
 
@@ -1384,10 +1459,10 @@ function stubHotelBook() {
 }
 
 async function handleHotelSearch(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const v = validateRequest(hotelSearchSchema, req.body);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — hotel search returning stubs');
@@ -1405,19 +1480,19 @@ async function handleHotelSearch(req: VercelRequest, res: VercelResponse) {
       guests: Array.from({ length: v.data.guests ?? 1 }, () => ({ type: 'adult' as const })),
     });
     return res.status(200).json(results);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logApiError('api/booking/hotel-search', err);
-    const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);
-    console.error('[booking/hotel-search] Duffel error detail:', JSON.stringify(detail, null, 2));
-    return res.status(500).json({ error: 'Failed to search hotels' });
+    const detail = getErrorDetail(err);
+    console.error('[booking/hotel-search] Duffel error detail:', detail);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to search hotels');
   }
 }
 
 async function handleHotelQuote(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const v = validateRequest(hotelQuoteSchema, req.body);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — hotel quote returning stub');
@@ -1433,22 +1508,22 @@ async function handleHotelQuote(req: VercelRequest, res: VercelResponse) {
       checkOut: v.data.checkOut,
     });
     return res.status(200).json(quote);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logApiError('api/booking/hotel-quote', err);
-    const detail = err?.response?.data ?? err?.body ?? err?.message ?? String(err);
-    console.error('[booking/hotel-quote] Duffel error detail:', JSON.stringify(detail, null, 2));
-    return res.status(500).json({ error: 'Failed to get hotel quote' });
+    const detail = getErrorDetail(err);
+    console.error('[booking/hotel-quote] Duffel error detail:', detail);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to get hotel quote');
   }
 }
 
 async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
 
   const jwt = getJwt(req);
-  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+  if (!jwt) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
 
   const v = validateRequest(hotelBookSchema, req.body);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
   if (STUB_MODE) {
     console.warn('[booking] Stub mode — hotel book returning stub');
@@ -1457,12 +1532,13 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
 
   try {
     const user = await verifyUser(jwt);
+    if (!user) return sendError(res, 401, 'UNAUTHORIZED', 'Invalid session');
 
     // Verify Stripe payment
     const { getPaymentIntent } = await import('../services/stripe.js');
     const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
     if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ error: 'Payment not completed' });
+      return sendError(res, 402, 'PAYMENT_REQUIRED', 'Payment not completed');
     }
 
     const { createStaysBooking } = await import('../services/duffel.js');
@@ -1495,13 +1571,11 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
     if (hotelInsertErr) throw hotelInsertErr;
 
     return res.status(200).json(booking);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logApiError('api/booking/hotel-book', err);
-    const detail = err?.errors
-      ? JSON.stringify(err.errors)
-      : err?.message || String(err);
+    const detail = getErrorDetail(err);
     console.error('[booking/hotel-book] Error detail:', detail);
-    return res.status(500).json({ error: `Hotel booking failed: ${detail}` });
+    return sendError(res, 500, 'INTERNAL_ERROR', `Hotel booking failed: ${detail}`);
   }
 }
 
@@ -1512,9 +1586,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = String(req.query.action || '');
 
   // In production, block real-money actions when Duffel/Stripe aren't configured
-  if (STUB_MODE && process.env.NODE_ENV === 'production') {
+  if (STUB_MODE && env.NODE_ENV === 'production') {
     if (action === 'payment-intent' || action === 'create-order') {
-      return res.status(503).json({ error: 'Booking service not configured' });
+      return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Booking service not configured');
     }
   }
 
@@ -1524,12 +1598,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (expensiveActions.includes(action)) {
     const rl = checkRateLimit(`booking-write:${ip}`, 5, 60_000);
     if (!rl.allowed) {
-      return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+      const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+      return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
     }
   } else if (action === 'search' || action === 'hotel-search') {
     const rl = checkRateLimit(`booking-search:${ip}`, 15, 60_000);
     if (!rl.allowed) {
-      return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+      const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+      return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
     }
   }
 
@@ -1546,6 +1622,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleGetOrder(req, res);
     case 'history':
       return handleHistory(req, res);
+    case 'flight-status':
+      return handleFlightStatus(req, res);
     case 'webhook':
       return handleWebhook(req, res);
     case 'duffel-webhook':
@@ -1557,6 +1635,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'hotel-book':
       return handleHotelBook(req, res);
     default:
-      return res.status(400).json({ error: 'Missing or invalid action parameter' });
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Missing or invalid action parameter');
   }
 }

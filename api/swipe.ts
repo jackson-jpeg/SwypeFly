@@ -5,6 +5,7 @@ import { logApiError } from '../utils/apiLogger';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors.js';
+import { sendError } from '../utils/apiResponse';
 
 // ─── Learning rates per swipe action ────────────────────────────────
 
@@ -39,14 +40,15 @@ const PREF_KEYS = [
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
   }
 
   // Rate limit: 30 req/min per IP
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
   const rl = checkRateLimit(`swipe:${ip}`, 30, 60_000);
   if (!rl.allowed) {
-    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+    const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
   }
 
   // Auth is optional — guests can swipe, we just skip preference learning
@@ -56,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
 
     const v = validateRequest(swipeBodySchema, req.body);
-    if (!v.success) return res.status(400).json({ error: v.error });
+    if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
     const { destination_id, action, time_spent_ms, price_shown } = v.data;
 
     // 1. Insert swipe history (only for auth'd users)
@@ -135,6 +137,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     logApiError('api/swipe', err);
-    return res.status(500).json({ error: 'Failed to record swipe' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to record swipe');
   }
 }

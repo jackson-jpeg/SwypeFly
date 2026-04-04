@@ -11,6 +11,8 @@ export interface BoardDeal {
   status: 'DEAL' | 'HOT' | 'NEW';
   priceSource: string;
   priceFetchedAt?: string;
+  offerExpiresAt?: string;
+  cachedOfferId?: string;
   airline: string;
   departureDate: string;
   returnDate: string;

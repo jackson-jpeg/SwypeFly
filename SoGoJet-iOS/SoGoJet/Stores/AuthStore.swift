@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import AuthenticationServices
 import UIKit
+import Clerk
 
 // MARK: - OAuth Presentation Context
 
@@ -56,10 +57,10 @@ final class AuthStore: NSObject {
     private var currentWebAuthSession: ASWebAuthenticationSession?
     private var errorClearTask: Task<Void, Never>?
 
-    private let tokenKey = "sg_auth_token"
-    private let userIdKey = "sg_user_id"
-    private let userNameKey = "sg_user_name"
-    private let userEmailKey = "sg_user_email"
+    private let tokenKey = StorageKeys.Auth.token
+    private let userIdKey = StorageKeys.Auth.userId
+    private let userNameKey = StorageKeys.Auth.userName
+    private let userEmailKey = StorageKeys.Auth.userEmail
 
     // MARK: Init
 
@@ -100,147 +101,73 @@ final class AuthStore: NSObject {
         }
     }
 
-    // MARK: Sign In with OAuth (Google, TikTok)
+    // MARK: Sign In with OAuth (Google, TikTok) via Clerk SDK
 
     func signInWithGoogle() {
-        startOAuthFlow(provider: "oauth_google")
+        startClerkOAuth(provider: .google)
     }
 
     func signInWithTikTok() {
-        startOAuthFlow(provider: "oauth_tiktok")
+        startClerkOAuth(provider: .tiktok)
     }
 
-    private let clerkDomain = "clerk.sogojet.com"
-    private let oauthCallbackScheme = "sogojet"
-
-    private func startOAuthFlow(provider: String) {
+    private func startClerkOAuth(provider: OAuthProvider) {
         isLoading = true
         authError = nil
 
-        let redirectUri = "\(oauthCallbackScheme)://oauth-callback"
-        guard let clerkOAuthURL = URL(string: "https://\(clerkDomain)/oauth/authorize?strategy=\(provider)&redirect_url=\(redirectUri.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectUri)") else {
-            isLoading = false
-            authError = "Sign in failed. Please try again."
-            return
-        }
+        Task {
+            do {
+                let result = try await SignIn.authenticateWithRedirect(
+                    strategy: .oauth(provider: provider)
+                )
 
-        let session = ASWebAuthenticationSession(
-            url: clerkOAuthURL,
-            callbackURLScheme: oauthCallbackScheme
-        ) { [weak self] callbackURL, error in
-            Task { @MainActor in
-                guard let self else { return }
-                self.currentWebAuthSession = nil
-
-                if let error {
-                    self.isLoading = false
-                    if (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin {
-                        return // User canceled
-                    }
-                    self.setErrorWithAutoClear("Sign in failed. Please try again.")
-                    #if DEBUG
-                    print("[Auth] OAuth error: \(error.localizedDescription)")
-                    #endif
-                    return
-                }
-
-                guard let callbackURL,
-                      let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false) else {
+                // After successful OAuth, Clerk SDK updates Clerk.shared.session automatically.
+                // Extract the session token (JWT) for our backend API calls.
+                guard let clerkSession = Clerk.shared.session else {
+                    SGLogger.auth.error("OAuth completed but no Clerk session found")
                     self.isLoading = false
                     self.setErrorWithAutoClear("Sign in failed. Please try again.")
                     return
                 }
 
-                // Extract the rotating_token or code from callback
-                if let token = components.queryItems?.first(where: { $0.name == "__clerk_status" })?.value,
-                   token == "completed",
-                   let sessionToken = components.queryItems?.first(where: { $0.name == "rotating_token" })?.value {
-                    // Clerk completed the OAuth — we have a session token
-                    await self.handleOAuthToken(sessionToken)
-                } else if let code = components.queryItems?.first(where: { $0.name == "code" })?.value {
-                    // Got an authorization code — exchange it via backend
-                    await self.exchangeOAuthCode(code: code, redirectUri: redirectUri)
-                } else if let ticket = components.queryItems?.first(where: { $0.name == "__clerk_ticket" })?.value {
-                    // Got a Clerk ticket — exchange it
-                    await self.handleOAuthToken(ticket)
-                } else {
-                    // Try to extract session from the callback URL
-                    #if DEBUG
-                    print("[Auth] OAuth callback URL: \(callbackURL)")
-                    #endif
-                    self.isLoading = false
-                    self.setErrorWithAutoClear("Sign in failed. Please try again.")
+                let token = try await clerkSession.getToken()?.jwt ?? ""
+                let user = Clerk.shared.user
+
+                // Exchange the Clerk session token with our backend
+                let response: AuthResponse = try await APIClient.shared.fetch(
+                    .authOAuth(code: token, redirectUri: "clerk-sdk")
+                )
+
+                self.authToken = response.sessionToken
+                self.userId = response.userId
+                self.userName = response.name ?? [user?.firstName, user?.lastName].compactMap { $0 }.joined(separator: " ")
+                self.userEmail = response.email ?? user?.emailAddresses.first?.emailAddress
+                self.isAuthenticated = true
+                self.isLoading = false
+
+                saveSession(
+                    token: response.sessionToken,
+                    userId: response.userId,
+                    name: self.userName,
+                    email: self.userEmail
+                )
+
+                SGLogger.auth.debug("OAuth signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email"))")
+            } catch let error as ClerkClientError {
+                SGLogger.auth.error("Clerk OAuth failed: \(error.localizedDescription)")
+                self.isLoading = false
+                if error.localizedDescription.lowercased().contains("cancel") {
+                    return // User canceled
                 }
+                self.setErrorWithAutoClear("Sign in failed. Please try again.")
+            } catch {
+                SGLogger.auth.error("OAuth failed: \(error.localizedDescription)")
+                self.isLoading = false
+                if error.localizedDescription.lowercased().contains("cancel") {
+                    return
+                }
+                self.setErrorWithAutoClear("Sign in failed. Please try again.")
             }
-        }
-
-        session.prefersEphemeralWebBrowserSession = false
-        session.presentationContextProvider = OAuthPresentationContext.shared
-        currentWebAuthSession = session
-        session.start()
-    }
-
-    private func handleOAuthToken(_ token: String) async {
-        do {
-            let response: AuthResponse = try await APIClient.shared.fetch(
-                .authOAuth(code: token, redirectUri: "\(oauthCallbackScheme)://oauth-callback")
-            )
-
-            self.authToken = response.sessionToken
-            self.userId = response.userId
-            self.userName = response.name
-            self.userEmail = response.email
-            self.isAuthenticated = true
-            self.isLoading = false
-
-            saveSession(
-                token: response.sessionToken,
-                userId: response.userId,
-                name: response.name,
-                email: response.email
-            )
-
-            #if DEBUG
-            print("[Auth] OAuth signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email"))")
-            #endif
-        } catch {
-            #if DEBUG
-            print("[Auth] OAuth token exchange failed: \(error.localizedDescription)")
-            #endif
-            self.isLoading = false
-            self.setErrorWithAutoClear("Sign in failed. Please try again.")
-        }
-    }
-
-    private func exchangeOAuthCode(code: String, redirectUri: String) async {
-        do {
-            let response: AuthResponse = try await APIClient.shared.fetch(
-                .authOAuth(code: code, redirectUri: redirectUri)
-            )
-
-            self.authToken = response.sessionToken
-            self.userId = response.userId
-            self.userName = response.name
-            self.userEmail = response.email
-            self.isAuthenticated = true
-            self.isLoading = false
-
-            saveSession(
-                token: response.sessionToken,
-                userId: response.userId,
-                name: response.name,
-                email: response.email
-            )
-
-            #if DEBUG
-            print("[Auth] OAuth signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email"))")
-            #endif
-        } catch {
-            #if DEBUG
-            print("[Auth] OAuth code exchange failed: \(error.localizedDescription)")
-            #endif
-            self.isLoading = false
-            self.setErrorWithAutoClear("Sign in failed. Please try again.")
         }
     }
 
@@ -257,6 +184,35 @@ final class AuthStore: NSObject {
         UserDefaults.standard.removeObject(forKey: userNameKey)
         UserDefaults.standard.removeObject(forKey: userEmailKey)
         KeychainHelper.delete(key: tokenKey)
+    }
+
+    // MARK: OAuth Callback Parsing
+
+    enum OAuthCallbackResult {
+        case completed(token: String)
+        case codeExchange(code: String)
+        case ticket(value: String)
+        case failed
+    }
+
+    nonisolated static func parseOAuthCallback(_ components: URLComponents) -> OAuthCallbackResult {
+        let items = components.queryItems ?? []
+
+        if let status = items.first(where: { $0.name == "__clerk_status" })?.value,
+           status == "completed",
+           let token = items.first(where: { $0.name == "rotating_token" })?.value {
+            return .completed(token: token)
+        }
+
+        if let code = items.first(where: { $0.name == "code" })?.value {
+            return .codeExchange(code: code)
+        }
+
+        if let ticket = items.first(where: { $0.name == "__clerk_ticket" })?.value {
+            return .ticket(value: ticket)
+        }
+
+        return .failed
     }
 
     // MARK: Guest Mode
@@ -322,13 +278,9 @@ final class AuthStore: NSObject {
                 email: response.email
             )
 
-            #if DEBUG
-            print("[Auth] Signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email")) clerk_id=\(response.userId)")
-            #endif
+            SGLogger.auth.debug("Signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email")) clerk_id=\(response.userId)")
         } catch {
-            #if DEBUG
-            print("[Auth] Backend auth failed: \(error.localizedDescription)")
-            #endif
+            SGLogger.auth.error("Backend auth failed: \(error.localizedDescription)")
             self.isLoading = false
             self.setErrorWithAutoClear("Sign in failed — server error. Try Google or continue as guest.")
         }
@@ -396,11 +348,7 @@ extension AuthStore: ASAuthorizationControllerDelegate {
             } else {
                 self.setErrorWithAutoClear("Sign in failed. Please try again.")
             }
-            #if DEBUG
-            print("[Auth] Error: \(error.localizedDescription) (domain=\(nsError.domain) code=\(nsError.code))")
-            print("[Auth] Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
-            print("[Auth] Hint: Ensure 'Sign in with Apple' capability is in Xcode → Signing & Capabilities, then clean build (Cmd+Shift+K) and rebuild.")
-            #endif
+            SGLogger.auth.error("Apple Sign In error: \(error.localizedDescription) (domain=\(nsError.domain) code=\(nsError.code)) bundleID=\(Bundle.main.bundleIdentifier ?? "nil"). Ensure 'Sign in with Apple' capability is in Xcode → Signing & Capabilities.")
         }
     }
 }

@@ -7,8 +7,16 @@ struct SavedView: View {
     @Environment(SavedStore.self) private var savedStore
     @Environment(Router.self) private var router
     @Environment(ToastManager.self) private var toastManager
+    @Environment(BookingHistoryStore.self) private var historyStore
+    @Environment(AuthStore.self) private var auth
 
+    @State private var activeSegment: SavedSegment = .flights
     @State private var sortMode: SortMode = .recent
+
+    private enum SavedSegment: String, CaseIterable {
+        case flights = "Saved Flights"
+        case trips = "My Trips"
+    }
     @State private var showComparePicker = false
     @State private var showCompareView = false
     @State private var compareA: Deal?
@@ -36,31 +44,12 @@ struct SavedView: View {
                         .padding(.top, Spacing.lg)
                         .id("saved-top")
 
-                    if savedStore.savedDeals.isEmpty {
-                        emptyState
+                    segmentPicker
+
+                    if activeSegment == .flights {
+                        savedFlightsContent
                     } else {
-                        // Savings banner (2+ deals with savings data)
-                        if savedStore.savedDeals.count >= 2 {
-                            let totalSavings = savedStore.totalSavings
-                            let totalValue = savedStore.savedDeals.compactMap(\.displayPrice).reduce(0, +)
-                            let banner = SavingsBanner(
-                                totalSavings: totalSavings,
-                                totalValue: totalValue,
-                                tripCount: savedStore.count
-                            )
-                            if banner.shouldShow {
-                                banner
-                            }
-                        }
-
-                        summaryLine
-
-                        if comparableDealsCount >= 2 {
-                            compareBanner
-                        }
-
-                        sortBar
-                        cardGrid
+                        MyTripsView()
                     }
                 }
                 .padding(.horizontal, Spacing.md)
@@ -109,22 +98,97 @@ struct SavedView: View {
         }
     }
 
+    // MARK: - Segment Picker
+
+    private var segmentPicker: some View {
+        HStack(spacing: 0) {
+            ForEach(SavedSegment.allCases, id: \.self) { segment in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        HapticEngine.selection()
+                        activeSegment = segment
+                    }
+                } label: {
+                    HStack(spacing: Spacing.xs) {
+                        Image(systemName: segment == .flights ? "heart.fill" : "airplane.departure")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(segment.rawValue)
+                            .font(SGFont.bodyBold(size: 13))
+                        // Badge for trip count
+                        if segment == .trips && auth.isAuthenticated && historyStore.hasBookings {
+                            Text("\(historyStore.bookings.count)")
+                                .font(SGFont.bodyBold(size: 10))
+                                .foregroundStyle(activeSegment == segment ? Color.sgBg : Color.sgYellow)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(
+                                    activeSegment == segment ? Color.sgYellow.opacity(0.3) : Color.sgYellow.opacity(0.15),
+                                    in: Capsule()
+                                )
+                        }
+                    }
+                    .foregroundStyle(activeSegment == segment ? Color.sgBg : Color.sgWhiteDim)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        activeSegment == segment ? Color.sgYellow : Color.clear,
+                        in: RoundedRectangle(cornerRadius: Radius.md)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
+    }
+
+    // MARK: - Saved Flights Content
+
+    @ViewBuilder
+    private var savedFlightsContent: some View {
+        if savedStore.savedDeals.isEmpty {
+            emptyState
+        } else {
+            // Savings banner (2+ deals with savings data)
+            if savedStore.savedDeals.count >= 2 {
+                let totalSavings = savedStore.totalSavings
+                let totalValue = savedStore.savedDeals.compactMap(\.displayPrice).reduce(0, +)
+                let banner = SavingsBanner(
+                    totalSavings: totalSavings,
+                    totalValue: totalValue,
+                    tripCount: savedStore.count
+                )
+                if banner.shouldShow {
+                    banner
+                }
+            }
+
+            summaryLine
+
+            if comparableDealsCount >= 2 {
+                compareBanner
+            }
+
+            sortBar
+            cardGrid
+        }
+    }
+
     // MARK: - Header
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("SAVED TRIPS")
+            Text(activeSegment == .flights ? "SAVED TRIPS" : "BOOKING HISTORY")
                 .font(SGFont.bodyBold(size: 11))
                 .foregroundStyle(Color.sgYellow)
                 .tracking(1.5)
-            Text("Saved Routes")
+            Text(activeSegment == .flights ? "Saved Routes" : "My Trips")
                 .font(SGFont.display(size: 28))
                 .foregroundStyle(Color.sgWhite)
-            Text("Your saved destinations.")
+            Text(activeSegment == .flights ? "Your saved destinations." : "Your booked flights.")
                 .font(SGFont.accent(size: 15))
                 .foregroundStyle(Color.sgMuted)
 
-            if !regionStamps.isEmpty {
+            if activeSegment == .flights && !regionStamps.isEmpty {
                 regionStampRow
                     .padding(.top, 6)
             }

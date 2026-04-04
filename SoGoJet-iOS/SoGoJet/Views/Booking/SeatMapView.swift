@@ -35,36 +35,44 @@ struct SeatMapView: View {
     }
 
     private var windowSeats: [SeatInfo] {
-        availableSeats.filter { $0.type == .window }
+        guard let seatMap else { return availableSeats.filter { $0.type == .window } }
+        return availableSeats.filter { seatMap.seatType(column: $0.column, extraLegroom: $0.extraLegroom) == .window }
     }
 
     private var aisleSeats: [SeatInfo] {
-        availableSeats.filter { $0.type == .aisle }
+        guard let seatMap else { return availableSeats.filter { $0.type == .aisle } }
+        return availableSeats.filter { seatMap.seatType(column: $0.column, extraLegroom: $0.extraLegroom) == .aisle }
     }
 
     private var cheapestSeat: SeatInfo? {
-        availableSeats.sorted { lhs, rhs in
-            (lhs.price ?? 0) < (rhs.price ?? 0)
-        }
-        .first
+        availableSeats.min { ($0.price ?? 0) < ($1.price ?? 0) }
     }
 
     private var cheapestExtraSeat: SeatInfo? {
-        extraLegroomSeats.sorted { lhs, rhs in
-            (lhs.price ?? 0) < (rhs.price ?? 0)
-        }
-        .first
+        extraLegroomSeats.min { ($0.price ?? 0) < ($1.price ?? 0) }
+    }
+
+    /// Ranked seats using the smart scoring algorithm.
+    /// Considers: seat position preference, row position (front better),
+    /// exit row proximity, extra legroom, price value, and middle seat penalty.
+    private var rankedSeats: [SeatInfo] {
+        seatMap?.rankedSeats(preference: seatPreference) ?? []
+    }
+
+    /// User's seat preference — defaults to aisle for solo travelers.
+    private var seatPreference: SeatMap.SeatPreference {
+        // Could be stored in SettingsStore in the future
+        .aisle
     }
 
     private var recommendedSeat: SeatInfo? {
-        if let selectedSeat {
-            return selectedSeat
-        }
+        if let selectedSeat { return selectedSeat }
+        return rankedSeats.first
+    }
 
-        return cheapestExtraSeat
-            ?? aisleSeats.first
-            ?? windowSeats.first
-            ?? availableSeats.first
+    /// Top 3 seat picks for the quick-pick section
+    private var topPicks: [SeatInfo] {
+        Array(rankedSeats.prefix(3))
     }
 
     private var sectionedColumns: [[String]] {
@@ -182,6 +190,9 @@ struct SeatMapView: View {
 
                 if let seatMap, !seatMap.rows.isEmpty {
                     seatSelectionDesk
+                    if topPicks.count > 1 {
+                        topPicksSection
+                    }
                     cabinAtlas(seatMap)
                     travelerNotes
                 } else {
@@ -516,7 +527,8 @@ struct SeatMapView: View {
 
     private func cabinSeatButton(_ seat: SeatInfo) -> some View {
         let isSelected = store.selectedSeatId == seat.id
-        let isExtraLegroom = seat.type == .extra
+        let seatType = seatMap?.seatType(column: seat.column, extraLegroom: seat.extraLegroom) ?? seat.type
+        let isExtraLegroom = seatType == .extra
         let isBestValue = isExtraLegroom && seat.available && isCheapestExtra(seat)
         let tone: VintageTerminalTone = {
             if isSelected { return .amber }
@@ -571,7 +583,8 @@ struct SeatMapView: View {
 
     private func seatListButton(_ seat: SeatInfo) -> some View {
         let isSelected = store.selectedSeatId == seat.id
-        let isExtraLegroom = seat.type == .extra
+        let seatType = seatMap?.seatType(column: seat.column, extraLegroom: seat.extraLegroom) ?? seat.type
+        let isExtraLegroom = seatType == .extra
         let tone: VintageTerminalTone = isSelected ? .amber : (isExtraLegroom ? .moss : .ivory)
 
         return Button {
@@ -619,6 +632,83 @@ struct SeatMapView: View {
                             tone: .ember
                         )
                     }
+                }
+            }
+        }
+    }
+
+    // MARK: - Top Picks
+
+    private var topPicksSection: some View {
+        VintageTerminalPanel(
+            title: "Top Picks",
+            subtitle: "Our best seats based on position, legroom, price, and row.",
+            stamp: "Smart",
+            tone: .moss
+        ) {
+            VStack(spacing: Spacing.sm) {
+                ForEach(Array(topPicks.enumerated()), id: \.element.id) { index, seat in
+                    let isSelected = store.selectedSeatId == seat.id
+                    let type = seatMap?.seatType(column: seat.column, extraLegroom: seat.extraLegroom) ?? seat.type
+
+                    Button {
+                        store.selectSeat(seat.id)
+                        HapticEngine.medium()
+                    } label: {
+                        HStack(spacing: Spacing.md) {
+                            // Rank badge
+                            ZStack {
+                                Circle()
+                                    .fill(index == 0 ? Color.sgYellow : Color.sgSurface)
+                                    .frame(width: 32, height: 32)
+                                    .overlay(
+                                        Circle().strokeBorder(
+                                            index == 0 ? Color.sgYellow : Color.sgBorder,
+                                            lineWidth: 1.5
+                                        )
+                                    )
+                                Text("#\(index + 1)")
+                                    .font(SGFont.bodyBold(size: 13))
+                                    .foregroundStyle(index == 0 ? Color.sgBg : Color.sgWhite)
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: Spacing.xs) {
+                                    Text(seat.label)
+                                        .font(SGFont.bodyBold(size: 15))
+                                        .foregroundStyle(isSelected ? Color.sgYellow : Color.sgWhite)
+                                    Text("·")
+                                        .foregroundStyle(Color.sgMuted)
+                                    Text(seatTypeLabel(type))
+                                        .font(SGFont.body(size: 13))
+                                        .foregroundStyle(Color.sgMuted)
+                                }
+                                Text(seatNarrative(for: seat))
+                                    .font(SGFont.body(size: 11))
+                                    .foregroundStyle(Color.sgMuted)
+                                    .lineLimit(1)
+                            }
+
+                            Spacer()
+
+                            Text(seatPriceLabel(for: seat))
+                                .font(SGFont.bodyBold(size: 14))
+                                .foregroundStyle(isSelected ? Color.sgYellow : Color.sgWhite)
+                        }
+                        .padding(Spacing.md)
+                        .background(
+                            isSelected ? Color.sgYellow.opacity(0.1) : Color.sgSurface,
+                            in: RoundedRectangle(cornerRadius: Radius.md)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.md)
+                                .strokeBorder(
+                                    isSelected ? Color.sgYellow : Color.sgBorder,
+                                    lineWidth: isSelected ? 2 : 1
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -830,26 +920,45 @@ struct SeatMapView: View {
 
     private func seatNarrative(for seat: SeatInfo) -> String {
         guard seat.available else { return "Unavailable seat" }
+        let type = seatMap?.seatType(column: seat.column, extraLegroom: seat.extraLegroom) ?? seat.type
 
-        let pieces = [
-            seatTypeLabel(for: seat),
-            seat.price.map { "$\(Int($0.rounded())) add-on" } ?? "No added seat fee",
-            isCheapestExtra(seat) ? "Best premium value" : nil,
-        ]
+        var pieces = [seatTypeLabel(type)]
 
-        return pieces.compactMap { $0 }.joined(separator: "  |  ")
+        if let price = seat.price {
+            pieces.append("$\(Int(price.rounded())) add-on")
+        } else {
+            pieces.append("No added seat fee")
+        }
+
+        if isCheapestExtra(seat) {
+            pieces.append("Best premium value")
+        }
+
+        // Row position context
+        if let seatMap, let rowIdx = seatMap.rows.firstIndex(where: { $0.seats.contains(where: { $0.id == seat.id }) }) {
+            let totalRows = seatMap.rows.count
+            let position = Double(rowIdx) / Double(max(totalRows - 1, 1))
+            if position < 0.25 {
+                pieces.append("Front cabin")
+            } else if position > 0.75 {
+                pieces.append("Rear cabin")
+            }
+
+            let rowNum = seatMap.rows[rowIdx].rowNumber
+            if seatMap.exitRows.contains(rowNum) {
+                pieces.append("Exit row")
+            }
+        }
+
+        return pieces.joined(separator: "  |  ")
     }
 
-    private func seatTypeLabel(for seat: SeatInfo) -> String {
-        switch seat.type {
-        case .window:
-            return "Window"
-        case .middle:
-            return "Middle"
-        case .aisle:
-            return "Aisle"
-        case .extra:
-            return "Extra legroom"
+    private func seatTypeLabel(_ type: SeatInfo.SeatType) -> String {
+        switch type {
+        case .window: "Window"
+        case .middle: "Middle"
+        case .aisle: "Aisle"
+        case .extra: "Extra legroom"
         }
     }
 }

@@ -6,8 +6,10 @@ import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { cors } from './_cors.js';
+import { env } from '../utils/env';
+import { sendError } from '../utils/apiResponse';
 
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 
 function withMarkup(price: number): number {
   return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
@@ -77,24 +79,24 @@ function calculateRollingAverage(snapshots: PriceSnapshot[]): number | null {
 // ─── Create alert ────────────────────────────────────────────────────────────
 
 async function handleCreate(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'POST only');
 
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
   const rl = checkRateLimit(`alerts-create:${ip}`, 20, 60_000);
   if (!rl.allowed) {
-    return res.status(429).json({ error: 'Too many requests, please try again later' });
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests, please try again later');
   }
 
   const authResult = await verifyClerkToken(req.headers.authorization);
   const userId = authResult?.userId ?? null;
 
   const v = validateRequest(priceAlertBodySchema, req.body);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { destination_id, target_price, email } = v.data;
 
   // Guests must provide an email
   if (!userId && !email) {
-    return res.status(400).json({ error: 'Email required for guest price alerts' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Email required for guest price alerts');
   }
 
   try {
@@ -141,7 +143,7 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
   } catch (err: unknown) {
     logApiError('api/alerts/create', err);
     const message = err instanceof Error ? err.message : 'Failed to create alert';
-    res.status(500).json({ error: message });
+    sendError(res, 500, 'INTERNAL_ERROR', message);
   }
 }
 
@@ -173,15 +175,14 @@ async function sendAlertEmail(
 }
 
 async function handleCheck(req: VercelRequest, res: VercelResponse) {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return res.status(503).json({ error: 'CRON_SECRET not configured' });
+  const cronSecret = env.CRON_SECRET;
+  if (!cronSecret) return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'CRON_SECRET not configured');
   const secret = req.headers['authorization']?.replace('Bearer ', '') || '';
-  if (secret !== cronSecret) return res.status(401).json({ error: 'Unauthorized' });
+  if (secret !== cronSecret) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
 
   try {
     // Paginate through all active alerts
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let allAlerts: any[] = [];
+    let allAlerts: Record<string, unknown>[] = [];
     let offset = 0;
     const BATCH = 100;
     const MAX_ALERTS = 10_000;
@@ -235,7 +236,8 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
         // Check trigger conditions:
         // 1. Current price <= user's target price
         // 2. Current price is >15% below the 7-day rolling average
-        const belowTarget = currentPrice != null && currentPrice <= alert.target_price;
+        const targetPrice = alert.target_price as number;
+        const belowTarget = currentPrice != null && currentPrice <= targetPrice;
 
         let rollingAvg: number | null = null;
         let dropFromAvgPercent = 0;
@@ -251,8 +253,8 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
         }
 
         if (belowTarget || belowRollingAvg) {
-          const dropPercent = alert.target_price > 0
-            ? Math.round(((alert.target_price as number) - (currentPrice as number)) / (alert.target_price as number) * 100)
+          const dropPercent = targetPrice > 0
+            ? Math.round((targetPrice - (currentPrice as number)) / targetPrice * 100)
             : 0;
           const { error: triggerErr } = await supabase
             .from(TABLES.priceAlerts)
@@ -291,18 +293,18 @@ async function handleCheck(req: VercelRequest, res: VercelResponse) {
     res.json({ checked, triggered, total: allAlerts.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to check alerts';
-    res.status(500).json({ error: message });
+    sendError(res, 500, 'INTERNAL_ERROR', message);
   }
 }
 
 // ─── List alerts ────────────────────────────────────────────────────────────
 
 async function handleList(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'GET only');
 
   const authResult = await verifyClerkToken(req.headers.authorization);
   if (!authResult) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
   }
   const userId = authResult.userId;
 
@@ -329,7 +331,7 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
   } catch (err: unknown) {
     logApiError('api/alerts/list', err);
     const message = err instanceof Error ? err.message : 'Failed to list alerts';
-    res.status(500).json({ error: message });
+    sendError(res, 500, 'INTERNAL_ERROR', message);
   }
 }
 
@@ -337,16 +339,16 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
 
 async function handleDelete(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'DELETE' && req.method !== 'POST')
-    return res.status(405).json({ error: 'DELETE or POST only' });
+    return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'DELETE or POST only');
 
   const authResult = await verifyClerkToken(req.headers.authorization);
   if (!authResult) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
   }
   const userId = authResult.userId;
 
   const v = validateRequest(priceAlertDeleteSchema, req.body);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { alertId } = v.data;
 
   try {
@@ -356,9 +358,9 @@ async function handleDelete(req: VercelRequest, res: VercelResponse) {
       .select('user_id')
       .eq('id', alertId)
       .single();
-    if (fetchErr || !doc) return res.status(404).json({ error: 'Alert not found' });
+    if (fetchErr || !doc) return sendError(res, 404, 'NOT_FOUND', 'Alert not found');
     if (doc.user_id !== userId) {
-      return res.status(403).json({ error: 'Not authorized to delete this alert' });
+      return sendError(res, 403, 'FORBIDDEN', 'Not authorized to delete this alert');
     }
 
     const { error: deleteErr } = await supabase
@@ -370,7 +372,7 @@ async function handleDelete(req: VercelRequest, res: VercelResponse) {
   } catch (err: unknown) {
     logApiError('api/alerts/delete', err);
     const message = err instanceof Error ? err.message : 'Failed to delete alert';
-    res.status(500).json({ error: message });
+    sendError(res, 500, 'INTERNAL_ERROR', message);
   }
 }
 
@@ -390,6 +392,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'delete':
       return handleDelete(req, res);
     default:
-      return res.status(400).json({ error: 'Missing or invalid action parameter. Use ?action=create, ?action=list, ?action=check, or ?action=delete' });
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Missing or invalid action parameter. Use ?action=create, ?action=list, ?action=check, or ?action=delete');
   }
 }

@@ -32,14 +32,22 @@ packages:
   stripe-ios:
     url: https://github.com/stripe/stripe-ios.git
     from: "24.0.0"
+  clerk-ios:
+    url: https://github.com/clerk/clerk-ios.git
+    from: "0.71.0"
 schemes:
   SoGoJet:
     build:
       targets:
         SoGoJet: all
         SoGoJetWidgetExtension: all
+        SoGoJetTests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - SoGoJetTests
 targets:
   SoGoJet:
     type: application
@@ -51,15 +59,20 @@ targets:
     dependencies:
       - package: stripe-ios
         product: StripePaymentSheet
+      - package: clerk-ios
+        product: Clerk
       - target: SoGoJetWidgetExtension
     entitlements:
       path: SoGoJet/SoGoJet.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app
         INFOPLIST_FILE: SoGoJet/Info.plist
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "2"
         GENERATE_INFOPLIST_FILE: false
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
@@ -81,7 +94,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app.Widget
         INFOPLIST_FILE: SoGoJetWidget/Info.plist
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "2"
         GENERATE_INFOPLIST_FILE: false
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1"
@@ -92,3 +105,17 @@ targets:
           - "$(inherited)"
           - "@executable_path/Frameworks"
           - "@executable_path/../../Frameworks"
+
+  SoGoJetTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: SoGoJetTests
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - target: SoGoJet
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app.tests
+        GENERATE_INFOPLIST_FILE: true

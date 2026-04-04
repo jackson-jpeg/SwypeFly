@@ -774,23 +774,7 @@ struct DepartureBoardView: View {
     }
 
     private var nearbyAirports: [String] {
-        let nearby: [String: [String]] = [
-            "JFK": ["EWR", "LGA", "PHL"],
-            "EWR": ["JFK", "LGA", "PHL"],
-            "LGA": ["JFK", "EWR", "PHL"],
-            "LAX": ["SNA", "BUR", "LGB"],
-            "SFO": ["OAK", "SJC"],
-            "ORD": ["MDW"],
-            "MDW": ["ORD"],
-            "MIA": ["FLL", "PBI"],
-            "FLL": ["MIA", "PBI"],
-            "TPA": ["PIE", "SRQ", "MCO", "FLL"],
-            "ATL": ["CLT"],
-            "DFW": ["DAL", "IAH"],
-            "SEA": ["PDX"],
-            "BOS": ["PVD", "BDL"],
-        ]
-        return nearby[settingsStore.departureCode] ?? ["JFK", "LAX", "ORD"]
+        AirportGraph.nearbyAirports(for: settingsStore.departureCode)
     }
 }
 

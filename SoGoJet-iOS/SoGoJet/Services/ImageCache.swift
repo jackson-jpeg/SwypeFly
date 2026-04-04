@@ -48,9 +48,7 @@ actor ImageCache {
             queue: .main
         ) { _ in
             cache.removeAllObjects()
-            #if DEBUG
-            print("[ImageCache] Memory warning — flushed in-memory cache")
-            #endif
+            SGLogger.images.debug("Memory warning — flushed in-memory cache")
         }
     }
 
@@ -182,9 +180,7 @@ actor ImageCache {
 
         guard totalSize > highWater else { return }
 
-        #if DEBUG
-        print("[ImageCache] Startup trim: \(totalSize / 1024 / 1024)MB > \(highWater / 1024 / 1024)MB threshold")
-        #endif
+        SGLogger.images.debug("Startup trim: \(totalSize / 1024 / 1024)MB > \(highWater / 1024 / 1024)MB threshold")
 
         for file in files.sorted(by: { $0.modified < $1.modified }) {
             try? FileManager.default.removeItem(at: file.url)
@@ -192,9 +188,7 @@ actor ImageCache {
             if totalSize <= lowWater { break }
         }
 
-        #if DEBUG
-        print("[ImageCache] Trimmed to \(totalSize / 1024 / 1024)MB")
-        #endif
+        SGLogger.images.debug("Trimmed to \(totalSize / 1024 / 1024)MB")
     }
 
     /// Remove all cached images.

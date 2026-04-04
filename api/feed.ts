@@ -6,18 +6,30 @@ import { generateAviasalesLink } from '../utils/affiliateLinks';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
 import { searchFlights } from '../services/duffel';
+import type { OfferRequest, OfferSlice, OfferSliceSegment } from '@duffel/api/types';
+import {
+  compactOfferJson as sharedCompactOfferJson,
+  getOffersFromResult,
+  sortOffersByPrice,
+  extractCheapestOfferData,
+} from '../utils/duffelMapper';
 import { cors } from './_cors.js';
-import { bulkGetRouteStats, getRouteStats } from '../utils/priceStats';
+import { bulkGetRouteStats } from '../utils/priceStats';
 import { nearbyAirports } from '../data/airports';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
+import { env } from '../utils/env';
+import { FEED_PAGE_SIZE, STALE_PRICE_MS, DUFFEL_CONCURRENCY } from '../utils/config';
+import { sendError } from '../utils/apiResponse';
 
-const PAGE_SIZE = 10;
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const PAGE_SIZE = FEED_PAGE_SIZE;
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 
-/** Apply booking markup so displayed prices match checkout. */
+/** Apply booking markup so displayed prices match checkout.
+ *  Uses round-then-add to match the booking endpoint's formula exactly. */
 function applyMarkup(price: number | null | undefined): number | null {
   if (price == null) return null;
-  return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
+  const markup = Math.round(price * (BOOKING_MARKUP_PERCENT / 100));
+  return price + markup;
 }
 
 // On-demand pricing may need up to ~30s for 10 destinations (5 concurrent × 2-3s each)
@@ -72,6 +84,8 @@ interface OnDemandPrice {
   fetchedAt: string;
   departureDate: string;
   returnDate: string;
+  offerId: string;
+  offerExpiresAt: string;
 }
 
 const onDemandPriceCache = new Map<string, OnDemandPrice | null>();
@@ -94,29 +108,31 @@ async function fetchLivePriceForDest(
       cabinClass: 'economy',
     });
 
-    const offers = (result as any).offers as any[] | undefined;
-    if (!offers || offers.length === 0) {
+    const allOffers = getOffersFromResult(result as OfferRequest);
+    if (allOffers.length === 0) {
       onDemandPriceCache.set(cacheKey, null);
       return null;
     }
 
-    offers.sort((a: any, b: any) => parseFloat(a.total_amount) - parseFloat(b.total_amount));
-    const cheapest = offers[0];
-    const price = Math.round(parseFloat(cheapest.total_amount));
-    const firstSeg = cheapest.slices?.[0]?.segments?.[0];
-    const airline = firstSeg?.operating_carrier?.name || firstSeg?.operating_carrier?.iata_code || '';
-
-    // Calculate total duration from segments
-    let duration = '';
-    const outSlice = cheapest.slices?.[0];
-    if (outSlice?.duration) {
-      const match = outSlice.duration.match(/PT(\d+)H(\d+)?M?/);
-      if (match) duration = `${match[1]}h ${match[2] || '0'}m`;
-    }
+    const sorted = sortOffersByPrice(allOffers);
+    const cheapest = sorted[0];
+    const offerData = extractCheapestOfferData(cheapest);
 
     const fetchedAt = new Date().toISOString();
-    const priceData: OnDemandPrice = { price, airline, duration, fetchedAt, departureDate, returnDate };
+    const priceData: OnDemandPrice = {
+      price: offerData.price,
+      airline: offerData.airline,
+      duration: offerData.duration,
+      fetchedAt,
+      departureDate,
+      returnDate,
+      offerId: offerData.offerId,
+      offerExpiresAt: offerData.offerExpiresAt,
+    };
     onDemandPriceCache.set(cacheKey, priceData);
+
+    // Compact offer JSON for caching (includes offer ID for direct booking)
+    const compactOffer = sharedCompactOfferJson(cheapest);
 
     // Write to cached_prices in the background so future requests are instant
     supabase
@@ -125,15 +141,17 @@ async function fetchLivePriceForDest(
         {
           origin,
           destination_iata: destIata,
-          price,
+          price: offerData.price,
           currency: 'USD',
-          airline,
-          duration,
+          airline: offerData.airline,
+          duration: offerData.duration,
           source: 'duffel',
           fetched_at: fetchedAt,
           departure_date: departureDate,
           return_date: returnDate,
           trip_duration_days: 7,
+          offer_json: compactOffer,
+          offer_expires_at: offerData.offerExpiresAt,
         },
         { onConflict: 'origin,destination_iata' },
       )
@@ -150,9 +168,7 @@ async function fetchLivePriceForDest(
   }
 }
 
-const ON_DEMAND_CONCURRENCY = 15;
-
-const STALE_PRICE_MS = 60 * 60 * 1000; // 1 hour — prices older than this get refreshed on-demand
+const ON_DEMAND_CONCURRENCY = DUFFEL_CONCURRENCY;
 
 function isPriceStale(fetchedAt: string | undefined): boolean {
   if (!fetchedAt) return true;
@@ -164,7 +180,7 @@ async function fillMissingPrices(
   origin: string,
 ): Promise<ReturnType<typeof toFrontend>[]> {
   const missing = page.filter(
-    (d) => !d.flightPrice || d.flightPrice <= 0 || isPriceStale(d.priceFetchedAt),
+    (d) => !d.flightPrice || d.flightPrice <= 0 || d.priceSource !== 'duffel' || isPriceStale(d.priceFetchedAt),
   );
   if (missing.length === 0) return page;
 
@@ -175,21 +191,23 @@ async function fillMissingPrices(
   }
 
   const priceResults = new Map<string, OnDemandPrice>();
-  for (const chunk of chunks) {
-    const results = await Promise.allSettled(
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const chunk = chunks[ci];
+    await Promise.allSettled(
       chunk.map(async (d) => {
         const result = await fetchLivePriceForDest(origin, d.iataCode);
         if (result) priceResults.set(d.iataCode, result);
       }),
     );
-    // Brief pause between chunks to respect Duffel rate limits (100ms instead of 500ms — concurrent cap already handles load)
-    if (chunks.indexOf(chunk) < chunks.length - 1) {
+    // Brief pause between chunks to respect Duffel rate limits (100ms instead of 500ms -- concurrent cap already handles load)
+    if (ci < chunks.length - 1) {
       await new Promise((r) => setTimeout(r, 100));
     }
   }
 
   // Merge live prices into the page + compute savings from route stats
-  return Promise.all(page.map(async (d) => {
+  const routeStatsMap = await bulkGetRouteStats(origin);
+  return page.map((d) => {
     const live = priceResults.get(d.iataCode);
     if (!live) return d; // No fresh price available — keep existing
 
@@ -198,7 +216,7 @@ async function fillMissingPrices(
     let savingsAmount = d.savingsAmount;
     let savingsPercent = d.savingsPercent;
     if (!usualPrice) {
-      const stats = await getRouteStats(origin, d.iataCode);
+      const stats = routeStatsMap.get(`${origin}-${d.iataCode}`);
       if (stats && stats.sampleCount >= 1) {
         usualPrice = stats.medianPrice;
         if (live.price < usualPrice) {
@@ -220,11 +238,13 @@ async function fillMissingPrices(
       departureDate: live.departureDate,
       returnDate: live.returnDate,
       tripDurationDays: 7,
+      cachedOfferId: live.offerId || undefined,
+      offerExpiresAt: live.offerExpiresAt || undefined,
       usualPrice: usualPrice ? applyMarkup(usualPrice) : usualPrice,
       savingsAmount,
       savingsPercent,
     };
-  }));
+  });
 }
 
 // ─── Seeded PRNG (consistent within a day, fresh next day) ──────────
@@ -386,7 +406,7 @@ interface ScoredDest {
   longitude?: number;
   itinerary?: { day: number; activities: string[] }[];
   restaurants?: { name: string; type: string; rating: number }[];
-  hotels_data?: any[];
+  hotels_data?: Record<string, unknown>[];
   // Deal quality fields (from cached_prices / price_calendar)
   deal_score?: number;
   deal_tier?: string;
@@ -406,6 +426,8 @@ interface ScoredDest {
   // Nearby airport fallback
   nearby_origin?: string;        // e.g. "MCO" — set when deal is from a nearby airport
   nearby_origin_label?: string;  // e.g. "Orlando (1h drive)"
+  typical_price_low?: number | null;
+  typical_price_high?: number | null;
 }
 
 // ─── Generic scoring (for anonymous users) ──────────────────────────
@@ -1378,9 +1400,9 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
   }
 
   // Build hotel price + hotels lookup by IATA code
-  const hotelPriceMap = new Map<string, { price: number; source: string; hotels?: any[] }>();
+  const hotelPriceMap = new Map<string, { price: number; source: string; hotels?: Record<string, unknown>[] }>();
   for (const hp of hotelPriceResult.documents) {
-    let hotels: any[] | undefined;
+    let hotels: Record<string, unknown>[] | undefined;
     try {
       hotels = hp.hotels_json
         ? (typeof hp.hotels_json === 'string' ? JSON.parse(hp.hotels_json) : hp.hotels_json)
@@ -1466,20 +1488,19 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
     const routeKey = `${origin}-${iata}`;
     const routeStats = routeStatsMap.get(routeKey);
 
-    // Fresh Duffel price (bookable, <48h old)
+    // Fresh Duffel price (bookable, <2h old) — tight window to minimize bait-and-switch
     const liveDuffelPrice = (() => {
       if (!lp?.price || lp.source !== 'duffel') return null;
       if (lp.fetched_at) {
         const age = Date.now() - new Date(lp.fetched_at).getTime();
-        if (age > 48 * 60 * 60 * 1000) return null;
+        if (age > 2 * 60 * 60 * 1000) return null; // 2 hours max
       }
       return lp.price;
     })();
 
-    // Best available price: Duffel live > any cached price > calendar
-    // For savings, use the best price regardless of source
-    const bestCachedPrice = lp?.price ?? null;
-    const effectivePrice = liveDuffelPrice ?? bestCachedPrice ?? cp?.price ?? null;
+    // Use Duffel price if available, otherwise Travelpayouts cached price.
+    // Both come with departure dates so the booking screen can match the shown price.
+    const effectivePrice = liveDuffelPrice ?? (lp?.price ?? null);
     let usualPrice: number | null = null;
     let savingsAmount: number | null = null;
     let savingsPercent: number | null = null;
@@ -1530,23 +1551,23 @@ async function getDestinationsWithPrices(origin: string): Promise<ScoredDest[]> 
       nature_score: (d.nature_score as number) || 0,
       food_score: (d.food_score as number) || 0,
       popularity_score: (d.popularity_score as number) || 0,
-      // Best available price: Duffel live (bookable) > cached price > calendar
-      live_price: liveDuffelPrice ?? bestCachedPrice ?? (cp?.price ?? null),
+      // Price source: prefer Duffel (bookable), fallback to Travelpayouts cache
+      live_price: liveDuffelPrice ?? (lp?.price ?? null),
       live_airline: lp?.airline ?? '',
       live_duration: lp?.duration ?? '',
-      price_source: lp?.source ?? (cp ? 'travelpayouts' : undefined),
+      price_source: liveDuffelPrice ? 'duffel' : (lp?.source ?? undefined),
       price_fetched_at: lp?.fetched_at ?? undefined,
-      // Prefer Duffel dates (match the price shown) over calendar dates
-      departure_date: lp?.departure_date ?? cp?.date,
-      return_date: lp?.return_date ?? cp?.return_date,
-      trip_duration_days: lp?.trip_duration_days ?? cp?.trip_days,
-      cheapest_date: lp?.departure_date ?? cp?.date ?? undefined,
-      cheapest_return_date: lp?.return_date ?? cp?.return_date ?? undefined,
-      previous_price: lp?.previous_price ?? cp?.previous_price,
-      price_direction: lp?.price_direction ?? cp?.price_direction,
-      flash_deal: cp?.flash_deal ?? false,
-      offer_json: lp?.offer_json,
-      offer_expires_at: lp?.offer_expires_at,
+      // Always pass dates so the booking screen auto-fills the trip that matches the price
+      departure_date: lp?.departure_date ?? undefined,
+      return_date: lp?.return_date ?? undefined,
+      trip_duration_days: lp?.trip_duration_days ?? undefined,
+      cheapest_date: undefined,
+      cheapest_return_date: undefined,
+      previous_price: lp?.previous_price,
+      price_direction: lp?.price_direction,
+      flash_deal: false,
+      offer_json: liveDuffelPrice ? (lp?.offer_json ?? undefined) : undefined,
+      offer_expires_at: liveDuffelPrice ? (lp?.offer_expires_at ?? undefined) : undefined,
       flight_number: lp?.flight_number,
       tp_found_at: lp?.tp_found_at,
       live_hotel_price: hotelPriceMap.get(d.iata_code as string)?.price ?? null,
@@ -1588,7 +1609,9 @@ function toFrontend(d: ScoredDest, origin?: string) {
     description: d.description,
     // image_url already prioritizes Unsplash over Google Places (set in merge above)
     imageUrl: d.image_url || d.image_urls?.[0],
-    // imageUrls omitted from feed — single URL is sufficient for card rendering
+    imageUrls: d.image_urls?.length ? d.image_urls : undefined,
+    latitude: d.latitude ?? undefined,
+    longitude: d.longitude ?? undefined,
     // Apply booking markup to feed prices so the card price matches what users
     // pay at checkout. Without this, every booking appears X% more expensive.
     flightPrice: applyMarkup(d.live_price ?? d.flight_price),
@@ -1599,16 +1622,16 @@ function toFrontend(d: ScoredDest, origin?: string) {
     averageTemp: d.average_temp,
     flightDuration: d.live_duration || d.flight_duration,
     livePrice: applyMarkup(d.live_price),
-    priceSource: d.live_price != null
-      ? (d.price_source as 'travelpayouts' | 'amadeus' | 'duffel' | 'estimate')
-      : 'estimate',
+    priceSource: d.price_source === 'duffel' ? 'duffel' as const
+      : d.price_source === 'travelpayouts' ? 'travelpayouts' as const
+      : 'estimate' as const,
     priceFetchedAt: d.price_fetched_at || d.tp_found_at || undefined,
     liveHotelPrice: d.live_hotel_price ?? null,
     hotelPriceSource: d.live_hotel_price != null
       ? (d.hotel_price_source as 'duffel' | 'liteapi' | 'estimate')
       : 'estimate',
     // Heavy fields omitted from feed — fetched on-demand via /api/destination
-    // hotels, available_flight_days, latitude, longitude, itinerary, restaurants
+    // hotels, available_flight_days, itinerary, restaurants
     departureDate: d.departure_date || undefined,
     returnDate: d.return_date || undefined,
     tripDurationDays: d.trip_duration_days ?? undefined,
@@ -1619,7 +1642,14 @@ function toFrontend(d: ScoredDest, origin?: string) {
       d.previous_price && d.live_price != null && d.previous_price > 0
         ? Math.round(((d.previous_price - d.live_price) / d.previous_price) * 100)
         : undefined,
-    // offerJson omitted from feed — large JSON blob only needed during booking
+    // Pass offer ID so booking can try to reuse the exact same offer
+    cachedOfferId: (() => {
+      if (!d.offer_json) return undefined;
+      try {
+        const parsed = JSON.parse(d.offer_json);
+        return parsed.id || undefined;
+      } catch { return undefined; }
+    })(),
     offerExpiresAt: d.offer_expires_at || undefined,
     airlineLogoUrl: d.live_airline
       ? `https://pics.avs.io/200/80/${d.live_airline}.png`
@@ -1658,7 +1688,7 @@ function toFrontend(d: ScoredDest, origin?: string) {
 
 async function handleBudgetDiscovery(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(budgetDiscoveryQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { origin, minPrice, maxPrice } = v.data;
 
   try {
@@ -1695,7 +1725,7 @@ async function handleBudgetDiscovery(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logApiError('api/feed?action=budget', err);
-    return res.status(500).json({ error: 'Failed to load budget deals' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load budget deals');
   }
 }
 
@@ -1706,7 +1736,7 @@ const ORIGIN_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 async function handleDetectOrigin(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(detectOriginQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
   const fallback = { iata: 'TPA', name: 'Tampa', country: 'US' };
 
@@ -1751,14 +1781,15 @@ async function handleDetectOrigin(req: VercelRequest, res: VercelResponse) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
   }
 
   // Rate limit: 20 req/min per IP
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
   const rl = checkRateLimit(`feed:${ip}`, 20, 60_000);
   if (!rl.allowed) {
-    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+    const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
   }
 
   // Route by action param
@@ -1771,7 +1802,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const v = validateRequest(feedQuerySchema, req.query);
-    if (!v.success) return res.status(400).json({ error: v.error });
+    if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
     const { origin, cursor: parsedCursor, sessionId, excludeIds, vibeFilter, sortPreset, regionFilter, maxPrice, minPrice, search, durationFilter, travelStyle, budgetLevel, preferredSeason, preferredVibes: preferredVibesRaw } = v.data;
     const cursor = parsedCursor ?? 0;
 
@@ -1810,10 +1841,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (vibeFilter) {
-      const vibes = vibeFilter.split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
-      // "nonstop" is a flight attribute, not a vibe tag — handle separately
+      const vibes = vibeFilter.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+      // "nonstop" is a flight attribute, not a vibe tag -- handle separately
       const wantsNonstop = vibes.includes('nonstop');
-      const tagVibes = vibes.filter((v) => v !== 'nonstop');
+      const tagVibes = vibes.filter((s) => s !== 'nonstop');
       if (wantsNonstop) {
         destinations = destinations.filter((d) => d.is_nonstop === true);
       }
@@ -1945,8 +1976,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const nextCursor = cursor + effectivePageSize < scored.length ? String(cursor + effectivePageSize) : null;
 
     // Separate destinations with and without prices
-    const withPrice = page.filter((d) => d.flightPrice && d.flightPrice > 0);
-    const withoutPrice = page.filter((d) => !d.flightPrice || d.flightPrice <= 0);
+    const withPrice = page.filter((d) => d.flightPrice && d.flightPrice > 0 && d.priceSource === 'duffel' && !isPriceStale(d.priceFetchedAt));
+    const withoutPrice = page.filter((d) => !d.flightPrice || d.flightPrice <= 0 || d.priceSource !== 'duffel' || isPriceStale(d.priceFetchedAt));
 
     if (withPrice.length >= 10) {
       // Plenty of priced destinations — show them, but refresh stale ones in background
@@ -1974,7 +2005,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       page = page.filter((d) => d.flightPrice && d.flightPrice > 0);
     }
 
-    // Fire-and-forget: backfill remaining unprice destinations
+    // Fire-and-forget: backfill remaining unpriced destinations
     const stillUnpriced = page.length < effectivePageSize
       ? withoutPrice.filter((d) => !page.some((p) => p.iataCode === d.iataCode))
       : withoutPrice;
@@ -1992,6 +2023,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ destinations: page, nextCursor });
   } catch (err) {
     logApiError('api/feed', err);
-    return res.status(500).json({ error: 'Failed to load feed' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load feed');
   }
 }

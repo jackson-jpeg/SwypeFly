@@ -236,17 +236,15 @@ final class Router {
                 }
             }
         case "search":
-            handleQuickAction("com.sogojet.search")
+            handleQuickAction(ActivityTypes.search)
         case "saved":
-            handleQuickAction("com.sogojet.saved")
+            handleQuickAction(ActivityTypes.saved)
         case "board":
-            handleQuickAction("com.sogojet.board")
+            handleQuickAction(ActivityTypes.board)
         case "home":
             activeTab = .feed
         default:
-            #if DEBUG
-            print("[Router] Unrecognized sogojet:// URL: \(url)")
-            #endif
+            SGLogger.router.warning("Unrecognized sogojet:// URL: \(url)")
         }
     }
 
@@ -317,9 +315,7 @@ final class Router {
                 showDeal(deal)
             }
         } catch {
-            #if DEBUG
-            print("[Router] Failed to fetch deal for deep link \(id): \(error)")
-            #endif
+            SGLogger.router.error("Failed to fetch deal for deep link \(id): \(error)")
         }
     }
 
@@ -347,12 +343,12 @@ final class Router {
 
     func handleQuickAction(_ type: String) {
         switch type {
-        case "com.sogojet.search":
+        case ActivityTypes.search, ActivityTypes.searchFlights:
             activeTab = .feed
             showSearch()
-        case "com.sogojet.saved":
+        case ActivityTypes.saved:
             activeTab = .saved
-        case "com.sogojet.board":
+        case ActivityTypes.board:
             activeTab = .feed
             // The board view is toggled via SettingsStore.preferredView
         default:

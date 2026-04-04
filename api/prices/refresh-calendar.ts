@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../../services/supabaseServer';
 import { fetchAllCheapPrices, fetchLatestPrices, fetchByPriceRange } from '../../services/travelpayouts';
 import { logApiError } from '../../utils/apiLogger';
+import { withRetry } from '../../utils/retry';
 import { evaluateDealQuality, US_AIRPORTS } from '../../utils/dealQuality';
 import {
   getRouteStats,
@@ -9,6 +10,8 @@ import {
   updateRouteStats,
   clearStatsCache,
 } from '../../utils/priceStats';
+import { env } from '../../utils/env';
+import { sendError } from '../../utils/apiResponse';
 
 export const maxDuration = 300;
 
@@ -59,8 +62,8 @@ async function getActiveOrigins(): Promise<string[]> {
     for (const doc of data ?? []) {
       if (doc.departure_code) origins.add(doc.departure_code as string);
     }
-  } catch {
-    // user_preferences may not have data yet
+  } catch (err) {
+    console.warn('[refresh-calendar] Failed to fetch user departure codes:', err);
   }
   return Array.from(origins);
 }
@@ -77,8 +80,8 @@ async function pickNextOrigins(count: number): Promise<string[]> {
       .limit(500);
     if (error) throw error;
     statusDocs = data ?? [];
-  } catch {
-    // No calendar data yet
+  } catch (err) {
+    console.warn('[refresh-calendar] Failed to fetch calendar staleness data:', err);
   }
 
   const lastRefreshed = new Map<string, string>();
@@ -129,8 +132,8 @@ async function getDestMeta(): Promise<Map<string, DestMeta>> {
         bestMonths: (doc.best_months as string[]) || [],
       });
     }
-  } catch {
-    // Non-fatal
+  } catch (err) {
+    console.warn('[refresh-calendar] Failed to load destination metadata:', err);
   }
   return destMetaCache;
 }
@@ -154,7 +157,9 @@ async function upsertCalendarEntry(
   // statistical context for percentile calculation, discovery scoring,
   // and flash deal detection. Without this, first-time routes get
   // usual_price=undefined and all discovery signals return 0.
-  await updateRouteStats(origin, destIata, price).catch(() => {});
+  await updateRouteStats(origin, destIata, price).catch((err) =>
+    console.warn(`[refresh-calendar] updateRouteStats failed for ${origin}->${destIata}:`, err),
+  );
 
   // Now get stats (which include the price we just recorded)
   const stats = await getRouteStats(origin, destIata);
@@ -203,8 +208,8 @@ async function upsertCalendarEntry(
         else if (changePct < -0.05) priceDirection = 'up';
       }
     }
-  } catch {
-    // Non-fatal — just won't have direction data
+  } catch (err) {
+    console.warn(`[refresh-calendar] Failed to fetch previous price for ${origin}->${destIata}:`, err);
   }
 
   // Flash deal: >30% below usual price AND found in last refresh
@@ -277,9 +282,27 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
 
   // Step 1: Get prices from multiple Travelpayouts endpoints in parallel
   const [bulkPrices, latestPrices, budgetDeals] = await Promise.all([
-    fetchAllCheapPrices(origin),
-    fetchLatestPrices(origin).catch(() => new Map()),
-    fetchByPriceRange(origin, 1, 350).catch(() => []),  // Sub-$350 surprises
+    withRetry(() => fetchAllCheapPrices(origin), {
+      maxRetries: 2,
+      baseDelayMs: 1000,
+      label: `tp-bulk:${origin}`,
+    }),
+    withRetry(() => fetchLatestPrices(origin), {
+      maxRetries: 2,
+      baseDelayMs: 1000,
+      label: `tp-latest:${origin}`,
+    }).catch((err) => {
+      console.warn(`[refresh-calendar] fetchLatestPrices failed for ${origin}:`, err);
+      return new Map() as Awaited<ReturnType<typeof fetchLatestPrices>>;
+    }),
+    withRetry(() => fetchByPriceRange(origin, 1, 350), {
+      maxRetries: 2,
+      baseDelayMs: 1000,
+      label: `tp-budget:${origin}`,
+    }).catch((err) => {
+      console.warn(`[refresh-calendar] fetchByPriceRange failed for ${origin}:`, err);
+      return [] as Awaited<ReturnType<typeof fetchByPriceRange>>;
+    }),
   ]);
 
   // Merge: bulk is primary, supplement with latest 48h prices and budget discoveries
@@ -330,8 +353,8 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
       .limit(500);
     if (error) throw error;
     ourDestCodes = new Set((data ?? []).map((d) => d.iata_code as string));
-  } catch {
-    // Non-fatal — just won't prioritize
+  } catch (err) {
+    console.warn('[refresh-calendar] Failed to fetch destination IATA codes:', err);
   }
 
   const allBulkEntries = Array.from(bulkPrices.entries())
@@ -394,14 +417,14 @@ async function refreshOrigin(origin: string): Promise<OriginResult> {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Verify CRON_SECRET
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = env.CRON_SECRET;
   if (!cronSecret) {
-    return res.status(503).json({ error: 'CRON_SECRET not configured' });
+    return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'CRON_SECRET not configured');
   }
   const authHeader = req.headers.authorization;
   const provided = authHeader?.replace('Bearer ', '') || '';
   if (provided !== cronSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
   }
 
   const originParam =
@@ -440,9 +463,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logApiError('api/prices/refresh-calendar', err);
-    return res.status(500).json({
-      error: 'Price calendar refresh failed',
-      detail: message,
-    });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Price calendar refresh failed', { detail: message });
   }
 }

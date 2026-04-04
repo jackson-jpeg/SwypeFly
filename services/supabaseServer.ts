@@ -4,9 +4,10 @@
  * Uses service_role key for full database access (bypasses RLS).
  */
 import { createClient } from '@supabase/supabase-js';
+import { env } from '../utils/env';
 
-const supabaseUrl = (process.env.SUPABASE_URL ?? '').replace(/\\n/g, '').trim();
-const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').replace(/\\n/g, '').trim();
+const supabaseUrl = (env.SUPABASE_URL ?? '').replace(/\\n/g, '').trim();
+const supabaseServiceKey = (env.SUPABASE_SERVICE_ROLE_KEY ?? '').replace(/\\n/g, '').trim();
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('[FATAL] Supabase credentials not configured — database operations will fail');
@@ -35,4 +36,5 @@ export const TABLES = {
   bookingPassengers: 'booking_passengers',
   priceCalendar: 'price_calendar',
   priceHistoryStats: 'price_history_stats',
+  savedTravelers: 'saved_travelers',
 } as const;

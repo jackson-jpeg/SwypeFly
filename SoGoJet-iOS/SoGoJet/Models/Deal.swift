@@ -38,6 +38,7 @@ struct Deal: Codable, Identifiable, Hashable, Sendable {
     let priceDirection: String?
     let previousPrice: Double?
     let priceDropPercent: Double?
+    let cachedOfferId: String?
     let offerJson: String?
     let offerExpiresAt: String?
     let airlineLogoUrl: String?
@@ -75,7 +76,7 @@ struct Deal: Codable, Identifiable, Hashable, Sendable {
         case itinerary, restaurants
         case departureDate, returnDate, tripDurationDays
         case airline, priceDirection, previousPrice, priceDropPercent
-        case offerJson, offerExpiresAt, airlineLogoUrl
+        case cachedOfferId, offerJson, offerExpiresAt, airlineLogoUrl
         case cheapestDate, cheapestReturnDate, affiliateUrl
         case priceHistory
         case dealScore, dealTier, qualityScore, pricePercentile
@@ -124,19 +125,62 @@ extension Deal {
     /// Whether the displayed price is an estimate (from Travelpayouts cache)
     /// vs a confirmed live price (from Duffel).
     var isEstimatedPrice: Bool {
-        // If we have a livePrice from Duffel, it's confirmed
-        if (livePrice ?? 0) > 0 { return false }
-        // flightPrice from Travelpayouts is always an estimate
-        return flightPrice != nil
+        // Duffel prices are confirmed bookable fares
+        if priceSource == "duffel" { return false }
+        // Everything else (travelpayouts, estimate) is a cached/estimated price
+        return displayPrice != nil
     }
 
-    /// Price label for the card — "seen at $X" for estimates, "$X" for live prices
+    /// Price label for the card — always just the dollar amount.
+    /// Confidence context (live/recent/estimate) is shown by the dot + label in the price badge UI.
     var cardPriceLabel: String {
         guard let price = displayPrice, price > 0 else { return "Check price" }
-        if isEstimatedPrice {
-            return "seen at $\(Int(price))"
-        }
-        return "from $\(Int(price))"
+        return "$\(Int(price))"
+    }
+
+    /// How many minutes ago the price was fetched. Nil if unknown.
+    var priceAgeMinutes: Int? {
+        guard let fetchedStr = priceFetchedAt else { return nil }
+        let fmtFrac = ISO8601DateFormatter()
+        fmtFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let fmtPlain = ISO8601DateFormatter()
+        guard let date = fmtFrac.date(from: fetchedStr)
+                ?? fmtPlain.date(from: fetchedStr) else { return nil }
+        return Int(Date().timeIntervalSince(date) / 60)
+    }
+
+    /// Whether the cached Duffel offer is still valid (not expired).
+    var isOfferValid: Bool {
+        guard let expiresStr = offerExpiresAt else { return false }
+        let fmtFrac = ISO8601DateFormatter()
+        fmtFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let fmtPlain = ISO8601DateFormatter()
+        guard let expires = fmtFrac.date(from: expiresStr)
+                ?? fmtPlain.date(from: expiresStr) else { return false }
+        return expires > Date()
+    }
+
+    /// Price confidence level based on source and freshness.
+    enum PriceConfidence: String {
+        case live      // Duffel price, < 30 min old, offer still valid
+        case recent    // Duffel price, < 1 hour old
+        case estimate  // Travelpayouts or old cache
+    }
+
+    var priceConfidence: PriceConfidence {
+        guard !isEstimatedPrice else { return .estimate }
+        guard let age = priceAgeMinutes else { return .estimate }
+        if age < 30 && isOfferValid { return .live }
+        if age < 60 { return .recent }
+        return .estimate
+    }
+
+    /// Enhanced card price label — just the price value for split-flap display.
+    /// Confidence context (live/recent/estimate) is communicated by the colored dot
+    /// and label above the price badge, not embedded in the price text itself.
+    var cardPriceLabelEnhanced: String {
+        guard let price = displayPrice, price > 0 else { return "Check price" }
+        return "$\(Int(price))"
     }
 
     /// Short price label without "from" prefix — used in split-flap board rows
@@ -349,10 +393,10 @@ extension Deal {
         let minutes = Int(seconds) / 60
         let hours = minutes / 60
         let days = hours / 24
-        if days >= 1 { return "Seen \(days)d ago" }
-        if hours >= 1 { return "Seen \(hours)h ago" }
-        if minutes >= 1 { return "Seen \(minutes)m ago" }
-        return "Seen just now"
+        if days >= 1 { return "\(days)d ago" }
+        if hours >= 1 { return "\(hours)h ago" }
+        if minutes >= 1 { return "\(minutes)m ago" }
+        return "just now"
     }
 
     /// Freshness category for coloring the price-updated label.
@@ -498,7 +542,7 @@ extension Deal {
         restaurants: [Restaurant(name: "Cal Pep", type: "Tapas", rating: 4.8)],
         departureDate: "2026-04-15", returnDate: "2026-04-22", tripDurationDays: 7,
         airline: "DL", priceDirection: "down", previousPrice: 450, priceDropPercent: 36,
-        offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
+        cachedOfferId: nil, offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
         cheapestDate: "2026-04-15", cheapestReturnDate: "2026-04-22",
         affiliateUrl: "https://aviasales.com", priceHistory: [450, 420, 380, 310, 287],
         dealScore: 88, dealTier: .amazing, qualityScore: 90, pricePercentile: 15,
@@ -519,7 +563,7 @@ extension Deal {
         itinerary: nil, restaurants: nil,
         departureDate: "2026-05-01", returnDate: "2026-05-08", tripDurationDays: 7,
         airline: "BA", priceDirection: "down", previousPrice: 550, priceDropPercent: 29,
-        offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
+        cachedOfferId: nil, offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
         cheapestDate: "2026-05-01", cheapestReturnDate: "2026-05-08",
         affiliateUrl: "https://aviasales.com", priceHistory: [520, 490, 510, 470, 430, 400, 389],
         dealScore: 75, dealTier: .great, qualityScore: 95, pricePercentile: 20,

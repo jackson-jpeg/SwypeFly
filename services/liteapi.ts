@@ -1,4 +1,6 @@
-const LITEAPI_KEY = process.env.LITEAPI_API_KEY || '';
+import { env } from '../utils/env';
+
+const LITEAPI_KEY = env.LITEAPI_API_KEY || '';
 const BASE_URL = 'https://api.liteapi.travel/v3.0';
 
 interface HotelRateResult {

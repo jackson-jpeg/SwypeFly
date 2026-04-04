@@ -4,8 +4,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
+import { env } from '../utils/env';
+import { sendError } from '../utils/apiResponse';
 
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 function withMarkup(price: number): number {
   return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
 }
@@ -212,7 +214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Single deal mode
     if (!destId) {
-      return res.status(400).json({ error: 'Provide ?id=<destination_id> or ?top=N' });
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Provide ?id=<destination_id> or ?top=N');
     }
 
     const { data: dest, error: destError } = await supabase
@@ -263,6 +265,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).send(html);
   } catch (err) {
     console.error('[share-card] Error:', err);
-    return res.status(500).json({ error: 'Internal error' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Internal error');
   }
 }

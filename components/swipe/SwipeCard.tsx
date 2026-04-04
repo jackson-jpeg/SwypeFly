@@ -10,6 +10,7 @@ import { shareDestination } from '../../utils/share';
 import { showToast } from '../../stores/toastStore';
 import { useFilterStore } from '../../stores/filterStore';
 import PriceSparkline from './PriceSparkline';
+import { getPriceConfidence, getPriceAgeLabel } from '../../utils/formatPrice';
 import type { BoardDeal } from '../../types/deal';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -271,15 +272,19 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
             animate={animate}
           />
           <Text style={styles.priceLabel}>round trip</Text>
-          {/* Price freshness indicator */}
-          {deal.priceFetchedAt && (() => {
-            const ms = Date.now() - new Date(deal.priceFetchedAt!).getTime();
-            if (ms < 0 || isNaN(ms)) return null;
-            const mins = Math.floor(ms / 60000);
-            const hrs = Math.floor(mins / 60);
-            const days = Math.floor(hrs / 24);
-            const label = days >= 1 ? `${days}d ago` : hrs >= 1 ? `${hrs}h ago` : mins >= 1 ? `${mins}m ago` : 'just now';
-            return <Text style={styles.priceFreshness}>Seen {label}</Text>;
+          {/* Price confidence indicator — dot + age label */}
+          {(() => {
+            const confidence = getPriceConfidence(deal.priceSource, deal.priceFetchedAt, deal.offerExpiresAt);
+            const ageLabel = getPriceAgeLabel(deal.priceFetchedAt);
+            const dotColor = confidence === 'live' ? '#22c55e' : confidence === 'recent' ? '#eab308' : '#f97316';
+            return (
+              <View style={styles.confidenceRow}>
+                <View style={[styles.confidenceDot, { backgroundColor: dotColor }]} />
+                {ageLabel && (
+                  <Text style={styles.priceFreshness}>{ageLabel}</Text>
+                )}
+              </View>
+            );
           })()}
           {/* Price anchoring — usual price + savings */}
           {deal.usualPrice != null && deal.savingsAmount != null && deal.savingsAmount > 0 && (
@@ -591,11 +596,21 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  confidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  confidenceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   priceFreshness: {
     fontFamily: fonts.body,
     fontSize: 9,
-    color: 'rgba(255,255,255,0.4)',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.5)',
   },
   typicalRange: {
     fontFamily: fonts.body,

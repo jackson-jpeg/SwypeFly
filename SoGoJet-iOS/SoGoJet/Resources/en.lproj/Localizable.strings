@@ -1,0 +1,138 @@
+/* SoGoJet Localizable Strings — English (Base) */
+
+/* Onboarding */
+"onboarding.tagline" = "Find cheap flights.\nSwipe, save, book.";
+"onboarding.continue" = "Continue";
+"onboarding.skip" = "Skip";
+"onboarding.select_airport" = "Select your home airport";
+"onboarding.sign_in" = "Sign In";
+"onboarding.sign_in_later" = "Maybe Later";
+
+/* Tabs */
+"tab.explore" = "Explore";
+"tab.saved" = "Saved";
+"tab.settings" = "Settings";
+
+/* Feed */
+"feed.empty.title" = "No Deals Found";
+"feed.empty.subtitle_filters" = "Try removing some filters";
+"feed.empty.subtitle_no_filters" = "No live routes from %@";
+"feed.error.title" = "Couldn't Load Deals";
+"feed.error.retry" = "Try Again";
+"feed.end.title" = "You've seen them all";
+"feed.end.subtitle" = "Check back later for new deals";
+"feed.swipe_hint" = "Swipe right to save";
+"feed.cached_banner" = "Showing cached data";
+
+/* Deal Card */
+"deal.live_fare" = "live fare";
+"deal.recent_fare" = "recent fare";
+"deal.estimated_fare" = "est. fare";
+
+/* Search */
+"search.title" = "Search Flights";
+"search.subtitle" = "Set your travel dates and preferences.";
+"search.cabin" = "Cabin";
+"search.passengers" = "Passengers";
+"search.passengers.adults" = "Adults";
+"search.from" = "From";
+"search.to" = "To";
+"search.depart" = "Depart";
+"search.return" = "Return";
+"search.searching" = "Searching...";
+"search.no_results" = "No flights found for this route";
+"search.advanced" = "Advanced";
+
+/* Booking */
+"booking.step.search" = "Search";
+"booking.step.traveler" = "Traveler";
+"booking.step.seats" = "Seats";
+"booking.step.review" = "Review";
+"booking.step.confirmed" = "Confirmed";
+
+/* Passenger Form */
+"passenger.title" = "Traveler Details";
+"passenger.first_name" = "First Name";
+"passenger.last_name" = "Last Name";
+"passenger.email" = "Email";
+"passenger.phone" = "Phone";
+"passenger.dob" = "Date of Birth";
+"passenger.gender" = "Gender";
+"passenger.passport" = "Passport Number";
+"passenger.nationality" = "Nationality";
+"passenger.passport_expiry" = "Passport Expiry";
+"passenger.title_mr" = "Mr";
+"passenger.title_mrs" = "Mrs";
+"passenger.title_ms" = "Ms";
+"passenger.title_miss" = "Miss";
+"passenger.title_dr" = "Dr";
+
+/* Seat Map */
+"seats.title" = "Choose Your Seat";
+"seats.skip" = "Skip seat selection";
+"seats.recommended" = "Recommended";
+"seats.extra_legroom" = "Extra Legroom";
+"seats.top_picks" = "Top Picks";
+"seats.available" = "%d available";
+
+/* Review */
+"review.title" = "Review & Pay";
+"review.total" = "Total";
+"review.pay_now" = "Pay Now";
+"review.booking_disabled" = "Booking is temporarily unavailable. Please try again later.";
+"review.offer_expired" = "This offer has expired";
+"review.search_fresh" = "Search Fresh Fares";
+"review.flight_summary" = "Flight Summary";
+"review.passenger_details" = "Passenger Details";
+"review.seat_selection" = "Seat Selection";
+"review.price_breakdown" = "Price Breakdown";
+
+/* Boarding Pass */
+"boarding.title" = "Booking Confirmed";
+"boarding.reference" = "Booking Reference";
+"boarding.back_to_deals" = "Back to Deals";
+"boarding.share_trip" = "Share Trip";
+
+/* Saved */
+"saved.title" = "Saved Trips";
+"saved.empty" = "No saved trips yet";
+"saved.empty.subtitle" = "Swipe right on deals you like to save them here.";
+"saved.compare" = "Compare";
+"saved.sort" = "Sort";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.departure" = "Departure Airport";
+"settings.sign_in_prompt" = "Sign in to save preferences and book flights";
+"settings.sign_out" = "Sign Out";
+"settings.notifications" = "Notifications";
+"settings.price_alerts" = "Price Alerts";
+"settings.privacy_policy" = "Privacy Policy";
+"settings.terms" = "Terms of Service";
+"settings.version" = "Version %@";
+
+/* Network */
+"network.offline" = "No internet connection";
+"network.error.generic" = "Something went wrong. Please try again.";
+"network.error.timeout" = "The request timed out. Please try again.";
+"network.error.no_internet" = "No internet connection. Check your Wi-Fi or cellular data and try again.";
+
+/* Maintenance / Force Update */
+"maintenance.title" = "We'll Be Right Back";
+"maintenance.default_message" = "SoGoJet is currently undergoing maintenance. Please check back shortly.";
+"update.title" = "Update Required";
+"update.message" = "A new version of SoGoJet is available. Please update to continue.";
+"update.button" = "Update Now";
+
+/* Sync */
+"sync.failed" = "Couldn't sync saved trips. Your local saves are safe.";
+"session.expired" = "Session expired. Please sign in again.";
+
+/* Common */
+"common.cancel" = "Cancel";
+"common.done" = "Done";
+"common.save" = "Save";
+"common.delete" = "Delete";
+"common.share" = "Share";
+"common.close" = "Close";
+"common.loading" = "Loading...";

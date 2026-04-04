@@ -1,6 +1,7 @@
 import { verifyToken } from '@clerk/backend';
+import { env } from './env';
 
-const CLERK_SECRET_KEY = (process.env.CLERK_SECRET_KEY || '').trim();
+const CLERK_SECRET_KEY = (env.CLERK_SECRET_KEY || '').trim();
 
 if (!CLERK_SECRET_KEY) {
   console.error('[FATAL] CLERK_SECRET_KEY not configured — auth verification will fail');

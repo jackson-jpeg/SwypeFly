@@ -290,7 +290,7 @@ struct SearchView: View {
                     latitude: nil, longitude: nil, itinerary: nil, restaurants: nil,
                     departureDate: nil, returnDate: nil, tripDurationDays: nil,
                     airline: nil, priceDirection: nil, previousPrice: nil, priceDropPercent: nil,
-                    offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
+                    cachedOfferId: nil, offerJson: nil, offerExpiresAt: nil, airlineLogoUrl: nil,
                     cheapestDate: nil, cheapestReturnDate: nil, affiliateUrl: nil,
                     priceHistory: nil, dealScore: nil, dealTier: nil, qualityScore: nil,
                     pricePercentile: nil, isNonstop: nil, totalStops: nil,

@@ -26,6 +26,9 @@ interface ApiDestination {
   tripDurationDays?: number;
   airline?: string;
   priceSource?: string;
+  priceFetchedAt?: string;
+  offerExpiresAt?: string;
+  cachedOfferId?: string;
   priceDirection?: string;
   affiliateUrl?: string;
   itinerary?: { day: number; activities: string[] }[];
@@ -42,6 +45,8 @@ interface ApiDestination {
   savingsAmount?: number;
   savingsPercent?: number;
   priceHistory?: number[];
+  typicalPriceLow?: number;
+  typicalPriceHigh?: number;
   nearbyOrigin?: string;
   nearbyOriginLabel?: string;
   flashDeal?: boolean;
@@ -92,6 +97,8 @@ function apiToBoardDeal(d: ApiDestination, origin: string): BoardDeal {
     status: hasPrice ? getStatus(d) : 'NEW',
     priceSource: d.priceSource || 'unknown',
     priceFetchedAt: d.priceFetchedAt || undefined,
+    offerExpiresAt: d.offerExpiresAt || undefined,
+    cachedOfferId: d.cachedOfferId || undefined,
     airline: d.airline ? getAirlineName(d.airline) : 'Multiple Airlines',
     departureDate: depDate,
     returnDate: retDate,

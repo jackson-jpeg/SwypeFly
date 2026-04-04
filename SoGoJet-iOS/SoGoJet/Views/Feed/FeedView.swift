@@ -34,6 +34,7 @@ struct FeedView: View {
     @State private var headerHideTask: Task<Void, Never>?
     @State private var swipeModeIndex: Int = 0
     @State private var showMap: Bool = false
+    @State private var showTripPlanner: Bool = false
 
     private var currentDeal: Deal? {
         guard let currentIndex,
@@ -158,6 +159,13 @@ struct FeedView: View {
         }
         .sheet(item: $shareItem) { item in
             ShareSheet(activityItems: item.activityItems)
+        }
+        .sheet(isPresented: $showTripPlanner) {
+            if let deal = currentDeal {
+                TripPlanView(city: deal.city, country: deal.country, destinationId: deal.id)
+            } else {
+                TripPlanView(city: settingsStore.departureCity, country: nil, destinationId: nil)
+            }
         }
         .fullScreenCover(isPresented: $showMap) {
             ExploreMapView(
@@ -537,6 +545,15 @@ struct FeedView: View {
             .accessibilityLabel("Explore on map")
 
             FeedHeaderButton(
+                systemName: "sparkles",
+                action: {
+                    HapticEngine.light()
+                    showTripPlanner = true
+                }
+            )
+            .accessibilityLabel("AI Trip Planner")
+
+            FeedHeaderButton(
                 systemName: "magnifyingglass",
                 action: {
                     HapticEngine.light()
@@ -824,23 +841,7 @@ struct FeedView: View {
     // MARK: - Helpers
 
     private var nearbyAirports: [String] {
-        let nearby: [String: [String]] = [
-            "JFK": ["EWR", "LGA", "PHL"],
-            "EWR": ["JFK", "LGA", "PHL"],
-            "LGA": ["JFK", "EWR", "PHL"],
-            "LAX": ["SNA", "BUR", "LGB"],
-            "SFO": ["OAK", "SJC"],
-            "ORD": ["MDW"],
-            "MDW": ["ORD"],
-            "MIA": ["FLL", "PBI"],
-            "FLL": ["MIA", "PBI"],
-            "TPA": ["PIE", "SRQ", "MCO", "FLL"],
-            "ATL": ["CLT"],
-            "DFW": ["DAL", "IAH"],
-            "SEA": ["PDX"],
-            "BOS": ["PVD", "BDL"],
-        ]
-        return nearby[settingsStore.departureCode] ?? ["JFK", "LAX", "ORD"]
+        AirportGraph.nearbyAirports(for: settingsStore.departureCode)
     }
 }
 

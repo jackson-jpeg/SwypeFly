@@ -4,8 +4,10 @@ import { tripPlanBodySchema, validateRequest } from '../../utils/validation';
 import { logApiError } from '../../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../../utils/rateLimit';
 import { cors } from '../_cors.js';
+import { env } from '../../utils/env';
+import { sendError } from '../../utils/apiResponse';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
 /** Strip control characters and excess whitespace from user-supplied strings */
 function sanitize(input: string): string {
@@ -14,22 +16,22 @@ function sanitize(input: string): string {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'POST only');
 
   // Rate limit: 10 requests per minute per IP
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
   const rl = checkRateLimit(`trip-plan:${ip}`, 10, 60_000);
   if (!rl.allowed) {
-    return res.status(429).json({ error: 'Too many requests, please try again later' });
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests, please try again later');
   }
 
   const v = validateRequest(tripPlanBodySchema, req.body);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
   const { city, country, duration, style, interests } = v.data;
 
   // Demo fallback when API key is not configured
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!env.ANTHROPIC_API_KEY) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     const fallback = `${city}${country ? `, ${country}` : ''} — ${duration}-Day ${style.charAt(0).toUpperCase() + style.slice(1)} Itinerary\n\nDay 1 — Arrival & First Impressions\n🌅 Morning: Arrive and check into your hotel\n🏛 Afternoon: Explore the city center and main landmarks\n🍽 Evening: Dinner at a top-rated local restaurant\n💡 Tip: Exchange currency at the airport for convenience\n\nDay 2 — Local Highlights\n☀️ Morning: Visit the most popular attraction\n🚶 Afternoon: Walking tour through historic neighborhoods\n🌙 Evening: Sunset views and nightlife district\n💡 Tip: Public transit is the most efficient way to get around\n\nDay 3 — Hidden Gems & Departure\n🌿 Morning: Off-the-beaten-path neighborhood exploration\n🛍 Afternoon: Local markets and souvenir shopping\n✈️ Evening: Depart ${city}\n💡 Tip: Book airport transfer in advance to save time\n\nPro Tips:\n1. Learn a few basic phrases in the local language\n2. Try street food for the most authentic experience\n3. Keep copies of important documents separate from originals`;
     return res.status(200).end(fallback);
@@ -82,7 +84,7 @@ Use emojis sparingly for visual appeal. No markdown headers — use plain text w
     logApiError('api/ai/trip-plan', err);
     const message = err instanceof Error ? err.message : 'AI generation failed';
     if (!res.headersSent) {
-      res.status(500).json({ error: message });
+      sendError(res, 500, 'INTERNAL_ERROR', message);
     } else {
       res.write(`\n\n[Error: ${message}]`);
       res.end();

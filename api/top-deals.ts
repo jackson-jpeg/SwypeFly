@@ -5,21 +5,24 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
+import { env } from '../utils/env';
+import { sendError } from '../utils/apiResponse';
 
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 function withMarkup(price: number): number {
   return Math.round(price * (1 + BOOKING_MARKUP_PERCENT / 100));
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
-  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'GET only');
 
   // Rate limit: 10 req/min per IP
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
   const rl = checkRateLimit(`top-deals:${ip}`, 10, 60_000);
   if (!rl.allowed) {
-    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+    const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
   }
 
   const limit = Math.min(parseInt(String(req.query.limit || '10'), 10) || 10, 25);
@@ -79,6 +82,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     console.error('[top-deals] Error:', err);
-    return res.status(500).json({ error: 'Internal error' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Internal error');
   }
 }

@@ -1,13 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { OfferRequest } from '@duffel/api/types';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { destinationQuerySchema, priceCalendarQuerySchema, weekMatrixQuerySchema, priceHistoryQuerySchema, validateRequest } from '../utils/validation';
 import { fetchPriceCalendar, fetchMonthlyPrices, fetchWeekMatrix } from '../services/travelpayouts';
+import { getOffersFromResult, sortOffersByPrice, extractCheapestOfferData } from '../utils/duffelMapper';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
+import { env } from '../utils/env';
+import { STALE_PRICE_MS } from '../utils/config';
+import { sendError } from '../utils/apiResponse';
 
-const BOOKING_MARKUP_PERCENT = parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3');
-const PRICE_STALE_MS = 60 * 60 * 1000; // 1 hour
+const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
+const PRICE_STALE_MS = STALE_PRICE_MS;
 
 /** Apply booking markup so displayed prices match checkout. */
 function withMarkup(price: number | null | undefined): number | null {
@@ -52,20 +57,14 @@ function backgroundPriceRefresh(origin: string, destIata: string) {
         cabinClass: 'economy',
       });
 
-      const cheapest = (result.offers || []).sort(
-        (a: { total_amount: string }, b: { total_amount: string }) =>
-          parseFloat(a.total_amount) - parseFloat(b.total_amount),
-      )[0] as Record<string, any> | undefined;
-      if (!cheapest) return;
+      const offers = getOffersFromResult(result as OfferRequest);
+      if (!offers.length) return;
 
-      const price = Math.round(parseFloat(cheapest.total_amount));
-      const outSlice = cheapest.slices?.[0];
-      let duration = '';
-      if (outSlice?.duration) {
-        const match = (outSlice.duration as string).match(/PT(\d+)H(\d+)?M?/);
-        if (match) duration = `${match[1]}h ${match[2] || '0'}m`;
-      }
-      const airline = outSlice?.segments?.[0]?.marketing_carrier?.iata_code ?? '';
+      const sorted = sortOffersByPrice(offers);
+      const data = extractCheapestOfferData(sorted[0]);
+      const price = data.price;
+      const duration = data.duration;
+      const airline = data.airlineCode;
 
       await supabase.from(TABLES.cachedPrices).upsert(
         {
@@ -95,7 +94,7 @@ function backgroundPriceRefresh(origin: string, destIata: string) {
 
 async function handleCalendar(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(priceCalendarQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { origin, destination, month } = v.data;
 
   try {
@@ -103,7 +102,7 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
     const today = new Date().toISOString().split('T')[0];
 
     // Try price_calendar collection first (cached by cron)
-    let calendarDocs: any[] = [];
+    let calendarDocs: Record<string, unknown>[] = [];
     try {
       const { data } = await supabase
         .from(TABLES.priceCalendar)
@@ -164,7 +163,7 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logApiError('api/destination?action=calendar', err);
-    return res.status(500).json({ error: 'Failed to load price calendar' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load price calendar');
   }
 }
 
@@ -172,7 +171,7 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
 
 async function handleMonthly(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(priceCalendarQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { origin, destination } = v.data;
 
   try {
@@ -197,7 +196,7 @@ async function handleMonthly(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logApiError('api/destination?action=monthly', err);
-    return res.status(500).json({ error: 'Failed to load monthly prices' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load monthly prices');
   }
 }
 
@@ -205,7 +204,7 @@ async function handleMonthly(req: VercelRequest, res: VercelResponse) {
 
 async function handleWeekMatrix(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(weekMatrixQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { origin, destination, departDate, returnDate } = v.data;
 
   try {
@@ -225,7 +224,7 @@ async function handleWeekMatrix(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err) {
     logApiError('api/destination?action=week-matrix', err);
-    return res.status(500).json({ error: 'Failed to load week matrix' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load week matrix');
   }
 }
 
@@ -236,7 +235,7 @@ const priceHistoryCache = new Map<string, { data: unknown; expires: number }>();
 
 async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(priceHistoryQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { origin, destination } = v.data;
 
   const cacheKey = `ph:${origin}:${destination}`;
@@ -267,7 +266,7 @@ async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
         .eq('destination_iata', destination)
         .order('price', { ascending: true })
         .limit(1)
-    ).catch(() => ({ data: [] as any[] }));
+    ).catch(() => ({ data: [] as Record<string, unknown>[] }));
 
     const currentPriceDoc = (currentPriceData ?? [])[0];
     const currentPrice = (currentPriceDoc?.price as number) ?? null;
@@ -328,7 +327,7 @@ async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(responseData);
   } catch (err) {
     logApiError('api/destination?action=price-history', err);
-    return res.status(500).json({ error: 'Failed to load price history' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load price history');
   }
 }
 
@@ -337,14 +336,15 @@ async function handlePriceHistory(req: VercelRequest, res: VercelResponse) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
   }
 
   // Rate limit: 30 req/min per IP
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
   const rl = checkRateLimit(`dest:${ip}`, 30, 60_000);
   if (!rl.allowed) {
-    return res.status(429).json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+    const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
   }
 
   // Route by action param
@@ -362,12 +362,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const v = validateRequest(destinationQuerySchema, req.query);
-  if (!v.success) return res.status(400).json({ error: v.error });
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
   const { id, origin } = v.data;
 
   try {
     // Fetch destination from Supabase
-    let dest: any;
+    let dest: Record<string, unknown>;
     const { data: destData, error: destError } = await supabase
       .from(TABLES.destinations)
       .select('*')
@@ -375,7 +375,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (destError || !destData) {
-      return res.status(404).json({ error: 'Destination not found' });
+      return sendError(res, 404, 'NOT_FOUND', 'Destination not found');
     }
     dest = destData;
 
@@ -408,16 +408,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const [allPricesResult, hotelPriceResult, imageResult, similarResult] = await Promise.all([
       Promise.resolve(
         supabase.from(TABLES.cachedPrices).select('*').eq('destination_iata', dest.iata_code as string).limit(20)
-      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
+      ).then(({ data }) => data ?? []).catch(() => [] as Record<string, unknown>[]),
       Promise.resolve(
         supabase.from(TABLES.cachedHotelPrices).select('*').eq('destination_iata', dest.iata_code as string).limit(1)
-      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
+      ).then(({ data }) => data ?? []).catch(() => [] as Record<string, unknown>[]),
       Promise.resolve(
         supabase.from(TABLES.destinationImages).select('*').eq('destination_id', id).eq('is_primary', true).limit(1)
-      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
+      ).then(({ data }) => data ?? []).catch(() => [] as Record<string, unknown>[]),
       Promise.resolve(
         supabase.from(TABLES.destinations).select('*').eq('country', dest.country as string).neq('id', id).limit(3)
-      ).then(({ data }) => data ?? []).catch(() => [] as any[]),
+      ).then(({ data }) => data ?? []).catch(() => [] as Record<string, unknown>[]),
     ]);
 
     const otherPrices = allPricesResult
@@ -430,7 +430,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hotelPrice = hotelPriceDoc;
 
     // Parse hotels_json from cached hotel prices
-    let hotels: any[] | undefined;
+    let hotels: Record<string, unknown>[] | undefined;
     try {
       hotels = hotelPriceDoc?.hotels_json ? JSON.parse(hotelPriceDoc.hotels_json as string) : undefined;
     } catch {
@@ -504,6 +504,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(result);
   } catch (err) {
     logApiError('api/destination', err);
-    return res.status(500).json({ error: 'Failed to load destination' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load destination');
   }
 }

@@ -4,6 +4,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { Resend } from 'resend';
+import { env } from '../utils/env';
+import { sendError } from '../utils/apiResponse';
 
 export const maxDuration = 60;
 
@@ -67,7 +69,7 @@ async function getTopDeals(limit: number): Promise<DealRow[]> {
       city: doc.city || 'Unknown',
       country: doc.country || '',
       iata: doc.destination_iata || '',
-      price: doc.price ? Math.round((doc.price as number) * (1 + parseFloat(process.env.BOOKING_MARKUP_PERCENT || '3') / 100)) : 0,
+      price: doc.price ? Math.round((doc.price as number) * (1 + env.BOOKING_MARKUP_PERCENT / 100)) : 0,
       usualPrice: doc.usual_price || null,
       savingsPercent: doc.savings_percent || null,
       dealTier: doc.deal_tier || 'fair',
@@ -214,12 +216,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Auth — Vercel cron Bearer token, query param, or custom header
   const bearerToken = req.headers.authorization?.replace('Bearer ', '');
   const secret = bearerToken || req.query.secret || req.headers['x-cron-secret'];
-  const preview = req.query.preview === 'true' && process.env.VERCEL_ENV !== 'production';
+  const preview = req.query.preview === 'true' && env.VERCEL_ENV !== 'production';
 
   if (!preview) {
-    const cronSecret = process.env.CRON_SECRET?.trim();
-    if (!cronSecret) return res.status(503).json({ error: 'CRON_SECRET not configured' });
-    if (secret !== cronSecret) return res.status(401).json({ error: 'Unauthorized' });
+    const cronSecret = env.CRON_SECRET?.trim();
+    if (!cronSecret) return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'CRON_SECRET not configured');
+    if (secret !== cronSecret) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
   }
 
   try {
@@ -270,12 +272,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ sent, deals: deals.length });
   } catch (err) {
     console.error('[newsletter] Error:', err);
-    return res.status(500).json({ error: 'Internal error' });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Internal error');
   }
 }
 
 function getResendClient(): Resend | null {
-  const key = process.env.RESEND_API_KEY?.trim();
+  const key = env.RESEND_API_KEY?.trim();
   if (!key) return null;
   return new Resend(key);
 }

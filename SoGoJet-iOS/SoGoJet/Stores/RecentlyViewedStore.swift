@@ -23,7 +23,7 @@ final class RecentlyViewedStore {
 
     private(set) var items: [RecentItem] = []
 
-    private let storageKey = "sg_recently_viewed"
+    private let storageKey = StorageKeys.Saved.recentlyViewed
     private let maxItems = 10
 
     init() {

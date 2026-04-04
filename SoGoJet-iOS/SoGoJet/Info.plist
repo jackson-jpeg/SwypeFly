@@ -30,6 +30,8 @@
 		<string>com.sogojet.board</string>
 		<string>com.sogojet.view-deal</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>SoGoJet may need camera access for features provided by third-party services.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>SoGoJet uses Face ID to verify your identity before completing a flight purchase.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -89,6 +91,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>sogojet</string>
+				<string>com.sogojet.app</string>
 			</array>
 			<key>CFBundleURLName</key>
 			<string>com.sogojet.app</string>
