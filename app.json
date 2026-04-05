@@ -41,7 +41,7 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router",
+      ["expo-router", { "origin": "https://sogojet.com" }],
       "expo-font"
     ],
     "extra": {
