@@ -32,7 +32,7 @@ interface SplitFlapCharProps {
 
 const SIZES = {
   sm: { width: 13, height: 22, fontSize: 16 },
-  md: { width: 17, height: 28, fontSize: 22 },
+  md: { width: 22, height: 28, fontSize: 20 },
   lg: { width: 28, height: 44, fontSize: 36 },
   xl: { width: 136, height: 196, fontSize: 144 },
 } as const;
