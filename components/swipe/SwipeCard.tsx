@@ -580,10 +580,10 @@ const styles = StyleSheet.create({
   priceTag: {
     position: 'absolute',
     top: Platform.OS === 'web' ? 70 : 60,
-    right: spacing.md,
+    right: spacing.sm,
     alignItems: 'center',
     backgroundColor: 'rgba(10,8,6,0.7)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
