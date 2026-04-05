@@ -25,7 +25,7 @@ for (const f of ['.env', '.env.local']) {
   }
 }
 
-const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY as string;
 if (!GOOGLE_API_KEY) throw new Error('GOOGLE_PLACES_API_KEY env var is required');
 const client = new Client()
   .setEndpoint(process.env.APPWRITE_ENDPOINT!)
