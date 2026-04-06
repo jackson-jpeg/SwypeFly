@@ -7,6 +7,8 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useFilterStore } from '../../stores/filterStore';
 import SwipeFeed from '../../components/swipe/SwipeFeed';
 import DepartureBoard from '../../components/board/DepartureBoard';
+import StreakBadge from '../../components/common/StreakBadge';
+import { useStreakStore } from '../../stores/streakStore';
 import SkeletonCard from '../../components/swipe/SkeletonCard';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
 import FilterButton from '../../components/swipe/FilterButton';
@@ -43,7 +45,11 @@ export default function FeedScreen() {
   const filterVibes = useFilterStore((s) => s.vibes);
   const filterDuration = useFilterStore((s) => s.duration);
   const sortPreset = useFilterStore((s) => s.sortPreset);
+  const recordLogin = useStreakStore((s) => s.recordLogin);
   const prevDepartureRef = useRef(departureCode);
+
+  // Record daily streak on mount
+  useEffect(() => { recordLogin(); }, []);
 
   // Immersion mode state
   const headerOpacity = useRef(new Animated.Value(1)).current;
@@ -109,8 +115,9 @@ export default function FeedScreen() {
       {/* Floating header — fades during immersion */}
       <Pressable onPress={handleHeaderTap} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
         <Animated.View style={[styles.header, { paddingTop: insets.top + 8, opacity: headerOpacity }]}>
-          <View>
+          <View style={styles.logoRow}>
             <Text style={styles.logo}>✈ SOGOJET</Text>
+            <StreakBadge />
             {dealStats && (
               <Text style={styles.dealCounter}>
                 {dealStats.cheapest ? `From $${dealStats.cheapest}` : `${dealStats.total} deals`}
@@ -227,6 +234,11 @@ const styles = StyleSheet.create({
       web: { pointerEvents: 'box-none' as const },
       default: {},
     }),
+  },
+  logoRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
   },
   logo: {
     fontFamily: fonts.display,
