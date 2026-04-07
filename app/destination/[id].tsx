@@ -54,14 +54,18 @@ function upgradeUnsplashUrl(url: string, width: number): string {
 
 function PriceAlertCTA({ deal }: { deal: BoardDeal }) {
   const [email, setEmail] = useState('');
+  const defaultTarget = deal.price ? Math.round(deal.price * 0.9) : null;
+  const [thresholdText, setThresholdText] = useState(defaultTarget ? String(defaultTarget) : '');
   const [status, setStatus] = useState<'idle' | 'input' | 'sending' | 'done' | 'error'>('idle');
-  const targetPrice = deal.price ? Math.round(deal.price * 0.9) : null;
+
+  const targetPrice = parseInt(thresholdText, 10) || defaultTarget;
 
   const handleCreate = async () => {
     if (!email.trim() || !email.includes('@')) return;
+    if (!targetPrice || targetPrice <= 0) return;
     setStatus('sending');
     try {
-      const res = await fetch(`${API_BASE}/api/alerts?action=create`, {
+      const res = await fetch(`${API_BASE}/api/price-alert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -97,7 +101,19 @@ function PriceAlertCTA({ deal }: { deal: BoardDeal }) {
     return (
       <View style={alertStyles.cta}>
         <View style={{ flex: 1, gap: 8 }}>
-          <Text style={alertStyles.title}>Get notified at ${targetPrice}</Text>
+          <Text style={alertStyles.title}>Set your target price</Text>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 16, color: colors.yellow }}>$</Text>
+            <TextInput
+              style={[alertStyles.emailInput, { maxWidth: 100 }]}
+              placeholder={defaultTarget ? String(defaultTarget) : '0'}
+              placeholderTextColor={colors.muted + '60'}
+              value={thresholdText}
+              onChangeText={(t) => setThresholdText(t.replace(/[^0-9]/g, ''))}
+              keyboardType="numeric"
+              returnKeyType="done"
+            />
+          </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TextInput
               style={alertStyles.emailInput}
@@ -130,7 +146,7 @@ function PriceAlertCTA({ deal }: { deal: BoardDeal }) {
     <View style={alertStyles.cta}>
       <View style={{ flex: 1 }}>
         <Text style={alertStyles.title}>Track this price</Text>
-        <Text style={alertStyles.desc}>Get notified when {deal.destination} drops below ${targetPrice}</Text>
+        <Text style={alertStyles.desc}>Get notified when {deal.destination} drops below ${defaultTarget}</Text>
       </View>
       <Pressable style={({ pressed }) => [alertStyles.btn, pressed && { opacity: 0.85 }]} onPress={() => setStatus('input')}>
         <Ionicons name="notifications-outline" size={18} color={colors.bg} />
@@ -314,6 +330,9 @@ export default function DestinationDetailScreen() {
         <meta property="og:image" content={`${API_BASE}/api/og?id=${deal.id}`} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={`${API_BASE}/api/og?id=${deal.id}`} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDesc} />
       </Head>
       <Animated.ScrollView
         bounces={false}
