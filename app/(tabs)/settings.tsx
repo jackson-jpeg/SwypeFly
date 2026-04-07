@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -103,6 +104,7 @@ function NewsletterSignup() {
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const settings = useSettingsStore();
   const clearSaved = useSavedStore((s) => s.clear);
 
@@ -294,6 +296,22 @@ export default function SettingsScreen() {
           thumbColor={settings.priceAlertsEnabled ? colors.green : colors.muted}
         />
       </View>
+
+      {/* ── Community ── */}
+      <Text style={styles.sectionLabel}>COMMUNITY</Text>
+      <Pressable
+        style={styles.row}
+        onPress={() => router.push('/social/leaderboard')}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <Ionicons name="trophy-outline" size={18} color={colors.yellow} />
+          <View>
+            <Text style={styles.rowLabel}>Leaderboard</Text>
+            <Text style={styles.rowHint}>Top deal hunters ranked by savings</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+      </Pressable>
 
       {/* ── Data ── */}
       <Text style={styles.sectionLabel}>DATA</Text>

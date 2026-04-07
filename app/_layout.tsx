@@ -193,6 +193,10 @@ export default function RootLayout() {
                 name="destination/[id]"
                 options={{ animation: 'slide_from_bottom', gestureEnabled: true }}
               />
+              <Stack.Screen
+                name="social/leaderboard"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
             </Stack>
           </OnboardingGate>
           <StatusBar style="light" />
