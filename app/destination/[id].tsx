@@ -17,6 +17,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
+import { SkeletonDestinationDetail } from '../../components/common/Skeleton';
 import { useDealStore } from '../../stores/dealStore';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -24,6 +25,7 @@ import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { shareDestination } from '../../utils/share';
 import { showToast } from '../../stores/toastStore';
+import { lightHaptic, mediumHaptic, successHaptic } from '../../utils/haptics';
 import type { BoardDeal } from '../../types/deal';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -76,6 +78,7 @@ function PriceAlertCTA({ deal }: { deal: BoardDeal }) {
       });
       if (res.ok) {
         setStatus('done');
+        successHaptic();
         showToast(`Price alert set for ${deal.destination}!`);
       } else {
         setStatus('error');
@@ -276,12 +279,14 @@ export default function DestinationDetailScreen() {
 
   const handleShare = useCallback(async () => {
     if (!deal) return;
+    lightHaptic();
     const shared = await shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
     if (shared) showToast('Link copied!');
   }, [deal]);
 
   const handleBook = useCallback(() => {
     if (!deal) return;
+    mediumHaptic();
     // Store trip context before entering booking flow
     const store = useBookingFlowStore.getState();
     store.reset();
@@ -300,13 +305,13 @@ export default function DestinationDetailScreen() {
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.white} />
         </Pressable>
-        <View style={styles.notFound}>
-          {loadingServer ? (
-            <Text style={styles.notFoundText}>Loading destination...</Text>
-          ) : (
+        {loadingServer ? (
+          <SkeletonDestinationDetail />
+        ) : (
+          <View style={styles.notFound}>
             <Text style={styles.notFoundText}>Deal not found</Text>
-          )}
-        </View>
+          </View>
+        )}
       </View>
     );
   }
@@ -370,6 +375,8 @@ export default function DestinationDetailScreen() {
           <Pressable
             style={[styles.backBtn, { top: insets.top + 8 }]}
             onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <Ionicons name="arrow-back" size={24} color={colors.white} />
           </Pressable>
@@ -647,6 +654,9 @@ export default function DestinationDetailScreen() {
                   key={sd.id}
                   style={styles.similarCard}
                   onPress={() => router.push(`/destination/${sd.id}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${sd.destination}, ${sd.country}${sd.price != null ? `, ${sd.priceFormatted}` : ''}`}
+                  accessibilityHint="View destination details"
                 >
                   {sd.imageUrl ? (
                     <Image
@@ -700,7 +710,10 @@ export default function DestinationDetailScreen() {
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
         <Pressable
           style={styles.saveBtn}
-          onPress={() => { toggle(deal); if (!isSaved) showToast(`${deal.destination} saved`); }}
+          onPress={() => { lightHaptic(); toggle(deal); if (!isSaved) showToast(`${deal.destination} saved`); }}
+          accessibilityRole="button"
+          accessibilityLabel={isSaved ? `Unsave ${deal.destination}` : `Save ${deal.destination}`}
+          accessibilityState={{ selected: isSaved }}
         >
           <Ionicons
             name={isSaved ? 'heart' : 'heart-outline'}
@@ -708,10 +721,20 @@ export default function DestinationDetailScreen() {
             color={isSaved ? '#E85D4A' : colors.white}
           />
         </Pressable>
-        <Pressable style={styles.saveBtn} onPress={handleShare}>
+        <Pressable
+          style={styles.saveBtn}
+          onPress={handleShare}
+          accessibilityRole="button"
+          accessibilityLabel={`Share ${deal.destination} deal`}
+        >
           <Ionicons name="share-outline" size={22} color={colors.white} />
         </Pressable>
-        <Pressable style={styles.bookBtn} onPress={handleBook}>
+        <Pressable
+          style={styles.bookBtn}
+          onPress={handleBook}
+          accessibilityRole="button"
+          accessibilityLabel={`Search flights to ${deal.destination}`}
+        >
           <Text style={styles.bookLabel}>
             Search Flights
           </Text>

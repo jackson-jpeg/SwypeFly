@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View } from 'react-native';
+import { SkeletonSwipeCard } from '../components/common/Skeleton';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
@@ -16,6 +17,7 @@ import ToastContainer from '../components/common/ToastContainer';
 import LaunchMark from '../components/common/LaunchMark';
 import AppDownloadBanner from '../components/common/AppDownloadBanner';
 import useAnimatedFavicon from '../hooks/useAnimatedFavicon';
+import { useNetworkSync } from '../hooks/useNetworkSync';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -68,6 +70,7 @@ export default function RootLayout() {
   const [showLaunchMark, setShowLaunchMark] = useState(true);
 
   useAnimatedFavicon();
+  useNetworkSync();
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -86,15 +89,8 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.bg,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <ActivityIndicator color={colors.yellow} size="large" />
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <SkeletonSwipeCard />
       </View>
     );
   }
@@ -194,7 +190,35 @@ export default function RootLayout() {
                 options={{ animation: 'slide_from_bottom', gestureEnabled: true }}
               />
               <Stack.Screen
+                name="bookings/index"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
+              <Stack.Screen
                 name="social/leaderboard"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
+              <Stack.Screen
+                name="booking/[id]/trip"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
+              <Stack.Screen
+                name="booking/[id]/index"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
+              <Stack.Screen
+                name="booking/[id]/dates"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
+              <Stack.Screen
+                name="booking/[id]/passengers"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
+              <Stack.Screen
+                name="booking/[id]/seats"
+                options={{ animation: 'slide_from_right', gestureEnabled: true }}
+              />
+              <Stack.Screen
+                name="booking/[id]/review"
                 options={{ animation: 'slide_from_right', gestureEnabled: true }}
               />
             </Stack>

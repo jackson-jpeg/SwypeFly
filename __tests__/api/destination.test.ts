@@ -1,30 +1,107 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const mockGetDocument = jest.fn();
-const mockListDocuments = jest.fn();
+// ─── Supabase mock infrastructure ────────────────────────────────────
 
-jest.mock('node-appwrite', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    setEndpoint: jest.fn().mockReturnThis(),
-    setProject: jest.fn().mockReturnThis(),
-    setKey: jest.fn().mockReturnThis(),
-  })),
-  Databases: jest.fn().mockImplementation(() => ({
-    getDocument: mockGetDocument,
-    listDocuments: mockListDocuments,
-  })),
-  Users: jest.fn().mockImplementation(() => ({})),
-  Query: {
-    equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
-    notEqual: jest.fn((...args: unknown[]) => `notEqual:${args.join(',')}`),
-    orderAsc: jest.fn((field: string) => `orderAsc:${field}`),
-    search: jest.fn((...args: unknown[]) => `search:${args.join(',')}`),
-    limit: jest.fn((n: number) => `limit:${n}`),
+const mockResultQueues = new Map<string, Array<{ data: unknown; error: unknown }>>();
+
+function pushResult(table: string, result: { data: unknown; error: unknown }) {
+  if (!mockResultQueues.has(table)) mockResultQueues.set(table, []);
+  mockResultQueues.get(table)!.push(result);
+}
+
+function popResult(table: string): { data: unknown; error: unknown } {
+  const queue = mockResultQueues.get(table);
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+const mockInsertCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpdateCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpsertCalls: Array<{ table: string; data: unknown; options?: unknown }> = [];
+
+const createChain = (table: string) => {
+  const chain: Record<string, jest.Mock> = {};
+  const methods = [
+    'select', 'eq', 'neq', 'in', 'contains', 'ilike',
+    'gte', 'lte', 'gt', 'lt', 'is', 'not', 'or',
+    'order', 'limit', 'range', 'match',
+  ];
+  for (const m of methods) {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  }
+  chain.insert = jest.fn().mockImplementation((data: unknown) => {
+    mockInsertCalls.push({ table, data });
+    return chain;
+  });
+  chain.update = jest.fn().mockImplementation((data: unknown) => {
+    mockUpdateCalls.push({ table, data });
+    return chain;
+  });
+  chain.delete = jest.fn().mockImplementation(() => chain);
+  chain.upsert = jest.fn().mockImplementation((data: unknown, options?: unknown) => {
+    mockUpsertCalls.push({ table, data, options });
+    return chain;
+  });
+  chain.single = jest.fn().mockImplementation(() => {
+    const result = popResult(table);
+    return Promise.resolve({
+      data: result.error ? null : (Array.isArray(result.data) ? (result.data as unknown[])[0] ?? null : result.data),
+      error: result.error,
+    });
+  });
+  (chain as any).then = jest.fn().mockImplementation((resolve: any) => {
+    const result = popResult(table);
+    if (resolve) return Promise.resolve(resolve(result));
+    return Promise.resolve(result);
+  });
+  return chain;
+};
+
+const mockFrom = jest.fn().mockImplementation((table: string) => createChain(table));
+
+jest.mock('../../services/supabaseServer', () => ({
+  supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+  TABLES: {
+    destinations: 'destinations',
+    cachedPrices: 'cached_prices',
+    cachedHotelPrices: 'cached_hotel_prices',
+    destinationImages: 'destination_images',
+    priceCalendar: 'price_calendar',
+    aiCache: 'ai_cache',
+    priceHistoryStats: 'price_history_stats',
   },
 }));
 
 jest.mock('../../utils/apiLogger', () => ({
   logApiError: jest.fn(),
+}));
+
+jest.mock('../../api/_cors', () => ({
+  cors: () => false,
+}));
+
+jest.mock('../../utils/rateLimit', () => ({
+  checkRateLimit: jest.fn().mockReturnValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
+jest.mock('../../utils/env', () => ({
+  env: {
+    BOOKING_MARKUP_PERCENT: 3,
+    CRON_SECRET: 'test',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+  },
+}));
+
+jest.mock('../../services/travelpayouts', () => ({
+  fetchPriceCalendar: jest.fn().mockResolvedValue([]),
+  fetchMonthlyPrices: jest.fn().mockResolvedValue([]),
+  fetchWeekMatrix: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock('../../services/duffel', () => ({
+  searchFlights: jest.fn().mockResolvedValue({ data: { offers: [] } }),
 }));
 
 import handler from '../../api/destination';
@@ -33,7 +110,7 @@ const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
 
 function makeDest(overrides: Record<string, unknown> = {}) {
   return {
-    $id: VALID_UUID,
+    id: VALID_UUID,
     iata_code: 'BCN',
     city: 'Barcelona',
     country: 'Spain',
@@ -78,12 +155,23 @@ function makeRes() {
   };
 }
 
+/** Push empty results for the parallel tables in destination handler's Promise.all:
+ *  [allPrices (cached_prices), hotelPrices (cached_hotel_prices), images (destination_images), similar (destinations)]
+ */
+function pushEmptyParallel() {
+  pushResult('cached_prices', { data: [], error: null });
+  pushResult('cached_hotel_prices', { data: [], error: null });
+  pushResult('destination_images', { data: [], error: null });
+  pushResult('destinations', { data: [], error: null });
+}
+
 describe('GET /api/destination', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.APPWRITE_ENDPOINT = 'https://test.appwrite.io/v1';
-    process.env.APPWRITE_PROJECT_ID = 'test-project';
-    process.env.APPWRITE_API_KEY = 'test-key';
+    mockResultQueues.clear();
+    mockInsertCalls.length = 0;
+    mockUpdateCalls.length = 0;
+    mockUpsertCalls.length = 0;
   });
 
   it('rejects non-GET methods', async () => {
@@ -101,7 +189,9 @@ describe('GET /api/destination', () => {
   });
 
   it('returns 404 when destination not found', async () => {
-    mockGetDocument.mockRejectedValueOnce(new Error('Not found'));
+    // .single() pops from destinations queue — push an error
+    pushResult('destinations', { data: null, error: new Error('Not found') });
+
     const req = makeReq();
     const res = makeRes();
     await handler(req, res);
@@ -109,9 +199,12 @@ describe('GET /api/destination', () => {
   });
 
   it('returns destination with camelCase keys', async () => {
-    mockGetDocument.mockResolvedValueOnce(makeDest());
-    // Price lookup, then Promise.all: [otherPrices, hotelPrices, images]
-    mockListDocuments.mockResolvedValue({ documents: [] });
+    // 1. Destination lookup via .single()
+    pushResult('destinations', { data: makeDest(), error: null });
+    // 2. Cached price lookup (via .then — chain await)
+    pushResult('cached_prices', { data: [], error: null });
+    // 3. Promise.all: [allPrices, hotelPrices, images, similar]
+    pushEmptyParallel();
 
     const req = makeReq();
     const res = makeRes();
@@ -121,17 +214,19 @@ describe('GET /api/destination', () => {
     const body = res.json.mock.calls[0][0];
     expect(body.id).toBe(VALID_UUID);
     expect(body.city).toBe('Barcelona');
-    expect(body.flightPrice).toBe(450);
+    // withMarkup(450) = Math.round(450 * 1.03) = 464
+    expect(body.flightPrice).toBe(464);
     expect(body.vibeTags).toEqual(['city', 'culture']);
     expect(body.livePrice).toBeNull();
     expect(body.priceSource).toBe('estimate');
   });
 
   it('merges live price when available', async () => {
-    mockGetDocument.mockResolvedValueOnce(makeDest());
-    // 1st call: cached prices for this origin
-    mockListDocuments.mockResolvedValueOnce({
-      documents: [
+    // 1. Destination lookup via .single()
+    pushResult('destinations', { data: makeDest(), error: null });
+    // 2. Cached price lookup
+    pushResult('cached_prices', {
+      data: [
         {
           origin: 'JFK',
           destination_iata: 'BCN',
@@ -147,36 +242,40 @@ describe('GET /api/destination', () => {
           price_direction: 'down',
         },
       ],
+      error: null,
     });
-    // Promise.all calls: otherPrices, hotelPrices, images, similar
-    mockListDocuments.mockResolvedValue({ documents: [] });
+    // 3. Promise.all: [allPrices, hotelPrices, images, similar]
+    pushEmptyParallel();
 
     const req = makeReq();
     const res = makeRes();
     await handler(req, res);
 
     const body = res.json.mock.calls[0][0];
-    expect(body.livePrice).toBe(299);
-    expect(body.flightPrice).toBe(299);
+    // withMarkup(299) = Math.round(299 * 1.03) = 308
+    expect(body.livePrice).toBe(308);
+    expect(body.flightPrice).toBe(308);
     expect(body.airline).toBe('TAP');
     expect(body.priceDirection).toBe('down');
     expect(body.priceSource).toBe('travelpayouts');
   });
 
   it('includes otherPrices from different origins', async () => {
-    mockGetDocument.mockResolvedValueOnce(makeDest());
-    // 1st: cached price for this origin (empty)
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
-    // Promise.all: [otherPrices, hotelPrices, images]
-    mockListDocuments.mockResolvedValueOnce({
-      documents: [
+    // 1. Destination lookup via .single()
+    pushResult('destinations', { data: makeDest(), error: null });
+    // 2. Cached price for this origin (empty)
+    pushResult('cached_prices', { data: [], error: null });
+    // 3. Promise.all: [allPrices, hotelPrices, images, similar]
+    pushResult('cached_prices', {
+      data: [
         { origin: 'LAX', destination_iata: 'BCN', price: 399, source: 'travelpayouts' },
         { origin: 'ORD', destination_iata: 'BCN', price: 450, source: 'amadeus' },
       ],
+      error: null,
     });
-    mockListDocuments.mockResolvedValueOnce({ documents: [] }); // hotelPrices
-    mockListDocuments.mockResolvedValueOnce({ documents: [] }); // images
-    mockListDocuments.mockResolvedValueOnce({ documents: [] }); // similar destinations
+    pushResult('cached_hotel_prices', { data: [], error: null });
+    pushResult('destination_images', { data: [], error: null });
+    pushResult('destinations', { data: [], error: null }); // similar destinations
 
     const req = makeReq();
     const res = makeRes();
@@ -189,8 +288,12 @@ describe('GET /api/destination', () => {
   });
 
   it('defaults origin to TPA when not provided', async () => {
-    mockGetDocument.mockResolvedValueOnce(makeDest());
-    mockListDocuments.mockResolvedValue({ documents: [] });
+    // 1. Destination lookup via .single()
+    pushResult('destinations', { data: makeDest(), error: null });
+    // 2. Cached price lookup
+    pushResult('cached_prices', { data: [], error: null });
+    // 3. Promise.all
+    pushEmptyParallel();
 
     const req = makeReq({ query: { id: VALID_UUID } });
     const res = makeRes();
@@ -200,8 +303,12 @@ describe('GET /api/destination', () => {
   });
 
   it('sets Cache-Control header', async () => {
-    mockGetDocument.mockResolvedValueOnce(makeDest());
-    mockListDocuments.mockResolvedValue({ documents: [] });
+    // 1. Destination lookup via .single()
+    pushResult('destinations', { data: makeDest(), error: null });
+    // 2. Cached price lookup
+    pushResult('cached_prices', { data: [], error: null });
+    // 3. Promise.all
+    pushEmptyParallel();
 
     const req = makeReq();
     const res = makeRes();

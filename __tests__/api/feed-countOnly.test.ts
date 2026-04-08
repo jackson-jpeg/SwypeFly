@@ -1,24 +1,78 @@
 // __tests__/api/feed-countOnly.test.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const mockListDocuments = jest.fn();
+// ─── Supabase mock infrastructure ────────────────────────────────────
 
-jest.mock('node-appwrite', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    setEndpoint: jest.fn().mockReturnThis(),
-    setProject: jest.fn().mockReturnThis(),
-    setKey: jest.fn().mockReturnThis(),
-  })),
-  Databases: jest.fn().mockImplementation(() => ({
-    listDocuments: mockListDocuments,
-  })),
-  Users: jest.fn().mockImplementation(() => ({})),
-  Query: {
-    equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
-    orderAsc: jest.fn((field: string) => `orderAsc:${field}`),
-    greaterThanEqual: jest.fn((...args: unknown[]) => `greaterThanEqual:${args.join(',')}`),
-    limit: jest.fn((n: number) => `limit:${n}`),
-    search: jest.fn((field: string, value: string) => `search:${field},${value}`),
+const mockResultQueues = new Map<string, Array<{ data: unknown; error: unknown }>>();
+
+function pushResult(table: string, result: { data: unknown; error: unknown }) {
+  if (!mockResultQueues.has(table)) mockResultQueues.set(table, []);
+  mockResultQueues.get(table)!.push(result);
+}
+
+function popResult(table: string): { data: unknown; error: unknown } {
+  const queue = mockResultQueues.get(table);
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+const mockInsertCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpdateCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpsertCalls: Array<{ table: string; data: unknown; options?: unknown }> = [];
+
+const createChain = (table: string) => {
+  const chain: Record<string, jest.Mock> = {};
+  const methods = [
+    'select', 'eq', 'neq', 'in', 'contains', 'ilike',
+    'gte', 'lte', 'gt', 'lt', 'is', 'not', 'or',
+    'order', 'limit', 'range', 'match',
+  ];
+  for (const m of methods) {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  }
+  chain.insert = jest.fn().mockImplementation((data: unknown) => {
+    mockInsertCalls.push({ table, data });
+    return chain;
+  });
+  chain.update = jest.fn().mockImplementation((data: unknown) => {
+    mockUpdateCalls.push({ table, data });
+    return chain;
+  });
+  chain.delete = jest.fn().mockImplementation(() => chain);
+  chain.upsert = jest.fn().mockImplementation((data: unknown, options?: unknown) => {
+    mockUpsertCalls.push({ table, data, options });
+    return chain;
+  });
+  chain.single = jest.fn().mockImplementation(() => {
+    const result = popResult(table);
+    if (result.error) return Promise.reject(result.error);
+    return Promise.resolve({
+      data: Array.isArray(result.data) ? (result.data as unknown[])[0] ?? null : result.data,
+      error: null,
+    });
+  });
+  (chain as any).then = jest.fn().mockImplementation((resolve: any) => {
+    const result = popResult(table);
+    if (resolve) return Promise.resolve(resolve(result));
+    return Promise.resolve(result);
+  });
+  return chain;
+};
+
+const mockFrom = jest.fn().mockImplementation((table: string) => createChain(table));
+
+jest.mock('../../services/supabaseServer', () => ({
+  supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+  TABLES: {
+    destinations: 'destinations',
+    cachedPrices: 'cached_prices',
+    cachedHotelPrices: 'cached_hotel_prices',
+    destinationImages: 'destination_images',
+    priceCalendar: 'price_calendar',
+    userPreferences: 'user_preferences',
+    swipeHistory: 'swipe_history',
+    aiCache: 'ai_cache',
+    priceHistoryStats: 'price_history_stats',
   },
 }));
 
@@ -26,11 +80,48 @@ jest.mock('../../utils/apiLogger', () => ({
   logApiError: jest.fn(),
 }));
 
+jest.mock('../../utils/clerkAuth', () => ({
+  verifyClerkToken: jest.fn().mockResolvedValue(null),
+}));
+
+jest.mock('../../api/_cors', () => ({
+  cors: () => false,
+}));
+
+jest.mock('../../utils/rateLimit', () => ({
+  checkRateLimit: jest.fn().mockReturnValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
+jest.mock('../../utils/priceStats', () => ({
+  bulkGetRouteStats: jest.fn().mockResolvedValue(new Map()),
+}));
+
+jest.mock('../../services/duffel', () => ({
+  searchFlights: jest.fn().mockResolvedValue({ data: { offers: [] } }),
+}));
+
+jest.mock('../../services/travelpayouts', () => ({
+  fetchByPriceRange: jest.fn().mockResolvedValue([]),
+  detectOriginAirport: jest.fn().mockResolvedValue(null),
+  fetchPriceCalendar: jest.fn().mockResolvedValue([]),
+  fetchMonthlyPrices: jest.fn().mockResolvedValue([]),
+  fetchWeekMatrix: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock('../../utils/env', () => ({
+  env: {
+    BOOKING_MARKUP_PERCENT: 3,
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+  },
+}));
+
 import handler from '../../api/feed';
 
 function makeDest(overrides: Record<string, unknown> = {}) {
   return {
-    $id: overrides.$id ?? 'dest-1',
+    id: overrides.id ?? 'dest-1',
     iata_code: 'BCN',
     city: 'Barcelona',
     country: 'Spain',
@@ -88,23 +179,24 @@ function makeRes() {
 describe('feed countOnly', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.APPWRITE_ENDPOINT = 'https://test.appwrite.io/v1';
-    process.env.APPWRITE_PROJECT_ID = 'test-project';
-    process.env.APPWRITE_API_KEY = 'test-key';
+    mockResultQueues.clear();
+    mockInsertCalls.length = 0;
+    mockUpdateCalls.length = 0;
+    mockUpsertCalls.length = 0;
   });
 
   it('returns count instead of full results when countOnly=true', async () => {
     const dests = [
-      makeDest({ $id: 'co-1', flight_price: 200, vibe_tags: ['beach'] }),
-      makeDest({ $id: 'co-2', flight_price: 600, vibe_tags: ['city'] }),
-      makeDest({ $id: 'co-3', flight_price: 100, vibe_tags: ['beach'] }),
+      makeDest({ id: 'co-1', flight_price: 200, vibe_tags: ['beach'] }),
+      makeDest({ id: 'co-2', flight_price: 600, vibe_tags: ['city'] }),
+      makeDest({ id: 'co-3', flight_price: 100, vibe_tags: ['beach'] }),
     ];
 
-    mockListDocuments.mockResolvedValueOnce({ documents: dests, total: 3 });
-    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // price_calendar
-    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // cached_prices
-    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // hotel_prices
-    mockListDocuments.mockResolvedValueOnce({ documents: [], total: 0 }); // images
+    pushResult('destinations', { data: dests, error: null });
+    pushResult('price_calendar', { data: [], error: null });
+    pushResult('cached_prices', { data: [], error: null });
+    pushResult('cached_hotel_prices', { data: [], error: null });
+    pushResult('destination_images', { data: [], error: null });
 
     const req = makeReq({ query: { origin: 'QQQ', countOnly: 'true', maxPrice: '300' } });
     const res = makeRes();

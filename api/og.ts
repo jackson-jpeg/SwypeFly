@@ -129,6 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const imgResponse = new ImageResponse(
       {
         type: 'div',
+        key: null,
         props: {
           style: {
             position: 'relative',

@@ -31,3 +31,19 @@ export async function successHaptic(): Promise<void> {
     // Haptics not available
   }
 }
+
+export async function errorHaptic(): Promise<void> {
+  try {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  } catch {
+    // Haptics not available
+  }
+}
+
+export async function warningHaptic(): Promise<void> {
+  try {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  } catch {
+    // Haptics not available
+  }
+}

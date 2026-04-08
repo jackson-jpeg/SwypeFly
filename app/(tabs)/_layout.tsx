@@ -1,13 +1,15 @@
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts } from '../../theme/tokens';
 import { useSavedStore } from '../../stores/savedStore';
+import SyncIndicator from '../../components/common/SyncIndicator';
 
 export default function TabLayout() {
   const savedCount = useSavedStore((s) => s.savedDeals.length);
 
   return (
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -65,5 +67,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    <SyncIndicator />
+    </View>
   );
 }

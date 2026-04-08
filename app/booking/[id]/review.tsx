@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,18 @@ import {
   StyleSheet,
   ActivityIndicator,
   Modal,
+  Alert,
+  InteractionManager,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { successHaptic, errorHaptic } from '../../../utils/haptics';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
 import TripBanner from '../../../components/booking/TripBanner';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
+import { useBookingHistoryStore } from '../../../stores/bookingHistoryStore';
 import { useDealStore } from '../../../stores/dealStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
 import { colors, fonts, spacing } from '../../../theme/tokens';
@@ -85,6 +90,8 @@ export default function ReviewPaymentScreen() {
 
   const deal = useDealStore((s) => s.deals.find((d) => d.id === id));
   const departureCode = useSettingsStore((s) => s.departureCode) || 'TPA';
+  const refreshRetries = useRef(0);
+  const MAX_REFRESH_RETRIES = 3;
 
   const [offer, setOffer] = useState<OfferData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,6 +120,13 @@ export default function ReviewPaymentScreen() {
     return (data.offer || data) as OfferData;
   }, []);
 
+  // Redirect to trip screen if no offerId (direct URL navigation)
+  useEffect(() => {
+    if (!offerId && !loading) {
+      router.replace(`/booking/${id}/trip` as never);
+    }
+  }, [offerId, loading, id, router]);
+
   useEffect(() => {
     if (!offerId) {
       setError('No offer selected');
@@ -129,6 +143,12 @@ export default function ReviewPaymentScreen() {
         if (cancelled) return;
         // Check if offer has already expired
         if (offerData.expiresAt && new Date(offerData.expiresAt) < new Date()) {
+          refreshRetries.current += 1;
+          if (refreshRetries.current > MAX_REFRESH_RETRIES) {
+            setError('This offer has expired. Please search for new flights.');
+            errorHaptic();
+            return;
+          }
           setRefreshing(true);
           // Re-search for a fresh offer
           return fetch(`${API_BASE}/api/booking?action=search`, {
@@ -148,7 +168,8 @@ export default function ReviewPaymentScreen() {
                 useBookingFlowStore.getState().setOfferId(newOffer.id);
                 // Will re-trigger this effect with new offerId
               } else {
-                setError('No flights available. Please go back and search again.');
+                setError('No flights available. Please search for new flights.');
+                errorHaptic();
               }
             })
             .finally(() => { if (!cancelled) setRefreshing(false); });
@@ -266,19 +287,43 @@ export default function ReviewPaymentScreen() {
       }
 
       const orderData = await orderRes.json();
-      setBookingRef(orderData.bookingReference || orderData.id || 'CONFIRMED');
+      const ref = orderData.bookingReference || orderData.id || 'CONFIRMED';
+      setBookingRef(ref);
       setConfirmed(true);
+
+      // Record in booking history
+      useBookingHistoryStore.getState().addBooking({
+        id: `bk_${Date.now()}`,
+        destinationName: deal?.destinationFull || deal?.destination || '',
+        destinationImage: deal?.imageUrl || '',
+        origin: departureCode,
+        departureDate: deal?.departureDate || '',
+        returnDate: deal?.returnDate || '',
+        passengers: passengers.length || 1,
+        totalPrice: totalAmount,
+        currency: 'USD',
+        bookingReference: ref,
+        airline: deal?.airline || offer?.slices?.[0]?.airline || '',
+        bookedAt: new Date().toISOString(),
+        status: 'confirmed',
+      });
+
+      successHaptic();
     } catch (e) {
       setError((e as Error).message);
+      errorHaptic();
     } finally {
       setPaying(false);
     }
   }, [offer, offerId, passengers, selectedSeats, deal, departureCode, totalInCents, totalAmount]);
 
   function handleDone() {
-    resetBooking();
+    // Navigate first, then reset store after transition completes to avoid race condition
     router.dismissAll();
     router.replace('/(tabs)');
+    InteractionManager.runAfterInteractions(() => {
+      resetBooking();
+    });
   }
 
   function formatBpDate(dateStr: string): string {

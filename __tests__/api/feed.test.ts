@@ -1,27 +1,119 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const mockListDocuments = jest.fn();
+// ─── Supabase mock infrastructure ────────────────────────────────────
 
-jest.mock('node-appwrite', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    setEndpoint: jest.fn().mockReturnThis(),
-    setProject: jest.fn().mockReturnThis(),
-    setKey: jest.fn().mockReturnThis(),
-  })),
-  Databases: jest.fn().mockImplementation(() => ({
-    listDocuments: mockListDocuments,
-  })),
-  Users: jest.fn().mockImplementation(() => ({})),
-  Query: {
-    equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
-    orderAsc: jest.fn((field: string) => `orderAsc:${field}`),
-    greaterThanEqual: jest.fn((...args: unknown[]) => `greaterThanEqual:${args.join(',')}`),
-    limit: jest.fn((n: number) => `limit:${n}`),
+const mockResultQueues = new Map<string, Array<{ data: unknown; error: unknown }>>();
+
+function pushResult(table: string, result: { data: unknown; error: unknown }) {
+  if (!mockResultQueues.has(table)) mockResultQueues.set(table, []);
+  mockResultQueues.get(table)!.push(result);
+}
+
+function popResult(table: string): { data: unknown; error: unknown } {
+  const queue = mockResultQueues.get(table);
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+const mockInsertCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpdateCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpsertCalls: Array<{ table: string; data: unknown; options?: unknown }> = [];
+
+const createChain = (table: string) => {
+  const chain: Record<string, jest.Mock> = {};
+  const methods = [
+    'select', 'eq', 'neq', 'in', 'contains', 'ilike',
+    'gte', 'lte', 'gt', 'lt', 'is', 'not', 'or',
+    'order', 'limit', 'range', 'match',
+  ];
+  for (const m of methods) {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  }
+  chain.insert = jest.fn().mockImplementation((data: unknown) => {
+    mockInsertCalls.push({ table, data });
+    return chain;
+  });
+  chain.update = jest.fn().mockImplementation((data: unknown) => {
+    mockUpdateCalls.push({ table, data });
+    return chain;
+  });
+  chain.delete = jest.fn().mockImplementation(() => chain);
+  chain.upsert = jest.fn().mockImplementation((data: unknown, options?: unknown) => {
+    mockUpsertCalls.push({ table, data, options });
+    return chain;
+  });
+  chain.single = jest.fn().mockImplementation(() => {
+    const result = popResult(table);
+    if (result.error) return Promise.reject(result.error);
+    return Promise.resolve({
+      data: Array.isArray(result.data) ? (result.data as unknown[])[0] ?? null : result.data,
+      error: null,
+    });
+  });
+  (chain as any).then = jest.fn().mockImplementation((resolve: any) => {
+    const result = popResult(table);
+    if (resolve) return Promise.resolve(resolve(result));
+    return Promise.resolve(result);
+  });
+  return chain;
+};
+
+const mockFrom = jest.fn().mockImplementation((table: string) => createChain(table));
+
+jest.mock('../../services/supabaseServer', () => ({
+  supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+  TABLES: {
+    destinations: 'destinations',
+    cachedPrices: 'cached_prices',
+    cachedHotelPrices: 'cached_hotel_prices',
+    destinationImages: 'destination_images',
+    priceCalendar: 'price_calendar',
+    userPreferences: 'user_preferences',
+    swipeHistory: 'swipe_history',
+    aiCache: 'ai_cache',
+    priceHistoryStats: 'price_history_stats',
   },
 }));
 
 jest.mock('../../utils/apiLogger', () => ({
   logApiError: jest.fn(),
+}));
+
+jest.mock('../../utils/clerkAuth', () => ({
+  verifyClerkToken: jest.fn().mockResolvedValue(null),
+}));
+
+jest.mock('../../api/_cors', () => ({
+  cors: () => false,
+}));
+
+jest.mock('../../utils/rateLimit', () => ({
+  checkRateLimit: jest.fn().mockReturnValue({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
+jest.mock('../../utils/priceStats', () => ({
+  bulkGetRouteStats: jest.fn().mockResolvedValue(new Map()),
+}));
+
+jest.mock('../../services/duffel', () => ({
+  searchFlights: jest.fn().mockResolvedValue({ data: { offers: [] } }),
+}));
+
+jest.mock('../../services/travelpayouts', () => ({
+  fetchByPriceRange: jest.fn().mockResolvedValue([]),
+  detectOriginAirport: jest.fn().mockResolvedValue(null),
+  fetchPriceCalendar: jest.fn().mockResolvedValue([]),
+  fetchMonthlyPrices: jest.fn().mockResolvedValue([]),
+  fetchWeekMatrix: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock('../../utils/env', () => ({
+  env: {
+    BOOKING_MARKUP_PERCENT: 3,
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+  },
 }));
 
 import handler from '../../api/feed';
@@ -30,7 +122,6 @@ import handler from '../../api/feed';
 let originCounter = 0;
 function uniqueOrigin(): string {
   originCounter++;
-  // 3-letter uppercase IATA codes
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const a = letters[originCounter % 26];
   const b = letters[Math.floor(originCounter / 26) % 26];
@@ -40,7 +131,7 @@ function uniqueOrigin(): string {
 
 function makeDest(overrides: Record<string, unknown> = {}) {
   return {
-    $id: overrides.$id ?? 'dest-1',
+    id: overrides.id ?? 'dest-1',
     iata_code: 'BCN',
     city: 'Barcelona',
     country: 'Spain',
@@ -71,6 +162,14 @@ function makeDest(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** Push empty results for the 4 parallel feed tables */
+function pushEmptyParallel() {
+  pushResult('price_calendar', { data: [], error: null });
+  pushResult('cached_prices', { data: [], error: null });
+  pushResult('cached_hotel_prices', { data: [], error: null });
+  pushResult('destination_images', { data: [], error: null });
+}
+
 function makeReq(overrides: Partial<VercelRequest> = {}): VercelRequest {
   return {
     method: 'GET',
@@ -97,9 +196,10 @@ function makeRes() {
 describe('GET /api/feed', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.APPWRITE_ENDPOINT = 'https://test.appwrite.io/v1';
-    process.env.APPWRITE_PROJECT_ID = 'test-project';
-    process.env.APPWRITE_API_KEY = 'test-key';
+    mockResultQueues.clear();
+    mockInsertCalls.length = 0;
+    mockUpdateCalls.length = 0;
+    mockUpsertCalls.length = 0;
   });
 
   it('rejects non-GET methods', async () => {
@@ -118,12 +218,10 @@ describe('GET /api/feed', () => {
 
   it('returns paginated destinations with default origin', async () => {
     const dests = Array.from({ length: 3 }, (_, i) =>
-      makeDest({ $id: `dest-${i}`, iata_code: `D${i}X`, city: `City${i}` }),
+      makeDest({ id: `dest-${i}`, iata_code: `D${i}X`, city: `City${i}` }),
     );
-    // destinations, then prices+hotelPrices+images (all empty)
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const req = makeReq({ query: { origin: uniqueOrigin() } });
     const res = makeRes();
@@ -141,13 +239,12 @@ describe('GET /api/feed', () => {
 
   it('applies maxPrice filter', async () => {
     const dests = [
-      makeDest({ $id: 'cheap', flight_price: 200 }),
-      makeDest({ $id: 'mid', flight_price: 500 }),
-      makeDest({ $id: 'expensive', flight_price: 900 }),
+      makeDest({ id: 'cheap', flight_price: 200 }),
+      makeDest({ id: 'mid', flight_price: 500 }),
+      makeDest({ id: 'expensive', flight_price: 900 }),
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, maxPrice: '400' } });
@@ -163,12 +260,11 @@ describe('GET /api/feed', () => {
 
   it('applies vibeFilter', async () => {
     const dests = [
-      makeDest({ $id: 'beach1', vibe_tags: ['beach', 'tropical'] }),
-      makeDest({ $id: 'city1', vibe_tags: ['city', 'nightlife'] }),
+      makeDest({ id: 'beach1', vibe_tags: ['beach', 'tropical'] }),
+      makeDest({ id: 'city1', vibe_tags: ['city', 'nightlife'] }),
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, vibeFilter: 'beach' } });
@@ -183,13 +279,12 @@ describe('GET /api/feed', () => {
 
   it('sorts by cheapest when sortPreset=cheapest', async () => {
     const dests = [
-      makeDest({ $id: 'a', flight_price: 800, city: 'A' }),
-      makeDest({ $id: 'b', flight_price: 200, city: 'B' }),
-      makeDest({ $id: 'c', flight_price: 500, city: 'C' }),
+      makeDest({ id: 'a', flight_price: 800, city: 'A' }),
+      makeDest({ id: 'b', flight_price: 200, city: 'B' }),
+      makeDest({ id: 'c', flight_price: 500, city: 'C' }),
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, sortPreset: 'cheapest' } });
@@ -204,24 +299,24 @@ describe('GET /api/feed', () => {
   });
 
   it('handles pagination with cursor', async () => {
-    const dests = Array.from({ length: 15 }, (_, i) =>
-      makeDest({ $id: `d-${i}`, iata_code: `X${String(i).padStart(2, '0')}`, city: `City${i}` }),
+    // First page loads PAGE_SIZE * 2 = 20 items, so we need >20 dests to trigger pagination
+    const dests = Array.from({ length: 25 }, (_, i) =>
+      makeDest({ id: `d-${i}`, iata_code: `X${String(i).padStart(2, '0')}`, city: `City${i}` }),
     );
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req1 = makeReq({ query: { origin, sortPreset: 'cheapest' } });
     const res1 = makeRes();
     await handler(req1, res1);
     const body1 = res1.json.mock.calls[0][0];
-    expect(body1.destinations).toHaveLength(10);
-    expect(body1.nextCursor).toBe('10');
+    expect(body1.destinations).toHaveLength(20);
+    expect(body1.nextCursor).toBe('20');
   });
 
   it('merges live prices from cached_prices collection', async () => {
-    const dests = [makeDest({ $id: 'dest-bcn', iata_code: 'BCN', flight_price: 450 })];
+    const dests = [makeDest({ id: 'dest-bcn', iata_code: 'BCN', flight_price: 450 })];
     const prices = [
       {
         destination_iata: 'BCN',
@@ -229,19 +324,19 @@ describe('GET /api/feed', () => {
         airline: 'TAP',
         duration: '7h 15m',
         source: 'duffel',
-        fetched_at: '2026-02-26T00:00:00Z',
-        departure_date: '2026-04-01',
-        return_date: '2026-04-08',
+        fetched_at: new Date().toISOString(),
+        departure_date: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+        return_date: new Date(Date.now() + 21 * 86400000).toISOString().split('T')[0],
         trip_duration_days: 7,
         previous_price: 350,
         price_direction: 'down',
       },
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })   // destinations
-      .mockResolvedValueOnce({ documents: [] })       // price_calendar
-      .mockResolvedValueOnce({ documents: prices })   // cached prices
-      .mockResolvedValue({ documents: [] });           // hotel prices + images
+    pushResult('destinations', { data: dests, error: null });
+    pushResult('price_calendar', { data: [], error: null });
+    pushResult('cached_prices', { data: prices, error: null });
+    pushResult('cached_hotel_prices', { data: [], error: null });
+    pushResult('destination_images', { data: [], error: null });
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin } });
@@ -257,7 +352,8 @@ describe('GET /api/feed', () => {
   });
 
   it('returns 500 on database error', async () => {
-    mockListDocuments.mockRejectedValueOnce(new Error('DB down'));
+    pushResult('destinations', { data: null, error: new Error('DB down') });
+
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin } });
     const res = makeRes();
@@ -266,7 +362,8 @@ describe('GET /api/feed', () => {
   });
 
   it('sets Cache-Control with s-maxage for anonymous requests', async () => {
-    mockListDocuments.mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: [], error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin } });
@@ -282,13 +379,12 @@ describe('GET /api/feed', () => {
 
   it('filters by city name with search param', async () => {
     const dests = [
-      makeDest({ $id: 'bcn', city: 'Barcelona', country: 'Spain' }),
-      makeDest({ $id: 'par', city: 'Paris', country: 'France' }),
-      makeDest({ $id: 'tok', city: 'Tokyo', country: 'Japan' }),
+      makeDest({ id: 'bcn', city: 'Barcelona', country: 'Spain' }),
+      makeDest({ id: 'par', city: 'Paris', country: 'France' }),
+      makeDest({ id: 'tok', city: 'Tokyo', country: 'Japan' }),
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, search: 'barcelona' } });
@@ -303,13 +399,12 @@ describe('GET /api/feed', () => {
 
   it('filters by country name with search param', async () => {
     const dests = [
-      makeDest({ $id: 'bcn2', city: 'Barcelona', country: 'Spain' }),
-      makeDest({ $id: 'par2', city: 'Paris', country: 'France' }),
-      makeDest({ $id: 'mad2', city: 'Madrid', country: 'Spain' }),
+      makeDest({ id: 'bcn2', city: 'Barcelona', country: 'Spain' }),
+      makeDest({ id: 'par2', city: 'Paris', country: 'France' }),
+      makeDest({ id: 'mad2', city: 'Madrid', country: 'Spain' }),
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, search: 'Spain' } });
@@ -325,13 +420,12 @@ describe('GET /api/feed', () => {
 
   it('excludes cheap destinations with minPrice filter', async () => {
     const dests = [
-      makeDest({ $id: 'cheap2', flight_price: 150 }),
-      makeDest({ $id: 'mid2', flight_price: 500 }),
-      makeDest({ $id: 'exp2', flight_price: 900 }),
+      makeDest({ id: 'cheap2', flight_price: 150 }),
+      makeDest({ id: 'mid2', flight_price: 500 }),
+      makeDest({ id: 'exp2', flight_price: 900 }),
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, minPrice: '400', sortPreset: 'cheapest' } });
@@ -348,14 +442,13 @@ describe('GET /api/feed', () => {
 
   it('combines minPrice and maxPrice for price range', async () => {
     const dests = [
-      makeDest({ $id: 'p1', flight_price: 100 }),
-      makeDest({ $id: 'p2', flight_price: 300 }),
-      makeDest({ $id: 'p3', flight_price: 600 }),
-      makeDest({ $id: 'p4', flight_price: 900 }),
+      makeDest({ id: 'p1', flight_price: 100 }),
+      makeDest({ id: 'p2', flight_price: 300 }),
+      makeDest({ id: 'p3', flight_price: 600 }),
+      makeDest({ id: 'p4', flight_price: 900 }),
     ];
-    mockListDocuments
-      .mockResolvedValueOnce({ documents: dests })
-      .mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: dests, error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, minPrice: '200', maxPrice: '700', sortPreset: 'cheapest' } });
@@ -371,7 +464,8 @@ describe('GET /api/feed', () => {
   });
 
   it('sets no-store for session-based requests', async () => {
-    mockListDocuments.mockResolvedValue({ documents: [] });
+    pushResult('destinations', { data: [], error: null });
+    pushEmptyParallel();
 
     const origin = uniqueOrigin();
     const req = makeReq({ query: { origin, sessionId: 'abc-123' } });

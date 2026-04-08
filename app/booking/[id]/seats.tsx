@@ -152,7 +152,7 @@ export default function SeatSelectionScreen() {
     } else {
       setSeats([]);
     }
-    router.push(`/booking/${id}/review` as never);
+    router.push(`/booking/${id}/services` as never);
   }
 
   // ─── Seat button ──────────────────────────────────────────────

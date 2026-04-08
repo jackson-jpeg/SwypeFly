@@ -1,21 +1,69 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const mockGetDocument = jest.fn();
+// ─── Supabase mock infrastructure ────────────────────────────────────
 
-jest.mock('node-appwrite', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    setEndpoint: jest.fn().mockReturnThis(),
-    setProject: jest.fn().mockReturnThis(),
-    setKey: jest.fn().mockReturnThis(),
-  })),
-  Databases: jest.fn().mockImplementation(() => ({
-    getDocument: mockGetDocument,
-  })),
-  Users: jest.fn().mockImplementation(() => ({})),
-  Query: {
-    equal: jest.fn(),
-    limit: jest.fn(),
+const mockResultQueues = new Map<string, Array<{ data: unknown; error: unknown }>>();
+
+function pushResult(table: string, result: { data: unknown; error: unknown }) {
+  if (!mockResultQueues.has(table)) mockResultQueues.set(table, []);
+  mockResultQueues.get(table)!.push(result);
+}
+
+function popResult(table: string): { data: unknown; error: unknown } {
+  const queue = mockResultQueues.get(table);
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+const createChain = (table: string) => {
+  const chain: Record<string, jest.Mock> = {};
+  const methods = [
+    'select', 'eq', 'neq', 'in', 'contains', 'ilike',
+    'gte', 'lte', 'gt', 'lt', 'is', 'not', 'or',
+    'order', 'limit', 'range', 'match',
+  ];
+  for (const m of methods) {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  }
+  chain.single = jest.fn().mockImplementation(() => {
+    const result = popResult(table);
+    if (result.error) return Promise.resolve({ data: null, error: result.error });
+    return Promise.resolve({
+      data: Array.isArray(result.data) ? (result.data as unknown[])[0] ?? null : result.data,
+      error: null,
+    });
+  });
+  (chain as any).then = jest.fn().mockImplementation((resolve: any) => {
+    const result = popResult(table);
+    if (resolve) return Promise.resolve(resolve(result));
+    return Promise.resolve(result);
+  });
+  return chain;
+};
+
+const mockFrom = jest.fn().mockImplementation((table: string) => createChain(table));
+
+jest.mock('../../services/supabaseServer', () => ({
+  supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+  TABLES: {
+    destinations: 'destinations',
+    priceCalendar: 'price_calendar',
   },
+}));
+
+jest.mock('../../api/_cors', () => ({
+  cors: () => false,
+}));
+
+jest.mock('../../utils/env', () => ({
+  env: { BOOKING_MARKUP_PERCENT: 3 },
+}));
+
+const mockArrayBuffer = jest.fn().mockResolvedValue(new ArrayBuffer(8));
+jest.mock('@vercel/og', () => ({
+  ImageResponse: jest.fn().mockImplementation(() => ({
+    arrayBuffer: mockArrayBuffer,
+  })),
 }));
 
 import handler from '../../api/og';
@@ -34,110 +82,79 @@ function makeRes() {
     status: jest.fn().mockReturnThis(),
     send: jest.fn().mockReturnThis(),
     setHeader: jest.fn().mockReturnThis(),
+    end: jest.fn().mockReturnThis(),
   };
   return res as unknown as VercelResponse & {
     status: jest.Mock;
     send: jest.Mock;
     setHeader: jest.Mock;
+    end: jest.Mock;
   };
 }
 
 describe('GET /api/og', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.APPWRITE_ENDPOINT = 'https://test.appwrite.io/v1';
-    process.env.APPWRITE_PROJECT_ID = 'test-project';
-    process.env.APPWRITE_API_KEY = 'test-key';
+    mockResultQueues.clear();
   });
 
-  it('returns HTML with default content when no params', async () => {
+  it('returns PNG with default content when no params', async () => {
     const req = makeReq();
     const res = makeRes();
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/html');
-    const html = res.send.mock.calls[0][0] as string;
-    expect(html).toContain('Amazing Destination');
-    expect(html).toContain('SoGo');
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
   });
 
-  it('uses query params for city, country, price', async () => {
+  it('returns PNG with query params for city, country, price', async () => {
     const req = makeReq({ city: 'Paris', country: 'France', price: '299' });
     const res = makeRes();
     await handler(req, res);
 
-    const html = res.send.mock.calls[0][0] as string;
-    expect(html).toContain('Paris');
-    expect(html).toContain('France');
-    expect(html).toContain('$299');
-  });
-
-  it('escapes HTML in query params to prevent XSS', async () => {
-    const req = makeReq({ city: '<script>alert("xss")</script>', country: '"onload="alert(1)"' });
-    const res = makeRes();
-    await handler(req, res);
-
-    const html = res.send.mock.calls[0][0] as string;
-    expect(html).not.toContain('<script>');
-    expect(html).toContain('&lt;script&gt;');
-    expect(html).toContain('&quot;onload=&quot;');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
   });
 
   it('fetches destination by id from database', async () => {
-    mockGetDocument.mockResolvedValueOnce({
-      city: 'Tokyo',
-      country: 'Japan',
-      tagline: 'Neon lights and ancient temples',
-      image_url: 'https://example.com/tokyo.jpg',
-      flight_price: 650,
-      live_price: null,
-      rating: 4.8,
-      flight_duration: '14h',
-      hotel_price_per_night: 90,
+    pushResult('destinations', {
+      data: {
+        city: 'Tokyo',
+        country: 'Japan',
+        tagline: 'Neon lights and ancient temples',
+        image_url: 'https://example.com/tokyo.jpg',
+        flight_price: 650,
+        live_price: null,
+        rating: 4.8,
+        flight_duration: '14h',
+        hotel_price_per_night: 90,
+      },
+      error: null,
     });
+    // Empty price_calendar result
+    pushResult('price_calendar', { data: [], error: null });
 
     const req = makeReq({ id: 'dest-123' });
     const res = makeRes();
     await handler(req, res);
 
-    const html = res.send.mock.calls[0][0] as string;
-    expect(html).toContain('Tokyo');
-    expect(html).toContain('Japan');
-    // flight_price=650 + 3% markup = 670
-    expect(html).toContain('$670');
-  });
-
-  it('uses live_price over flight_price when available', async () => {
-    mockGetDocument.mockResolvedValueOnce({
-      city: 'Barcelona',
-      country: 'Spain',
-      image_url: 'https://example.com/bcn.jpg',
-      flight_price: 450,
-      live_price: 299,
-      hotel_price_per_night: 120,
-    });
-
-    const req = makeReq({ id: 'dest-456' });
-    const res = makeRes();
-    await handler(req, res);
-
-    const html = res.send.mock.calls[0][0] as string;
-    // live_price=299 + 3% markup = 308
-    expect(html).toContain('$308');
-    expect(html).not.toContain('$450');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+    // Verify DB was queried
+    expect(mockFrom).toHaveBeenCalledWith('destinations');
+    expect(mockFrom).toHaveBeenCalledWith('price_calendar');
   });
 
   it('falls back gracefully when destination not found', async () => {
-    mockGetDocument.mockRejectedValueOnce(new Error('Not found'));
+    pushResult('destinations', { data: null, error: new Error('Not found') });
 
     const req = makeReq({ id: 'nonexistent' });
     const res = makeRes();
     await handler(req, res);
 
+    // Handler catches DB error, uses defaults, still generates PNG
     expect(res.status).toHaveBeenCalledWith(200);
-    const html = res.send.mock.calls[0][0] as string;
-    expect(html).toContain('Amazing Destination');
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
   });
 
   it('sets long cache headers', async () => {
@@ -149,5 +166,15 @@ describe('GET /api/og', () => {
       (c: string[]) => c[0] === 'Cache-Control',
     );
     expect(cacheHeader![1]).toContain('s-maxage=86400');
+  });
+
+  it('returns 302 redirect when image generation fails', async () => {
+    mockArrayBuffer.mockRejectedValueOnce(new Error('generation failed'));
+
+    const req = makeReq({ city: 'Test' });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(302);
   });
 });

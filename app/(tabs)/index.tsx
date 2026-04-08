@@ -164,6 +164,9 @@ export default function FeedScreen() {
           <Pressable
             style={styles.retryBtn}
             onPress={() => fetchDeals(departureCode, toQueryParams())}
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
+            accessibilityHint="Refresh flight deals"
           >
             <Text style={styles.retryText}>Try Again</Text>
           </Pressable>
@@ -180,6 +183,8 @@ export default function FeedScreen() {
                     onPress={() => {
                       useSettingsStore.getState().setDeparture(ap.label.split(' (')[0], ap.code);
                     }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Switch to ${ap.label}`}
                   >
                     <Text style={styles.nearbyCode}>{ap.code}</Text>
                     <Text style={styles.nearbyLabel}>{ap.label}</Text>

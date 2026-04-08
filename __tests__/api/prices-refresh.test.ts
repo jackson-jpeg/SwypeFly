@@ -1,37 +1,99 @@
-const mockDatabases = {
-  listDocuments: jest.fn(),
-  createDocument: jest.fn(),
-  updateDocument: jest.fn(),
-  getDocument: jest.fn(),
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// ─── Supabase mock infrastructure ──────────────────────────────────────────
+
+const mockResultQueues = new Map<string, Array<{ data: unknown; error: unknown }>>();
+
+function pushResult(table: string, result: { data: unknown; error: unknown }) {
+  if (!mockResultQueues.has(table)) mockResultQueues.set(table, []);
+  mockResultQueues.get(table)!.push(result);
+}
+
+function popResult(table: string): { data: unknown; error: unknown } {
+  const queue = mockResultQueues.get(table);
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+const mockInsertCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpdateCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpsertCalls: Array<{ table: string; data: unknown; options?: unknown }> = [];
+const mockDeleteCalls: Array<{ table: string }> = [];
+
+const createChain = (table: string) => {
+  const chain: Record<string, jest.Mock> = {};
+  const methods = [
+    'select', 'eq', 'neq', 'in', 'contains', 'ilike',
+    'gte', 'lte', 'gt', 'lt', 'is', 'not', 'or',
+    'order', 'limit', 'range', 'match',
+  ];
+  for (const m of methods) {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  }
+  chain.insert = jest.fn().mockImplementation((data: unknown) => {
+    mockInsertCalls.push({ table, data });
+    return chain;
+  });
+  chain.update = jest.fn().mockImplementation((data: unknown) => {
+    mockUpdateCalls.push({ table, data });
+    return chain;
+  });
+  chain.delete = jest.fn().mockImplementation(() => {
+    mockDeleteCalls.push({ table });
+    return chain;
+  });
+  chain.upsert = jest.fn().mockImplementation((data: unknown, options?: unknown) => {
+    mockUpsertCalls.push({ table, data, options });
+    return chain;
+  });
+  chain.single = jest.fn().mockImplementation(() => {
+    const result = popResult(table);
+    if (result.error) return Promise.reject(result.error);
+    return Promise.resolve({
+      data: Array.isArray(result.data) ? (result.data as unknown[])[0] ?? null : result.data,
+      error: null,
+    });
+  });
+  (chain as any).then = jest.fn().mockImplementation((resolve: any) => {
+    const result = popResult(table);
+    if (resolve) return Promise.resolve(resolve(result));
+    return Promise.resolve(result);
+  });
+  return chain;
 };
 
-jest.mock('../../services/appwriteServer', () => ({
-  serverDatabases: mockDatabases,
-  DATABASE_ID: 'sogojet',
-  COLLECTIONS: {
+const mockFrom = jest.fn().mockImplementation((table: string) => createChain(table));
+
+jest.mock('../../services/supabaseServer', () => ({
+  supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+  TABLES: {
     destinations: 'destinations',
     cachedPrices: 'cached_prices',
     userPreferences: 'user_preferences',
     aiCache: 'ai_cache',
     priceHistoryStats: 'price_history_stats',
   },
-  Query: {
-    equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
-    limit: jest.fn((n: number) => `limit:${n}`),
-    orderAsc: jest.fn((f: string) => `orderAsc:${f}`),
-    orderDesc: jest.fn((f: string) => `orderDesc:${f}`),
+}));
+
+jest.mock('../../utils/env', () => ({
+  env: {
+    get CRON_SECRET() {
+      return process.env.CRON_SECRET;
+    },
+    BOOKING_MARKUP_PERCENT: 3,
   },
 }));
 
-jest.mock('node-appwrite', () => ({
-  ID: { unique: jest.fn(() => 'unique-id') },
+jest.mock('../../utils/config', () => ({
+  REFRESH_BATCH_SIZE: 30,
+  DUFFEL_CONCURRENCY: 15,
+  PRICE_CHANGE_THRESHOLD: 0.05,
 }));
 
 jest.mock('../../utils/apiLogger', () => ({ logApiError: jest.fn() }));
 
-const mockSearchFlights = jest.fn();
-jest.mock('../../services/duffel', () => ({
-  searchFlights: (...args: unknown[]) => mockSearchFlights(...args),
+jest.mock('../../api/_cors', () => ({
+  cors: () => false,
 }));
 
 jest.mock('../../utils/validation', () => ({
@@ -42,8 +104,50 @@ jest.mock('../../utils/validation', () => ({
   })),
 }));
 
+// Mock retry to call function directly (no delays)
+jest.mock('../../utils/retry', () => ({
+  withRetry: (fn: () => Promise<unknown>) => fn(),
+}));
+
+// Mock priceStats — the handler calls these for deal quality scoring
+const mockGetRouteStats = jest.fn().mockResolvedValue(null);
+const mockComputePricePercentile = jest.fn().mockReturnValue(50);
+const mockUpdateRouteStats = jest.fn().mockResolvedValue(undefined);
+const mockClearStatsCache = jest.fn();
+jest.mock('../../utils/priceStats', () => ({
+  getRouteStats: (...args: unknown[]) => mockGetRouteStats(...args),
+  computePricePercentile: (...args: unknown[]) => mockComputePricePercentile(...args),
+  updateRouteStats: (...args: unknown[]) => mockUpdateRouteStats(...args),
+  clearStatsCache: (...args: unknown[]) => mockClearStatsCache(...args),
+}));
+
+// Mock dealQuality — always pass for simplicity
+jest.mock('../../utils/dealQuality', () => ({
+  evaluateDealQuality: jest.fn().mockReturnValue({
+    pass: true,
+    dealScore: 80,
+    dealTier: 'good',
+    qualityScore: 75,
+    rejectReason: null,
+    savingsPercent: 10,
+  }),
+  extractSegmentData: jest.fn().mockReturnValue({
+    airlineCode: 'TA',
+    totalStops: 0,
+    totalTravelTimeMinutes: 600,
+    maxLayoverMinutes: 0,
+    departureHour: 8,
+    isNonstop: true,
+  }),
+  US_AIRPORTS: new Set(['JFK', 'LAX', 'ORD', 'ATL', 'SFO', 'MIA', 'DFW', 'SEA', 'BOS', 'TPA']),
+}));
+
+const mockSearchFlights = jest.fn();
+jest.mock('../../services/duffel', () => ({
+  searchFlights: (...args: unknown[]) => mockSearchFlights(...args),
+}));
+
 import handler from '../../api/prices/refresh';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 function makeReq(overrides: Partial<VercelRequest> = {}): VercelRequest {
   return {
@@ -70,7 +174,6 @@ function makeDuffelOffer(dest: string, price: number, airline = 'TestAir') {
     total_amount: String(price),
     total_currency: 'USD',
     expires_at: '2026-04-01T15:00:00Z',
-    owner: { name: airline, iata_code: 'TA' },
     slices: [
       {
         segments: [
@@ -108,6 +211,11 @@ describe('api/prices/refresh', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResultQueues.clear();
+    mockInsertCalls.length = 0;
+    mockUpdateCalls.length = 0;
+    mockUpsertCalls.length = 0;
+    mockDeleteCalls.length = 0;
     process.env = { ...OLD_ENV };
     process.env.CRON_SECRET = 'test-secret';
   });
@@ -141,21 +249,41 @@ describe('api/prices/refresh', () => {
   });
 
   test('succeeds with Duffel as primary source', async () => {
-    mockDatabases.listDocuments.mockImplementation(
-      (_db: string, collection: string) => {
-        if (collection === 'destinations') {
-          return Promise.resolve({
-            documents: [
-              { $id: 'dest-1', iata_code: 'BCN', is_active: true, country: 'Spain', popularity_score: 0.8, best_months: ['June', 'July'] },
-              { $id: 'dest-2', iata_code: 'CDG', is_active: true, country: 'France', popularity_score: 0.9, best_months: ['May', 'June'] },
-            ],
-            total: 2,
-          });
-        }
-        // cached_prices, user_preferences, price_history_stats — empty
-        return Promise.resolve({ documents: [], total: 0 });
-      },
-    );
+    // 1. destinations (active IATA codes) — called from main handler
+    pushResult('destinations', {
+      data: [
+        { iata_code: 'BCN' },
+        { iata_code: 'CDG' },
+      ],
+      error: null,
+    });
+
+    // 2. user_preferences (getActiveOrigins)
+    pushResult('user_preferences', { data: [], error: null });
+
+    // 3. cached_prices (pickNextOrigins staleness check) — not needed since origin=JFK is explicit
+    // but pickStalestDestinations calls it:
+    // 3a. cached_prices — existing prices for origin (pickStalestDestinations currentPriceMap)
+    pushResult('cached_prices', { data: [], error: null });
+    // 3b. cached_prices — staleness data (pickStalestDestinations fetchedAtMap)
+    pushResult('cached_prices', { data: [], error: null });
+
+    // 4. destinations (getDestMeta — for deal quality)
+    pushResult('destinations', {
+      data: [
+        { iata_code: 'BCN', country: 'Spain', popularity_score: 0.8, best_months: ['June', 'July'] },
+        { iata_code: 'CDG', country: 'France', popularity_score: 0.9, best_months: ['May', 'June'] },
+      ],
+      error: null,
+    });
+
+    // For each destination's refreshOneDest:
+    // BCN: cached_prices insert (new) + ai_cache insert (snapshot)
+    pushResult('cached_prices', { data: null, error: null }); // insert
+    pushResult('ai_cache', { data: null, error: null }); // snapshot
+    // CDG: cached_prices insert + ai_cache insert
+    pushResult('cached_prices', { data: null, error: null }); // insert
+    pushResult('ai_cache', { data: null, error: null }); // snapshot
 
     // Duffel returns offers for each destination
     mockSearchFlights.mockImplementation((params: { destination: string }) => {
@@ -168,15 +296,13 @@ describe('api/prices/refresh', () => {
       return Promise.resolve({ offers: [] });
     });
 
-    mockDatabases.createDocument.mockResolvedValue({ $id: 'price-1' });
-    mockDatabases.updateDocument.mockResolvedValue({ $id: 'price-1' });
-
     const req = makeReq({
       headers: { authorization: 'Bearer test-secret' } as any,
       query: { origin: 'JFK' },
     });
     const res = makeRes();
     await handler(req, res);
+
     expect(res.status).toHaveBeenCalledWith(200);
     const responseData = (res.json as jest.Mock).mock.calls[0][0];
     expect(responseData.origins).toHaveLength(1);
@@ -187,39 +313,42 @@ describe('api/prices/refresh', () => {
     // Verify Duffel was called for each destination
     expect(mockSearchFlights).toHaveBeenCalledTimes(2);
 
-    // Verify createDocument calls by collection
-    const createCalls = mockDatabases.createDocument.mock.calls;
-    const cachedPriceCreates = createCalls.filter((c: unknown[]) => c[1] === 'cached_prices');
-    const snapshotCreates = createCalls.filter((c: unknown[]) => c[1] === 'ai_cache');
-    const statsCreates = createCalls.filter((c: unknown[]) => c[1] === 'price_history_stats');
-
-    // 2 cached_prices creates (one per destination)
-    expect(cachedPriceCreates.length).toBe(2);
-    expect(cachedPriceCreates[0][3].source).toBe('duffel');
-    expect(cachedPriceCreates[0][3].offer_json).toBeTruthy();
-    expect(cachedPriceCreates[0][3].offer_expires_at).toBeTruthy();
+    // Verify cached_prices inserts (one per destination)
+    const cachedPriceInserts = mockInsertCalls.filter((c) => c.table === 'cached_prices');
+    expect(cachedPriceInserts.length).toBe(2);
+    expect((cachedPriceInserts[0].data as any).source).toBe('duffel');
+    expect((cachedPriceInserts[0].data as any).offer_json).toBeTruthy();
+    expect((cachedPriceInserts[0].data as any).offer_expires_at).toBeTruthy();
     // Deal quality fields should be present
-    expect(cachedPriceCreates[0][3].deal_score).toBeDefined();
-    expect(cachedPriceCreates[0][3].deal_tier).toBeDefined();
+    expect((cachedPriceInserts[0].data as any).deal_score).toBeDefined();
+    expect((cachedPriceInserts[0].data as any).deal_tier).toBeDefined();
 
-    // 2 price_history snapshots in ai_cache
-    expect(snapshotCreates.length).toBe(2);
-    expect(snapshotCreates[0][3].type).toBe('price_history');
-
-    // 2 price_history_stats creates (new routes)
-    expect(statsCreates.length).toBe(2);
+    // Verify price history snapshots in ai_cache
+    const snapshotInserts = mockInsertCalls.filter((c) => c.table === 'ai_cache');
+    expect(snapshotInserts.length).toBe(2);
+    expect((snapshotInserts[0].data as any).type).toBe('price_history');
   });
 
   test('returns null source when Duffel fails', async () => {
-    mockDatabases.listDocuments.mockResolvedValue({
-      documents: [{ $id: 'dest-1', iata_code: 'BCN', is_active: true }],
-      total: 1,
+    // destinations
+    pushResult('destinations', {
+      data: [{ iata_code: 'BCN' }],
+      error: null,
+    });
+    // user_preferences
+    pushResult('user_preferences', { data: [], error: null });
+    // cached_prices (pickStalestDestinations: currentPriceMap)
+    pushResult('cached_prices', { data: [], error: null });
+    // cached_prices (pickStalestDestinations: fetchedAtMap)
+    pushResult('cached_prices', { data: [], error: null });
+    // destinations (getDestMeta)
+    pushResult('destinations', {
+      data: [{ iata_code: 'BCN', country: 'Spain', popularity_score: 0.8, best_months: [] }],
+      error: null,
     });
 
     // Duffel fails
     mockSearchFlights.mockRejectedValue(new Error('Duffel API error'));
-
-    mockDatabases.createDocument.mockResolvedValue({ $id: 'price-1' });
 
     const req = makeReq({
       headers: { authorization: 'Bearer test-secret' } as any,
@@ -227,49 +356,58 @@ describe('api/prices/refresh', () => {
     });
     const res = makeRes();
     await handler(req, res);
+
     expect(res.status).toHaveBeenCalledWith(200);
     const responseData = (res.json as jest.Mock).mock.calls[0][0];
     expect(responseData.origins[0].sources.duffel).toBe(0);
     expect(responseData.origins[0].fetched).toBe(0);
 
     // No cached_prices or snapshots should be created when Duffel fails
-    expect(mockDatabases.createDocument).not.toHaveBeenCalled();
+    const cachedPriceInserts = mockInsertCalls.filter((c) => c.table === 'cached_prices');
+    expect(cachedPriceInserts.length).toBe(0);
   });
 
   test('tracks price history with direction', async () => {
-    mockDatabases.listDocuments.mockImplementation(
-      (_db: string, collection: string, _queries: unknown[]) => {
-        if (collection === 'destinations') {
-          return Promise.resolve({
-            documents: [{ $id: 'dest-1', iata_code: 'BCN', is_active: true, country: 'Spain', popularity_score: 0.8, best_months: ['June'] }],
-            total: 1,
-          });
-        }
-        if (collection === 'cached_prices') {
-          return Promise.resolve({
-            documents: [
-              {
-                $id: 'price-bcn',
-                destination_iata: 'BCN',
-                price: 400,
-                fetched_at: '2026-03-01T00:00:00Z',
-              },
-            ],
-            total: 1,
-          });
-        }
-        // user_preferences, price_history_stats — empty
-        return Promise.resolve({ documents: [], total: 0 });
-      },
-    );
+    // destinations (active IATA codes)
+    pushResult('destinations', {
+      data: [{ iata_code: 'BCN' }],
+      error: null,
+    });
+    // user_preferences
+    pushResult('user_preferences', { data: [], error: null });
+    // cached_prices (pickStalestDestinations: currentPriceMap) — has existing price
+    pushResult('cached_prices', {
+      data: [
+        {
+          id: 'price-bcn',
+          destination_iata: 'BCN',
+          price: 400,
+        },
+      ],
+      error: null,
+    });
+    // cached_prices (pickStalestDestinations: fetchedAtMap)
+    pushResult('cached_prices', {
+      data: [
+        { destination_iata: 'BCN', fetched_at: '2026-03-01T00:00:00Z' },
+      ],
+      error: null,
+    });
+    // destinations (getDestMeta)
+    pushResult('destinations', {
+      data: [{ iata_code: 'BCN', country: 'Spain', popularity_score: 0.8, best_months: ['June'] }],
+      error: null,
+    });
+
+    // cached_prices update result
+    pushResult('cached_prices', { data: null, error: null });
+    // ai_cache snapshot insert
+    pushResult('ai_cache', { data: null, error: null });
 
     // Duffel returns cheaper price (>5% drop)
     mockSearchFlights.mockResolvedValue({
       offers: [makeDuffelOffer('BCN', 350, 'Iberia')],
     });
-
-    mockDatabases.updateDocument.mockResolvedValue({ $id: 'price-bcn' });
-    mockDatabases.createDocument.mockResolvedValue({ $id: 'snapshot-1' });
 
     const req = makeReq({
       headers: { authorization: 'Bearer test-secret' } as any,
@@ -277,21 +415,19 @@ describe('api/prices/refresh', () => {
     });
     const res = makeRes();
     await handler(req, res);
+
     expect(res.status).toHaveBeenCalledWith(200);
 
     // Verify update for cached_prices with price direction
-    const updateCalls = mockDatabases.updateDocument.mock.calls;
-    const priceUpdates = updateCalls.filter((c: unknown[]) => c[1] === 'cached_prices');
+    const priceUpdates = mockUpdateCalls.filter((c) => c.table === 'cached_prices');
     expect(priceUpdates.length).toBe(1);
-    expect(priceUpdates[0][3].price).toBe(350);
-    expect(priceUpdates[0][3].previous_price).toBe(400);
-    expect(priceUpdates[0][3].price_direction).toBe('down');
+    expect((priceUpdates[0].data as any).price).toBe(350);
+    expect((priceUpdates[0].data as any).previous_price).toBe(400);
+    expect((priceUpdates[0].data as any).price_direction).toBe('down');
 
     // Verify price snapshot was also recorded in ai_cache
-    const createCalls = mockDatabases.createDocument.mock.calls;
-    expect(createCalls.length).toBeGreaterThanOrEqual(1);
-    const snapshotCall = createCalls.find((c: any[]) => c[1] === 'ai_cache');
-    expect(snapshotCall).toBeTruthy();
-    expect(snapshotCall![3].type).toBe('price_history');
+    const snapshotInserts = mockInsertCalls.filter((c) => c.table === 'ai_cache');
+    expect(snapshotInserts.length).toBe(1);
+    expect((snapshotInserts[0].data as any).type).toBe('price_history');
   });
 });

@@ -54,9 +54,10 @@ interface SavedCardProps {
   onPress: () => void;
   onRemove: () => void;
   onBook?: () => void;
+  onLongPress?: () => void;
 }
 
-function SavedCard({ deal, index = 0, onPress, onRemove, onBook }: SavedCardProps) {
+function SavedCard({ deal, index = 0, onPress, onRemove, onBook, onLongPress }: SavedCardProps) {
   const countdown = daysUntil(deal.departureDate);
   const tierColor = deal.dealTier ? DEAL_TIER_COLORS[deal.dealTier] : null;
 
@@ -73,10 +74,12 @@ function SavedCard({ deal, index = 0, onPress, onRemove, onBook }: SavedCardProp
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={500}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       accessibilityRole="button"
       accessibilityLabel={`${deal.destination}, ${deal.country}. ${deal.priceFormatted || 'Price varies'}. ${deal.airline}`}
-      accessibilityHint="Tap to view details"
+      accessibilityHint="Tap to view details, long press for options"
     >
       {Platform.OS === 'web' && deal.imageUrl ? (
         <img

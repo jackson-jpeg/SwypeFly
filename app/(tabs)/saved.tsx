@@ -1,14 +1,16 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable, ScrollView, Modal } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable, ScrollView, Modal, RefreshControl, ActionSheetIOS, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import SavedCard from '../../components/saved/SavedCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
-import { lightHaptic, successHaptic } from '../../utils/haptics';
+import { lightHaptic, mediumHaptic, successHaptic, warningHaptic } from '../../utils/haptics';
+import { shareDestination } from '../../utils/share';
 import type { BoardDeal } from '../../types/deal';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc';
@@ -263,6 +265,7 @@ export default function SavedScreen() {
       lightHaptic();
       return;
     }
+    lightHaptic();
     router.push(`/destination/${deal.id}`);
   }, [router, compareMode, savedDeals]);
 
@@ -276,6 +279,62 @@ export default function SavedScreen() {
     router.push(`/booking/${deal.id}/trip`);
   }, [router, departureCode]);
 
+  const handleRemove = useCallback((deal: BoardDeal) => {
+    warningHaptic();
+    toggle(deal);
+  }, [toggle]);
+
+  const handleLongPress = useCallback((deal: BoardDeal) => {
+    mediumHaptic();
+    const options = ['View Details', 'Search Flights', 'Share', 'Remove from Saved', 'Cancel'];
+    const destructiveButtonIndex = 3;
+    const cancelButtonIndex = 4;
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          destructiveButtonIndex,
+          cancelButtonIndex,
+          title: `${deal.destination}, ${deal.country}`,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) {
+            router.push(`/destination/${deal.id}`);
+          } else if (buttonIndex === 1) {
+            handleBook(deal);
+          } else if (buttonIndex === 2) {
+            shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
+          } else if (buttonIndex === 3) {
+            warningHaptic();
+            toggle(deal);
+          }
+        },
+      );
+    } else if (Platform.OS === 'web') {
+      // Web fallback — simple confirm for destructive action
+      const action = typeof window !== 'undefined'
+        ? window.prompt(`${deal.destination}\n\nType "remove" to unsave, or press Cancel:`)
+        : null;
+      if (action?.toLowerCase() === 'remove') {
+        warningHaptic();
+        toggle(deal);
+      }
+    } else {
+      // Android fallback
+      Alert.alert(
+        `${deal.destination}, ${deal.country}`,
+        undefined,
+        [
+          { text: 'View Details', onPress: () => router.push(`/destination/${deal.id}`) },
+          { text: 'Search Flights', onPress: () => handleBook(deal) },
+          { text: 'Remove from Saved', style: 'destructive', onPress: () => { warningHaptic(); toggle(deal); } },
+          { text: 'Cancel', style: 'cancel' },
+        ],
+      );
+    }
+  }, [router, toggle, handleBook]);
+
   const toggleCompareMode = useCallback(() => {
     setCompareMode((prev) => !prev);
     setCompareSelection([]);
@@ -284,22 +343,26 @@ export default function SavedScreen() {
 
   const renderItem = useCallback(
     ({ item, index }: { item: BoardDeal; index: number }) => (
-      <View style={compareMode && compareSelection.includes(item.id) ? styles.selectedCard : undefined}>
+      <Animated.View
+        entering={FadeInUp.delay(Math.min(index, 8) * 50).springify()}
+        style={compareMode && compareSelection.includes(item.id) ? styles.selectedCard : undefined}
+      >
         <SavedCard
           deal={item}
           index={index}
           onPress={() => handlePress(item)}
-          onRemove={() => toggle(item)}
+          onRemove={() => handleRemove(item)}
           onBook={compareMode ? undefined : () => handleBook(item)}
+          onLongPress={() => handleLongPress(item)}
         />
         {compareMode && compareSelection.includes(item.id) && (
           <View style={styles.checkmark}>
             <Ionicons name="checkmark-circle" size={24} color={colors.yellow} />
           </View>
         )}
-      </View>
+      </Animated.View>
     ),
-    [handlePress, toggle, handleBook, compareMode, compareSelection],
+    [handlePress, handleRemove, handleBook, handleLongPress, compareMode, compareSelection],
   );
 
   const keyExtractor = useCallback((item: BoardDeal) => item.id, []);
@@ -399,6 +462,15 @@ export default function SavedScreen() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.grid}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={false}
+              onRefresh={() => { successHaptic(); /* Saved deals are local — no-op but gives native pull feel */ }}
+              tintColor={colors.yellow}
+              colors={[colors.yellow]}
+              progressBackgroundColor={colors.surface}
+            />
+          }
         />
       )}
 

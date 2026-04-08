@@ -69,6 +69,7 @@ function singleDealElement(
   return {
     element: {
       type: 'div',
+      key: null,
       props: {
         style: {
           position: 'relative' as const,
@@ -484,6 +485,7 @@ function boardCardElement(
   return {
     element: {
       type: 'div',
+      key: null,
       props: {
         style: {
           width: w,

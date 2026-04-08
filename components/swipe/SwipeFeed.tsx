@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { View, FlatList, Text, Dimensions, StyleSheet, Platform, ViewToken, ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { View, FlatList, Text, Dimensions, StyleSheet, Platform, ViewToken, Pressable, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useDealStore } from '../../stores/dealStore';
@@ -8,8 +8,11 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useBookingFlowStore } from '../../stores/bookingFlowStore';
 import { useFilterStore } from '../../stores/filterStore';
 import SwipeCard from './SwipeCard';
+import SwipeGesture from './SwipeGesture';
+import { SkeletonSwipeCard } from '../common/Skeleton';
 import type { BoardDeal } from '../../types/deal';
 import { colors, fonts, spacing } from '../../theme/tokens';
+import { lightHaptic, warningHaptic } from '../../utils/haptics';
 const { height: SCREEN_H } = Dimensions.get('window');
 
 interface SwipeFeedProps {
@@ -37,6 +40,10 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
       const idx = viewableItems[0].index;
       setVisibleIndex(idx);
       onVisibleIndexChange?.(idx);
+      // Haptic feedback when reaching the last card
+      if (idx === deals.length - 1 && deals.length > 0) {
+        warningHaptic();
+      }
     }
   }).current;
 
@@ -92,6 +99,28 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
     [toggle],
   );
 
+  const scrollToNext = useCallback(() => {
+    const next = Math.min(visibleIndex + 1, deals.length - 1);
+    if (next !== visibleIndex) {
+      listRef.current?.scrollToIndex({ index: next, animated: true });
+    }
+  }, [visibleIndex, deals.length]);
+
+  const handleSwipeRight = useCallback(
+    (deal: BoardDeal) => {
+      if (!savedIds.includes(deal.id)) {
+        toggle(deal);
+      }
+      scrollToNext();
+    },
+    [toggle, savedIds, scrollToNext],
+  );
+
+  const handleSwipeLeft = useCallback(() => {
+    lightHaptic();
+    scrollToNext();
+  }, [scrollToNext]);
+
   const handleBook = useCallback((deal: BoardDeal) => {
     const store = useBookingFlowStore.getState();
     store.reset();
@@ -138,17 +167,23 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
 
   const renderItem = useCallback(
     ({ item, index }: { item: BoardDeal; index: number }) => (
-      <SwipeCard
-        deal={item}
-        isSaved={savedIds.includes(item.id)}
-        isFirst={index === 0}
-        animate={index === visibleIndex}
-        onSave={() => handleSave(item)}
-        onBook={() => handleBook(item)}
-        onTap={() => router.push(`/destination/${item.id}`)}
-      />
+      <SwipeGesture
+        onSwipeRight={() => handleSwipeRight(item)}
+        onSwipeLeft={() => handleSwipeLeft()}
+        enabled={index === visibleIndex}
+      >
+        <SwipeCard
+          deal={item}
+          isSaved={savedIds.includes(item.id)}
+          isFirst={index === 0}
+          animate={index === visibleIndex}
+          onSave={() => handleSave(item)}
+          onBook={() => handleBook(item)}
+          onTap={() => router.push(`/destination/${item.id}`)}
+        />
+      </SwipeGesture>
     ),
-    [savedIds, handleSave, handleBook, router, visibleIndex],
+    [savedIds, handleSave, handleBook, handleSwipeRight, handleSwipeLeft, router, visibleIndex],
   );
 
   const getItemLayout = useCallback(
@@ -193,12 +228,7 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
         viewabilityConfig={viewabilityConfig}
         ListFooterComponent={
           loadingMore ? (
-            <View style={styles.loadingSkeleton}>
-              <View style={styles.loadingPulse}>
-                <ActivityIndicator color={colors.yellow} size="large" />
-                <Text style={styles.loadingText}>Finding more deals...</Text>
-              </View>
-            </View>
+            <SkeletonSwipeCard />
           ) : deals.length > 0 ? (
             <View style={styles.endOfDeck}>
               <Text style={styles.endIcon}>✈</Text>
@@ -227,15 +257,17 @@ export default function SwipeFeed({ onVisibleIndexChange }: SwipeFeedProps) {
         }
       />
 
-      {/* Card counter + keyboard hints */}
+      {/* Card counter + gesture/keyboard hints */}
       {deals.length > 1 && (
         <View style={styles.counter} pointerEvents="none">
           <Text style={styles.counterText}>
             {visibleIndex + 1} / {deals.length}
           </Text>
-          {Platform.OS === 'web' && (
+          {Platform.OS === 'web' ? (
             <Text style={styles.kbHint}>↑↓ navigate · S save · Enter details</Text>
-          )}
+          ) : visibleIndex === 0 ? (
+            <Text style={styles.kbHint}>← skip · → save · ↕ scroll</Text>
+          ) : null}
         </View>
       )}
     </View>

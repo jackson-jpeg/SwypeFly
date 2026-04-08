@@ -1,42 +1,133 @@
-const mockDatabases = {
-  listDocuments: jest.fn(),
-  createDocument: jest.fn(),
-  updateDocument: jest.fn(),
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// ─── Supabase mock infrastructure ──────────────────────────────────────────
+
+const mockResultQueues = new Map<string, Array<{ data: unknown; error: unknown }>>();
+
+function pushResult(table: string, result: { data: unknown; error: unknown }) {
+  if (!mockResultQueues.has(table)) mockResultQueues.set(table, []);
+  mockResultQueues.get(table)!.push(result);
+}
+
+function popResult(table: string): { data: unknown; error: unknown } {
+  const queue = mockResultQueues.get(table);
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+const mockInsertCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpdateCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpsertCalls: Array<{ table: string; data: unknown; options?: unknown }> = [];
+const mockDeleteCalls: Array<{ table: string }> = [];
+
+const createChain = (table: string) => {
+  const chain: Record<string, jest.Mock> = {};
+  const methods = [
+    'select', 'eq', 'neq', 'in', 'contains', 'ilike',
+    'gte', 'lte', 'gt', 'lt', 'is', 'not', 'or',
+    'order', 'limit', 'range', 'match',
+  ];
+  for (const m of methods) {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  }
+  chain.insert = jest.fn().mockImplementation((data: unknown) => {
+    mockInsertCalls.push({ table, data });
+    return chain;
+  });
+  chain.update = jest.fn().mockImplementation((data: unknown) => {
+    mockUpdateCalls.push({ table, data });
+    return chain;
+  });
+  chain.delete = jest.fn().mockImplementation(() => {
+    mockDeleteCalls.push({ table });
+    return chain;
+  });
+  chain.upsert = jest.fn().mockImplementation((data: unknown, options?: unknown) => {
+    mockUpsertCalls.push({ table, data, options });
+    return chain;
+  });
+  chain.single = jest.fn().mockImplementation(() => {
+    const result = popResult(table);
+    if (result.error) return Promise.reject(result.error);
+    return Promise.resolve({
+      data: Array.isArray(result.data) ? (result.data as unknown[])[0] ?? null : result.data,
+      error: null,
+    });
+  });
+  (chain as any).then = jest.fn().mockImplementation((resolve: any) => {
+    const result = popResult(table);
+    if (resolve) return Promise.resolve(resolve(result));
+    return Promise.resolve(result);
+  });
+  return chain;
 };
 
-jest.mock('../../services/appwriteServer', () => ({
-  serverDatabases: mockDatabases,
-  DATABASE_ID: 'sogojet',
-  COLLECTIONS: {
+const mockFrom = jest.fn().mockImplementation((table: string) => createChain(table));
+
+jest.mock('../../services/supabaseServer', () => ({
+  supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+  TABLES: {
     destinations: 'destinations',
-    cachedPrices: 'cached_prices',
     userPreferences: 'user_preferences',
     priceCalendar: 'price_calendar',
     priceHistoryStats: 'price_history_stats',
   },
-  Query: {
-    equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
-    limit: jest.fn((n: number) => `limit:${n}`),
-    orderAsc: jest.fn((f: string) => `orderAsc:${f}`),
-  },
 }));
 
-jest.mock('node-appwrite', () => ({
-  ID: { unique: jest.fn(() => 'unique-id') },
+jest.mock('../../utils/env', () => ({
+  env: {
+    get CRON_SECRET() {
+      return process.env.CRON_SECRET;
+    },
+  },
 }));
 
 jest.mock('../../utils/apiLogger', () => ({ logApiError: jest.fn() }));
 
-const mockFetchAllCheapPrices = jest.fn();
-const mockFetchPriceCalendar = jest.fn();
+jest.mock('../../api/_cors', () => ({
+  cors: () => false,
+}));
 
+// Mock retry to call function directly (no delays)
+jest.mock('../../utils/retry', () => ({
+  withRetry: (fn: () => Promise<unknown>) => fn(),
+}));
+
+// Mock priceStats
+const mockGetRouteStats = jest.fn().mockResolvedValue({ medianPrice: 400, p20Price: 300, p5Price: 250, p80Price: 500, minPriceEver: 200, maxPriceEver: 600, sampleCount: 10, last30dAvg: 380 });
+const mockComputePricePercentile = jest.fn().mockReturnValue(50);
+const mockUpdateRouteStats = jest.fn().mockResolvedValue(undefined);
+const mockClearStatsCache = jest.fn();
+jest.mock('../../utils/priceStats', () => ({
+  getRouteStats: (...args: unknown[]) => mockGetRouteStats(...args),
+  computePricePercentile: (...args: unknown[]) => mockComputePricePercentile(...args),
+  updateRouteStats: (...args: unknown[]) => mockUpdateRouteStats(...args),
+  clearStatsCache: (...args: unknown[]) => mockClearStatsCache(...args),
+}));
+
+// Mock dealQuality — always pass
+jest.mock('../../utils/dealQuality', () => ({
+  evaluateDealQuality: jest.fn().mockReturnValue({
+    pass: true,
+    dealScore: 80,
+    dealTier: 'good',
+    qualityScore: 75,
+    rejectReason: null,
+    savingsPercent: 10,
+  }),
+  US_AIRPORTS: new Set(['JFK', 'LAX', 'ORD', 'ATL', 'SFO', 'MIA', 'DFW', 'SEA', 'BOS', 'TPA']),
+}));
+
+const mockFetchAllCheapPrices = jest.fn();
+const mockFetchLatestPrices = jest.fn().mockResolvedValue(new Map());
+const mockFetchByPriceRange = jest.fn().mockResolvedValue([]);
 jest.mock('../../services/travelpayouts', () => ({
   fetchAllCheapPrices: (...args: unknown[]) => mockFetchAllCheapPrices(...args),
-  fetchPriceCalendar: (...args: unknown[]) => mockFetchPriceCalendar(...args),
+  fetchLatestPrices: (...args: unknown[]) => mockFetchLatestPrices(...args),
+  fetchByPriceRange: (...args: unknown[]) => mockFetchByPriceRange(...args),
 }));
 
 import handler from '../../api/prices/refresh-calendar';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 function makeReq(overrides: Partial<VercelRequest> = {}): VercelRequest {
   return {
@@ -62,6 +153,11 @@ describe('api/prices/refresh-calendar', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResultQueues.clear();
+    mockInsertCalls.length = 0;
+    mockUpdateCalls.length = 0;
+    mockUpsertCalls.length = 0;
+    mockDeleteCalls.length = 0;
     process.env = { ...OLD_ENV };
     process.env.CRON_SECRET = 'test-secret';
   });
@@ -94,21 +190,11 @@ describe('api/prices/refresh-calendar', () => {
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('fetches bulk prices then calendar for each destination, upserts entries', async () => {
-    // listDocuments: user_preferences (for origins), then price_calendar (for staleness)
-    mockDatabases.listDocuments.mockImplementation(
-      (_db: string, collection: string) => {
-        if (collection === 'user_preferences') {
-          return Promise.resolve({ documents: [], total: 0 });
-        }
-        if (collection === 'price_calendar') {
-          return Promise.resolve({ documents: [], total: 0 });
-        }
-        return Promise.resolve({ documents: [], total: 0 });
-      },
-    );
-
+  test('fetches bulk prices then upserts calendar entries', async () => {
     // fetchAllCheapPrices returns two destinations
+    // Use dates far in the future so they pass the dep >= today filter
+    const futureDate = new Date(Date.now() + 14 * 86400000).toISOString();
+    const futureReturn = new Date(Date.now() + 21 * 86400000).toISOString();
     mockFetchAllCheapPrices.mockResolvedValue(
       new Map([
         [
@@ -117,9 +203,9 @@ describe('api/prices/refresh-calendar', () => {
             destination: 'BCN',
             price: 350,
             airline: 'IB',
-            departureAt: '2026-04-01',
-            returnAt: '2026-04-08',
-            foundAt: '2026-03-19',
+            departureAt: futureDate,
+            returnAt: futureReturn,
+            foundAt: new Date().toISOString(),
           },
         ],
         [
@@ -128,15 +214,39 @@ describe('api/prices/refresh-calendar', () => {
             destination: 'CDG',
             price: 420,
             airline: 'AF',
-            departureAt: '2026-04-02',
-            returnAt: '2026-04-09',
-            foundAt: '2026-03-19',
+            departureAt: futureDate,
+            returnAt: futureReturn,
+            foundAt: new Date().toISOString(),
           },
         ],
       ]),
     );
 
-    mockDatabases.createDocument.mockResolvedValue({ $id: 'cal-1' });
+    // destinations (our destination IATA codes for sorting)
+    pushResult('destinations', {
+      data: [
+        { iata_code: 'BCN' },
+        { iata_code: 'CDG' },
+      ],
+      error: null,
+    });
+
+    // destinations (getDestMeta — for deal quality)
+    pushResult('destinations', {
+      data: [
+        { iata_code: 'BCN', country: 'Spain', popularity_score: 0.8, best_months: ['June'] },
+        { iata_code: 'CDG', country: 'France', popularity_score: 0.9, best_months: ['May'] },
+      ],
+      error: null,
+    });
+
+    // For each upsertCalendarEntry:
+    // BCN: price_calendar previous price check, then upsert
+    pushResult('price_calendar', { data: [], error: null }); // previous price check
+    pushResult('price_calendar', { data: null, error: null }); // upsert
+    // CDG: price_calendar previous price check, then upsert
+    pushResult('price_calendar', { data: [], error: null }); // previous price check
+    pushResult('price_calendar', { data: null, error: null }); // upsert
 
     const req = makeReq({
       headers: { authorization: 'Bearer test-secret' } as any,
@@ -153,88 +263,28 @@ describe('api/prices/refresh-calendar', () => {
     // Should have called fetchAllCheapPrices once for JFK
     expect(mockFetchAllCheapPrices).toHaveBeenCalledWith('JFK');
 
-    // Filter to only price_calendar creates (route stats also create docs)
-    const calendarCreates = mockDatabases.createDocument.mock.calls.filter(
-      (call: unknown[]) => call[1] === 'price_calendar',
-    );
-    expect(calendarCreates).toHaveLength(2);
+    // Verify upsert calls for price_calendar
+    const calendarUpserts = mockUpsertCalls.filter((c) => c.table === 'price_calendar');
+    expect(calendarUpserts.length).toBe(2);
 
     // Verify upsert data shape
-    const firstCall = calendarCreates[0];
-    expect(firstCall[0]).toBe('sogojet'); // DATABASE_ID
-    expect(firstCall[1]).toBe('price_calendar'); // collection
-    expect(firstCall[3].origin).toBe('JFK');
-    expect(firstCall[3].source).toBe('travelpayouts');
-    expect(firstCall[3].trip_days).toBe(7);
-    expect(firstCall[3].fetched_at).toBeDefined();
+    const firstUpsert = calendarUpserts[0].data as any;
+    expect(firstUpsert.origin).toBe('JFK');
+    expect(firstUpsert.source).toBe('travelpayouts');
+    expect(firstUpsert.trip_days).toBe(7);
+    expect(firstUpsert.fetched_at).toBeDefined();
     // Deal quality fields should be present
-    expect(firstCall[3].deal_score).toBeDefined();
-    expect(firstCall[3].deal_tier).toBeDefined();
-  });
-
-  test('updates existing calendar entries instead of creating new ones', async () => {
-    mockDatabases.listDocuments.mockImplementation(
-      (_db: string, collection: string, queries?: string[]) => {
-        if (collection === 'user_preferences') {
-          return Promise.resolve({ documents: [], total: 0 });
-        }
-        if (collection === 'price_calendar') {
-          // When checking for existing entry during upsert, return a match
-          const hasDateQuery = queries?.some((q: string) => q.startsWith('equal:date,'));
-          if (hasDateQuery) {
-            return Promise.resolve({
-              documents: [{ $id: 'existing-cal-1' }],
-              total: 1,
-            });
-          }
-          // For staleness check
-          return Promise.resolve({ documents: [], total: 0 });
-        }
-        return Promise.resolve({ documents: [], total: 0 });
-      },
-    );
-
-    mockFetchAllCheapPrices.mockResolvedValue(
-      new Map([
-        [
-          'BCN',
-          {
-            destination: 'BCN',
-            price: 350,
-            airline: 'IB',
-            departureAt: '2026-04-01',
-            returnAt: '2026-04-08',
-            foundAt: '2026-03-19',
-          },
-        ],
-      ]),
-    );
-
-    mockFetchPriceCalendar.mockResolvedValue([
-      { date: '2026-04-01', price: 340, airline: 'IB', transferCount: 0 },
-    ]);
-
-    // createDocument fails (duplicate) → triggers fallback update path
-    mockDatabases.createDocument.mockRejectedValue(new Error('Document already exists'));
-    mockDatabases.updateDocument.mockResolvedValue({ $id: 'existing-cal-1' });
-
-    const req = makeReq({
-      headers: { authorization: 'Bearer test-secret' } as any,
-      query: { origin: 'JFK' },
-    });
-    const res = makeRes();
-    await handler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    // Create should have been attempted then failed, triggering update
-    expect(mockDatabases.createDocument).toHaveBeenCalled();
-    expect(mockDatabases.updateDocument).toHaveBeenCalledTimes(1);
-    expect(mockDatabases.updateDocument.mock.calls[0][2]).toBe('existing-cal-1');
+    expect(firstUpsert.deal_score).toBeDefined();
+    expect(firstUpsert.deal_tier).toBeDefined();
   });
 
   test('handles fetchAllCheapPrices returning empty map', async () => {
-    mockDatabases.listDocuments.mockResolvedValue({ documents: [], total: 0 });
     mockFetchAllCheapPrices.mockResolvedValue(new Map());
+
+    // destinations (for IATA codes) — still queried even if bulk is empty
+    pushResult('destinations', { data: [], error: null });
+    // getDestMeta
+    pushResult('destinations', { data: [], error: null });
 
     const req = makeReq({
       headers: { authorization: 'Bearer test-secret' } as any,
@@ -244,31 +294,37 @@ describe('api/prices/refresh-calendar', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(mockFetchPriceCalendar).not.toHaveBeenCalled();
-    expect(mockDatabases.createDocument).not.toHaveBeenCalled();
+    const data = (res.json as jest.Mock).mock.calls[0][0];
+    expect(data.origins[0].bulkDestinations).toBe(0);
+    // No upserts should happen
+    const calendarUpserts = mockUpsertCalls.filter((c) => c.table === 'price_calendar');
+    expect(calendarUpserts.length).toBe(0);
   });
 
   test('picks stalest origins when no origin param provided', async () => {
-    // user_preferences returns nothing, price_calendar returns old data for TPA
-    mockDatabases.listDocuments.mockImplementation(
-      (_db: string, collection: string) => {
-        if (collection === 'user_preferences') {
-          return Promise.resolve({ documents: [], total: 0 });
-        }
-        if (collection === 'price_calendar') {
-          return Promise.resolve({
-            documents: [
-              { origin: 'TPA', fetched_at: '2026-01-01T00:00:00Z' },
-              { origin: 'LAX', fetched_at: '2026-03-18T00:00:00Z' },
-            ],
-            total: 2,
-          });
-        }
-        return Promise.resolve({ documents: [], total: 0 });
-      },
-    );
+    // 1. user_preferences (getActiveOrigins)
+    pushResult('user_preferences', { data: [], error: null });
+    // 2. price_calendar (pickNextOrigins staleness check)
+    pushResult('price_calendar', {
+      data: [
+        { origin: 'TPA', fetched_at: '2026-01-01T00:00:00Z' },
+        { origin: 'LAX', fetched_at: '2026-03-18T00:00:00Z' },
+      ],
+      error: null,
+    });
 
+    // For each origin that gets processed, fetchAllCheapPrices returns empty
     mockFetchAllCheapPrices.mockResolvedValue(new Map());
+
+    // Each origin will query destinations + getDestMeta
+    // Origin 1: destinations for IATA codes
+    pushResult('destinations', { data: [], error: null });
+    // Origin 1: getDestMeta
+    pushResult('destinations', { data: [], error: null });
+    // Origin 2: destinations for IATA codes
+    pushResult('destinations', { data: [], error: null });
+    // Origin 2: getDestMeta  (may use cached from first call)
+    pushResult('destinations', { data: [], error: null });
 
     const req = makeReq({
       headers: { authorization: 'Bearer test-secret' } as any,
@@ -279,7 +335,7 @@ describe('api/prices/refresh-calendar', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     const data = (res.json as jest.Mock).mock.calls[0][0];
-    // Should pick 2 origins
+    // Should pick 2 origins (pickNextOrigins(2) in the handler)
     expect(data.origins).toHaveLength(2);
   });
 });

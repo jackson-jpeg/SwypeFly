@@ -4,12 +4,13 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts, spacing } from '../../theme/tokens';
-import { successHaptic } from '../../utils/haptics';
+import { lightHaptic, mediumHaptic, successHaptic } from '../../utils/haptics';
 import SplitFlapRow from '../board/SplitFlapRow';
 import { shareDestination } from '../../utils/share';
 import { showToast } from '../../stores/toastStore';
 import { useFilterStore } from '../../stores/filterStore';
 import PriceSparkline from './PriceSparkline';
+import ExpiryCountdown from '../common/ExpiryCountdown';
 import { getPriceConfidence, getPriceAgeLabel } from '../../utils/formatPrice';
 import type { BoardDeal } from '../../types/deal';
 
@@ -169,6 +170,7 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
   }, []);
 
   const handleShare = useCallback(async () => {
+    lightHaptic();
     const shared = await shareDestination(deal.destination, deal.country, deal.tagline, deal.id, deal.price ?? undefined);
     if (shared) showToast('Link copied!');
   }, [deal]);
@@ -286,6 +288,8 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
               </View>
             );
           })()}
+          {/* Expiry countdown — shows when offer expires within 24h */}
+          {deal.offerExpiresAt && <ExpiryCountdown expiresAt={deal.offerExpiresAt} />}
           {/* Price anchoring — usual price + savings */}
           {deal.usualPrice != null && deal.savingsAmount != null && deal.savingsAmount > 0 && (
             <View style={styles.savingsRow}>
@@ -436,7 +440,7 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
           </Pressable>
 
           <Pressable
-            onPress={onBook}
+            onPress={() => { mediumHaptic(); onBook(); }}
             style={({ pressed }) => [styles.bookBtn, pressed && styles.bookPressed]}
             accessibilityRole="button"
             accessibilityLabel={`Search flights to ${deal.destination}`}

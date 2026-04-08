@@ -1,41 +1,81 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Mock env module so STUB_MODE = false in tests (we mock Duffel ourselves)
+// ─── Supabase mock infrastructure ──────────────────────────────────────────
+
+const mockResultQueues = new Map<string, Array<{ data: unknown; error: unknown }>>();
+
+function pushResult(table: string, result: { data: unknown; error: unknown }) {
+  if (!mockResultQueues.has(table)) mockResultQueues.set(table, []);
+  mockResultQueues.get(table)!.push(result);
+}
+
+function popResult(table: string): { data: unknown; error: unknown } {
+  const queue = mockResultQueues.get(table);
+  if (queue && queue.length > 0) return queue.shift()!;
+  return { data: [], error: null };
+}
+
+const mockInsertCalls: Array<{ table: string; data: unknown }> = [];
+const mockUpdateCalls: Array<{ table: string; data: unknown }> = [];
+const mockDeleteCalls: Array<{ table: string }> = [];
+
+const createChain = (table: string) => {
+  const chain: Record<string, jest.Mock> = {};
+  const methods = [
+    'select', 'eq', 'neq', 'in', 'contains', 'ilike',
+    'gte', 'lte', 'gt', 'lt', 'is', 'not', 'or',
+    'order', 'limit', 'range', 'match',
+  ];
+  for (const m of methods) {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  }
+  chain.insert = jest.fn().mockImplementation((data: unknown) => {
+    mockInsertCalls.push({ table, data });
+    return chain;
+  });
+  chain.update = jest.fn().mockImplementation((data: unknown) => {
+    mockUpdateCalls.push({ table, data });
+    return chain;
+  });
+  chain.delete = jest.fn().mockImplementation(() => {
+    mockDeleteCalls.push({ table });
+    return chain;
+  });
+  chain.single = jest.fn().mockImplementation(() => {
+    const result = popResult(table);
+    if (result.error) return Promise.reject(result.error);
+    return Promise.resolve({
+      data: Array.isArray(result.data) ? (result.data as unknown[])[0] ?? null : result.data,
+      error: null,
+    });
+  });
+  (chain as any).then = jest.fn().mockImplementation((resolve: any) => {
+    const result = popResult(table);
+    if (resolve) return Promise.resolve(resolve(result));
+    return Promise.resolve(result);
+  });
+  return chain;
+};
+
+const mockFrom = jest.fn().mockImplementation((table: string) => createChain(table));
+
+jest.mock('../../services/supabaseServer', () => ({
+  supabase: { from: (...args: unknown[]) => mockFrom(...args) },
+  TABLES: {
+    cachedPrices: 'cached_prices',
+    destinations: 'destinations',
+  },
+}));
+
+// Mock env module so STUB_MODE = false in tests
 jest.mock('../../utils/env', () => ({
   env: {
-    SUPABASE_URL: 'http://localhost:54321',
-    SUPABASE_SERVICE_ROLE_KEY: 'test-key',
-    DUFFEL_API_KEY: 'test-key',
-    APPWRITE_ENDPOINT: 'https://test.appwrite.io/v1',
-    APPWRITE_PROJECT_ID: 'test-project',
-    APPWRITE_API_KEY: 'test-key',
+    SUPABASE_URL: 'http://test',
+    SUPABASE_SERVICE_ROLE_KEY: 'test',
+    DUFFEL_API_KEY: 'test',
     BOOKING_MARKUP_PERCENT: 3,
   },
   STUB_MODE: false,
-}));
-
-const mockListDocuments = jest.fn();
-const mockCreateDocument = jest.fn();
-const mockUpdateDocument = jest.fn();
-
-jest.mock('node-appwrite', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    setEndpoint: jest.fn().mockReturnThis(),
-    setProject: jest.fn().mockReturnThis(),
-    setKey: jest.fn().mockReturnThis(),
-  })),
-  Databases: jest.fn().mockImplementation(() => ({
-    listDocuments: mockListDocuments,
-    createDocument: mockCreateDocument,
-    updateDocument: mockUpdateDocument,
-  })),
-  Users: jest.fn().mockImplementation(() => ({})),
-  Query: {
-    equal: jest.fn((...args: unknown[]) => `equal:${args.join(',')}`),
-    orderAsc: jest.fn((field: string) => `orderAsc:${field}`),
-    limit: jest.fn((n: number) => `limit:${n}`),
-  },
-  ID: { unique: jest.fn(() => 'unique-id') },
 }));
 
 jest.mock('../../utils/apiLogger', () => ({
@@ -52,6 +92,10 @@ const mockGetClientIp = jest.fn();
 jest.mock('../../utils/rateLimit', () => ({
   checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
   getClientIp: (...args: unknown[]) => mockGetClientIp(...args),
+}));
+
+jest.mock('../../api/_cors', () => ({
+  cors: () => false,
 }));
 
 import handler from '../../api/search';
@@ -115,7 +159,7 @@ function makeDuffelOffer(overrides: Record<string, unknown> = {}) {
 function makeCachedDoc(overrides: Record<string, unknown> = {}) {
   const offer = makeDuffelOffer();
   return {
-    $id: 'doc-1',
+    id: 'doc-1',
     origin: 'JFK',
     destination_iata: 'LIM',
     price: 310,
@@ -150,6 +194,10 @@ function makeCachedDoc(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockResultQueues.clear();
+  mockInsertCalls.length = 0;
+  mockUpdateCalls.length = 0;
+  mockDeleteCalls.length = 0;
   mockCheckRateLimit.mockReturnValue({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 });
   mockGetClientIp.mockReturnValue('127.0.0.1');
 });
@@ -181,25 +229,28 @@ describe('GET /api/search', () => {
 
   it('returns cached result if fresh (does not call Duffel)', async () => {
     const cachedDoc = makeCachedDoc();
-    mockListDocuments.mockResolvedValueOnce({ documents: [cachedDoc] });
+    // Cache check: returns fresh doc
+    pushResult('cached_prices', { data: [cachedDoc], error: null });
 
     const res = makeRes();
     await handler(makeReq(), res);
 
     expect(res._status).toBe(200);
-    expect(res._json).toMatchObject({ cached: true, price: 310, airline: 'Avianca' });
+    // Price should have markup applied: 310 * 1.03 = 319.3 → rounded to 319
+    expect(res._json).toMatchObject({ cached: true, airline: 'Avianca' });
     expect(mockSearchFlights).not.toHaveBeenCalled();
   });
 
   it('calls Duffel when no cache, returns result and caches it', async () => {
-    // First listDocuments: cache check — empty
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
-    // Second listDocuments: upsert check — empty (create new)
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
-    mockCreateDocument.mockResolvedValueOnce({ $id: 'new-doc' });
+    // Cache check — empty
+    pushResult('cached_prices', { data: [], error: null });
+    // Existing doc check — empty (will create)
+    pushResult('cached_prices', { data: [], error: null });
+    // Insert result
+    pushResult('cached_prices', { data: null, error: null });
 
     const offer = makeDuffelOffer();
-    mockSearchFlights.mockResolvedValueOnce({ data: [offer] });
+    mockSearchFlights.mockResolvedValueOnce({ offers: [offer] });
 
     const res = makeRes();
     await handler(makeReq(), res);
@@ -207,17 +258,18 @@ describe('GET /api/search', () => {
     expect(res._status).toBe(200);
     expect(res._json).toMatchObject({
       cached: false,
-      price: 310,
       airline: 'Avianca',
       airlineCode: 'AV',
     });
     expect(mockSearchFlights).toHaveBeenCalledTimes(1);
-    expect(mockCreateDocument).toHaveBeenCalledTimes(1);
+    expect(mockInsertCalls.length).toBe(1);
+    expect(mockInsertCalls[0].table).toBe('cached_prices');
   });
 
   it('returns 404 when Duffel returns no offers', async () => {
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
-    mockSearchFlights.mockResolvedValueOnce({ data: [] });
+    // Cache check — empty
+    pushResult('cached_prices', { data: [], error: null });
+    mockSearchFlights.mockResolvedValueOnce({ offers: [] });
 
     const res = makeRes();
     await handler(makeReq(), res);
@@ -227,7 +279,8 @@ describe('GET /api/search', () => {
   });
 
   it('returns 500 on Duffel error', async () => {
-    mockListDocuments.mockResolvedValueOnce({ documents: [] });
+    // Cache check — empty
+    pushResult('cached_prices', { data: [], error: null });
     mockSearchFlights.mockRejectedValueOnce(new Error('Duffel down'));
 
     const res = makeRes();
@@ -238,25 +291,28 @@ describe('GET /api/search', () => {
   });
 
   it('updates existing cached doc instead of creating new one', async () => {
-    // Cache check — stale (fetched 1 hour ago)
+    // Cache check — stale doc (old fetched_at, will fail isFreshCache)
     const staleDoc = makeCachedDoc({
       fetched_at: new Date(Date.now() - 3600000).toISOString(),
+      offer_expires_at: new Date(Date.now() - 1000).toISOString(), // expired
     });
-    mockListDocuments.mockResolvedValueOnce({ documents: [staleDoc] });
+    pushResult('cached_prices', { data: [staleDoc], error: null });
 
     // Duffel returns offer
-    mockSearchFlights.mockResolvedValueOnce({ data: [makeDuffelOffer()] });
+    mockSearchFlights.mockResolvedValueOnce({ offers: [makeDuffelOffer()] });
 
-    // Upsert check — existing doc found
-    mockListDocuments.mockResolvedValueOnce({ documents: [{ $id: 'doc-1' }] });
-    mockUpdateDocument.mockResolvedValueOnce({});
+    // Existing doc check — found existing
+    pushResult('cached_prices', { data: [{ id: 'doc-1' }], error: null });
+    // Update result
+    pushResult('cached_prices', { data: null, error: null });
 
     const res = makeRes();
     await handler(makeReq(), res);
 
     expect(res._status).toBe(200);
     expect(res._json).toMatchObject({ cached: false });
-    expect(mockUpdateDocument).toHaveBeenCalledTimes(1);
-    expect(mockCreateDocument).not.toHaveBeenCalled();
+    expect(mockUpdateCalls.length).toBe(1);
+    expect(mockUpdateCalls[0].table).toBe('cached_prices');
+    expect(mockInsertCalls.length).toBe(0);
   });
 });

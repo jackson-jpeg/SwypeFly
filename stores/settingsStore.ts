@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createPersistStorage } from '../utils/storage';
 
+export type BudgetPreference = 'budget' | 'balanced' | 'premium';
+
 interface SettingsState {
   departureCode: string;
   departureCity: string;
@@ -10,6 +12,7 @@ interface SettingsState {
   notificationsEnabled: boolean;
   priceAlertsEnabled: boolean;
   hasCompletedOnboarding: boolean;
+  budgetPreference: BudgetPreference | null;
 
   setDeparture: (city: string, code: string) => void;
   setPreferredView: (view: 'swipe' | 'board') => void;
@@ -17,6 +20,7 @@ interface SettingsState {
   setNotifications: (enabled: boolean) => void;
   setPriceAlerts: (enabled: boolean) => void;
   setOnboarded: () => void;
+  setBudgetPreference: (pref: BudgetPreference) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -29,6 +33,7 @@ export const useSettingsStore = create<SettingsState>()(
       notificationsEnabled: false,
       priceAlertsEnabled: false,
       hasCompletedOnboarding: false,
+      budgetPreference: null,
 
       setDeparture: (city, code) => set({ departureCity: city, departureCode: code }),
       setPreferredView: (view) => set({ preferredView: view }),
@@ -36,6 +41,7 @@ export const useSettingsStore = create<SettingsState>()(
       setNotifications: (enabled) => set({ notificationsEnabled: enabled }),
       setPriceAlerts: (enabled) => set({ priceAlertsEnabled: enabled }),
       setOnboarded: () => set({ hasCompletedOnboarding: true }),
+      setBudgetPreference: (pref) => set({ budgetPreference: pref }),
     }),
     {
       name: 'sogojet-settings',

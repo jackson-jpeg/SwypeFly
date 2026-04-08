@@ -18,7 +18,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useSavedStore } from '../../stores/savedStore';
 import { airports, type Airport } from '../../data/airports';
 import { colors, fonts, spacing } from '../../theme/tokens';
-import { successHaptic } from '../../utils/haptics';
+import { lightHaptic, successHaptic } from '../../utils/haptics';
 import { showToast } from '../../stores/toastStore';
 import SplitFlapRow from '../../components/board/SplitFlapRow';
 
@@ -127,20 +127,20 @@ export default function SettingsScreen() {
       settings.setDeparture(airport.city, airport.code);
       setEditingAirport(false);
       setQuery('');
-      successHaptic();
+      lightHaptic();
     },
     [settings],
   );
 
   const handleViewToggle = useCallback(() => {
     settings.setPreferredView(settings.preferredView === 'swipe' ? 'board' : 'swipe');
-    successHaptic();
+    lightHaptic();
   }, [settings]);
 
   const handleUnitsToggle = useCallback(
     (metric: boolean) => {
       settings.setUsesMetric(metric);
-      successHaptic();
+      lightHaptic();
     },
     [settings],
   );
@@ -193,7 +193,13 @@ export default function SettingsScreen() {
           )}
         </View>
       ) : (
-        <Pressable style={styles.row} onPress={() => setEditingAirport(true)}>
+        <Pressable
+          style={styles.row}
+          onPress={() => setEditingAirport(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Departure airport: ${settings.departureCode}, ${settings.departureCity}`}
+          accessibilityHint="Tap to change departure airport"
+        >
           <View>
             <Text style={styles.rowLabel}>Departure Airport</Text>
             <Text style={styles.rowHint}>Deals are priced from this city</Text>
@@ -216,7 +222,12 @@ export default function SettingsScreen() {
 
       {/* ── Display ── */}
       <Text style={styles.sectionLabel}>DISPLAY</Text>
-      <Pressable style={styles.row} onPress={handleViewToggle}>
+      <Pressable
+        style={styles.row}
+        onPress={handleViewToggle}
+        accessibilityRole="button"
+        accessibilityLabel={`Default view: ${settings.preferredView}. Tap to switch to ${settings.preferredView === 'swipe' ? 'board' : 'swipe'}`}
+      >
         <View>
           <Text style={styles.rowLabel}>Default View</Text>
           <Text style={styles.rowHint}>How deals appear on the home tab</Text>
@@ -254,6 +265,9 @@ export default function SettingsScreen() {
           <Pressable
             style={[styles.pill, !settings.usesMetric && styles.pillActive]}
             onPress={() => handleUnitsToggle(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Use Fahrenheit and miles"
+            accessibilityState={{ selected: !settings.usesMetric }}
           >
             <Text style={[styles.pillText, !settings.usesMetric && styles.pillTextActive]}>
               °F / mi
@@ -262,6 +276,9 @@ export default function SettingsScreen() {
           <Pressable
             style={[styles.pill, settings.usesMetric && styles.pillActive]}
             onPress={() => handleUnitsToggle(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Use Celsius and kilometers"
+            accessibilityState={{ selected: settings.usesMetric }}
           >
             <Text style={[styles.pillText, settings.usesMetric && styles.pillTextActive]}>
               °C / km
@@ -279,9 +296,12 @@ export default function SettingsScreen() {
         </View>
         <Switch
           value={settings.notificationsEnabled}
-          onValueChange={settings.setNotifications}
+          onValueChange={(v) => { lightHaptic(); settings.setNotifications(v); }}
           trackColor={{ false: colors.cell, true: colors.green + '80' }}
           thumbColor={settings.notificationsEnabled ? colors.green : colors.muted}
+          accessibilityRole="switch"
+          accessibilityLabel="Push notifications"
+          accessibilityState={{ checked: settings.notificationsEnabled }}
         />
       </View>
       <View style={styles.row}>
@@ -291,9 +311,12 @@ export default function SettingsScreen() {
         </View>
         <Switch
           value={settings.priceAlertsEnabled}
-          onValueChange={settings.setPriceAlerts}
+          onValueChange={(v) => { lightHaptic(); settings.setPriceAlerts(v); }}
           trackColor={{ false: colors.cell, true: colors.green + '80' }}
           thumbColor={settings.priceAlertsEnabled ? colors.green : colors.muted}
+          accessibilityRole="switch"
+          accessibilityLabel="Price alerts"
+          accessibilityState={{ checked: settings.priceAlertsEnabled }}
         />
       </View>
 
@@ -302,6 +325,9 @@ export default function SettingsScreen() {
       <Pressable
         style={styles.row}
         onPress={() => router.push('/social/leaderboard')}
+        accessibilityRole="button"
+        accessibilityLabel="View leaderboard"
+        accessibilityHint="Top deal hunters ranked by savings"
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
           <Ionicons name="trophy-outline" size={18} color={colors.yellow} />
@@ -322,6 +348,9 @@ export default function SettingsScreen() {
           successHaptic();
           showToast('Saved flights cleared');
         }}
+        accessibilityRole="button"
+        accessibilityLabel="Clear saved flights"
+        accessibilityHint="Removes all saved flights"
       >
         <Text style={styles.rowLabel}>Clear Saved Flights</Text>
         <Ionicons name="trash-outline" size={18} color="#E85D4A" />
@@ -335,6 +364,8 @@ export default function SettingsScreen() {
           const url = 'https://sogojet.com/privacy';
           if (Platform.OS === 'web') { window.open(url, '_blank'); } else { Linking.openURL(url); }
         }}
+        accessibilityRole="link"
+        accessibilityLabel="Privacy policy"
       >
         <Text style={styles.rowLabel}>Privacy Policy</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.faint} />
@@ -345,6 +376,8 @@ export default function SettingsScreen() {
           const url = 'https://sogojet.com/terms';
           if (Platform.OS === 'web') { window.open(url, '_blank'); } else { Linking.openURL(url); }
         }}
+        accessibilityRole="link"
+        accessibilityLabel="Terms of service"
       >
         <Text style={styles.rowLabel}>Terms of Service</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.faint} />
@@ -355,6 +388,8 @@ export default function SettingsScreen() {
           const url = 'mailto:hello@sogojet.com';
           if (Platform.OS === 'web') { window.open(url); } else { Linking.openURL(url); }
         }}
+        accessibilityRole="link"
+        accessibilityLabel="Contact us via email"
       >
         <Text style={styles.rowLabel}>Contact</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.faint} />
