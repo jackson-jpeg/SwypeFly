@@ -160,6 +160,70 @@ describe('updateRouteStats', () => {
     expect(result.last30dAvg).toBe(800);
     expect(result.lastUpdated).toBeDefined();
   });
+
+  it('updates existing route with a lower price observation', async () => {
+    // Bootstrap first
+    await updateRouteStats('SFO', 'NRT', 800);
+    // Now update with a lower price — should nudge percentiles down
+    const result = await updateRouteStats('SFO', 'NRT', 500);
+    expect(result.sampleCount).toBe(2);
+    expect(result.minPriceEver).toBe(500);
+    expect(result.maxPriceEver).toBe(800);
+    // Median should nudge toward the new price
+    expect(result.medianPrice).toBeLessThan(800);
+    expect(result.medianPrice).toBeGreaterThan(500);
+    // p20 and p5 should nudge down since 500 < median
+    expect(result.p20Price).toBeLessThanOrEqual(result.medianPrice);
+    expect(result.p5Price).toBeLessThanOrEqual(result.p20Price);
+  });
+
+  it('updates existing route with a higher price observation', async () => {
+    await updateRouteStats('LAX', 'LHR', 600);
+    const result = await updateRouteStats('LAX', 'LHR', 1200);
+    expect(result.sampleCount).toBe(2);
+    expect(result.minPriceEver).toBe(600);
+    expect(result.maxPriceEver).toBe(1200);
+    // p80 should nudge up since 1200 > median
+    expect(result.p80Price).toBeGreaterThanOrEqual(result.medianPrice);
+  });
+
+  it('maintains ordering invariant p5 <= p20 <= median <= p80', async () => {
+    await updateRouteStats('JFK', 'BCN', 500);
+    // Send several updates to shake things up
+    await updateRouteStats('JFK', 'BCN', 100);
+    await updateRouteStats('JFK', 'BCN', 2000);
+    await updateRouteStats('JFK', 'BCN', 300);
+    const result = await updateRouteStats('JFK', 'BCN', 800);
+
+    expect(result.p5Price).toBeLessThanOrEqual(result.p20Price);
+    expect(result.p20Price).toBeLessThanOrEqual(result.medianPrice);
+    expect(result.p80Price).toBeGreaterThanOrEqual(result.medianPrice);
+  });
+
+  it('tracks minPriceEver and maxPriceEver across observations', async () => {
+    await updateRouteStats('TPA', 'CDG', 700);
+    await updateRouteStats('TPA', 'CDG', 400);
+    await updateRouteStats('TPA', 'CDG', 1100);
+    const result = await updateRouteStats('TPA', 'CDG', 600);
+
+    expect(result.minPriceEver).toBe(400);
+    expect(result.maxPriceEver).toBe(1100);
+    expect(result.sampleCount).toBe(4);
+  });
+
+  it('handles many consecutive updates without crash', async () => {
+    await updateRouteStats('ORD', 'NRT', 900);
+    for (let i = 0; i < 20; i++) {
+      const price = 500 + Math.floor(Math.random() * 800);
+      await updateRouteStats('ORD', 'NRT', price);
+    }
+    const result = await updateRouteStats('ORD', 'NRT', 700);
+    expect(result.sampleCount).toBe(22);
+    // Ordering invariant should still hold
+    expect(result.p5Price).toBeLessThanOrEqual(result.p20Price);
+    expect(result.p20Price).toBeLessThanOrEqual(result.medianPrice);
+    expect(result.p80Price).toBeGreaterThanOrEqual(result.medianPrice);
+  });
 });
 
 // ─── bulkGetRouteStats ──────────────────────────────────────────────
@@ -174,6 +238,43 @@ describe('bulkGetRouteStats', () => {
     const result = await bulkGetRouteStats('JFK');
     expect(result).toBeInstanceOf(Map);
     expect(result.size).toBe(0);
+  });
+
+  it('returns stats map when data exists', async () => {
+    // Mock supabase to return some stats
+    const fromSpy = supabase.from as jest.Mock;
+    const mockChain: Record<string, jest.Mock> = {};
+    const methods = ['select', 'eq', 'limit', 'order', 'gt', 'range'];
+    for (const m of methods) {
+      mockChain[m] = jest.fn().mockReturnValue(mockChain);
+    }
+    (mockChain as any).then = jest.fn().mockImplementation((resolve: any) => {
+      return Promise.resolve(resolve({
+        data: [{
+          route_key: 'JFK-CDG',
+          origin: 'JFK',
+          destination_iata: 'CDG',
+          median_price: 500,
+          p20_price: 350,
+          p5_price: 250,
+          p80_price: 700,
+          min_price_ever: 200,
+          max_price_ever: 1200,
+          sample_count: 50,
+          last_30d_avg: 480,
+          last_updated: '2026-04-01T00:00:00Z',
+        }],
+        error: null,
+      }));
+    });
+    fromSpy.mockReturnValueOnce(mockChain);
+
+    const result = await bulkGetRouteStats('JFK');
+    expect(result.size).toBe(1);
+    const stats = result.get('JFK-CDG');
+    expect(stats).toBeDefined();
+    expect(stats!.medianPrice).toBe(500);
+    expect(stats!.sampleCount).toBe(50);
   });
 });
 
