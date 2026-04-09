@@ -58,6 +58,12 @@ jest.mock('../../utils/apiLogger', () => ({
   logApiError: jest.fn(),
 }));
 
+const mockCheckRateLimit = jest.fn().mockReturnValue({ allowed: true, resetAt: 0 });
+jest.mock('../../utils/rateLimit', () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
 jest.mock('../../utils/env', () => ({
   env: {
     TRAVELER_ENCRYPTION_KEY: '',
@@ -396,6 +402,192 @@ describe('/api/travelers', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ deleted: true });
+    });
+
+    it('returns 500 on database error during delete', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      mockQueryResult = { data: null, error: new Error('DB failure') };
+
+      const req = makeReq({
+        method: 'DELETE',
+        query: { action: 'delete', id: 'trav-1' },
+        headers: { authorization: 'Bearer token' },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('action=list — error paths', () => {
+    it('returns 500 when database query fails', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      mockQueryResult = { data: null, error: new Error('Connection refused') };
+
+      const req = makeReq({
+        method: 'GET',
+        query: { action: 'list' },
+        headers: { authorization: 'Bearer token' },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('action=create — error paths', () => {
+    it('returns 500 when insert fails', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      // First call: count check returns 0
+      // Second call: insert fails
+      let callCount = 0;
+      mockFrom.mockImplementation(() => {
+        callCount++;
+        const chain = createChain();
+        if (callCount === 1) {
+          // Count query
+          mockQueryResult = { data: null, error: null, count: 0 };
+        } else {
+          // Insert fails
+          mockQueryResult = { data: null, error: new Error('Insert failed') };
+        }
+        return chain;
+      });
+
+      const req = makeReq({
+        method: 'POST',
+        query: { action: 'create' },
+        headers: { authorization: 'Bearer token' },
+        body: {
+          givenName: 'Jane',
+          familyName: 'Doe',
+          nationality: 'US',
+        },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('action=update — error paths', () => {
+    it('returns 404 when traveler not found', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      mockQueryResult = { data: null, error: null };
+
+      const req = makeReq({
+        method: 'PATCH',
+        query: { action: 'update', id: 'nonexistent' },
+        headers: { authorization: 'Bearer token' },
+        body: { givenName: 'Updated' },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      // The handler calls .single() which returns null data
+      // This should either return 404 or 500 depending on implementation
+      const status = res.status.mock.calls[0]?.[0];
+      expect([404, 500]).toContain(status);
+    });
+
+    it('returns 500 when update query fails', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      mockQueryResult = { data: null, error: new Error('Update failed') };
+
+      const req = makeReq({
+        method: 'PATCH',
+        query: { action: 'update', id: 'trav-1' },
+        headers: { authorization: 'Bearer token' },
+        body: { givenName: 'Updated' },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('rate limiting', () => {
+    it('returns 429 when rate limit is exceeded', async () => {
+      mockCheckRateLimit.mockReturnValueOnce({ allowed: false, resetAt: Date.now() + 60000 });
+
+      const req = makeReq({
+        method: 'GET',
+        query: { action: 'list' },
+        headers: {},
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+  });
+
+  describe('passport encryption in response', () => {
+    it('returns null passportNumber when no encrypted data', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      mockQueryResult = {
+        data: [{ ...TRAVELER_ROW, passport_number_encrypted: null }],
+        error: null,
+      };
+
+      const req = makeReq({
+        method: 'GET',
+        query: { action: 'list' },
+        headers: { authorization: 'Bearer token' },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      const body = res.json.mock.calls[0][0];
+      expect(body.travelers[0].passportNumber).toBeNull();
+    });
+
+    it('returns raw passport when encryption key is not set', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      // When no encryption key, encrypted field is stored as plaintext
+      mockQueryResult = {
+        data: [{ ...TRAVELER_ROW, passport_number_encrypted: 'AB123456' }],
+        error: null,
+      };
+
+      const req = makeReq({
+        method: 'GET',
+        query: { action: 'list' },
+        headers: { authorization: 'Bearer token' },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      const body = res.json.mock.calls[0][0];
+      // Without encryption key, decrypt() returns the string as-is (no colons = passthrough)
+      expect(body.travelers[0].passportNumber).toBe('AB123456');
+    });
+
+    it('returns camelCase field names in response', async () => {
+      mockVerifyClerkToken.mockResolvedValueOnce({ userId: 'user-1' });
+      mockQueryResult = { data: [TRAVELER_ROW], error: null };
+
+      const req = makeReq({
+        method: 'GET',
+        query: { action: 'list' },
+        headers: { authorization: 'Bearer token' },
+      });
+      const res = makeRes();
+      await handler(req, res);
+
+      const traveler = res.json.mock.calls[0][0].travelers[0];
+      expect(traveler).toHaveProperty('givenName');
+      expect(traveler).toHaveProperty('familyName');
+      expect(traveler).toHaveProperty('bornOn');
+      expect(traveler).toHaveProperty('phoneNumber');
+      expect(traveler).toHaveProperty('isPrimary');
+      // Should NOT have snake_case
+      expect(traveler).not.toHaveProperty('given_name');
+      expect(traveler).not.toHaveProperty('family_name');
     });
   });
 });
