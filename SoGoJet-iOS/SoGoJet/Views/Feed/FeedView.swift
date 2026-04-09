@@ -72,6 +72,8 @@ struct FeedView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.sm)
                 .background(Color.sgOrange.opacity(0.85))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(String(localized: "feed.offline_banner"))
             }
         }
         .task {
@@ -629,6 +631,8 @@ struct FeedView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "feed.clear_filters"))
+                    .accessibilityHint(String(localized: "feed.clear_filters.hint"))
                 }
 
                 // Nearby airports (only when no error — not helpful during network failures)
@@ -673,6 +677,7 @@ struct FeedView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "feed.error.retry"))
             }
             .padding(.horizontal, Spacing.md)
             .padding(.top, Spacing.xl)
@@ -718,11 +723,14 @@ struct FeedView: View {
                     .background(Color.sgYellow, in: Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "feed.refresh_deals"))
 
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.sgBg)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "feed.end.title"))
     }
 
     // MARK: - Actions
@@ -901,6 +909,7 @@ private struct NearbyAirportButton: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Try \(code) airport")
     }
 }
 

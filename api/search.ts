@@ -124,12 +124,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (cacheError) throw cacheError;
 
     if ((cachedDocs ?? []).length > 0 && isFreshCache(cachedDocs![0])) {
+      res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=60');
       return res.status(200).json(buildResponse(cachedDocs![0], true));
     }
 
     // If we have any cached data (even stale), return it when Duffel is unavailable
     if (STUB_MODE) {
       if ((cachedDocs ?? []).length > 0) {
+        res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=60');
         return res.status(200).json(buildResponse(cachedDocs![0], true));
       }
       return sendError(res, 404, 'NOT_FOUND', 'No flights found (search unavailable)');
@@ -199,6 +201,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Build response from the fresh data
     const responseDoc = { ...docData };
+    res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=60');
     return res.status(200).json(buildResponse(responseDoc, false));
   } catch (err) {
     logApiError('search', err);

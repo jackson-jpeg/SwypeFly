@@ -754,6 +754,16 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
     try {
       const { getOffer } = await import('../services/duffel.js');
       const offer = await getOffer(v.data.offerId);
+
+      // Check offer expiry before proceeding with payment
+      if (offer.expires_at) {
+        const expiresAt = new Date(offer.expires_at).getTime();
+        if (expiresAt < Date.now()) {
+          console.warn(`[booking/payment-intent] Offer ${v.data.offerId} expired at ${offer.expires_at}`);
+          return sendError(res, 410, 'OFFER_EXPIRED', 'This offer has expired. Please search again for current prices.');
+        }
+      }
+
       const duffelTotal = parseFloat(offer.total_amount) || 0;
       // Apply the same markup the client should have seen
       const expectedTotal = duffelTotal + Math.round(duffelTotal * (BOOKING_MARKUP_PERCENT / 100));
@@ -791,7 +801,7 @@ async function handlePaymentIntent(req: VercelRequest, res: VercelResponse) {
     logApiError('api/booking/payment-intent', err);
     const detail = getErrorMessage(err);
     console.error('[booking/payment-intent] Error detail:', detail);
-    return sendError(res, 500, 'INTERNAL_ERROR', `Payment intent failed: ${detail}`);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Payment setup failed. Please try again.');
   }
 }
 
@@ -814,6 +824,27 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     const v = validateRequest(createOrderSchema, req.body);
     if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
 
+    // Idempotency: check if this paymentIntentId has already been used for a booking
+    try {
+      const { data: existingBooking } = await supabase
+        .from(TABLES.bookings)
+        .select('id, booking_reference, status')
+        .eq('stripe_payment_intent_id', v.data.paymentIntentId)
+        .limit(1)
+        .single();
+      if (existingBooking) {
+        console.warn(`[booking/create-order] Duplicate submission for paymentIntentId ${v.data.paymentIntentId} — returning existing booking ${existingBooking.id}`);
+        return res.status(200).json({
+          orderId: existingBooking.id,
+          bookingReference: existingBooking.booking_reference ?? '',
+          status: existingBooking.status ?? 'confirmed',
+          duplicate: true,
+        });
+      }
+    } catch {
+      // .single() throws when 0 rows — that's the expected happy path (no duplicate)
+    }
+
     // Verify payment was actually completed before creating a real ticket
     try {
       const { getPaymentIntent } = await import('../services/stripe.js');
@@ -821,6 +852,12 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
       if (paymentIntent.status !== 'succeeded') {
         console.warn(`[booking/create-order] Payment not completed: ${paymentIntent.status}`);
         return sendError(res, 402, 'PAYMENT_REQUIRED', 'Payment required. Please complete payment before booking.');
+      }
+      // Verify the payment intent's offerId matches the request's offerId (prevents reuse)
+      const piOfferId = paymentIntent.metadata?.offerId;
+      if (piOfferId && piOfferId !== v.data.offerId) {
+        console.warn(`[booking/create-order] Payment intent offerId mismatch: PI=${piOfferId}, request=${v.data.offerId}`);
+        return sendError(res, 400, 'PAYMENT_MISMATCH', 'Payment was created for a different offer. Please start a new checkout.');
       }
     } catch (stripeErr: unknown) {
       console.warn(`[booking/create-order] Stripe verification failed: ${getErrorMessage(stripeErr)}`);
@@ -865,17 +902,34 @@ async function handleCreateOrder(req: VercelRequest, res: VercelResponse) {
     } catch (_e) {
       // Non-fatal: fall back to USD if offer can't be re-fetched at this stage
     }
-    // Use offer total from the request body (payment intent may not be confirmed yet)
-    const paymentAmount = v.data.amount ? (v.data.amount / 100).toFixed(2) : '0.00';
+
+    // Check offer expiry before creating the Duffel order
+    if (offerCheck?.expires_at) {
+      const expiresAt = new Date(offerCheck.expires_at).getTime();
+      if (expiresAt < Date.now()) {
+        await refundPaymentIntent(v.data.paymentIntentId);
+        console.warn(`[booking/create-order] Offer ${activeOfferId} expired at ${offerCheck.expires_at} — refunded ${v.data.paymentIntentId}`);
+        return sendError(res, 410, 'OFFER_EXPIRED', 'This offer has expired. You have been refunded. Please search again.');
+      }
+    }
+
+    // Use offer total from Duffel for Duffel payment, apply markup for comparison
+    const duffelBasePrice = offerCheck ? parseFloat(offerCheck.total_amount) || 0 : 0;
+    const expectedMarkedUp = duffelBasePrice + Math.round(duffelBasePrice * (BOOKING_MARKUP_PERCENT / 100));
+    // Client amount (from the Stripe payment intent, in cents → dollars)
+    const clientPaidDollars = v.data.amount ? v.data.amount / 100 : 0;
     const paymentCurrency = offerCheck?.total_currency || 'USD'; // From Duffel, not client
+    // Duffel expects the base (non-marked-up) price
+    const paymentAmount = duffelBasePrice > 0 ? duffelBasePrice.toFixed(2) : (clientPaidDollars > 0 ? clientPaidDollars.toFixed(2) : '0.00');
 
     // Re-verify offer price before creating order — catch last-second price changes
-    if (offerCheck && Math.abs(parseFloat(offerCheck.total_amount) - parseFloat(paymentAmount)) > 1) {
+    // Compare the marked-up Duffel price against what the client actually paid
+    if (offerCheck && clientPaidDollars > 0 && Math.abs(expectedMarkedUp - clientPaidDollars) > 1) {
       // Price changed since payment was created — refund and tell client
       await refundPaymentIntent(v.data.paymentIntentId);
-      console.warn(`[booking/create-order] Price changed: offer=$${offerCheck.total_amount}, payment=$${paymentAmount} — refunded ${v.data.paymentIntentId}`);
+      console.warn(`[booking/create-order] Price changed: offer=$${duffelBasePrice} (marked up=$${expectedMarkedUp}), paid=$${clientPaidDollars} — refunded ${v.data.paymentIntentId}`);
       return sendError(res, 409, 'PRICE_CHANGED', 'Price changed since payment was initiated. You have been refunded.', {
-        detail: JSON.stringify({ newPrice: offerCheck.total_amount }),
+        detail: JSON.stringify({ newPrice: expectedMarkedUp }),
       });
     }
 
@@ -1138,13 +1192,15 @@ async function handleDuffelWebhook(req: VercelRequest, res: VercelResponse) {
   // Read raw body for signature verification
   const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
-  // Verify webhook signature
+  // Verify webhook signature using constant-time comparison to prevent timing attacks
   const crypto = await import('crypto');
   const expected = crypto
     .createHmac('sha256', DUFFEL_WEBHOOK_SECRET)
     .update(rawBody)
     .digest('hex');
-  if (signature !== expected) {
+  const sigBuf = Buffer.from(signature, 'utf8');
+  const expBuf = Buffer.from(expected, 'utf8');
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
     console.warn('[booking/duffel-webhook] Invalid signature');
     return sendError(res, 401, 'UNAUTHORIZED', 'Invalid webhook signature');
   }
@@ -1534,6 +1590,27 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
     const user = await verifyUser(jwt);
     if (!user) return sendError(res, 401, 'UNAUTHORIZED', 'Invalid session');
 
+    // Idempotency: check if this paymentIntentId has already been used
+    try {
+      const { data: existingBooking } = await supabase
+        .from(TABLES.bookings)
+        .select('id, booking_reference, status')
+        .eq('stripe_payment_intent_id', v.data.paymentIntentId)
+        .limit(1)
+        .single();
+      if (existingBooking) {
+        console.warn(`[booking/hotel-book] Duplicate submission for paymentIntentId ${v.data.paymentIntentId}`);
+        return res.status(200).json({
+          bookingId: existingBooking.id,
+          confirmationReference: existingBooking.booking_reference ?? '',
+          status: existingBooking.status ?? 'confirmed',
+          duplicate: true,
+        });
+      }
+    } catch {
+      // .single() throws when 0 rows — expected happy path
+    }
+
     // Verify Stripe payment
     const { getPaymentIntent } = await import('../services/stripe.js');
     const paymentIntent = await getPaymentIntent(v.data.paymentIntentId);
@@ -1542,13 +1619,29 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
     }
 
     const { createStaysBooking } = await import('../services/duffel.js');
-    const booking = await createStaysBooking({
-      quoteId: v.data.quoteId,
-      guestName: v.data.guestName,
-      guestEmail: v.data.guestEmail,
-      paymentAmount: (paymentIntent.amount / 100).toFixed(2),
-      paymentCurrency: paymentIntent.currency.toUpperCase(),
-    });
+    const { refundPaymentIntent } = await import('../services/stripe.js');
+
+    // Wrap post-payment section — any failure triggers a refund
+    let booking;
+    try {
+      booking = await createStaysBooking({
+        quoteId: v.data.quoteId,
+        guestName: v.data.guestName,
+        guestEmail: v.data.guestEmail,
+        paymentAmount: (paymentIntent.amount / 100).toFixed(2),
+        paymentCurrency: paymentIntent.currency.toUpperCase(),
+      });
+    } catch (duffelErr: unknown) {
+      // Duffel booking failed after payment succeeded — refund the customer
+      try {
+        await refundPaymentIntent(v.data.paymentIntentId);
+        console.error(`[booking/hotel-book] Refunded ${v.data.paymentIntentId} after Duffel failure:`, duffelErr);
+      } catch (refundErr: unknown) {
+        console.error(`[booking/hotel-book] CRITICAL: Refund FAILED for ${v.data.paymentIntentId}: ${getErrorMessage(refundErr)}`);
+        logApiError('api/booking/hotel-book-refund-failed', refundErr);
+      }
+      throw duffelErr;
+    }
 
     // Save booking record to Supabase
     const { error: hotelInsertErr } = await supabase
@@ -1575,7 +1668,7 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
     logApiError('api/booking/hotel-book', err);
     const detail = getErrorDetail(err);
     console.error('[booking/hotel-book] Error detail:', detail);
-    return sendError(res, 500, 'INTERNAL_ERROR', `Hotel booking failed: ${detail}`);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Hotel booking failed. If you were charged, a refund has been initiated.');
   }
 }
 

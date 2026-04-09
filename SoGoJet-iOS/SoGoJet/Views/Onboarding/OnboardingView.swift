@@ -120,7 +120,7 @@ struct OnboardingView: View {
                 staggerMs: 50
             )
 
-            Text("Find cheap flights.\nSwipe, save, book.")
+            Text(String(localized: "auth.tagline"))
                 .font(SGFont.body(size: 17))
                 .foregroundStyle(Color.sgWhiteDim)
                 .lineSpacing(4)
@@ -132,7 +132,7 @@ struct OnboardingView: View {
 
     private var dealPreview: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text(liveShowcases != nil ? "LIVE DEALS" : "SAMPLE DEALS")
+            Text(liveShowcases != nil ? String(localized: "onboarding.live_deals") : String(localized: "onboarding.sample_deals"))
                 .font(SGFont.bodyBold(size: 11))
                 .foregroundStyle(Color.sgMuted)
                 .tracking(1.4)
@@ -160,7 +160,7 @@ struct OnboardingView: View {
                         staggerMs: 50
                     )
 
-                    Text("from \(settings.departureCode)")
+                    Text(String(format: String(localized: "onboarding.from_airport"), settings.departureCode))
                         .font(SGFont.body(size: 13))
                         .foregroundStyle(Color.sgMuted)
                 }
@@ -200,7 +200,7 @@ struct OnboardingView: View {
 
     private var airportSelection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("WHERE DO YOU FLY FROM?")
+            Text(String(localized: "onboarding.where_fly_from"))
                 .font(SGFont.bodyBold(size: 11))
                 .foregroundStyle(Color.sgMuted)
                 .tracking(1.4)
@@ -242,7 +242,7 @@ struct OnboardingView: View {
     private var signInOptions: some View {
         VStack(spacing: 8) {
             if !auth.isAuthenticated {
-                Text("Sign in to book flights and save across devices")
+                Text(String(localized: "onboarding.sign_in_subtitle"))
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
 
@@ -332,7 +332,7 @@ struct OnboardingView: View {
     private var getStartedButton: some View {
         VStack(spacing: 6) {
             if settings.departureCode.isEmpty {
-                Text("Select your departure airport above")
+                Text(String(localized: "onboarding.select_departure"))
                     .font(SGFont.body(size: 13))
                     .foregroundStyle(Color.sgOrange)
             }
@@ -343,7 +343,7 @@ struct OnboardingView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "airplane.departure")
-                    Text("Start Exploring")
+                    Text(String(localized: "onboarding.start_exploring"))
                         .font(SGFont.bodyBold(size: 17))
                 }
                 .foregroundStyle(Color.sgBg)

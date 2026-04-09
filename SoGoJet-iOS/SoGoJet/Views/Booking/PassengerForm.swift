@@ -19,6 +19,7 @@ struct PassengerForm: View {
     @State private var nationality = "US"
     @State private var hasSeededState = false
     @State private var hasAttemptedSubmit = false
+    @State private var visitedFields: Set<FormField> = []
     @FocusState private var focusedField: FormField?
 
     private enum FormField: Hashable {
@@ -33,6 +34,7 @@ struct PassengerForm: View {
             && phone.trimmingCharacters(in: .whitespacesAndNewlines).count >= 5
             && dateOfBirth < Date()
             && dobWasChanged
+            && isMinimumAge(dateOfBirth)
             && gender != .notSpecified
 
         // International flights require passport details
@@ -66,7 +68,25 @@ struct PassengerForm: View {
     }
 
     private var isDobInvalid: Bool {
-        !dobWasChanged
+        !dobWasChanged || !isMinimumAge(dateOfBirth)
+    }
+
+    private var dobErrorMessage: String {
+        if !dobWasChanged { return "Select your date of birth" }
+        if !isMinimumAge(dateOfBirth) { return "Passenger must be at least 2 years old" }
+        return ""
+    }
+
+    private var isUnder18: Bool {
+        let calendar = Calendar.current
+        guard let cutoff = calendar.date(byAdding: .year, value: -18, to: Date()) else { return false }
+        return dateOfBirth > cutoff
+    }
+
+    private func isMinimumAge(_ dob: Date) -> Bool {
+        let calendar = Calendar.current
+        guard let twoYearsAgo = calendar.date(byAdding: .year, value: -2, to: Date()) else { return false }
+        return dob <= twoYearsAgo
     }
 
     private var isGenderInvalid: Bool {
@@ -111,6 +131,11 @@ struct PassengerForm: View {
                 .font(SGFont.bodyBold(size: 16))
                 .foregroundStyle(Color.sgYellow)
                 .accessibilityLabel("Dismiss keyboard")
+            }
+        }
+        .onChange(of: focusedField) { oldField, _ in
+            if let old = oldField {
+                visitedFields.insert(old)
             }
         }
         .onAppear {
@@ -158,6 +183,7 @@ struct PassengerForm: View {
                     .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
             )
         }
+        .accessibilityLabel(String(localized: "passenger.use_saved_traveler", defaultValue: "Use saved traveler"))
     }
 
     private func loadTraveler(_ traveler: SavedTraveler) {
@@ -265,8 +291,9 @@ struct PassengerForm: View {
                         .focused($focusedField, equals: .givenName)
                         .submitLabel(.next)
                         .onSubmit { focusedField = .familyName }
+                        .accessibilityLabel(String(localized: "passenger.first_name"))
                 }
-                validationError("First name is required", show: hasAttemptedSubmit && isGivenNameInvalid)
+                validationError("First name is required", show: (hasAttemptedSubmit || visitedFields.contains(.givenName)) && isGivenNameInvalid)
 
                 fieldShell(label: "Family name", hint: "Last name as shown on your ID.") {
                     TextField("", text: $familyName, prompt: Text("Morgan").foregroundStyle(Color.sgMuted))
@@ -277,8 +304,9 @@ struct PassengerForm: View {
                         .focused($focusedField, equals: .familyName)
                         .submitLabel(.next)
                         .onSubmit { focusedField = .email }
+                        .accessibilityLabel(String(localized: "passenger.last_name"))
                 }
-                validationError("Last name is required", show: hasAttemptedSubmit && isFamilyNameInvalid)
+                validationError("Last name is required", show: (hasAttemptedSubmit || visitedFields.contains(.familyName)) && isFamilyNameInvalid)
 
                 HStack(alignment: .top, spacing: Spacing.md) {
                     VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -295,10 +323,17 @@ struct PassengerForm: View {
                                 RoundedRectangle(cornerRadius: Radius.md)
                                     .strokeBorder(Color.sgBorder, lineWidth: 1)
                             )
+                            .accessibilityLabel(String(localized: "passenger.dob"))
                             .onChange(of: dateOfBirth) { _, _ in
                                 dobWasChanged = true
                             }
-                        validationError("Select your date of birth", show: hasAttemptedSubmit && isDobInvalid)
+                        validationError(dobErrorMessage, show: hasAttemptedSubmit && isDobInvalid)
+                        if dobWasChanged && isUnder18 && !isDobInvalid {
+                            Text("Passenger is under 18 — an adult must also travel")
+                                .font(SGFont.body(size: 12))
+                                .foregroundStyle(.orange)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -346,6 +381,7 @@ struct PassengerForm: View {
                         .focused($focusedField, equals: .passportNumber)
                         .submitLabel(.next)
                         .onSubmit { focusedField = .nationality }
+                        .accessibilityLabel(String(localized: "passenger.passport"))
                 }
 
                 HStack(alignment: .top, spacing: Spacing.md) {
@@ -363,6 +399,7 @@ struct PassengerForm: View {
                                 RoundedRectangle(cornerRadius: Radius.md)
                                     .strokeBorder(Color.sgBorder, lineWidth: 1)
                             )
+                            .accessibilityLabel(String(localized: "passenger.passport_expiry"))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -374,6 +411,7 @@ struct PassengerForm: View {
                             .focused($focusedField, equals: .nationality)
                             .submitLabel(.next)
                             .onSubmit { focusedField = .email }
+                            .accessibilityLabel(String(localized: "passenger.nationality"))
                     }
                 }
             }
@@ -398,8 +436,9 @@ struct PassengerForm: View {
                         .focused($focusedField, equals: .email)
                         .submitLabel(.next)
                         .onSubmit { focusedField = .phone }
+                        .accessibilityLabel(String(localized: "passenger.email"))
                 }
-                validationError("Enter a valid email address", show: hasAttemptedSubmit && isEmailInvalid)
+                validationError("Enter a valid email address", show: (hasAttemptedSubmit || visitedFields.contains(.email)) && isEmailInvalid)
 
                 fieldShell(label: "Phone", hint: "A mobile number is best for airline updates.") {
                     TextField("", text: $phone, prompt: Text("+1 555 000 0000").foregroundStyle(Color.sgMuted))
@@ -407,8 +446,9 @@ struct PassengerForm: View {
                         .keyboardType(.phonePad)
                         .foregroundStyle(Color.sgWhite)
                         .focused($focusedField, equals: .phone)
+                        .accessibilityLabel(String(localized: "passenger.phone"))
                 }
-                validationError("Enter a valid phone number", show: hasAttemptedSubmit && isPhoneInvalid)
+                validationError("Enter a valid phone number", show: (hasAttemptedSubmit || visitedFields.contains(.phone)) && isPhoneInvalid)
             }
         }
     }
@@ -444,11 +484,13 @@ struct PassengerForm: View {
         VStack(spacing: Spacing.sm) {
             Button {
                 if isValid {
+                    HapticEngine.success()
                     applyToStore()
                     Task {
                         await store.proceedToSeats()
                     }
                 } else {
+                    HapticEngine.error()
                     hasAttemptedSubmit = true
                 }
             } label: {

@@ -26,7 +26,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 // Header
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text("Settings")
+                    Text(String(localized: "settings.title"))
                         .font(SGFont.cardTitle)
                         .foregroundStyle(Color.sgWhite)
                     Text("v\(appVersion)")
@@ -58,14 +58,14 @@ struct SettingsView: View {
         .background(Color.sgBg)
         .navigationTitle("")
         .navigationBarHidden(true)
-        .alert("Clear Saved Flights", isPresented: $showClearConfirmation) {
-            Button("Clear All", role: .destructive) {
+        .alert(String(localized: "settings.clear_saved.title"), isPresented: $showClearConfirmation) {
+            Button(String(localized: "settings.clear_all"), role: .destructive) {
                 HapticEngine.heavy()
                 savedStore.clear()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "common.cancel"), role: .cancel) {}
         } message: {
-            Text("This will remove all \(savedStore.count) saved flights. This cannot be undone.")
+            Text(String(format: String(localized: "settings.clear_saved.message"), savedStore.count))
         }
     }
 
@@ -73,7 +73,7 @@ struct SettingsView: View {
 
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Account")
+            Text(String(localized: "settings.account"))
                 .font(SGFont.bodyBold(size: 16))
                 .foregroundStyle(Color.sgWhite)
 
@@ -86,13 +86,13 @@ struct SettingsView: View {
                                 Image(systemName: "person.circle.fill")
                                     .font(.system(size: 24))
                                     .foregroundStyle(Color.sgYellow)
-                                Text("Edit Name")
+                                Text(String(localized: "settings.edit_name"))
                                     .font(SGFont.bodyBold(size: 15))
                                     .foregroundStyle(Color.sgWhite)
                             }
 
                             HStack(spacing: 8) {
-                                TextField("First", text: $editFirstName)
+                                TextField(String(localized: "common.first"), text: $editFirstName)
                                     .font(SGFont.body(size: 14))
                                     .foregroundStyle(Color.sgWhite)
                                     .padding(8)
@@ -100,7 +100,7 @@ struct SettingsView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
                                     .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.sgBorder))
 
-                                TextField("Last", text: $editLastName)
+                                TextField(String(localized: "common.last"), text: $editLastName)
                                     .font(SGFont.body(size: 14))
                                     .foregroundStyle(Color.sgWhite)
                                     .padding(8)
@@ -113,7 +113,7 @@ struct SettingsView: View {
                                 Button {
                                     isEditingName = false
                                 } label: {
-                                    Text("Cancel")
+                                    Text(String(localized: "common.cancel"))
                                         .font(SGFont.bodyBold(size: 13))
                                         .foregroundStyle(Color.sgMuted)
                                         .frame(maxWidth: .infinity)
@@ -131,7 +131,7 @@ struct SettingsView: View {
                                                 .tint(Color.sgBg)
                                                 .scaleEffect(0.8)
                                         }
-                                        Text("Save")
+                                        Text(String(localized: "common.save"))
                                             .font(SGFont.bodyBold(size: 13))
                                     }
                                     .foregroundStyle(Color.sgBg)
@@ -161,7 +161,7 @@ struct SettingsView: View {
                                         .foregroundStyle(Color.sgMuted)
                                 }
                                 if let created = profileCreatedAt {
-                                    Text("Member since \(created)")
+                                    Text(String(format: String(localized: "settings.member_since"), created))
                                         .font(SGFont.body(size: 11))
                                         .foregroundStyle(Color.sgMuted.opacity(0.7))
                                 }
@@ -184,7 +184,7 @@ struct SettingsView: View {
                     Button {
                         showSignOutConfirmation = true
                     } label: {
-                        Text("Sign Out")
+                        Text(String(localized: "settings.sign_out"))
                             .font(SGFont.bodyBold(size: 14))
                             .foregroundStyle(Color.sgRed)
                             .frame(maxWidth: .infinity)
@@ -202,10 +202,10 @@ struct SettingsView: View {
                         .font(.system(size: 24))
                         .foregroundStyle(Color.sgMuted)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Guest Mode")
+                        Text(String(localized: "settings.guest_mode"))
                             .font(SGFont.bodyBold(size: 15))
                             .foregroundStyle(Color.sgWhite)
-                        Text("Sign in to save preferences and book flights")
+                        Text(String(localized: "settings.guest_mode.subtitle"))
                             .font(SGFont.body(size: 12))
                             .foregroundStyle(Color.sgMuted)
                     }
@@ -218,7 +218,7 @@ struct SettingsView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "apple.logo")
                             .font(.system(size: 14))
-                        Text("Sign in with Apple")
+                        Text(String(localized: "settings.sign_in_apple"))
                             .font(SGFont.bodyBold(size: 14))
                     }
                     .foregroundStyle(Color.sgBg)
@@ -289,13 +289,13 @@ struct SettingsView: View {
                 }
             }
         }
-        .alert("Sign Out?", isPresented: $showSignOutConfirmation) {
-            Button("Sign Out", role: .destructive) {
+        .alert(String(localized: "settings.sign_out_confirm.title"), isPresented: $showSignOutConfirmation) {
+            Button(String(localized: "settings.sign_out"), role: .destructive) {
                 auth.signOut()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "common.cancel"), role: .cancel) {}
         } message: {
-            Text("You can still browse deals as a guest, but you won't be able to book flights.")
+            Text(String(localized: "settings.sign_out_confirm.message"))
         }
     }
 
@@ -357,7 +357,7 @@ struct SettingsView: View {
     // MARK: - Departure Airport
 
     private var departureSection: some View {
-        settingsSection("Departure Airport") {
+        settingsSection(String(localized: "settings.departure")) {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 HStack(alignment: .center, spacing: Spacing.md) {
                     SplitFlapRow(
@@ -374,13 +374,15 @@ struct SettingsView: View {
                             .font(SGFont.sectionHead)
                             .foregroundStyle(Color.sgWhite)
 
-                        Text("All prices shown from this airport")
+                        Text(String(localized: "settings.departure_subtitle"))
                             .font(SGFont.body(size: 12))
                             .foregroundStyle(Color.sgMuted)
                     }
 
                     Spacer(minLength: 0)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Departure airport: \(settings.departureCode), \(settings.departureCity)")
 
                 Button {
                     HapticEngine.selection()
@@ -389,7 +391,7 @@ struct SettingsView: View {
                     HStack(spacing: Spacing.sm) {
                         Image(systemName: "airplane.departure")
                             .font(.system(size: 14, weight: .semibold))
-                        Text("Change Airport")
+                        Text(String(localized: "settings.change_airport"))
                             .font(SGFont.bodyBold(size: 14))
                     }
                     .foregroundStyle(Color.sgBg)
@@ -406,18 +408,18 @@ struct SettingsView: View {
     // MARK: - Display Mode
 
     private var displaySection: some View {
-        settingsSection("View Mode") {
+        settingsSection(String(localized: "settings.view_mode")) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 // Segmented-style picker
                 HStack(spacing: 0) {
-                    viewModeButton(id: "grid", label: "Swipe Feed", icon: "rectangle.portrait.on.rectangle.portrait")
-                    viewModeButton(id: "list", label: "Board", icon: "rectangle.grid.1x2")
+                    viewModeButton(id: "grid", label: String(localized: "settings.view_mode.swipe"), icon: "rectangle.portrait.on.rectangle.portrait")
+                    viewModeButton(id: "list", label: String(localized: "settings.view_mode.board"), icon: "rectangle.grid.1x2")
                 }
                 .modifier(GlassSegmentModifier())
 
                 Text(settings.preferredView == "list"
-                     ? "Compact rows in a departure-board layout."
-                     : "Full-bleed destination cards with vertical paging.")
+                     ? String(localized: "settings.view_mode.board_desc")
+                     : String(localized: "settings.view_mode.swipe_desc"))
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             }
@@ -446,13 +448,15 @@ struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Switch to \(label) view mode")
+        .accessibilityLabel("\(label) view mode")
+        .accessibilityValue(settings.preferredView == id ? "Selected" : "Not selected")
+        .accessibilityAddTraits(settings.preferredView == id ? .isSelected : [])
     }
 
     // MARK: - Units
 
     private var unitsSection: some View {
-        settingsSection("Units") {
+        settingsSection(String(localized: "settings.units")) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 HStack(spacing: 0) {
                     unitButton(metric: false, label: "°F / mi", icon: "ruler")
@@ -461,8 +465,8 @@ struct SettingsView: View {
                 .modifier(GlassSegmentModifier())
 
                 Text(settings.usesMetric
-                     ? "Temperatures in Celsius, distances in kilometers."
-                     : "Temperatures in Fahrenheit, distances in miles.")
+                     ? String(localized: "settings.units.metric_desc")
+                     : String(localized: "settings.units.imperial_desc"))
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
             }
@@ -491,17 +495,19 @@ struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Switch to \(label) units")
+        .accessibilityLabel("\(label) units")
+        .accessibilityValue(settings.usesMetric == metric ? "Selected" : "Not selected")
+        .accessibilityAddTraits(settings.usesMetric == metric ? .isSelected : [])
     }
 
     // MARK: - Notifications
 
     private var notificationsSection: some View {
-        settingsSection("Notifications") {
+        settingsSection(String(localized: "settings.notifications")) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 toggleRow(
                     icon: "bell.badge.fill",
-                    title: "Push Notifications",
+                    title: String(localized: "settings.push_notifications"),
                     isOn: notificationBinding
                 )
 
@@ -509,7 +515,7 @@ struct SettingsView: View {
 
                 toggleRow(
                     icon: "tag.fill",
-                    title: "Price Alert Emails",
+                    title: String(localized: "settings.price_alert_emails"),
                     isOn: priceAlertsBinding
                 )
 
@@ -532,7 +538,7 @@ struct SettingsView: View {
                             .foregroundStyle(Color.sgYellow)
                             .frame(width: 20)
 
-                        Text("Manage Alerts")
+                        Text(String(localized: "settings.manage_alerts"))
                             .font(SGFont.bodyBold(size: 14))
                             .foregroundStyle(Color.sgWhite)
 
@@ -544,6 +550,7 @@ struct SettingsView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Manage price alerts")
                 .sheet(isPresented: $showPriceAlerts) {
                     PriceAlertsListView()
                 }
@@ -567,7 +574,8 @@ struct SettingsView: View {
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .tint(Color.sgYellow)
-                .accessibilityLabel("Toggle \(title)")
+                .accessibilityLabel(title)
+                .accessibilityValue(isOn.wrappedValue ? "On" : "Off")
         }
         .contentShape(Rectangle())
     }
@@ -575,10 +583,10 @@ struct SettingsView: View {
     // MARK: - Travelers
 
     private var travelersSection: some View {
-        settingsSection("Saved Travelers") {
+        settingsSection(String(localized: "settings.saved_travelers")) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 if travelerStore.travelers.isEmpty {
-                    Text("Save traveler details for faster booking.")
+                    Text(String(localized: "settings.saved_travelers.empty"))
                         .font(SGFont.body(size: 13))
                         .foregroundStyle(Color.sgMuted)
                 } else {
@@ -586,7 +594,7 @@ struct SettingsView: View {
                         Text("\(travelerStore.travelers.count)")
                             .font(SGFont.cardTitle)
                             .foregroundStyle(Color.sgYellow)
-                        Text(travelerStore.travelers.count == 1 ? "traveler saved" : "travelers saved")
+                        Text(travelerStore.travelers.count == 1 ? String(localized: "settings.traveler_saved") : String(localized: "settings.travelers_saved"))
                             .font(SGFont.body(size: 14))
                             .foregroundStyle(Color.sgMuted)
                         Spacer()
@@ -599,7 +607,7 @@ struct SettingsView: View {
                     HStack(spacing: Spacing.xs) {
                         Image(systemName: "person.2.fill")
                             .font(.system(size: 12))
-                        Text(travelerStore.travelers.isEmpty ? "Add Traveler" : "Manage Travelers")
+                        Text(travelerStore.travelers.isEmpty ? String(localized: "settings.add_traveler") : String(localized: "settings.manage_travelers"))
                             .font(SGFont.bodyBold(size: 14))
                     }
                     .foregroundStyle(Color.sgYellow)
@@ -612,6 +620,7 @@ struct SettingsView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(travelerStore.travelers.isEmpty ? "Add a traveler" : "Manage saved travelers")
             }
         }
         .sheet(isPresented: $showTravelers) {
@@ -627,13 +636,13 @@ struct SettingsView: View {
     // MARK: - Saved
 
     private var savedSection: some View {
-        settingsSection("Saved Flights") {
+        settingsSection(String(localized: "settings.saved_flights")) {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 HStack {
                     Text("\(savedStore.count)")
                         .font(SGFont.cardTitle)
                         .foregroundStyle(Color.sgYellow)
-                    Text(savedStore.count == 1 ? "trip saved" : "trips saved")
+                    Text(savedStore.count == 1 ? String(localized: "settings.trip_saved") : String(localized: "settings.trips_saved"))
                         .font(SGFont.body(size: 14))
                         .foregroundStyle(Color.sgMuted)
                     Spacer()
@@ -646,7 +655,7 @@ struct SettingsView: View {
                         HStack(spacing: Spacing.xs) {
                             Image(systemName: "heart.fill")
                                 .font(.system(size: 12))
-                            Text("View Saved")
+                            Text(String(localized: "settings.view_saved"))
                                 .font(SGFont.bodyBold(size: 13))
                         }
                         .foregroundStyle(Color.sgYellow)
@@ -667,7 +676,7 @@ struct SettingsView: View {
                         HStack(spacing: Spacing.xs) {
                             Image(systemName: "trash")
                                 .font(.system(size: 12))
-                            Text("Clear All")
+                            Text(String(localized: "settings.clear_all"))
                                 .font(SGFont.bodyBold(size: 13))
                         }
                         .foregroundStyle(Color.sgMuted)
@@ -687,21 +696,21 @@ struct SettingsView: View {
     // MARK: - About
 
     private var aboutSection: some View {
-        settingsSection("About") {
+        settingsSection(String(localized: "settings.about")) {
             VStack(alignment: .leading, spacing: 0) {
-                linkRow(icon: "lock.shield", title: "Privacy Policy") {
+                linkRow(icon: "lock.shield", title: String(localized: "settings.privacy_policy")) {
                     if let url = URL(string: "https://sogojet.com/legal/privacy") { openURL(url) }
                 }
 
                 Divider().overlay(Color.sgBorder)
 
-                linkRow(icon: "doc.text", title: "Terms of Service") {
+                linkRow(icon: "doc.text", title: String(localized: "settings.terms")) {
                     if let url = URL(string: "https://sogojet.com/legal/terms") { openURL(url) }
                 }
 
                 Divider().overlay(Color.sgBorder)
 
-                linkRow(icon: "envelope", title: "Contact Us") {
+                linkRow(icon: "envelope", title: String(localized: "settings.contact_us")) {
                     if let url = URL(string: "mailto:hello@sogojet.com") { openURL(url) }
                 }
             }
@@ -712,13 +721,13 @@ struct SettingsView: View {
 
     private var dangerZoneSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("DANGER ZONE")
+            Text(String(localized: "settings.danger_zone"))
                 .font(SGFont.bodyBold(size: 11))
                 .foregroundStyle(Color.sgRed)
                 .tracking(1.2)
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("Permanently delete your account, saved trips, and all personal data. This cannot be undone.")
+                Text(String(localized: "settings.delete_account.description"))
                     .font(SGFont.body(size: 13))
                     .foregroundStyle(Color.sgMuted)
 
@@ -728,7 +737,7 @@ struct SettingsView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "trash")
                             .font(.system(size: 14))
-                        Text("Delete Account")
+                        Text(String(localized: "settings.delete_account"))
                             .font(SGFont.bodyBold(size: 14))
                     }
                     .foregroundStyle(Color.sgRed)
@@ -748,13 +757,13 @@ struct SettingsView: View {
             .modifier(GlassDangerModifier())
         }
         .padding(.top, Spacing.md)
-        .alert("Delete Account?", isPresented: $showDeleteAccountConfirmation) {
-            Button("Delete", role: .destructive) {
+        .alert(String(localized: "settings.delete_account.title"), isPresented: $showDeleteAccountConfirmation) {
+            Button(String(localized: "common.delete"), role: .destructive) {
                 Task { await deleteAccount() }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "common.cancel"), role: .cancel) {}
         } message: {
-            Text("This will permanently delete your account, saved trips, and all personal data. This cannot be undone.")
+            Text(String(localized: "settings.delete_account.message"))
         }
     }
 

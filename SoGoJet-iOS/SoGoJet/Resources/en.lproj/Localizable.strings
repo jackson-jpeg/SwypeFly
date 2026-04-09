@@ -61,6 +61,7 @@
 "passenger.passport" = "Passport Number";
 "passenger.nationality" = "Nationality";
 "passenger.passport_expiry" = "Passport Expiry";
+"passenger.use_saved_traveler" = "Use saved traveler";
 "passenger.title_mr" = "Mr";
 "passenger.title_mrs" = "Mrs";
 "passenger.title_ms" = "Ms";
@@ -70,6 +71,7 @@
 /* Seat Map */
 "seats.title" = "Choose Your Seat";
 "seats.skip" = "Skip seat selection";
+"seats.skip_hint" = "The airline will assign your seat at check-in";
 "seats.recommended" = "Recommended";
 "seats.extra_legroom" = "Extra Legroom";
 "seats.top_picks" = "Top Picks";
@@ -90,6 +92,8 @@
 /* Boarding Pass */
 "boarding.title" = "Booking Confirmed";
 "boarding.reference" = "Booking Reference";
+"boarding.total_paid" = "Total paid: %@";
+"boarding.reference_value" = "Booking reference %@";
 "boarding.back_to_deals" = "Back to Deals";
 "boarding.share_trip" = "Share Trip";
 
@@ -128,6 +132,229 @@
 "sync.failed" = "Couldn't sync saved trips. Your local saves are safe.";
 "session.expired" = "Session expired. Please sign in again.";
 
+/* Auth */
+"auth.tagline" = "Find cheap flights.\nSwipe, save, book.";
+"auth.continue_google" = "Continue with Google";
+"auth.continue_tiktok" = "Continue with TikTok";
+"auth.continue_guest" = "Continue as Guest";
+"auth.sign_in_failed" = "Sign in failed. Please try again.";
+"auth.terms_prefix" = "By continuing, you agree to our";
+"auth.terms_link" = "Terms";
+"auth.terms_and" = "and";
+"auth.privacy_link" = "Privacy Policy";
+"auth.sign_in_to_pay" = "Sign In to Pay";
+"auth.sign_in_to_pay.subtitle" = "Your booking details are saved.\nSign in to complete your purchase.";
+"auth.not_now" = "Not Now";
+
+/* Onboarding — additional keys */
+"onboarding.live_deals" = "LIVE DEALS";
+"onboarding.sample_deals" = "SAMPLE DEALS";
+"onboarding.from_airport" = "from %@";
+"onboarding.where_fly_from" = "WHERE DO YOU FLY FROM?";
+"onboarding.sign_in_subtitle" = "Sign in to book flights and save across devices";
+"onboarding.select_departure" = "Select your departure airport above";
+"onboarding.start_exploring" = "Start Exploring";
+
+/* Settings — additional keys */
+"settings.account" = "Account";
+"settings.edit_name" = "Edit Name";
+"settings.guest_mode" = "Guest Mode";
+"settings.guest_mode.subtitle" = "Sign in to save preferences and book flights";
+"settings.sign_in_apple" = "Sign in with Apple";
+"settings.member_since" = "Member since %@";
+"settings.sign_out_confirm.title" = "Sign Out?";
+"settings.sign_out_confirm.message" = "You can still browse deals as a guest, but you won't be able to book flights.";
+"settings.departure_subtitle" = "All prices shown from this airport";
+"settings.change_airport" = "Change Airport";
+"settings.view_mode" = "View Mode";
+"settings.view_mode.swipe" = "Swipe Feed";
+"settings.view_mode.board" = "Board";
+"settings.view_mode.board_desc" = "Compact rows in a departure-board layout.";
+"settings.view_mode.swipe_desc" = "Full-bleed destination cards with vertical paging.";
+"settings.units" = "Units";
+"settings.units.metric_desc" = "Temperatures in Celsius, distances in kilometers.";
+"settings.units.imperial_desc" = "Temperatures in Fahrenheit, distances in miles.";
+"settings.push_notifications" = "Push Notifications";
+"settings.price_alert_emails" = "Price Alert Emails";
+"settings.manage_alerts" = "Manage Alerts";
+"settings.saved_travelers" = "Saved Travelers";
+"settings.saved_travelers.empty" = "Save traveler details for faster booking.";
+"settings.traveler_saved" = "traveler saved";
+"settings.travelers_saved" = "travelers saved";
+"settings.add_traveler" = "Add Traveler";
+"settings.manage_travelers" = "Manage Travelers";
+"settings.saved_flights" = "Saved Flights";
+"settings.trip_saved" = "trip saved";
+"settings.trips_saved" = "trips saved";
+"settings.view_saved" = "View Saved";
+"settings.clear_all" = "Clear All";
+"settings.clear_saved.title" = "Clear Saved Flights";
+"settings.clear_saved.message" = "This will remove all %d saved flights. This cannot be undone.";
+"settings.about" = "About";
+"settings.contact_us" = "Contact Us";
+"settings.danger_zone" = "DANGER ZONE";
+"settings.delete_account" = "Delete Account";
+"settings.delete_account.description" = "Permanently delete your account, saved trips, and all personal data. This cannot be undone.";
+"settings.delete_account.title" = "Delete Account?";
+"settings.delete_account.message" = "This will permanently delete your account, saved trips, and all personal data. This cannot be undone.";
+
+/* Booking Flow — additional keys */
+"booking.title" = "Booking Flow";
+"booking.your_trip" = "Your Trip";
+"booking.passenger_details" = "Passenger Details";
+"booking.cabin_map" = "Cabin Map";
+"booking.final_review" = "Final Review";
+"booking.confirmed" = "Confirmed";
+"booking.searching_subtitle" = "Searching for the best available flights.";
+"booking.trip_subtitle" = "Pick the flight that works for you, then add your details.";
+"booking.failed_subtitle" = "We couldn't find flights for this route. Try different dates or check back later.";
+"booking.passengers_subtitle" = "Enter passenger details as shown on their ID.";
+"booking.seats_subtitle" = "Choose your seat or skip to let the airline assign one.";
+"booking.review_subtitle" = "Review your trip details before paying.";
+"booking.paying_subtitle" = "Processing your payment...";
+"booking.confirmed_subtitle" = "Your trip is confirmed!";
+"booking.sign_in_required" = "Sign In Required";
+"booking.sign_in_message" = "Create an account to complete your booking. You can browse flights and compare prices without signing in.";
+"booking.continue_browsing" = "Continue Browsing";
+
+/* Review — additional keys */
+"review.confirming_booking" = "Confirming Booking";
+"review.confirming_subtitle" = "Confirming your booking...";
+"review.processing" = "Processing";
+"review.payment_processing_warning" = "Your payment is being processed. Please don't close this screen.";
+"review.status_processing" = "Processing payment";
+"review.order_summary" = "Order Summary";
+"review.order_summary.subtitle" = "Review everything before you pay.";
+"review.trip_summary" = "Trip Summary";
+"review.payment_failed" = "Payment Failed";
+"review.card_not_charged" = "Your card was not charged. You can try again or go back to change your flight.";
+"review.live_fare_change" = "Live Fare Change";
+"review.feed_fare" = "Feed fare";
+"review.booking_fare" = "Booking fare";
+"review.original_price" = "Original price";
+"review.current_live_rate" = "Current live rate";
+"review.flight_details" = "Flight Details";
+"review.flight_details.subtitle" = "Your selected flights.";
+"review.passenger" = "Passenger";
+"review.passenger.subtitle" = "Your booking details.";
+"review.passport_pending" = "Passport to be added later";
+"review.expiry_pending" = "Expiry not captured yet";
+"review.price_breakdown" = "Price Breakdown";
+"review.price_breakdown.subtitle" = "What you are about to pay right now.";
+"review.base_fare" = "Base fare";
+"review.base_fare_multiple" = "Base fare for %d travelers";
+"review.taxes_fees" = "Taxes and fees";
+"review.taxes_included" = "Included in fare";
+"review.cabin" = "Cabin";
+"review.before_you_pay" = "Before You Pay";
+"review.note_price" = "Current price is shown above";
+"review.note_price_detail" = "We'll verify the final price before charging you.";
+"review.note_seats" = "Seat extras are optional";
+"review.note_seats_detail" = "Skipping seats will not stop the booking. The carrier can still assign them later.";
+"review.note_back" = "You can still step back one screen";
+"review.note_back_detail" = "Use the secondary action below if you want to revise the seat or traveler details.";
+"review.offer_expired_title" = "Offer Expired";
+"review.offer_expired_message" = "This fare has expired. Search again to get a fresh price.";
+"review.search_again" = "Search Again";
+"review.offer_expires_in" = "Offer expires in";
+"review.processing_booking" = "Processing booking...";
+"review.preparing_payment" = "Preparing payment...";
+"review.secure" = "Secure";
+"review.back_to_traveler" = "Back to Traveler Details";
+"review.back_to_seats" = "Back to Seat Map";
+"review.back_subtitle" = "Revisit the previous step before payment is issued.";
+"review.assigned_later" = "Assigned later";
+"review.verify_identity" = "Verify your identity to complete this purchase";
+"review.nonstop" = "Nonstop live fare";
+"review.stops" = "%d stop live fare";
+"review.checked_baggage" = "Checked Baggage";
+"review.carry_on_only" = "Carry-on Only";
+"review.meal_service" = "Meal Service";
+"review.meal_included" = "Meal included";
+"review.refreshments" = "Refreshments";
+"review.no_meal" = "No meal service";
+"review.booking_conditions" = "Booking Conditions";
+"review.fully_refundable" = "Fully refundable";
+"review.non_refundable" = "Non-refundable";
+"review.free_changes" = "Free changes";
+"review.no_changes" = "No changes allowed";
+"review.booking_unavailable" = "Booking is temporarily unavailable. Please try again later.";
+
+/* Saved — additional keys */
+"saved.segment_picker" = "Saved view tabs";
+"saved.empty.title_routes" = "No Saved Routes";
+"saved.empty.hint" = "Tap the heart on any deal to save it here.";
+"saved.empty.explore" = "Explore Deals";
+"saved.empty.explore_subtitle" = "Find routes worth saving";
+
+/* My Trips — additional keys */
+"trips.empty.title" = "No trips yet";
+"trips.empty.subtitle" = "Book your first flight and it'll appear here.";
+"trips.empty.cta" = "Find Flights";
+"trips.sign_in.title" = "Sign in to see your trips";
+"trips.sign_in.subtitle" = "Your bookings and travel history will appear here.";
+"trips.error.title" = "Couldn't load trips";
+"trips.error.retry" = "Try Again";
+"trips.booking.hint" = "Tap to view booking details";
+
+/* Search — additional keys */
+"search.clear" = "Clear search text";
+"search.no_results_for %@" = "No results for \"%@\"";
+"search.no_results_hint" = "Try a city, country, airport code, or vibe tag.";
+
+/* Detail — additional keys */
+"detail.open_in_maps" = "Open in Maps";
+
+/* Compare — additional keys */
+"compare.select" = "Tap to select for comparison";
+"compare.deselect" = "Tap to deselect";
+
+/* Booking Detail */
+"booking.check_flight_status" = "Check flight status";
+"booking.copy_reference" = "Copy booking reference";
+"booking.reference_copied" = "Copied booking reference";
+"booking.contact_support" = "Contact support about booking %@";
+
+/* Hotel Search */
+"hotel.check_in_date" = "Check-in date";
+"hotel.check_out_date" = "Check-out date";
+"hotel.guest_count" = "%d guests";
+"hotel.search_button" = "Search hotels in %@";
+"hotel.guest_name" = "Guest full name";
+"hotel.guest_email" = "Guest email address";
+"hotel.booking_confirmed" = "Booking Confirmed!";
+"hotel.confirmation_ref" = "Confirmation reference: %@";
+"hotel.loading_search" = "Searching hotels...";
+"hotel.loading_quote" = "Getting rate details...";
+"hotel.loading_payment" = "Processing payment...";
+
+/* Departure Board */
+"board.flights_count %d" = "%d flights";
+"board.swipe_for_more" = "Swipe for more";
+"board.all_caught_up" = "All caught up";
+"board.next_flight" = "Next flight";
+"board.next_flight.hint" = "Advance to the next deal on the board";
+"board.book_flight" = "Book this flight";
+"board.code" = "CODE";
+"board.destination" = "DESTINATION";
+"board.fare" = "FARE";
+"board.no_flights" = "No flights";
+"board.empty.filter_hint" = "Try clearing filters or switching airports.";
+"board.empty.refresh_hint" = "Try refreshing %@ or switching airports.";
+"board.empty.filter_active" = "No flights match your filters.";
+
+/* Map */
+"map.pin.hint" = "Tap to view deal details";
+"map.destinations_count %d" = "%d destinations on map";
+
+/* Feed — additional keys */
+"feed.offline_banner" = "You're offline. Showing cached deals.";
+"feed.clear_filters" = "Clear Filters";
+"feed.clear_filters.hint" = "Remove all active filters and reload deals";
+"feed.refresh_deals" = "Refresh Deals";
+"feed.seen_all %d" = "You've seen all %d deals";
+"feed.seen_all.from %@" = "from %@";
+
 /* Common */
 "common.cancel" = "Cancel";
 "common.done" = "Done";
@@ -136,3 +363,6 @@
 "common.share" = "Share";
 "common.close" = "Close";
 "common.loading" = "Loading...";
+"common.sign_in" = "Sign In";
+"common.first" = "First";
+"common.last" = "Last";

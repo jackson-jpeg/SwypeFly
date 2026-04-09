@@ -137,6 +137,7 @@ struct SearchView: View {
                         .foregroundStyle(Color.sgMuted)
                         .font(.system(size: 16))
                 }
+                .accessibilityLabel(String(localized: "search.clear"))
             }
         }
         .padding(.horizontal, Spacing.md)
@@ -219,10 +220,11 @@ struct SearchView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 36))
                     .foregroundStyle(Color.sgMuted)
-                Text("No results for \"\(trimmedQuery)\"")
+                    .accessibilityHidden(true)
+                Text(String(localized: "search.no_results_for \(trimmedQuery)"))
                     .font(SGFont.bodyBold(size: 16))
                     .foregroundStyle(Color.sgWhite)
-                Text("Try a city, country, airport code, or vibe tag.")
+                Text(String(localized: "search.no_results_hint"))
                     .font(SGFont.body(size: 14))
                     .foregroundStyle(Color.sgMuted)
                     .multilineTextAlignment(.center)

@@ -30,6 +30,7 @@ struct PriceAlertsListView: View {
                         Image(systemName: "xmark")
                             .foregroundStyle(Color.sgWhite)
                     }
+                    .accessibilityLabel("Close price alerts")
                 }
                 ToolbarItem(placement: .principal) {
                     Text("Price Alerts")
@@ -122,6 +123,8 @@ struct PriceAlertsListView: View {
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(alert.destinationId), target price \(alert.targetPrice) dollars\(isActive ? ", active" : ", triggered")")
     }
 
     // MARK: - Empty State
@@ -152,6 +155,7 @@ struct PriceAlertsListView: View {
                     .clipShape(Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Browse deals")
         }
     }
 }

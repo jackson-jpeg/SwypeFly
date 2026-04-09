@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,14 @@ import {
   Alert,
   KeyboardAvoidingView,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { colors, fonts, spacing } from '../../../theme/tokens';
-import { successHaptic, errorHaptic } from '../../../utils/haptics';
+import { successHaptic, errorHaptic, warningHaptic } from '../../../utils/haptics';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
 import TripBanner from '../../../components/booking/TripBanner';
+import BookingProgress from '../../../components/booking/BookingProgress';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import type { Passenger } from '../../../stores/bookingFlowStore';
 
@@ -44,6 +45,7 @@ const PHONE_REGEX = /^\+\d[\d\s\-()]{7,}$/;
 export default function PassengersScreen() {
   const router = useRouter();
   const { id, offerId } = useLocalSearchParams<{ id: string; offerId: string }>();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const setPassengers = useBookingFlowStore((s) => s.setPassengers);
 
@@ -58,37 +60,75 @@ export default function PassengersScreen() {
 
   // Per-field error state (shown on blur or submit attempt)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({});
   const [didAttemptSubmit, setDidAttemptSubmit] = useState(false);
 
   const hasFormData = givenName.length > 0 || familyName.length > 0 || email.length > 0;
 
-  // Validation — also returns per-field errors
-  function validateFields(): Record<string, string> {
+  // Prevent swipe-back/hardware back from discarding form data
+  useEffect(() => {
+    if (!hasFormData) return;
+    const unsubscribe = navigation.addListener('beforeRemove', (e: { preventDefault: () => void; data: { action: unknown } }) => {
+      e.preventDefault();
+      if (Platform.OS === 'web') {
+        if (window.confirm('Discard passenger details?')) navigation.dispatch(e.data.action as never);
+        return;
+      }
+      Alert.alert('Discard details?', 'Your passenger information will be lost.', [
+        { text: 'Keep editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(e.data.action as never) },
+      ]);
+    });
+    return unsubscribe;
+  }, [navigation, hasFormData]);
+
+  // Validation — returns per-field errors and warnings
+  function validateFields(): { errors: Record<string, string>; warnings: Record<string, string> } {
     const errors: Record<string, string> = {};
+    const warnings: Record<string, string> = {};
     if (!givenName.trim()) errors.givenName = 'First name is required';
     if (!familyName.trim()) errors.familyName = 'Last name is required';
     if (!DOB_REGEX.test(bornOn)) {
       errors.bornOn = 'Date format: YYYY-MM-DD';
     } else {
       const dob = new Date(bornOn + 'T00:00:00');
-      if (isNaN(dob.getTime()) || dob >= new Date()) {
+      const now = new Date();
+      if (isNaN(dob.getTime()) || dob >= now) {
         errors.bornOn = 'Must be a date in the past';
+      } else {
+        // Age calculation
+        let ageYears = now.getFullYear() - dob.getFullYear();
+        const monthDiff = now.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+          ageYears--;
+        }
+        if (ageYears < 2) {
+          errors.bornOn = 'Passenger must be at least 2 years old';
+        } else if (ageYears < 18) {
+          warnings.bornOn = 'Passenger is under 18 — an adult must also travel';
+        }
       }
     }
     if (!EMAIL_REGEX.test(email)) errors.email = 'Enter a valid email';
     if (!PHONE_REGEX.test(phoneNumber)) errors.phoneNumber = 'Enter a valid phone (e.g. +1234567890)';
-    return errors;
+    return { errors, warnings };
   }
 
   const isValid = useMemo(() => {
-    return Object.keys(validateFields()).length === 0;
+    return Object.keys(validateFields().errors).length === 0;
   }, [givenName, familyName, bornOn, email, phoneNumber]);
 
   const handleFieldBlur = useCallback((field: string) => {
-    const errors = validateFields();
+    const { errors, warnings } = validateFields();
     setFieldErrors((prev) => {
       const next = { ...prev };
       if (errors[field]) next[field] = errors[field];
+      else delete next[field];
+      return next;
+    });
+    setFieldWarnings((prev) => {
+      const next = { ...prev };
+      if (warnings[field]) next[field] = warnings[field];
       else delete next[field];
       return next;
     });
@@ -108,11 +148,15 @@ export default function PassengersScreen() {
 
   const handleContinue = useCallback(() => {
     setDidAttemptSubmit(true);
-    const errors = validateFields();
+    const { errors, warnings } = validateFields();
+    setFieldWarnings(warnings);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       errorHaptic();
       return;
+    }
+    if (Object.keys(warnings).length > 0) {
+      warningHaptic();
     }
     setPassengers([
       {
@@ -148,6 +192,7 @@ export default function PassengersScreen() {
         </View>
         <Text style={styles.subtitle}>Traveler 1 of 1</Text>
       </View>
+      <BookingProgress />
       <TripBanner />
 
       <KeyboardAvoidingView
@@ -192,6 +237,7 @@ export default function PassengersScreen() {
             placeholderTextColor={colors.faint}
             autoCapitalize="words"
             autoCorrect={false}
+            accessibilityLabel="First name"
           />
           {(didAttemptSubmit || fieldErrors.givenName) && fieldErrors.givenName && (
             <Text style={styles.errorText}>{fieldErrors.givenName}</Text>
@@ -210,6 +256,7 @@ export default function PassengersScreen() {
             placeholderTextColor={colors.faint}
             autoCapitalize="words"
             autoCorrect={false}
+            accessibilityLabel="Last name"
           />
           {(didAttemptSubmit || fieldErrors.familyName) && fieldErrors.familyName && (
             <Text style={styles.errorText}>{fieldErrors.familyName}</Text>
@@ -229,9 +276,13 @@ export default function PassengersScreen() {
             keyboardType={Platform.OS === 'web' ? 'default' : 'numbers-and-punctuation'}
             autoCorrect={false}
             maxLength={10}
+            accessibilityLabel="Date of birth"
           />
           {(didAttemptSubmit || fieldErrors.bornOn) && fieldErrors.bornOn && (
             <Text style={styles.errorText}>{fieldErrors.bornOn}</Text>
+          )}
+          {!fieldErrors.bornOn && fieldWarnings.bornOn && (
+            <Text style={styles.warningText}>{fieldWarnings.bornOn}</Text>
           )}
         </View>
 
@@ -268,6 +319,7 @@ export default function PassengersScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            accessibilityLabel="Email address"
           />
           {(didAttemptSubmit || fieldErrors.email) && fieldErrors.email && (
             <Text style={styles.errorText}>{fieldErrors.email}</Text>
@@ -286,6 +338,7 @@ export default function PassengersScreen() {
             placeholderTextColor={colors.faint}
             keyboardType="phone-pad"
             autoCorrect={false}
+            accessibilityLabel="Phone number"
           />
           {(didAttemptSubmit || fieldErrors.phoneNumber) && fieldErrors.phoneNumber && (
             <Text style={styles.errorText}>{fieldErrors.phoneNumber}</Text>
@@ -299,6 +352,9 @@ export default function PassengersScreen() {
         <Pressable
           style={[styles.continueBtn, !isValid && didAttemptSubmit && styles.continueBtnDisabled]}
           onPress={handleContinue}
+          accessibilityRole="button"
+          accessibilityLabel="Continue to review"
+          accessibilityState={{ disabled: !isValid && didAttemptSubmit }}
         >
           <Text style={[styles.continueBtnText, !isValid && styles.continueBtnTextDisabled]}>
             Continue
@@ -380,6 +436,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 12,
     color: '#EF4444',
+    marginTop: 4,
+  },
+  warningText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: '#F59E0B',
     marginTop: 4,
   },
   chipRow: {

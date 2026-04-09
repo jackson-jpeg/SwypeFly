@@ -345,7 +345,36 @@ struct FlightStatusView: View {
             )
             flightStatus = response
         } catch {
-            self.error = "Unable to fetch flight status"
+            self.error = flightStatusMessage(for: error)
         }
+    }
+
+    /// Convert errors into contextual messages for flight status.
+    private func flightStatusMessage(for error: Error) -> String {
+        let route = "\(booking.originIata) \u{2192} \(booking.destinationIata)"
+
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost:
+                return "No internet connection. Connect to Wi-Fi or cellular to check your \(route) flight status."
+            case .timedOut:
+                return "The status check timed out. Tap Retry to try again."
+            default:
+                return "Couldn't reach the server to check your \(route) flight. Please try again."
+            }
+        }
+
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .httpError(let code, _) where code == 404:
+                return "Flight status for \(route) isn't available yet. Check back closer to departure."
+            case .httpError(let code, _) where (500...599).contains(code):
+                return "The flight status service is temporarily down. Your booking is unaffected — please try again shortly."
+            default:
+                return "Couldn't load flight status for \(route). Tap Retry to try again."
+            }
+        }
+
+        return "Couldn't load flight status for \(route). Tap Retry to try again."
     }
 }

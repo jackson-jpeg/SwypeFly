@@ -91,7 +91,7 @@ export default function SyncIndicator() {
         ? `Syncing ${pendingCount} save${pendingCount !== 1 ? 's' : ''}...`
         : 'All synced';
 
-  const iconName =
+  const iconName: React.ComponentProps<typeof Ionicons>['name'] =
     syncState === 'offline'
       ? 'cloud-offline-outline'
       : syncState === 'synced'
@@ -111,7 +111,7 @@ export default function SyncIndicator() {
     >
       <View accessibilityRole="alert" accessibilityLabel={label}>
         <View style={styles.inner}>
-          <Ionicons name={iconName as any} size={14} color={iconColor} />
+          <Ionicons name={iconName} size={14} color={iconColor} />
           <Text style={[styles.text, syncState === 'offline' && styles.textOffline]}>
             {label}
           </Text>

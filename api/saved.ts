@@ -4,6 +4,7 @@ import { supabase, TABLES } from '../services/supabaseServer';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { logApiError } from '../utils/apiLogger';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
+import { savedActionSchema, savedBodySchema, savePrefsBodySchema, validateRequest } from '../utils/validation';
 import { cors } from './_cors.js';
 import { sendError } from '../utils/apiResponse';
 
@@ -78,15 +79,16 @@ async function handleGetPrefs(userId: string, res: VercelResponse) {
   });
 }
 
-async function handleSavePrefs(userId: string, body: Record<string, unknown>, res: VercelResponse) {
-  const updates: Record<string, unknown> = {};
-  if (typeof body.departure_city === 'string') updates.departure_city = body.departure_city;
-  if (typeof body.departure_code === 'string') updates.departure_code = body.departure_code;
-  if (typeof body.onboarding_completed === 'boolean') updates.onboarding_completed = body.onboarding_completed;
-
-  if (Object.keys(updates).length === 0) {
-    return sendError(res, 400, 'VALIDATION_ERROR', 'No valid fields to update');
-  }
+async function handleSavePrefs(
+  userId: string,
+  updates: { departure_city?: string; departure_code?: string; onboarding_completed?: boolean },
+  res: VercelResponse,
+) {
+  // Filter out undefined keys so we only send defined values to DB
+  const cleanUpdates: Record<string, unknown> = {};
+  if (updates.departure_city !== undefined) cleanUpdates.departure_city = updates.departure_city;
+  if (updates.departure_code !== undefined) cleanUpdates.departure_code = updates.departure_code;
+  if (updates.onboarding_completed !== undefined) cleanUpdates.onboarding_completed = updates.onboarding_completed;
 
   const { data: existing, error: findError } = await supabase
     .from(TABLES.userPreferences)
@@ -98,13 +100,13 @@ async function handleSavePrefs(userId: string, body: Record<string, unknown>, re
   if ((existing ?? []).length > 0) {
     const { error } = await supabase
       .from(TABLES.userPreferences)
-      .update(updates)
+      .update(cleanUpdates)
       .eq('id', existing![0].id);
     if (error) throw error;
   } else {
     const { error } = await supabase.from(TABLES.userPreferences).insert({
       user_id: userId,
-      ...updates,
+      ...cleanUpdates,
     });
     if (error) throw error;
   }
@@ -113,6 +115,9 @@ async function handleSavePrefs(userId: string, body: Record<string, unknown>, re
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+  }
 
   // Rate limit: 30 req/min per IP
   const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
@@ -122,29 +127,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
   }
 
+  // Validate action query param
+  const actionValidation = validateRequest(savedActionSchema, req.query);
+  if (!actionValidation.success) {
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Use ?action=list|save|unsave|get-prefs|save-prefs');
+  }
+  const { action } = actionValidation.data;
+
   const authResult = await verifyClerkToken(req.headers.authorization);
   if (!authResult) return sendError(res, 401, 'UNAUTHORIZED', 'Unauthorized');
-
-  const action = String(req.query.action || '');
 
   try {
     switch (action) {
       case 'list':
-        return handleList(authResult.userId, res);
+        return await handleList(authResult.userId, res);
       case 'save': {
-        const destId = String(req.body?.destination_id || '');
-        if (!destId) return sendError(res, 400, 'VALIDATION_ERROR', 'Missing destination_id');
-        return handleSave(authResult.userId, destId, res);
+        const bodyV = validateRequest(savedBodySchema, req.body);
+        if (!bodyV.success) return sendError(res, 400, 'VALIDATION_ERROR', bodyV.error);
+        return await handleSave(authResult.userId, bodyV.data.destination_id, res);
       }
       case 'unsave': {
-        const destId = String(req.body?.destination_id || '');
-        if (!destId) return sendError(res, 400, 'VALIDATION_ERROR', 'Missing destination_id');
-        return handleUnsave(authResult.userId, destId, res);
+        const bodyV = validateRequest(savedBodySchema, req.body);
+        if (!bodyV.success) return sendError(res, 400, 'VALIDATION_ERROR', bodyV.error);
+        return await handleUnsave(authResult.userId, bodyV.data.destination_id, res);
       }
       case 'get-prefs':
-        return handleGetPrefs(authResult.userId, res);
-      case 'save-prefs':
-        return handleSavePrefs(authResult.userId, req.body || {}, res);
+        return await handleGetPrefs(authResult.userId, res);
+      case 'save-prefs': {
+        const prefsV = validateRequest(savePrefsBodySchema, req.body);
+        if (!prefsV.success) return sendError(res, 400, 'VALIDATION_ERROR', prefsV.error);
+        return await handleSavePrefs(authResult.userId, prefsV.data, res);
+      }
       default:
         return sendError(res, 400, 'VALIDATION_ERROR', 'Use ?action=list|save|unsave|get-prefs|save-prefs');
     }

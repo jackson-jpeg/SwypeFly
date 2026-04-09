@@ -23,6 +23,8 @@ struct DealCard: View {
     @State private var heartBounce: Bool = false
     @State private var showSwipeHint: Bool = false
     @State private var swipeHintOffset: CGFloat = 0
+    @State private var hintTask: DispatchWorkItem?
+    @State private var hideHintTask: DispatchWorkItem?
 
     var body: some View {
         GeometryReader { geo in
@@ -123,6 +125,7 @@ struct DealCard: View {
                                             .clipShape(Capsule())
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityLabel("Filter by \(tag)")
                                 }
                             }
                         }
@@ -198,22 +201,31 @@ struct DealCard: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(dealCardAccessibilityLabel)
+        .accessibilityHint("Swipe up for next deal, or double tap to view details")
         .accessibilityAddTraits(.isButton)
         .onAppear {
             guard isFirst else { return }
             // Delay appearance so the card loads first
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            let showWork = DispatchWorkItem {
                 withAnimation(.easeOut(duration: 0.5)) {
                     showSwipeHint = true
                 }
                 startSwipeHintBounce()
             }
+            hintTask = showWork
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2, execute: showWork)
             // Auto-dismiss after a few seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+            let hideWork = DispatchWorkItem {
                 withAnimation(.easeIn(duration: 0.4)) {
                     showSwipeHint = false
                 }
             }
+            hideHintTask = hideWork
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.5, execute: hideWork)
+        }
+        .onDisappear {
+            hintTask?.cancel()
+            hideHintTask?.cancel()
         }
     }
 
@@ -428,6 +440,12 @@ struct DealCard: View {
         let stops = deal.stopsLabel
         if !stops.isEmpty {
             parts.append(stops)
+        }
+        if deal.isGoodTimeToVisit {
+            parts.append("Best time to visit")
+        }
+        if isTopPick {
+            parts.append("Top pick")
         }
         return parts.joined(separator: ", ")
     }

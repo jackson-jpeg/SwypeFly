@@ -11,8 +11,8 @@ struct HotelSearchView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss
 
-    @State private var checkInDate = Calendar.current.date(byAdding: .day, value: 14, to: Date())!
-    @State private var checkOutDate = Calendar.current.date(byAdding: .day, value: 17, to: Date())!
+    @State private var checkInDate = Calendar.current.date(byAdding: .day, value: 14, to: Date()) ?? Date()
+    @State private var checkOutDate = Calendar.current.date(byAdding: .day, value: 17, to: Date()) ?? Date()
     @State private var guests: Int = 1
     @State private var guestName: String = ""
     @State private var guestEmail: String = ""
@@ -117,6 +117,7 @@ struct HotelSearchView: View {
                     .datePickerStyle(.compact)
                     .tint(Color.sgYellow)
                     .labelsHidden()
+                    .accessibilityLabel(String(localized: "hotel.check_in_date", defaultValue: "Check-in date"))
             }
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -128,6 +129,7 @@ struct HotelSearchView: View {
                     .datePickerStyle(.compact)
                     .tint(Color.sgYellow)
                     .labelsHidden()
+                    .accessibilityLabel(String(localized: "hotel.check_out_date", defaultValue: "Check-out date"))
             }
 
             HStack {
@@ -139,6 +141,7 @@ struct HotelSearchView: View {
                 Stepper("\(guests)", value: $guests, in: 1...10)
                     .font(SGFont.bodyBold(size: 14))
                     .foregroundStyle(Color.sgWhite)
+                    .accessibilityLabel(String(localized: "hotel.guest_count", defaultValue: "\(guests) guests"))
             }
 
             Text("\(nights) night\(nights == 1 ? "" : "s")")
@@ -171,6 +174,7 @@ struct HotelSearchView: View {
             }
             .buttonStyle(.plain)
             .disabled(deal.latitude == nil || deal.longitude == nil)
+            .accessibilityLabel(String(localized: "hotel.search_button", defaultValue: "Search hotels in \(deal.city)"))
         }
         .padding(Spacing.lg)
         .background(Color.sgSurface)
@@ -184,16 +188,26 @@ struct HotelSearchView: View {
     // MARK: - Loading
 
     private var loadingSection: some View {
-        VStack(spacing: Spacing.md) {
+        let message: String = {
+            switch store.step {
+            case .quoting: return String(localized: "hotel.loading_quote", defaultValue: "Getting rate details...")
+            case .paying: return String(localized: "hotel.loading_payment", defaultValue: "Processing payment...")
+            default: return String(localized: "hotel.loading_search", defaultValue: "Searching hotels...")
+            }
+        }()
+
+        return VStack(spacing: Spacing.md) {
             ProgressView()
                 .tint(Color.sgYellow)
                 .scaleEffect(1.2)
-            Text("Searching hotels...")
+            Text(message)
                 .font(SGFont.body(size: 14))
                 .foregroundStyle(Color.sgMuted)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(message)
     }
 
     // MARK: - Results
@@ -251,6 +265,7 @@ struct HotelSearchView: View {
             Text("From $\(Int(hotel.cheapestTotalAmount))/night")
                 .font(SGFont.bodyBold(size: 14))
                 .foregroundStyle(Color.sgGreen)
+                .accessibilityLabel("From \(Int(hotel.cheapestTotalAmount)) dollars per night")
 
             if !hotel.rooms.isEmpty {
                 ForEach(hotel.rooms) { room in
@@ -275,6 +290,7 @@ struct HotelSearchView: View {
                         .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(room.name), \(Int(room.pricePerNight)) dollars per night. Double tap to select")
                 }
             }
         }
@@ -362,19 +378,22 @@ struct HotelSearchView: View {
                 TextField("Full Name", text: $guestName)
                     .font(SGFont.body(size: 14))
                     .foregroundStyle(Color.sgWhite)
+                    .textContentType(.name)
                     .padding(Spacing.md)
                     .background(Color.sgBg)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+                    .accessibilityLabel(String(localized: "hotel.guest_name", defaultValue: "Guest full name"))
 
                 TextField("Email", text: $guestEmail)
                     .font(SGFont.body(size: 14))
                     .foregroundStyle(Color.sgWhite)
                     .keyboardType(.emailAddress)
                     .textContentType(.emailAddress)
-                    .autocapitalization(.none)
+                    .textInputAutocapitalization(.never)
                     .padding(Spacing.md)
                     .background(Color.sgBg)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+                    .accessibilityLabel(String(localized: "hotel.guest_email", defaultValue: "Guest email address"))
             }
 
             if let error = store.paymentError {
@@ -455,6 +474,7 @@ struct HotelSearchView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Back to hotel results")
         }
         .padding(Spacing.lg)
         .background(Color.sgSurface)
@@ -473,13 +493,14 @@ struct HotelSearchView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(Color.sgGreen)
 
-            Text("Booking Confirmed!")
+            Text(String(localized: "hotel.booking_confirmed", defaultValue: "Booking Confirmed!"))
                 .font(SGFont.display(size: 22))
                 .foregroundStyle(Color.sgWhite)
 
             Text("Ref: \(confirmation.confirmationReference)")
                 .font(.system(size: 16, design: .monospaced))
                 .foregroundStyle(Color.sgYellow)
+                .accessibilityLabel(String(localized: "hotel.confirmation_ref", defaultValue: "Confirmation reference: \(confirmation.confirmationReference)"))
 
             if let hotel = confirmation.hotelName {
                 Text(hotel)
@@ -523,7 +544,7 @@ struct HotelSearchView: View {
             Button {
                 store.reset()
             } label: {
-                Text("Try Again")
+                Text(String(localized: "feed.error.retry"))
                     .font(SGFont.bodyBold(size: 14))
                     .foregroundStyle(Color.sgYellow)
                     .padding(.horizontal, Spacing.lg)
@@ -532,6 +553,7 @@ struct HotelSearchView: View {
                     .clipShape(Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "feed.error.retry"))
         }
         .padding(Spacing.lg)
         .frame(maxWidth: .infinity)

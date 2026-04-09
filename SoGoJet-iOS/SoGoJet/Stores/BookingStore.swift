@@ -138,6 +138,17 @@ final class BookingStore {
         loadRecentSearches()
     }
 
+    deinit {
+        expirationTimer?.invalidate()
+        expirationTimer = nil
+        // Live Activity cleanup must happen synchronously or be fire-and-forget
+        if let activity = liveActivity {
+            Task { @MainActor in
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
+
     // MARK: Actions
 
     /// Start the booking flow for a deal.
@@ -336,8 +347,13 @@ final class BookingStore {
         }
     }
 
-    /// Select a seat.
+    /// Select a seat. Only allows selecting seats marked as available in the seat map.
     func selectSeat(_ seatId: String) {
+        guard let seatMap,
+              let seat = seatMap.rows.flatMap(\.seats).first(where: { $0.id == seatId }),
+              seat.available else {
+            return
+        }
         selectedSeatId = seatId
     }
 
@@ -394,6 +410,12 @@ final class BookingStore {
                 return
             }
             STPAPIClient.shared.publishableKey = stripeKey
+
+            guard !paymentIntent.clientSecret.isEmpty else {
+                paymentError = "Invalid payment session. Please try again."
+                HapticEngine.error()
+                return
+            }
 
             var config = PaymentSheet.Configuration()
             config.merchantDisplayName = "SoGoJet"

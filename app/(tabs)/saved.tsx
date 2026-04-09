@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, Pressable, ScrollView, Modal, Refresh
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSavedStore } from '../../stores/savedStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useBookingFlowStore } from '../../stores/bookingFlowStore';
@@ -11,7 +11,10 @@ import SavedCard from '../../components/saved/SavedCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { lightHaptic, mediumHaptic, successHaptic, warningHaptic } from '../../utils/haptics';
 import { shareDestination } from '../../utils/share';
+import { showToast } from '../../stores/toastStore';
 import type { BoardDeal } from '../../types/deal';
+
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc';
 
@@ -224,6 +227,55 @@ export default function SavedScreen() {
   const [compareMode, setCompareMode] = useState(false);
   const [compareSelection, setCompareSelection] = useState<string[]>([]);
   const [compareDeals, setCompareDeals] = useState<[BoardDeal, BoardDeal] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (savedDeals.length === 0) return;
+    setRefreshing(true);
+    successHaptic();
+
+    try {
+      // Refresh prices for each saved deal (cap at 10 concurrent to avoid flooding)
+      const batch = savedDeals.slice(0, 10);
+      const results = await Promise.allSettled(
+        batch.map(async (deal) => {
+          const res = await fetch(
+            `${API_BASE}/api/destination?id=${encodeURIComponent(deal.id)}&origin=${encodeURIComponent(departureCode)}`,
+          );
+          if (!res.ok) return null;
+          const data = await res.json();
+          return data?.destination ?? null;
+        }),
+      );
+
+      // Update saved deals with fresh price data
+      const store = useSavedStore.getState();
+      const updatedDeals = store.savedDeals.map((deal) => {
+        const idx = batch.findIndex((b) => b.id === deal.id);
+        if (idx === -1) return deal;
+        const result = results[idx];
+        if (result.status !== 'fulfilled' || !result.value) return deal;
+        const fresh = result.value;
+        return {
+          ...deal,
+          price: fresh.price ?? fresh.flightPrice ?? deal.price,
+          savingsAmount: fresh.savingsAmount ?? deal.savingsAmount,
+          dealTier: fresh.dealTier ?? deal.dealTier,
+          isNonstop: fresh.isNonstop ?? deal.isNonstop,
+          totalStops: fresh.totalStops ?? deal.totalStops,
+          flightDuration: fresh.flightDuration ?? deal.flightDuration,
+          airline: fresh.airline ?? deal.airline,
+        };
+      });
+
+      useSavedStore.setState({ savedDeals: updatedDeals });
+      showToast('Prices refreshed');
+    } catch {
+      showToast('Could not refresh prices');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [savedDeals, departureCode]);
 
   // Compute savings stats
   const savingsStats = useMemo(() => {
@@ -344,7 +396,7 @@ export default function SavedScreen() {
   const renderItem = useCallback(
     ({ item, index }: { item: BoardDeal; index: number }) => (
       <Animated.View
-        entering={FadeInUp.delay(Math.min(index, 8) * 50).springify()}
+        entering={FadeInDown.delay(Math.min(index, 8) * 50).springify()}
         style={compareMode && compareSelection.includes(item.id) ? styles.selectedCard : undefined}
       >
         <SavedCard
@@ -464,8 +516,8 @@ export default function SavedScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={false}
-              onRefresh={() => { successHaptic(); /* Saved deals are local — no-op but gives native pull feel */ }}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
               tintColor={colors.yellow}
               colors={[colors.yellow]}
               progressBackgroundColor={colors.surface}

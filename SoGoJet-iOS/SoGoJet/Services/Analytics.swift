@@ -2,12 +2,22 @@ import Foundation
 import os
 
 // MARK: - Analytics
-// Lightweight event tracking foundation. Currently logs to os.Logger for debugging.
-// Swap the `track` implementation to wire up Amplitude, Mixpanel, or a custom backend.
+// Lightweight event tracking with batched network delivery.
+// Events are queued in memory and flushed periodically or when the batch reaches a threshold.
+// Falls back to os.Logger in DEBUG builds for local visibility.
 
 @MainActor
 enum Analytics {
     private static let logger = Logger(subsystem: "com.sogojet.app", category: "analytics")
+
+    /// Pending events waiting to be flushed to the backend.
+    private static var eventQueue: [EventPayload] = []
+
+    /// Maximum events to accumulate before auto-flushing.
+    private static let batchSize = 20
+
+    /// Timer that triggers periodic flushes (every 30 seconds).
+    private static var flushTimer: Timer?
 
     // MARK: - Events
 
@@ -68,7 +78,7 @@ enum Analytics {
     // MARK: - Track
 
     /// Track an event with optional properties.
-    /// Currently logs to os.Logger. Replace with your analytics SDK.
+    /// Events are batched and sent to the diagnostics endpoint periodically.
     static func track(_ event: Event, properties: [String: String]? = nil) {
         #if DEBUG
         if let properties {
@@ -79,13 +89,73 @@ enum Analytics {
         }
         #endif
 
-        // TODO: Wire to analytics backend
-        // Amplitude.instance().logEvent(event.rawValue, withEventProperties: properties)
-        // Mixpanel.mainInstance().track(event: event.rawValue, properties: properties)
+        let payload = EventPayload(
+            event: event.rawValue,
+            properties: properties,
+            timestamp: ISO8601DateFormatter().string(from: Date())
+        )
+        eventQueue.append(payload)
+
+        // Auto-flush when batch is full
+        if eventQueue.count >= batchSize {
+            flush()
+        }
+
+        // Start periodic flush timer if not running
+        startFlushTimerIfNeeded()
     }
 
     /// Track a screen view.
     static func screen(_ name: String) {
         track(.feedViewed, properties: ["screen": name])
     }
+
+    // MARK: - Flush
+
+    /// Send all queued events to the backend and clear the queue.
+    static func flush() {
+        guard !eventQueue.isEmpty else { return }
+        let events = eventQueue
+        eventQueue.removeAll()
+
+        Task {
+            do {
+                let batch = AnalyticsBatchBody(events: events)
+                let body = try JSONEncoder().encode(batch)
+                let _: EmptyResponse = try await APIClient.shared.fetch(.diagnosticsReport(body))
+            } catch {
+                // Re-queue events on failure so they aren't lost (cap to avoid unbounded growth)
+                await MainActor.run {
+                    let combined = events + eventQueue
+                    eventQueue = Array(combined.suffix(batchSize * 3))
+                }
+                logger.warning("Analytics flush failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    // MARK: - Timer
+
+    private static func startFlushTimerIfNeeded() {
+        guard flushTimer == nil else { return }
+        flushTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
+            Task { @MainActor in
+                Analytics.flush()
+            }
+        }
+    }
+}
+
+// MARK: - Event Payload
+
+private struct EventPayload: Codable, Sendable {
+    let event: String
+    let properties: [String: String]?
+    let timestamp: String
+}
+
+/// Wrapper to make the diagnostics body Encodable.
+private struct AnalyticsBatchBody: Encodable {
+    let type = "analytics"
+    let events: [EventPayload]
 }

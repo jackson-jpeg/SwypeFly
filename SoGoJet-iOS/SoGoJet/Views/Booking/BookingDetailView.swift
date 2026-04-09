@@ -63,6 +63,7 @@ struct BookingDetailView: View {
             .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(String(localized: "booking.check_flight_status", defaultValue: "Check flight status"))
         .sheet(isPresented: $showFlightStatus) {
             FlightStatusView(booking: booking)
         }
@@ -120,6 +121,8 @@ struct BookingDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Spacing.md)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(booking.originIata) to \(booking.destinationIata), \(booking.destinationCity), \(booking.statusInfo.label)")
     }
 
     // MARK: - Booking Reference
@@ -135,6 +138,7 @@ struct BookingDetailView: View {
                 .font(.system(size: 32, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.sgWhite)
                 .textSelection(.enabled)
+                .accessibilityLabel(String(localized: "boarding.reference_value", defaultValue: "Booking reference \(booking.bookingReference.isEmpty ? "pending" : booking.bookingReference)"))
 
             if !booking.bookingReference.isEmpty {
                 Button {
@@ -157,6 +161,7 @@ struct BookingDetailView: View {
                     .foregroundStyle(Color.sgYellow)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(copiedReference ? String(localized: "booking.reference_copied", defaultValue: "Copied booking reference") : String(localized: "booking.copy_reference", defaultValue: "Copy booking reference"))
             }
         }
         .frame(maxWidth: .infinity)
@@ -210,6 +215,8 @@ struct BookingDetailView: View {
                                         .foregroundStyle(Color.sgMuted)
                                 }
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("Passenger: \(pax.givenName) \(pax.familyName), \(pax.email)")
                         }
                     }
                 }
@@ -231,6 +238,8 @@ struct BookingDetailView: View {
                         .font(SGFont.bodyBold(size: 18))
                         .foregroundStyle(Color.sgGreen)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Total paid: \(booking.formattedPrice)")
             }
         }
     }
@@ -260,6 +269,7 @@ struct BookingDetailView: View {
                 )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "booking.contact_support", defaultValue: "Contact support about booking \(booking.bookingReference)"))
         }
     }
 
@@ -298,5 +308,7 @@ struct BookingDetailView: View {
                 .font(SGFont.bodyBold(size: 14))
                 .foregroundStyle(Color.sgWhite)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
     }
 }

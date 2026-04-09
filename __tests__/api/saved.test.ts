@@ -32,6 +32,9 @@ const createChain = (table: string) => {
     mockInsertCalls.push({ table, data });
     return chain;
   });
+  chain.update = jest.fn().mockImplementation(() => {
+    return chain;
+  });
   chain.delete = jest.fn().mockImplementation(() => {
     mockDeleteCalls.push({ table });
     return chain;
@@ -113,7 +116,7 @@ describe('api/saved', () => {
   it('returns 401 when not authenticated', async () => {
     mockVerifyClerkToken.mockResolvedValue(null);
     const res = makeRes();
-    await handler(makeReq(), res);
+    await handler(makeReq({ query: { action: 'list' } }), res);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
@@ -192,5 +195,90 @@ describe('api/saved', () => {
     const res = makeRes();
     await handler(makeReq({ query: { action: 'unknown' } }), res);
     expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  // ─── get-prefs ─────────────────────────────────────────────
+
+  it('returns user preferences', async () => {
+    pushResult('user_preferences', {
+      data: [{ departure_city: 'Tampa', departure_code: 'TPA', onboarding_completed: true }],
+      error: null,
+    });
+    const res = makeRes();
+    await handler(makeReq({ query: { action: 'get-prefs' } }), res);
+    expect(res.json).toHaveBeenCalledWith({
+      preferences: { departure_city: 'Tampa', departure_code: 'TPA', onboarding_completed: true },
+    });
+  });
+
+  it('returns null preferences when none exist', async () => {
+    pushResult('user_preferences', { data: [], error: null });
+    const res = makeRes();
+    await handler(makeReq({ query: { action: 'get-prefs' } }), res);
+    expect(res.json).toHaveBeenCalledWith({ preferences: null });
+  });
+
+  // ─── save-prefs ────────────────────────────────────────────
+
+  it('creates new user preferences', async () => {
+    // Check for existing → none found
+    pushResult('user_preferences', { data: [], error: null });
+    // Insert result
+    pushResult('user_preferences', { data: null, error: null });
+
+    const res = makeRes();
+    await handler(
+      makeReq({
+        method: 'POST',
+        query: { action: 'save-prefs' },
+        body: { departure_code: 'JFK', departure_city: 'New York' },
+      }),
+      res,
+    );
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
+    expect(mockInsertCalls.length).toBe(1);
+    expect(mockInsertCalls[0].table).toBe('user_preferences');
+  });
+
+  it('updates existing user preferences', async () => {
+    // Check for existing → found
+    pushResult('user_preferences', { data: [{ id: 'pref-1' }], error: null });
+    // Update result
+    pushResult('user_preferences', { data: null, error: null });
+
+    const res = makeRes();
+    await handler(
+      makeReq({
+        method: 'POST',
+        query: { action: 'save-prefs' },
+        body: { onboarding_completed: true },
+      }),
+      res,
+    );
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
+  });
+
+  it('rejects save-prefs with empty body', async () => {
+    const res = makeRes();
+    await handler(
+      makeReq({ method: 'POST', query: { action: 'save-prefs' }, body: {} }),
+      res,
+    );
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  // ─── error handling ────────────────────────────────────────
+
+  it('returns 500 on DB error', async () => {
+    pushResult('saved_trips', { data: null, error: { message: 'DB down' } });
+    const res = makeRes();
+    await handler(makeReq({ query: { action: 'list' } }), res);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+
+  it('returns 405 for PUT method', async () => {
+    const res = makeRes();
+    await handler(makeReq({ method: 'PUT', query: { action: 'list' } }), res);
+    expect(res.status).toHaveBeenCalledWith(405);
   });
 });

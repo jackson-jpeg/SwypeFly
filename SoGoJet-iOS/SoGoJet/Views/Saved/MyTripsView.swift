@@ -80,17 +80,18 @@ struct MyTripsView: View {
             Image(systemName: "airplane.circle")
                 .font(.system(size: 48))
                 .foregroundStyle(Color.sgMuted.opacity(0.5))
-            Text("No trips yet")
+                .accessibilityHidden(true)
+            Text(String(localized: "trips.empty.title"))
                 .font(SGFont.bodyBold(size: 18))
                 .foregroundStyle(Color.sgWhite)
-            Text("Book your first flight and it'll appear here.")
+            Text(String(localized: "trips.empty.subtitle"))
                 .font(SGFont.body(size: 14))
                 .foregroundStyle(Color.sgMuted)
                 .multilineTextAlignment(.center)
             Button {
                 router.activeTab = .feed
             } label: {
-                Text("Find Flights")
+                Text(String(localized: "trips.empty.cta"))
                     .font(SGFont.bodyBold(size: 14))
                     .foregroundStyle(Color.sgBg)
                     .padding(.horizontal, 24)
@@ -98,6 +99,7 @@ struct MyTripsView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "trips.empty.cta"))
             .padding(.top, Spacing.sm)
             Spacer()
         }
@@ -109,10 +111,11 @@ struct MyTripsView: View {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 48))
                 .foregroundStyle(Color.sgMuted.opacity(0.5))
-            Text("Sign in to see your trips")
+                .accessibilityHidden(true)
+            Text(String(localized: "trips.sign_in.title"))
                 .font(SGFont.bodyBold(size: 16))
                 .foregroundStyle(Color.sgWhite)
-            Text("Your bookings and travel history will appear here.")
+            Text(String(localized: "trips.sign_in.subtitle"))
                 .font(SGFont.body(size: 14))
                 .foregroundStyle(Color.sgMuted)
                 .multilineTextAlignment(.center)
@@ -126,7 +129,8 @@ struct MyTripsView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 40))
                 .foregroundStyle(Color.sgRed.opacity(0.6))
-            Text("Couldn't load trips")
+                .accessibilityHidden(true)
+            Text(String(localized: "trips.error.title"))
                 .font(SGFont.bodyBold(size: 16))
                 .foregroundStyle(Color.sgWhite)
             Text(message)
@@ -136,7 +140,7 @@ struct MyTripsView: View {
             Button {
                 Task { await historyStore.fetchHistory() }
             } label: {
-                Text("Try Again")
+                Text(String(localized: "trips.error.retry"))
                     .font(SGFont.bodyBold(size: 14))
                     .foregroundStyle(Color.sgBg)
                     .padding(.horizontal, 24)
@@ -144,6 +148,7 @@ struct MyTripsView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "trips.error.retry"))
             Spacer()
         }
     }
@@ -244,6 +249,9 @@ private struct BookingCard: View {
             RoundedRectangle(cornerRadius: Radius.lg)
                 .strokeBorder(isUpcoming ? Color.sgYellow.opacity(0.2) : Color.sgBorder, lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(booking.originIata) to \(booking.destinationIata), \(booking.destinationCity), \(booking.formattedPrice), \(booking.statusInfo.label)")
+        .accessibilityHint(String(localized: "trips.booking.hint"))
     }
 
     private var statusBadge: some View {

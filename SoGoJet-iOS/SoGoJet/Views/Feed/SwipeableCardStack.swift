@@ -35,6 +35,7 @@ struct SwipeableCardStack: View {
     @State private var stampOpacity: Double = 0
     @State private var hapticFired = false
     @State private var cardEntrance = false
+    @State private var swipeTask: Task<Void, Never>?
 
     private enum SwipeDirection {
         case left, right, none
@@ -156,6 +157,7 @@ struct SwipeableCardStack: View {
                     .background(Color.sgYellow)
                     .clipShape(Capsule())
                 }
+                .accessibilityLabel("Load more deals")
 
                 Button {
                     HapticEngine.light()
@@ -172,6 +174,7 @@ struct SwipeableCardStack: View {
                     .background(Color.sgWhite.opacity(0.08))
                     .clipShape(Capsule())
                 }
+                .accessibilityLabel("Start over from the beginning")
             }
             .padding(.top, Spacing.sm)
         }
@@ -391,8 +394,14 @@ struct SwipeableCardStack: View {
             flyAwayOffset = CGSize(width: flyX, height: flyY)
         }
 
+        // Cancel any previous swipe task to avoid pileup during rapid swiping
+        swipeTask?.cancel()
+
         // After fly animation, advance and reset
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+        swipeTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 350_000_000) // 0.35s
+            guard !Task.isCancelled else { return }
+
             // Set entrance state before advancing so new card starts at peek scale
             cardEntrance = true
             isFlying = false
@@ -401,15 +410,17 @@ struct SwipeableCardStack: View {
             onAdvance()
 
             // Animate the new top card from peek state to full size
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    cardEntrance = false
-                }
-                // Subtle "landing" haptic as the new card reaches full size
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    HapticEngine.light()
-                }
+            try? await Task.sleep(nanoseconds: 50_000_000) // 0.05s
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeOut(duration: 0.3)) {
+                cardEntrance = false
             }
+
+            // Subtle "landing" haptic as the new card reaches full size
+            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+            guard !Task.isCancelled else { return }
+            HapticEngine.light()
         }
     }
 

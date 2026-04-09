@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { logApiError } from '../utils/apiLogger';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { cors } from './_cors';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 
@@ -19,6 +20,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method !== 'GET') {
     return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Only GET is supported');
+  }
+
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`leaderboard:${ip}`, 20, 60_000);
+  if (!rl.allowed) {
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests');
   }
 
   const limit = Math.min(Number(req.query.limit) || 20, 100);
@@ -169,6 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rank: i + 1,
     }));
 
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=60');
     return sendSuccess(res, { leaderboard: trimmed, total: entries.length });
   } catch (err) {
     logApiError('leaderboard', err);

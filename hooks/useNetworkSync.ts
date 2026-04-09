@@ -5,9 +5,36 @@ import { useSavedStore, type PendingSync } from '../stores/savedStore';
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
 /**
+ * Retrieve the stored auth session token (Clerk JWT).
+ * Returns null when no user is signed in (guest mode).
+ *
+ * Currently checks localStorage/AsyncStorage for the token set by the
+ * auth flow. When client-side Clerk auth is added, this should be
+ * replaced with the Clerk SDK's `getToken()`.
+ */
+async function getAuthToken(): Promise<string | null> {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem('sogojet-session-token') || null;
+    }
+  } catch {
+    // SSR or storage unavailable
+  }
+  return null;
+}
+
+/** Calculate delay with exponential backoff: 1s, 2s, 4s, 8s, … capped at 60s. */
+function backoffDelay(attempt: number): number {
+  return Math.min(1000 * Math.pow(2, attempt), 60_000);
+}
+
+/**
  * Flush pending save/unsave actions to the backend.
  * Each sync is attempted individually — successful ones are cleared from the queue.
  * Failed syncs remain queued for the next connectivity event.
+ *
+ * Uses exponential backoff on repeated failures and includes auth headers
+ * when a session token is available.
  */
 async function flushPendingSyncs(
   pending: PendingSync[],
@@ -15,29 +42,62 @@ async function flushPendingSyncs(
 ): Promise<void> {
   if (pending.length === 0) return;
 
+  // Require an auth token — the /api/saved endpoint returns 401 without one
+  const token = await getAuthToken();
+  if (!token) {
+    // Guest mode: skip network sync entirely. Saves are persisted locally
+    // in the Zustand store and will sync once the user signs in.
+    return;
+  }
+
   const synced: string[] = [];
+  let consecutiveFailures = 0;
 
   for (const item of pending) {
+    // Exponential backoff: wait before retrying after consecutive failures
+    if (consecutiveFailures > 0) {
+      const delay = backoffDelay(consecutiveFailures - 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
     try {
       const res = await fetch(
         `${API_BASE}/api/saved?action=${item.action}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ destination_id: item.destinationId }),
         },
       );
 
       if (res.ok) {
         synced.push(item.destinationId);
+        consecutiveFailures = 0;
       } else if (res.status === 401) {
-        // User not authenticated — stop trying until next session
+        // Token expired or invalid — stop flushing until next session/refresh
+        break;
+      } else if (res.status === 429) {
+        // Rate limited — back off and stop for now
+        consecutiveFailures++;
+        break;
+      } else {
+        // Server error (500, etc.) — increment backoff but keep trying others
+        consecutiveFailures++;
+        if (consecutiveFailures >= 5) {
+          // Too many consecutive failures — bail out, try again later
+          break;
+        }
+      }
+    } catch {
+      // Network error — increment backoff
+      consecutiveFailures++;
+      if (consecutiveFailures >= 3) {
+        // Likely still offline — stop flushing, will retry on next connectivity event
         break;
       }
-      // Other errors (429, 500): leave in queue for retry
-    } catch {
-      // Network error — stop flushing, will retry on next connectivity event
-      break;
     }
   }
 

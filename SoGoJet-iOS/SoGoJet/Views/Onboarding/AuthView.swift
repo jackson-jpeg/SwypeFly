@@ -51,7 +51,7 @@ struct AuthView: View {
                 .padding(.bottom, 24)
 
                 // Tagline
-                Text("Find cheap flights.\nSwipe, save, book.")
+                Text(String(localized: "auth.tagline"))
                     .font(SGFont.body(size: 17))
                     .foregroundStyle(Color.sgWhiteDim)
                     .multilineTextAlignment(.center)
@@ -74,7 +74,7 @@ struct AuthView: View {
                                 }
                             case .failure(let error):
                                 if (error as? ASAuthorizationError)?.code != .canceled {
-                                    auth.authError = "Sign in failed. Please try again."
+                                    auth.authError = String(localized: "auth.sign_in_failed")
                                 }
                             }
                         }
@@ -91,7 +91,7 @@ struct AuthView: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "g.circle.fill")
                                     .font(.system(size: 20))
-                                Text("Continue with Google")
+                                Text(String(localized: "auth.continue_google"))
                                     .font(SGFont.bodyBold(size: 16))
                             }
                             .foregroundStyle(Color.sgBg)
@@ -112,7 +112,7 @@ struct AuthView: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "play.rectangle.fill")
                                     .font(.system(size: 18))
-                                Text("Continue with TikTok")
+                                Text(String(localized: "auth.continue_tiktok"))
                                     .font(SGFont.bodyBold(size: 16))
                             }
                             .foregroundStyle(Color.white)
@@ -135,7 +135,7 @@ struct AuthView: View {
                             auth.continueAsGuest()
                             settings.hasOnboarded = true
                         } label: {
-                            Text("Continue as Guest")
+                            Text(String(localized: "auth.continue_guest"))
                                 .font(SGFont.bodyBold(size: 15))
                                 .foregroundStyle(Color.sgMuted)
                                 .frame(maxWidth: .infinity)
@@ -175,13 +175,13 @@ struct AuthView: View {
                 // Terms
                 if showButtons {
                     HStack(spacing: 4) {
-                        Text("By continuing, you agree to our")
+                        Text(String(localized: "auth.terms_prefix"))
                         if let url = URL(string: "https://sogojet.com/legal/terms") {
-                            Link("Terms", destination: url)
+                            Link(String(localized: "auth.terms_link"), destination: url)
                         }
-                        Text("and")
+                        Text(String(localized: "auth.terms_and"))
                         if let url = URL(string: "https://sogojet.com/legal/privacy") {
-                            Link("Privacy Policy", destination: url)
+                            Link(String(localized: "auth.privacy_link"), destination: url)
                         }
                     }
                     .font(.system(size: 10))

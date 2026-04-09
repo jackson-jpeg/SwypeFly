@@ -32,7 +32,8 @@ struct ReviewView: View {
                 proceedAfterSignIn = false
                 showSignInSheet = false
                 // Small delay to let the sheet dismiss before starting biometric auth
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(400))
                     authenticateAndPay()
                 }
             }
@@ -68,9 +69,9 @@ struct ReviewView: View {
     private var payingContent: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             VintageTerminalHeroLockup(
-                eyebrow: "Review & Pay",
-                title: "Confirming Booking",
-                subtitle: "Confirming your booking..."
+                eyebrow: String(localized: "review.title"),
+                title: String(localized: "review.confirming_booking"),
+                subtitle: String(localized: "review.confirming_subtitle")
             )
             .padding(.horizontal, Spacing.md)
             .padding(.top, Spacing.lg)
@@ -78,7 +79,7 @@ struct ReviewView: View {
             VintageTravelTicket(tone: .amber) {
                 HStack {
                     VStack(alignment: .leading, spacing: Spacing.xs) {
-                        VintageTerminalSectionLabel(text: "Processing", tone: .amber)
+                        VintageTerminalSectionLabel(text: String(localized: "review.processing"), tone: .amber)
                         Text(totalLabel)
                             .font(SGFont.display(size: 34))
                             .foregroundStyle(Color.sgWhite)
@@ -92,13 +93,13 @@ struct ReviewView: View {
                         .scaleEffect(1.3)
                 }
             } content: {
-                Text("Your payment is being processed. Please don't close this screen.")
+                Text(String(localized: "review.payment_processing_warning"))
                     .font(SGFont.body(size: 13))
                     .foregroundStyle(Color.sgWhiteDim)
                     .fixedSize(horizontal: false, vertical: true)
             } footer: {
                 HStack {
-                    VintageTerminalCaptionBlock(title: "Status", value: "Processing payment", tone: .amber)
+                    VintageTerminalCaptionBlock(title: "Status", value: String(localized: "review.status_processing"), tone: .amber)
                     Spacer()
                     VintageTerminalCaptionBlock(title: "Route", value: routeLabel, tone: .ivory, alignment: .trailing)
                 }
@@ -113,8 +114,8 @@ struct ReviewView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             VintageTerminalCollectionHeader(
-                title: "Order Summary",
-                subtitle: "Review everything before you pay."
+                title: String(localized: "review.order_summary"),
+                subtitle: String(localized: "review.order_summary.subtitle")
             )
             .padding(.top, Spacing.sm)
         }
@@ -124,7 +125,7 @@ struct ReviewView: View {
         VintageTravelTicket(tone: .amber) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    VintageTerminalSectionLabel(text: "Trip Summary", tone: .amber)
+                    VintageTerminalSectionLabel(text: String(localized: "review.trip_summary"), tone: .amber)
                     Text(totalLabel)
                         .font(SGFont.display(size: 34))
                         .foregroundStyle(Color.sgYellow)
@@ -162,7 +163,7 @@ struct ReviewView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.sgOrange)
-                Text("Payment Failed")
+                Text(String(localized: "review.payment_failed"))
                     .font(SGFont.bodyBold(size: 14))
                     .foregroundStyle(Color.sgOrange)
                 Spacer()
@@ -171,7 +172,7 @@ struct ReviewView: View {
                 .font(SGFont.bodyDefault)
                 .foregroundStyle(Color.sgMuted)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Your card was not charged. You can try again or go back to change your flight.")
+            Text(String(localized: "review.card_not_charged"))
                 .font(SGFont.caption)
                 .foregroundStyle(Color.sgFaint)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -186,15 +187,15 @@ struct ReviewView: View {
 
     private func discrepancyDeck(_ discrepancy: PriceDiscrepancy) -> some View {
         VintageTerminalPanel(
-            title: "Live Fare Change",
+            title: String(localized: "review.live_fare_change"),
             subtitle: discrepancy.message,
             stamp: "\(discrepancy.percentDiff)%",
             tone: .ember
         ) {
             HStack(spacing: Spacing.sm) {
                 VintageTerminalMetricDeck(metrics: [
-                    .init(title: "Feed fare", value: "$\(Int(discrepancy.feedPrice.rounded()))", footnote: "Original price", tone: .ivory),
-                    .init(title: "Booking fare", value: "$\(Int(discrepancy.bookingPrice.rounded()))", footnote: "Current live rate", tone: .amber),
+                    .init(title: String(localized: "review.feed_fare"), value: "$\(Int(discrepancy.feedPrice.rounded()))", footnote: String(localized: "review.original_price"), tone: .ivory),
+                    .init(title: String(localized: "review.booking_fare"), value: "$\(Int(discrepancy.bookingPrice.rounded()))", footnote: String(localized: "review.current_live_rate"), tone: .amber),
                 ])
             }
         }
@@ -202,8 +203,8 @@ struct ReviewView: View {
 
     private var flightManifest: some View {
         VintageTerminalManifestCard(
-            title: "Flight Details",
-            subtitle: "Your selected flights.",
+            title: String(localized: "review.flight_details"),
+            subtitle: String(localized: "review.flight_details.subtitle"),
             tone: .ivory
         ) {
             if let outbound = offer?.outboundSlice {
@@ -221,7 +222,7 @@ struct ReviewView: View {
                     prefix: "FLT",
                     title: offer.airline,
                     value: "\(offer.flightNumber)  |  \(offer.duration)",
-                    subtitle: offer.stops == 0 ? "Nonstop live fare" : "\(offer.stops) stop live fare",
+                    subtitle: offer.stops == 0 ? String(localized: "review.nonstop") : String(format: String(localized: "review.stops"), offer.stops),
                     tone: .amber
                 )
             }
@@ -323,7 +324,7 @@ struct ReviewView: View {
 
         return VintageTerminalManifestRow(
             prefix: "BAG",
-            title: hasChecked ? "Checked Baggage" : "Carry-on Only",
+            title: hasChecked ? String(localized: "review.checked_baggage") : String(localized: "review.carry_on_only"),
             value: description,
             subtitle: subtitle,
             tone: hasChecked ? .moss : .ivory
@@ -334,9 +335,9 @@ struct ReviewView: View {
         let displayName: String = {
             if let name = meal.name, !name.isEmpty { return name }
             switch meal.rank?.lowercased() {
-            case "meal": return "Meal included"
-            case "snack", "refreshment": return "Refreshments"
-            default: return "No meal service"
+            case "meal": return String(localized: "review.meal_included")
+            case "snack", "refreshment": return String(localized: "review.refreshments")
+            default: return String(localized: "review.no_meal")
             }
         }()
         let rankLower = meal.rank?.lowercased()
@@ -344,7 +345,7 @@ struct ReviewView: View {
 
         return VintageTerminalManifestRow(
             prefix: "MEAL",
-            title: "Meal Service",
+            title: String(localized: "review.meal_service"),
             value: displayName,
             tone: hasMeal ? .moss : .ivory
         )
@@ -356,9 +357,9 @@ struct ReviewView: View {
                 if let penalty = conditions.refundPenalty, !penalty.isEmpty {
                     return "Refundable (\(penalty) fee)"
                 }
-                return "Fully refundable"
+                return String(localized: "review.fully_refundable")
             }
-            return "Non-refundable"
+            return String(localized: "review.non_refundable")
         }()
         let changeText: String? = {
             guard let changeable = conditions.changeable else { return nil }
@@ -366,14 +367,14 @@ struct ReviewView: View {
                 if let penalty = conditions.changePenalty, !penalty.isEmpty {
                     return "Changeable (\(penalty) fee)"
                 }
-                return "Free changes"
+                return String(localized: "review.free_changes")
             }
-            return "No changes allowed"
+            return String(localized: "review.no_changes")
         }()
 
         return VintageTerminalManifestRow(
             prefix: "COND",
-            title: "Booking Conditions",
+            title: String(localized: "review.booking_conditions"),
             value: refundText,
             subtitle: changeText,
             tone: conditions.refundable == true ? .moss : .ember
@@ -409,8 +410,8 @@ struct ReviewView: View {
 
     private var travelerManifest: some View {
         VintageTerminalManifestCard(
-            title: "Passenger",
-            subtitle: "Your booking details.",
+            title: String(localized: "review.passenger"),
+            subtitle: String(localized: "review.passenger.subtitle"),
             tone: .moss
         ) {
             VintageTerminalManifestRow(
@@ -423,9 +424,9 @@ struct ReviewView: View {
             manifestDivider
             VintageTerminalManifestRow(
                 prefix: "ID",
-                title: store.passenger.passportNumber.isEmpty ? "Passport to be added later" : store.passenger.passportNumber,
+                title: store.passenger.passportNumber.isEmpty ? String(localized: "review.passport_pending") : store.passenger.passportNumber,
                 value: store.passenger.nationality.isEmpty ? "US" : store.passenger.nationality,
-                subtitle: store.passenger.passportExpiry.isEmpty ? "Expiry not captured yet" : "Expires \(store.passenger.passportExpiry.shortDate)",
+                subtitle: store.passenger.passportExpiry.isEmpty ? String(localized: "review.expiry_pending") : "Expires \(store.passenger.passportExpiry.shortDate)",
                 tone: .ivory
             )
         }
@@ -433,13 +434,13 @@ struct ReviewView: View {
 
     private var fareLedger: some View {
         VintageTerminalPanel(
-            title: "Price Breakdown",
-            subtitle: "What you are about to pay right now.",
+            title: String(localized: "review.price_breakdown"),
+            subtitle: String(localized: "review.price_breakdown.subtitle"),
             stamp: totalLabel,
             tone: .amber
         ) {
             VStack(spacing: 0) {
-                lineItem(label: store.passengerCount > 1 ? "Base fare for \(store.passengerCount) travelers" : "Base fare", amount: offer?.price)
+                lineItem(label: store.passengerCount > 1 ? String(format: String(localized: "review.base_fare_multiple"), store.passengerCount) : String(localized: "review.base_fare"), amount: offer?.price)
                 manifestDivider
 
                 if let seatPrice = selectedSeatPrice {
@@ -447,34 +448,34 @@ struct ReviewView: View {
                     manifestDivider
                 }
 
-                lineItem(label: "Taxes and fees", note: "Included in fare")
+                lineItem(label: String(localized: "review.taxes_fees"), note: String(localized: "review.taxes_included"))
                 manifestDivider
-                lineItem(label: "Cabin", note: cabinLabel)
+                lineItem(label: String(localized: "review.cabin"), note: cabinLabel)
             }
         }
     }
 
     private var confirmationNotes: some View {
         VintageTerminalPanel(
-            title: "Before You Pay",
+            title: String(localized: "review.before_you_pay"),
             subtitle: "",
             stamp: "Ready",
             tone: .ember
         ) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 VintageTerminalChecklistItem(
-                    title: "Current price is shown above",
-                    detail: "We'll verify the final price before charging you.",
+                    title: String(localized: "review.note_price"),
+                    detail: String(localized: "review.note_price_detail"),
                     tone: .amber
                 )
                 VintageTerminalChecklistItem(
-                    title: "Seat extras are optional",
-                    detail: "Skipping seats will not stop the booking. The carrier can still assign them later.",
+                    title: String(localized: "review.note_seats"),
+                    detail: String(localized: "review.note_seats_detail"),
                     tone: .ivory
                 )
                 VintageTerminalChecklistItem(
-                    title: "You can still step back one screen",
-                    detail: "Use the secondary action below if you want to revise the seat or traveler details.",
+                    title: String(localized: "review.note_back"),
+                    detail: String(localized: "review.note_back_detail"),
                     tone: .moss
                 )
             }
@@ -495,14 +496,49 @@ struct ReviewView: View {
             break
         case .failed(let error):
             HapticEngine.error()
-            store.paymentError = error.localizedDescription
+            store.paymentError = userFacingPaymentMessage(for: error)
         }
+    }
+
+    /// Convert Stripe / payment errors into user-friendly messages.
+    private func userFacingPaymentMessage(for error: Error) -> String {
+        let message = error.localizedDescription.lowercased()
+
+        // Card declined (Stripe surfaces these as localized strings)
+        if message.contains("declined") || message.contains("insufficient funds")
+            || message.contains("do not honor") {
+            return "Your card was declined. Please check your card details or try a different payment method."
+        }
+
+        // Authentication required (3D Secure, etc.)
+        if message.contains("authentication") || message.contains("3d secure") {
+            return "Additional card verification is required. Please try again and complete the verification step."
+        }
+
+        // Expired card
+        if message.contains("expired") {
+            return "Your card appears to be expired. Please use a different card."
+        }
+
+        // Network / connectivity
+        if message.contains("network") || message.contains("internet")
+            || message.contains("connection") || error is URLError {
+            return "A network error occurred during payment. Your card was not charged. Please check your connection and try again."
+        }
+
+        // Generic server error
+        if message.contains("server") || message.contains("500") || message.contains("unavailable") {
+            return "The payment service is temporarily unavailable. Your card was not charged. Please try again in a moment."
+        }
+
+        // Fallback — still reassure the user
+        return "Payment could not be completed. Your card was not charged. Please try again or use a different payment method."
     }
 
     private func authenticateAndPay() {
         // Check remote config — admin can disable bookings without an app update
         guard RemoteConfig.shared.bookingEnabled else {
-            store.paymentError = "Booking is temporarily unavailable. Please try again later."
+            store.paymentError = String(localized: "review.booking_unavailable")
             return
         }
 
@@ -520,7 +556,7 @@ struct ReviewView: View {
         if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authError) {
             context.evaluatePolicy(
                 .deviceOwnerAuthentication,
-                localizedReason: "Verify your identity to complete this purchase"
+                localizedReason: String(localized: "review.verify_identity")
             ) { success, _ in
                 Task { @MainActor in
                     if success {
@@ -552,12 +588,12 @@ struct ReviewView: View {
                     Image(systemName: "clock.badge.xmark")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(Color.sgRed)
-                    Text("Offer Expired")
+                    Text(String(localized: "review.offer_expired_title"))
                         .font(SGFont.bodyBold(size: 14))
                         .foregroundStyle(Color.sgRed)
                     Spacer()
                 }
-                Text("This fare has expired. Search again to get a fresh price.")
+                Text(String(localized: "review.offer_expired_message"))
                     .font(SGFont.body(size: 13))
                     .foregroundStyle(Color.sgMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -568,7 +604,7 @@ struct ReviewView: View {
                     HStack(spacing: Spacing.sm) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 12, weight: .semibold))
-                        Text("Search Again")
+                        Text(String(localized: "review.search_again"))
                             .font(SGFont.bodyBold(size: 13))
                     }
                     .foregroundStyle(Color.sgBg)
@@ -595,7 +631,7 @@ struct ReviewView: View {
                 Image(systemName: "clock")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(accentColor)
-                Text("Offer expires in")
+                Text(String(localized: "review.offer_expires_in"))
                     .font(SGFont.body(size: 13))
                     .foregroundStyle(Color.sgWhiteDim)
                 Text(countdown)
@@ -624,7 +660,7 @@ struct ReviewView: View {
                     HStack(spacing: Spacing.sm) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 14, weight: .semibold))
-                        Text("Search Fresh Fares")
+                        Text(String(localized: "review.search_fresh"))
                             .font(SGFont.bodyBold(size: 16))
                         Spacer()
                     }
@@ -641,7 +677,7 @@ struct ReviewView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .tint(Color.sgYellow)
-                    Text("Processing booking...")
+                    Text(String(localized: "review.processing_booking"))
                         .font(SGFont.bodyBold(size: 16))
                     Spacer()
                 }
@@ -655,7 +691,7 @@ struct ReviewView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .tint(Color.sgYellow)
-                    Text("Preparing payment...")
+                    Text(String(localized: "review.preparing_payment"))
                         .font(SGFont.bodyBold(size: 16))
                     Spacer()
                 }
@@ -675,7 +711,7 @@ struct ReviewView: View {
                         Spacer()
                         Image(systemName: "lock.fill")
                             .font(.system(size: 11, weight: .semibold))
-                        Text("Secure")
+                        Text(String(localized: "review.secure"))
                             .font(SGFont.bodyBold(size: 11))
                     }
                     .foregroundStyle(Color.sgBg)
@@ -685,7 +721,8 @@ struct ReviewView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Pay for flight")
+                .accessibilityLabel("Pay \(totalLabel) for flight to \(store.deal?.destination ?? "destination")")
+                .accessibilityHint("Opens secure payment form")
                 .disabled(offer == nil || store.isOfferExpired)
             } else {
                 // No payment sheet yet — show button to prepare payment
@@ -700,7 +737,7 @@ struct ReviewView: View {
                         Spacer()
                         Image(systemName: "lock.fill")
                             .font(.system(size: 11, weight: .semibold))
-                        Text("Secure")
+                        Text(String(localized: "review.secure"))
                             .font(SGFont.bodyBold(size: 11))
                     }
                     .foregroundStyle(Color.sgBg)
@@ -710,13 +747,14 @@ struct ReviewView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Pay for flight")
+                .accessibilityLabel("Pay \(totalLabel) for flight to \(store.deal?.destination ?? "destination")")
+                .accessibilityHint("Verifies your identity, then opens secure payment")
                 .disabled(offer == nil || store.isOfferExpired)
             }
 
             VintageTerminalSecondaryButton(
-                title: store.seatMap == nil ? "Back to Traveler Details" : "Back to Seat Map",
-                subtitle: "Revisit the previous step before payment is issued.",
+                title: store.seatMap == nil ? String(localized: "review.back_to_traveler") : String(localized: "review.back_to_seats"),
+                subtitle: String(localized: "review.back_subtitle"),
                 icon: "arrow.uturn.backward",
                 tone: .ivory,
                 fillsWidth: true
@@ -774,7 +812,7 @@ struct ReviewView: View {
     }
 
     private var selectedSeatLabel: String {
-        guard let seatId = store.selectedSeatId else { return "Assigned later" }
+        guard let seatId = store.selectedSeatId else { return String(localized: "review.assigned_later") }
         return seatId
     }
 
@@ -841,11 +879,11 @@ private struct BookingSignInSheet: View {
                     .foregroundStyle(Color.sgYellow)
                     .padding(.top, Spacing.lg)
 
-                Text("Sign In to Pay")
+                Text(String(localized: "auth.sign_in_to_pay"))
                     .font(SGFont.display(size: 24))
                     .foregroundStyle(Color.sgWhite)
 
-                Text("Your booking details are saved.\nSign in to complete your purchase.")
+                Text(String(localized: "auth.sign_in_to_pay.subtitle"))
                     .font(SGFont.body(size: 14))
                     .foregroundStyle(Color.sgWhiteDim)
                     .multilineTextAlignment(.center)
@@ -867,7 +905,7 @@ private struct BookingSignInSheet: View {
                         }
                     case .failure(let error):
                         if (error as? ASAuthorizationError)?.code != .canceled {
-                            auth.authError = "Sign in failed. Please try again."
+                            auth.authError = String(localized: "auth.sign_in_failed")
                         }
                     }
                 }
@@ -884,7 +922,7 @@ private struct BookingSignInSheet: View {
                     HStack(spacing: 10) {
                         Image(systemName: "g.circle.fill")
                             .font(.system(size: 20))
-                        Text("Continue with Google")
+                        Text(String(localized: "auth.continue_google"))
                             .font(SGFont.bodyBold(size: 16))
                     }
                     .foregroundStyle(Color.sgBg)
@@ -921,13 +959,14 @@ private struct BookingSignInSheet: View {
             Button {
                 dismiss()
             } label: {
-                Text("Not Now")
+                Text(String(localized: "auth.not_now"))
                     .font(SGFont.bodyBold(size: 15))
                     .foregroundStyle(Color.sgMuted)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss sign in and go back")
             .padding(.horizontal, 32)
             .padding(.bottom, Spacing.lg)
         }

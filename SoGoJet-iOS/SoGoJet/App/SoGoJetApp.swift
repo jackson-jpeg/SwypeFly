@@ -4,7 +4,7 @@ import CoreSpotlight
 import UserNotifications
 import MetricKit
 import StripePaymentSheet
-import Clerk
+import ClerkKit
 import os
 
 // MARK: - App Delegate (Quick Actions + Notification Handling + Crash Reporting)
@@ -82,8 +82,13 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
             let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
             var sysInfo = utsname()
             uname(&sysInfo)
-            let deviceModel = withUnsafePointer(to: &sysInfo.machine) {
-                $0.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) }
+            let deviceModel: String = withUnsafePointer(to: &sysInfo.machine) { ptr in
+                ptr.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout.size(ofValue: sysInfo.machine)) { buf in
+                    let size = MemoryLayout.size(ofValue: sysInfo.machine)
+                    // Find null terminator to avoid reading past the string
+                    let len = (0..<size).first(where: { buf[$0] == 0 }) ?? size
+                    return String(bytes: UnsafeBufferPointer(start: buf, count: len), encoding: .utf8) ?? "unknown"
+                }
             }
             let wrapped = DiagnosticReport(
                 type: "metrickit_diagnostic",
@@ -200,7 +205,7 @@ struct SoGoJetApp: App {
     @UIApplicationDelegateAdaptor(SoGoJetAppDelegate.self) var appDelegate
     init() {
         // Configure Clerk SDK for OAuth (Google, TikTok).
-        Clerk.shared.configure(publishableKey: "pk_live_Y2xlcmsuc29nb2pldC5jb20k")
+        Clerk.configure(publishableKey: "pk_live_Y2xlcmsuc29nb2pldC5jb20k")
     }
 
     @State private var feedStore = FeedStore()
@@ -245,8 +250,7 @@ struct SoGoJetApp: App {
                     }
                 }
                 .task {
-                    // Load Clerk SDK (required before OAuth sign-in works)
-                    try? await Clerk.shared.load()
+                    // Clerk 1.x: configure() handles initialization — no separate load needed
 
                     // Fetch remote config (maintenance mode, feature flags, min version)
                     await RemoteConfig.shared.fetch()

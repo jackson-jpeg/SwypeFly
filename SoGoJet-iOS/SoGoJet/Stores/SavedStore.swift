@@ -49,7 +49,8 @@ final class SavedStore {
             deindexFromSpotlight(deal.id)
             Analytics.track(.dealUnsaved, properties: ["city": deal.city, "dealId": deal.id])
             // Fire-and-forget: sync unsave to backend
-            Task {
+            Task { [weak self] in
+                guard self != nil else { return }
                 let _: EmptyResponse? = try? await APIClient.shared.fetch(.savedUnsave(dealId: deal.id))
             }
             return false
@@ -61,7 +62,8 @@ final class SavedStore {
             ReviewPrompter.shared.recordSave(totalSavedCount: savedDeals.count)
             Analytics.track(.dealSaved, properties: ["city": deal.city, "dealId": deal.id])
             // Fire-and-forget: sync save to backend
-            Task {
+            Task { [weak self] in
+                guard self != nil else { return }
                 let _: EmptyResponse? = try? await APIClient.shared.fetch(.savedSave(dealId: deal.id))
             }
             return true
@@ -137,20 +139,21 @@ final class SavedStore {
     /// Call this on app launch when the user is authenticated.
     func syncFromServer() {
         guard APIClient.authToken != nil else { return }
-        Task {
+        Task { [weak self] in
             do {
                 let response: SavedListResponse = try await APIClient.shared.fetch(.savedList)
                 await MainActor.run {
-                    let localIds = Set(savedDeals.map(\.id))
+                    guard let self else { return }
+                    let localIds = Set(self.savedDeals.map(\.id))
                     // Append server-only deals that aren't already local
                     var didChange = false
                     for deal in response.deals where !localIds.contains(deal.id) {
-                        savedDeals.append(deal)
-                        indexInSpotlight(deal)
+                        self.savedDeals.append(deal)
+                        self.indexInSpotlight(deal)
                         didChange = true
                     }
                     if didChange {
-                        saveToDisk()
+                        self.saveToDisk()
                     }
                 }
             } catch {

@@ -9,6 +9,7 @@ import {
   Dimensions,
   Platform,
   Animated,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -339,11 +340,16 @@ export default function DestinationDetailScreen() {
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDesc} />
       </Head>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <Animated.ScrollView
         bounces={false}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
+        keyboardDismissMode="on-drag"
       >
         {/* Hero image with parallax */}
         <View style={styles.hero}>
@@ -705,6 +711,7 @@ export default function DestinationDetailScreen() {
         {/* Spacer for bottom bar */}
         <View style={{ height: 120 }} />
       </Animated.ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Sticky bottom bar */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>

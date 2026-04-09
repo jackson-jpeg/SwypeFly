@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from './_cors.js';
 import { logApiError } from '../utils/apiLogger';
 import { sendError } from '../utils/apiResponse';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { env } from '../utils/env';
@@ -12,8 +13,35 @@ import { env } from '../utils/env';
 
 const CLERK_SECRET_KEY = (env.CLERK_SECRET_KEY || '').trim();
 
+/** Fetch with a 5-second timeout to avoid hanging on Clerk API calls. */
+async function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Safely read a response body for logging (won't throw). */
+async function safeResponseText(response: Response): Promise<string> {
+  try {
+    return await response.text();
+  } catch {
+    return '(unreadable body)';
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
+
+  // Rate limit auth: 10 req/min per IP (auth is sensitive)
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`auth:${ip}`, 10, 60_000);
+  if (!rl.allowed) {
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many authentication requests');
+  }
 
   const { action } = req.query;
 
@@ -130,114 +158,186 @@ async function handleOAuthExchange(req: VercelRequest, res: VercelResponse) {
       return sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Auth not configured');
     }
 
-    // The code/token from the iOS app is either:
+    const codePreview = code.length > 20 ? code.substring(0, 20) + '...' : code;
+
+    // The code/token from the iOS app could be:
     // 1. A Clerk rotating_token from completed OAuth (__clerk_status=completed)
     // 2. A Clerk ticket from the OAuth callback (__clerk_ticket)
-    // 3. An authorization code
-    // All of these can be verified via /v1/clients/verify for rotating tokens.
+    // 3. A session JWT directly (Clerk iOS SDK 1.0 sends the JWT from getToken())
+    // 4. An authorization code
 
-    // Step 1: Try to verify as a client token (rotating_token)
-    const verifyResponse = await fetch('https://api.clerk.com/v1/clients/verify', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${CLERK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token: code }),
-    });
+    // ── Strategy 1: Verify as a client token (rotating_token) ──────────
+    try {
+      const verifyResponse = await fetchWithTimeout('https://api.clerk.com/v1/clients/verify', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${CLERK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: code }),
+      });
 
-    if (verifyResponse.ok) {
-      const clientData = await verifyResponse.json();
-      const session = clientData.sessions?.[0];
-      if (session) {
-        // Fetch user info
-        const userResponse = await fetch(
-          `https://api.clerk.com/v1/users/${session.user_id}`,
-          { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } },
-        );
+      if (verifyResponse.ok) {
+        const clientData = await verifyResponse.json();
+        const session = clientData.sessions?.[0];
+        if (session) {
+          // Fetch user info
+          const userResponse = await fetchWithTimeout(
+            `https://api.clerk.com/v1/users/${session.user_id}`,
+            { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } },
+          );
 
-        let email: string | null = null;
-        let name: string | null = null;
+          let email: string | null = null;
+          let name: string | null = null;
 
-        if (userResponse.ok) {
-          const user = await userResponse.json();
-          email = user.email_addresses?.[0]?.email_address || null;
-          name = [user.first_name, user.last_name].filter(Boolean).join(' ') || null;
-        }
+          if (userResponse.ok) {
+            const user = await userResponse.json();
+            email = user.email_addresses?.[0]?.email_address || null;
+            name = [user.first_name, user.last_name].filter(Boolean).join(' ') || null;
+          } else {
+            const body = await safeResponseText(userResponse);
+            console.warn(`[auth/oauth] Strategy 1: user fetch failed (${userResponse.status}): ${body}`);
+          }
 
-        // If the session has a JWT, use it directly
-        const jwt = session.last_active_token?.jwt;
-        if (jwt) {
+          // If the session has a JWT, use it directly
+          const jwt = session.last_active_token?.jwt;
+          if (jwt) {
+            return res.status(200).json({
+              sessionToken: jwt,
+              userId: session.user_id,
+              email,
+              name,
+            });
+          }
+
+          // Session exists but no JWT — create a sign-in token and redeem it for a JWT
+          if (email) {
+            const result = await findOrCreateClerkUser(email, name?.split(' ')[0], name?.split(' ').slice(1).join(' '));
+            if (result) return res.status(200).json(result);
+          }
+
+          // Last resort: return the rotating token itself (may not pass verifyToken)
+          console.warn('[auth/oauth] Strategy 1: session found but no JWT and no email — returning rotating token');
           return res.status(200).json({
-            sessionToken: jwt,
+            sessionToken: code,
             userId: session.user_id,
             email,
             name,
           });
         }
-
-        // Session exists but no JWT — create a sign-in token and redeem it for a JWT
-        if (email) {
-          const result = await findOrCreateClerkUser(email, name?.split(' ')[0], name?.split(' ').slice(1).join(' '));
-          if (result) return res.status(200).json(result);
-        }
-
-        // Last resort: return the rotating token itself (may not pass verifyToken)
-        console.warn('[auth/oauth] Session found but no JWT and no email — returning rotating token');
-        return res.status(200).json({
-          sessionToken: code,
-          userId: session.user_id,
-          email,
-          name,
-        });
+      } else {
+        const body = await safeResponseText(verifyResponse);
+        console.info(`[auth/oauth] Strategy 1 (clients/verify) failed (${verifyResponse.status}): ${body}`);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        console.warn('[auth/oauth] Strategy 1 (clients/verify) timed out after 5s');
+      } else {
+        console.warn('[auth/oauth] Strategy 1 (clients/verify) error:', err);
       }
     }
 
-    // Step 2: If client verify failed, the code might be a sign-in ticket.
-    // Try redeeming it via the Frontend API (same approach as Apple flow).
-    const clerkFrontendDomain = env.CLERK_FRONTEND_API || 'clerk.sogojet.com';
-    const ticketResponse = await fetch(
-      `https://${clerkFrontendDomain}/v1/client/sign_ins?_clerk_js_version=4`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          strategy: 'ticket',
-          ticket: code,
-        }),
-      },
-    );
+    // ── Strategy 2: Try as a sign-in ticket via Frontend API ───────────
+    try {
+      const clerkFrontendDomain = env.CLERK_FRONTEND_API || 'clerk.sogojet.com';
+      const ticketResponse = await fetchWithTimeout(
+        `https://${clerkFrontendDomain}/v1/client/sign_ins?_clerk_js_version=4`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            strategy: 'ticket',
+            ticket: code,
+          }),
+        },
+      );
 
-    if (ticketResponse.ok) {
-      const ticketData = await ticketResponse.json();
-      const session = ticketData.client?.sessions?.[0];
-      if (session?.last_active_token?.jwt) {
-        // Fetch user info
-        const userResponse = await fetch(
-          `https://api.clerk.com/v1/users/${session.user_id}`,
-          { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } },
-        );
+      if (ticketResponse.ok) {
+        const ticketData = await ticketResponse.json();
+        const session = ticketData.client?.sessions?.[0];
+        if (session?.last_active_token?.jwt) {
+          // Fetch user info
+          const userResponse = await fetchWithTimeout(
+            `https://api.clerk.com/v1/users/${session.user_id}`,
+            { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } },
+          );
+          let email: string | null = null;
+          let name: string | null = null;
+          if (userResponse.ok) {
+            const user = await userResponse.json();
+            email = user.email_addresses?.[0]?.email_address || null;
+            name = [user.first_name, user.last_name].filter(Boolean).join(' ') || null;
+          } else {
+            const body = await safeResponseText(userResponse);
+            console.warn(`[auth/oauth] Strategy 2: user fetch failed (${userResponse.status}): ${body}`);
+          }
+          return res.status(200).json({
+            sessionToken: session.last_active_token.jwt,
+            userId: session.user_id,
+            email,
+            name,
+          });
+        }
+      } else {
+        const body = await safeResponseText(ticketResponse);
+        console.info(`[auth/oauth] Strategy 2 (ticket) failed (${ticketResponse.status}): ${body}`);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        console.warn('[auth/oauth] Strategy 2 (ticket) timed out after 5s');
+      } else {
+        console.warn('[auth/oauth] Strategy 2 (ticket) error:', err);
+      }
+    }
+
+    // ── Strategy 3: Direct JWT verification (Clerk iOS SDK 1.0) ────────
+    // The new SDK's getToken() returns the session JWT directly as a String.
+    // If strategies 1 and 2 failed, the code might already be a valid JWT.
+    try {
+      const jwtAuth = await verifyClerkToken(`Bearer ${code}`);
+      if (jwtAuth) {
+        console.info('[auth/oauth] Strategy 3: code is a valid session JWT');
+        // Fetch user info from Clerk Backend API
         let email: string | null = null;
         let name: string | null = null;
-        if (userResponse.ok) {
-          const user = await userResponse.json();
-          email = user.email_addresses?.[0]?.email_address || null;
-          name = [user.first_name, user.last_name].filter(Boolean).join(' ') || null;
+        try {
+          const userResponse = await fetchWithTimeout(
+            `https://api.clerk.com/v1/users/${jwtAuth.userId}`,
+            { headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` } },
+          );
+          if (userResponse.ok) {
+            const user = await userResponse.json();
+            email = user.email_addresses?.[0]?.email_address || null;
+            name = [user.first_name, user.last_name].filter(Boolean).join(' ') || null;
+          } else {
+            const body = await safeResponseText(userResponse);
+            console.warn(`[auth/oauth] Strategy 3: user fetch failed (${userResponse.status}): ${body}`);
+          }
+        } catch (fetchErr) {
+          console.warn('[auth/oauth] Strategy 3: user fetch error:', fetchErr);
         }
         return res.status(200).json({
-          sessionToken: session.last_active_token.jwt,
-          userId: session.user_id,
+          sessionToken: code,
+          userId: jwtAuth.userId,
           email,
           name,
         });
       }
+    } catch (err) {
+      console.info('[auth/oauth] Strategy 3 (direct JWT verify) failed:', err);
     }
 
-    console.warn('[auth/oauth] All exchange methods failed for code:', code.substring(0, 20) + '...');
-    return sendError(res, 401, 'UNAUTHORIZED', 'OAuth exchange failed');
+    console.warn(`[auth/oauth] All 3 strategies failed for code: ${codePreview}`);
+    return sendError(
+      res,
+      401,
+      'UNAUTHORIZED',
+      'OAuth exchange failed — token could not be verified as rotating_token, ticket, or session JWT',
+    );
   } catch (err) {
     logApiError('api/auth/oauth', err);
-    return sendError(res, 500, 'INTERNAL_ERROR', 'Authentication failed');
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return sendError(res, 500, 'INTERNAL_ERROR', `Authentication failed: ${message}`);
   }
 }
 
@@ -389,7 +489,7 @@ async function findOrCreateClerkUser(
 ): Promise<{ sessionToken: string; userId: string; email: string; name: string | null } | null> {
   try {
     // Search for existing user by email
-    const searchResponse = await fetch(
+    const searchResponse = await fetchWithTimeout(
       `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(email)}&limit=1`,
       {
         headers: { Authorization: `Bearer ${CLERK_SECRET_KEY}` },
@@ -404,7 +504,7 @@ async function findOrCreateClerkUser(
         userId = users[0].id;
       } else {
         // Create new user
-        const createResponse = await fetch('https://api.clerk.com/v1/users', {
+        const createResponse = await fetchWithTimeout('https://api.clerk.com/v1/users', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${CLERK_SECRET_KEY}`,
@@ -430,7 +530,7 @@ async function findOrCreateClerkUser(
     }
 
     // Create a sign-in token for this user
-    const signInResponse = await fetch('https://api.clerk.com/v1/sign_in_tokens', {
+    const signInResponse = await fetchWithTimeout('https://api.clerk.com/v1/sign_in_tokens', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${CLERK_SECRET_KEY}`,
@@ -451,7 +551,7 @@ async function findOrCreateClerkUser(
     // Sign-in tokens are one-time-use and cannot be used as Bearer tokens for
     // verifyToken() — we need an actual JWT from a Clerk session.
     const clerkFrontendDomain = env.CLERK_FRONTEND_API || 'clerk.sogojet.com';
-    const ticketResponse = await fetch(
+    const ticketResponse = await fetchWithTimeout(
       `https://${clerkFrontendDomain}/v1/client/sign_ins?_clerk_js_version=4`,
       {
         method: 'POST',

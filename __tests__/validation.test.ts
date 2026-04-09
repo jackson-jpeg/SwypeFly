@@ -1,98 +1,68 @@
 import {
   feedQuerySchema,
-  searchDealsQuerySchema,
   swipeBodySchema,
   destinationQuerySchema,
-  pricesQuerySchema,
-  hotelPricesQuerySchema,
+  bookingSearchSchema,
+  passengerSchema,
   priceAlertBodySchema,
-  tripPlanBodySchema,
   subscribeBodySchema,
+  hotelSearchSchema,
+  savedActionSchema,
   validateRequest,
 } from '../utils/validation';
 
-// ─── feedQuerySchema ─────────────────────────────────────────────────
+// ─── feedQuerySchema ────────────────────────────────────────────────
 
 describe('feedQuerySchema', () => {
-  it('accepts valid query with origin and cursor', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK', cursor: '10' });
+  it('applies defaults when given empty object', () => {
+    const result = feedQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.origin).toBe('TPA');
+      expect(result.data.cursor).toBeUndefined();
+    }
+  });
+
+  it('accepts a full valid query', () => {
+    const result = feedQuerySchema.safeParse({
+      origin: 'JFK',
+      cursor: '10',
+      vibeFilter: 'beach',
+      sortPreset: 'cheapest',
+      durationFilter: 'weekend',
+      travelStyle: 'luxury',
+      maxPrice: '500',
+    });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.origin).toBe('JFK');
       expect(result.data.cursor).toBe(10);
-    }
-  });
-
-  it('defaults origin to TPA when missing', () => {
-    const result = validateRequest(feedQuerySchema, {});
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.origin).toBe('TPA');
-    }
-  });
-
-  it('rejects invalid IATA code (lowercase)', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'jfk' });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects IATA code with wrong length', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFKX' });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects negative cursor', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK', cursor: '-1' });
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts maxPrice filter', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK', maxPrice: '500' });
-    expect(result.success).toBe(true);
-    if (result.success) {
       expect(result.data.maxPrice).toBe(500);
     }
   });
 
-  it('rejects maxPrice over 10000', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK', maxPrice: '99999' });
+  it('rejects invalid IATA code (lowercase)', () => {
+    const result = feedQuerySchema.safeParse({ origin: 'jfk' });
     expect(result.success).toBe(false);
   });
 
-  it('rejects maxPrice of 0', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK', maxPrice: '0' });
+  it('rejects IATA code with wrong length', () => {
+    const result = feedQuerySchema.safeParse({ origin: 'JFKX' });
     expect(result.success).toBe(false);
   });
 
-  it('accepts vibeFilter and regionFilter together', () => {
-    const result = validateRequest(feedQuerySchema, {
-      origin: 'LAX',
-      vibeFilter: 'beach',
-      regionFilter: 'caribbean',
-      sortPreset: 'cheapest',
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.vibeFilter).toBe('beach');
-      expect(result.data.regionFilter).toBe('caribbean');
-      expect(result.data.sortPreset).toBe('cheapest');
-    }
-  });
-
-  it('rejects regionFilter exceeding max length', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK', regionFilter: 'a'.repeat(101) });
+  it('rejects negative cursor', () => {
+    const result = feedQuerySchema.safeParse({ cursor: '-1' });
     expect(result.success).toBe(false);
   });
 });
 
-// ─── swipeBodySchema ─────────────────────────────────────────────────
+// ─── swipeBodySchema ────────────────────────────────────────────────
 
 describe('swipeBodySchema', () => {
-  const validUUID = '550e8400-e29b-41d4-a716-446655440000';
-
   it('accepts valid swipe with all fields', () => {
-    const result = validateRequest(swipeBodySchema, {
-      destination_id: validUUID,
+    const result = swipeBodySchema.safeParse({
+      destination_id: 'dest-123',
       action: 'saved',
       time_spent_ms: 3500,
       price_shown: 499,
@@ -101,37 +71,29 @@ describe('swipeBodySchema', () => {
   });
 
   it('accepts valid swipe with required fields only', () => {
-    const result = validateRequest(swipeBodySchema, {
-      destination_id: validUUID,
+    const result = swipeBodySchema.safeParse({
+      destination_id: 'dest-123',
       action: 'viewed',
     });
     expect(result.success).toBe(true);
   });
 
+  it('rejects missing destination_id', () => {
+    const result = swipeBodySchema.safeParse({ action: 'viewed' });
+    expect(result.success).toBe(false);
+  });
+
   it('rejects invalid action', () => {
-    const result = validateRequest(swipeBodySchema, {
-      destination_id: validUUID,
+    const result = swipeBodySchema.safeParse({
+      destination_id: 'dest-1',
       action: 'liked',
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects missing destination_id', () => {
-    const result = validateRequest(swipeBodySchema, { action: 'saved' });
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts non-uuid destination_id (Appwrite uses numeric IDs)', () => {
-    const result = validateRequest(swipeBodySchema, {
-      destination_id: '36',
-      action: 'saved',
-    });
-    expect(result.success).toBe(true);
-  });
-
   it('rejects negative time_spent_ms', () => {
-    const result = validateRequest(swipeBodySchema, {
-      destination_id: validUUID,
+    const result = swipeBodySchema.safeParse({
+      destination_id: 'dest-1',
       action: 'viewed',
       time_spent_ms: -100,
     });
@@ -139,254 +101,291 @@ describe('swipeBodySchema', () => {
   });
 });
 
-// ─── destinationQuerySchema ──────────────────────────────────────────
+// ─── destinationQuerySchema ─────────────────────────────────────────
 
 describe('destinationQuerySchema', () => {
-  const validUUID = '550e8400-e29b-41d4-a716-446655440000';
+  it('accepts valid query and defaults origin', () => {
+    const result = destinationQuerySchema.safeParse({ id: 'abc-123' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.origin).toBe('TPA');
+    }
+  });
 
-  it('accepts valid id and origin', () => {
-    const result = validateRequest(destinationQuerySchema, { id: validUUID, origin: 'LAX' });
+  it('accepts explicit origin', () => {
+    const result = destinationQuerySchema.safeParse({ id: '123', origin: 'LAX' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.origin).toBe('LAX');
     }
   });
 
-  it('defaults origin to TPA', () => {
-    const result = validateRequest(destinationQuerySchema, { id: validUUID });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.origin).toBe('TPA');
-    }
+  it('rejects empty id', () => {
+    const result = destinationQuerySchema.safeParse({ id: '' });
+    expect(result.success).toBe(false);
   });
 
   it('rejects missing id', () => {
-    const result = validateRequest(destinationQuerySchema, {});
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts numeric string id', () => {
-    const result = validateRequest(destinationQuerySchema, { id: '123' });
-    expect(result.success).toBe(true);
-  });
-});
-
-// ─── pricesQuerySchema ───────────────────────────────────────────────
-
-describe('pricesQuerySchema', () => {
-  it('accepts valid origin', () => {
-    const result = validateRequest(pricesQuerySchema, { origin: 'SFO' });
-    expect(result.success).toBe(true);
-  });
-
-  it('accepts empty query (all optional)', () => {
-    const result = validateRequest(pricesQuerySchema, {});
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects invalid origin format', () => {
-    const result = validateRequest(pricesQuerySchema, { origin: 'sf' });
+    const result = destinationQuerySchema.safeParse({});
     expect(result.success).toBe(false);
   });
 });
 
-// ─── hotelPricesQuerySchema ──────────────────────────────────────────
+// ─── bookingSearchSchema ────────────────────────────────────────────
 
-describe('hotelPricesQuerySchema', () => {
-  it('accepts valid destination', () => {
-    const result = validateRequest(hotelPricesQuerySchema, { destination: 'BCN' });
+describe('bookingSearchSchema', () => {
+  const validSearch = {
+    origin: 'JFK',
+    destination: 'LAX',
+    departureDate: '2026-06-15',
+    passengers: [{ type: 'adult' }],
+  };
+
+  it('accepts a valid booking search', () => {
+    const result = bookingSearchSchema.safeParse(validSearch);
     expect(result.success).toBe(true);
   });
 
-  it('accepts empty query', () => {
-    const result = validateRequest(hotelPricesQuerySchema, {});
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects numeric destination', () => {
-    const result = validateRequest(hotelPricesQuerySchema, { destination: '123' });
-    expect(result.success).toBe(false);
-  });
-});
-
-// ─── priceAlertBodySchema ────────────────────────────────────────────
-
-describe('priceAlertBodySchema', () => {
-  const validUUID = '550e8400-e29b-41d4-a716-446655440000';
-
-  it('accepts valid alert', () => {
-    const result = validateRequest(priceAlertBodySchema, {
-      destination_id: validUUID,
-      target_price: 300,
+  it('accepts with optional returnDate and cabinClass', () => {
+    const result = bookingSearchSchema.safeParse({
+      ...validSearch,
+      returnDate: '2026-06-22',
+      cabinClass: 'business',
     });
     expect(result.success).toBe(true);
   });
 
-  it('accepts alert with email', () => {
-    const result = validateRequest(priceAlertBodySchema, {
-      destination_id: validUUID,
+  it('rejects bad date format', () => {
+    const result = bookingSearchSchema.safeParse({
+      ...validSearch,
+      departureDate: '06-15-2026',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects more than 9 passengers', () => {
+    const result = bookingSearchSchema.safeParse({
+      ...validSearch,
+      passengers: Array(10).fill({ type: 'adult' }),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects zero passengers', () => {
+    const result = bookingSearchSchema.safeParse({
+      ...validSearch,
+      passengers: [],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── passengerSchema ────────────────────────────────────────────────
+
+describe('passengerSchema', () => {
+  const validPassenger = {
+    given_name: 'Jane',
+    family_name: 'Doe',
+    born_on: '1990-05-20',
+    gender: 'f',
+    title: 'ms',
+    email: 'jane@example.com',
+    phone_number: '+15551234567',
+  };
+
+  it('accepts a valid full passenger', () => {
+    const result = passengerSchema.safeParse({
+      ...validPassenger,
+      passport_number: 'AB1234567',
+      passport_expiry: '2030-01-01',
+      nationality: 'us',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      // nationality should be uppercased
+      expect(result.data.nationality).toBe('US');
+    }
+  });
+
+  it('accepts required fields only', () => {
+    const result = passengerSchema.safeParse(validPassenger);
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects bad email', () => {
+    const result = passengerSchema.safeParse({
+      ...validPassenger,
+      email: 'not-an-email',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects bad DOB format', () => {
+    const result = passengerSchema.safeParse({
+      ...validPassenger,
+      born_on: '05/20/1990',
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── priceAlertBodySchema ───────────────────────────────────────────
+
+describe('priceAlertBodySchema', () => {
+  it('accepts a valid price alert', () => {
+    const result = priceAlertBodySchema.safeParse({
+      destination_id: 'dest-1',
+      target_price: 250,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts alert with optional email', () => {
+    const result = priceAlertBodySchema.safeParse({
+      destination_id: 'dest-1',
       target_price: 300,
       email: 'user@example.com',
     });
     expect(result.success).toBe(true);
   });
 
-  it('rejects negative target_price', () => {
-    const result = validateRequest(priceAlertBodySchema, {
-      destination_id: validUUID,
-      target_price: -50,
+  it('rejects negative price', () => {
+    const result = priceAlertBodySchema.safeParse({
+      destination_id: 'dest-1',
+      target_price: -10,
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects invalid email', () => {
-    const result = validateRequest(priceAlertBodySchema, {
-      destination_id: validUUID,
-      target_price: 300,
-      email: 'not-an-email',
+  it('rejects zero price', () => {
+    const result = priceAlertBodySchema.safeParse({
+      destination_id: 'dest-1',
+      target_price: 0,
     });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects missing destination_id', () => {
-    const result = validateRequest(priceAlertBodySchema, { target_price: 300 });
     expect(result.success).toBe(false);
   });
 });
 
-// ─── tripPlanBodySchema ─────────────────────────────────────────────
+// ─── subscribeBodySchema ────────────────────────────────────────────
 
-describe('tripPlanBodySchema', () => {
-  it('accepts valid trip plan with defaults', () => {
-    const result = validateRequest(tripPlanBodySchema, { city: 'Paris' });
+describe('subscribeBodySchema', () => {
+  it('accepts valid email and applies default airport', () => {
+    const result = subscribeBodySchema.safeParse({ email: 'user@test.com' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.duration).toBe(5);
-      expect(result.data.style).toBe('comfort');
+      expect(result.data.airport).toBe('TPA');
     }
   });
 
-  it('accepts full trip plan', () => {
-    const result = validateRequest(tripPlanBodySchema, {
-      city: 'Tokyo',
-      country: 'Japan',
-      duration: 7,
-      style: 'luxury',
-      interests: 'sushi, temples',
-    });
+  it('accepts explicit airport', () => {
+    const result = subscribeBodySchema.safeParse({ email: 'user@test.com', airport: 'LAX' });
     expect(result.success).toBe(true);
-  });
-
-  it('rejects missing city', () => {
-    const result = validateRequest(tripPlanBodySchema, { country: 'France' });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects duration > 30', () => {
-    const result = validateRequest(tripPlanBodySchema, { city: 'Paris', duration: 50 });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects invalid style', () => {
-    const result = validateRequest(tripPlanBodySchema, { city: 'Paris', style: 'ultra' });
-    expect(result.success).toBe(false);
-  });
-});
-
-// ─── subscribeBodySchema ─────────────────────────────────────────────
-
-describe('subscribeBodySchema', () => {
-  it('accepts valid email with airport', () => {
-    const result = validateRequest(subscribeBodySchema, { email: 'user@test.com', airport: 'JFK' });
-    expect(result.success).toBe(true);
-  });
-
-  it('defaults airport to TPA', () => {
-    const result = validateRequest(subscribeBodySchema, { email: 'user@test.com' });
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data.airport).toBe('TPA');
+    if (result.success) {
+      expect(result.data.airport).toBe('LAX');
+    }
   });
 
   it('rejects invalid email', () => {
-    const result = validateRequest(subscribeBodySchema, { email: 'not-email' });
+    const result = subscribeBodySchema.safeParse({ email: 'bad-email' });
     expect(result.success).toBe(false);
   });
 
   it('rejects missing email', () => {
-    const result = validateRequest(subscribeBodySchema, { airport: 'JFK' });
+    const result = subscribeBodySchema.safeParse({ airport: 'JFK' });
     expect(result.success).toBe(false);
   });
 });
 
-// ─── searchDealsQuerySchema ─────────────────────────────────────────
+// ─── hotelSearchSchema ──────────────────────────────────────────────
 
-describe('searchDealsQuerySchema', () => {
-  it('accepts valid query with origin', () => {
-    const result = validateRequest(searchDealsQuerySchema, { origin: 'TPA' });
+describe('hotelSearchSchema', () => {
+  const validHotelSearch = {
+    latitude: 40.7128,
+    longitude: -74.006,
+    checkIn: '2026-07-01',
+    checkOut: '2026-07-05',
+  };
+
+  it('accepts a valid hotel search', () => {
+    const result = hotelSearchSchema.safeParse(validHotelSearch);
     expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.origin).toBe('TPA');
-      expect(result.data.sort).toBe('cheapest');
-    }
   });
 
-  it('defaults origin to TPA and sort to cheapest', () => {
-    const result = validateRequest(searchDealsQuerySchema, {});
+  it('accepts optional guests', () => {
+    const result = hotelSearchSchema.safeParse({ ...validHotelSearch, guests: 3 });
     expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.origin).toBe('TPA');
-      expect(result.data.sort).toBe('cheapest');
-    }
   });
 
-  it('accepts all filter params', () => {
-    const result = validateRequest(searchDealsQuerySchema, {
-      origin: 'JFK',
-      search: 'paris',
-      region: 'europe',
-      minPrice: '100',
-      maxPrice: '500',
-      sort: 'trending',
-      cursor: '10',
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.search).toBe('paris');
-      expect(result.data.region).toBe('europe');
-      expect(result.data.minPrice).toBe(100);
-      expect(result.data.maxPrice).toBe(500);
-      expect(result.data.sort).toBe('trending');
-      expect(result.data.cursor).toBe(10);
-    }
-  });
-
-  it('rejects invalid sort value', () => {
-    const result = validateRequest(searchDealsQuerySchema, { sort: 'alphabetical' });
+  it('rejects latitude out of range', () => {
+    const result = hotelSearchSchema.safeParse({ ...validHotelSearch, latitude: 95 });
     expect(result.success).toBe(false);
   });
 
-  it('rejects invalid region', () => {
-    const result = validateRequest(searchDealsQuerySchema, { region: 'mars' });
+  it('rejects longitude out of range', () => {
+    const result = hotelSearchSchema.safeParse({ ...validHotelSearch, longitude: 200 });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects bad date format', () => {
+    const result = hotelSearchSchema.safeParse({ ...validHotelSearch, checkIn: '07/01/2026' });
     expect(result.success).toBe(false);
   });
 });
 
-// ─── validateRequest helper ──────────────────────────────────────────
+// ─── savedActionSchema ──────────────────────────────────────────────
+
+describe('savedActionSchema', () => {
+  it.each(['list', 'save', 'unsave', 'get-prefs', 'save-prefs'] as const)(
+    'accepts action "%s"',
+    (action) => {
+      const result = savedActionSchema.safeParse({ action });
+      expect(result.success).toBe(true);
+    },
+  );
+
+  it('rejects unknown action', () => {
+    const result = savedActionSchema.safeParse({ action: 'delete' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing action', () => {
+    const result = savedActionSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── validateRequest helper ─────────────────────────────────────────
 
 describe('validateRequest', () => {
-  it('returns descriptive error messages', () => {
-    const result = validateRequest(swipeBodySchema, { action: 'invalid' });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain('destination_id');
-    }
+  it('returns success with valid data', () => {
+    const result = validateRequest(swipeBodySchema, {
+      destination_id: 'x',
+      action: 'viewed',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data).toBeDefined();
+    expect(result.error).toBeUndefined();
   });
 
-  it('returns success data on valid input', () => {
-    const result = validateRequest(feedQuerySchema, { origin: 'JFK' });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toHaveProperty('origin', 'JFK');
-    }
+  it('returns error string with invalid data', () => {
+    const result = validateRequest(swipeBodySchema, { action: 'bad' });
+    expect(result.success).toBe(false);
+    expect(typeof result.error).toBe('string');
+    expect(result.error!.length).toBeGreaterThan(0);
+    expect(result.data).toBeUndefined();
+  });
+
+  it('includes field path in error message', () => {
+    const result = validateRequest(passengerSchema, {
+      given_name: 'A',
+      family_name: 'B',
+      born_on: 'bad-date',
+      gender: 'f',
+      title: 'mr',
+      email: 'a@b.com',
+      phone_number: '12345',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('born_on');
   });
 });

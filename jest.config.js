@@ -7,6 +7,8 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/$1',
     '_cors\\.js$': '<rootDir>/__tests__/__mocks__/_cors.ts',
     '^(\\.\\.[\\/])*services[\\/]supabaseServer$': '<rootDir>/__tests__/__mocks__/supabaseServer.ts',
+    '^(\\.\\.[\\/])*services[\\/]duffel\\.js$': '<rootDir>/services/duffel.ts',
+    '^(\\.\\.[\\/])*services[\\/]stripe\\.js$': '<rootDir>/services/stripe.ts',
   },
   coverageDirectory: 'coverage',
   collectCoverageFrom: [

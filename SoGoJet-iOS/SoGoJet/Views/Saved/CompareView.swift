@@ -89,6 +89,8 @@ struct CompareView: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(deal.city), \(deal.country)")
     }
 
     // MARK: - Metric Rows
@@ -240,6 +242,8 @@ struct CompareView: View {
         }
         .background(Color.sgSurface.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): \(leftValue) versus \(rightValue)")
     }
 
     // MARK: - Helpers
@@ -438,6 +442,9 @@ struct ComparePickerView: View {
             .padding(.vertical, Spacing.sm + 2)
             .background(isSelected ? Color.sgYellow.opacity(0.06) : Color.clear)
         }
+        .accessibilityLabel("\(deal.city), \(deal.country), \(deal.priceFormatted)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityHint(isSelected ? String(localized: "compare.deselect") : String(localized: "compare.select"))
     }
 
     private func handleSelection(_ deal: Deal) {

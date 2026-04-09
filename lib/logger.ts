@@ -12,7 +12,7 @@ class Logger {
   private isDev = process.env.NODE_ENV === 'development';
 
   private log(level: LogLevel, message: string, context?: string, data?: unknown) {
-    const entry: LogEntry = {
+    const _entry: LogEntry = {
       level,
       message,
       timestamp: new Date().toISOString(),

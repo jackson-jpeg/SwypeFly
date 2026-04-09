@@ -46,6 +46,7 @@ final class HotelStore {
     var paymentSheet: PaymentSheet?
     var paymentError: String?
     private var currentPaymentIntentId: String?
+    private var lastSearchResults: [HotelSearchResult] = []
 
     // Search params
     var checkIn: String = ""
@@ -83,12 +84,13 @@ final class HotelStore {
             if results.isEmpty {
                 step = .failed(message: "No hotels found for these dates.")
             } else {
+                lastSearchResults = results
                 step = .results(results)
             }
         } catch {
             guard activeRequestID == requestID else { return }
             self.error = (error as? APIError)?.errorDescription ?? "Hotel search failed."
-            step = .failed(message: self.error!)
+            step = .failed(message: self.error ?? "Something went wrong.")
         }
     }
 
@@ -114,7 +116,7 @@ final class HotelStore {
         } catch {
             guard activeRequestID == requestID else { return }
             self.error = (error as? APIError)?.errorDescription ?? "Failed to get quote."
-            step = .failed(message: self.error!)
+            step = .failed(message: self.error ?? "Something went wrong.")
         }
     }
 
@@ -190,7 +192,7 @@ final class HotelStore {
         } catch {
             guard activeRequestID == requestID else { return }
             self.error = (error as? APIError)?.errorDescription ?? "Booking failed."
-            step = .failed(message: self.error!)
+            step = .failed(message: self.error ?? "Something went wrong.")
             HapticEngine.error()
         }
     }
@@ -206,18 +208,34 @@ final class HotelStore {
         checkIn = ""
         checkOut = ""
         guests = 1
+        lastSearchResults = []
     }
 
     func goBack() {
         switch step {
         case .review:
-            if let hotel = selectedHotel {
+            if !lastSearchResults.isEmpty {
+                step = .results(lastSearchResults)
+            } else if let hotel = selectedHotel {
                 step = .results([hotel])
             } else {
                 step = .idle
             }
+        case .quoting, .paying:
+            if !lastSearchResults.isEmpty {
+                step = .results(lastSearchResults)
+            } else {
+                step = .idle
+            }
         case .failed:
-            step = .idle
+            if !lastSearchResults.isEmpty {
+                step = .results(lastSearchResults)
+            } else {
+                step = .idle
+            }
+        case .confirmed:
+            // Terminal state — do nothing
+            break
         default:
             break
         }

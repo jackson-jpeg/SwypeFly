@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import AuthenticationServices
 import UIKit
-import Clerk
+import ClerkKit
 
 // MARK: - OAuth Presentation Context
 
@@ -15,11 +15,14 @@ final class OAuthPresentationContext: NSObject,
     static let shared = OAuthPresentationContext()
 
     private var anchor: ASPresentationAnchor {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
+        // Try foreground active scene first, then fall back to any connected scene with a key window
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let keyWindow = scenes
             .first(where: { $0.activationState == .foregroundActive })?
             .windows.first(where: { $0.isKeyWindow })
-            ?? ASPresentationAnchor()
+            ?? scenes.flatMap(\.windows).first(where: { $0.isKeyWindow })
+            ?? scenes.flatMap(\.windows).first
+        return keyWindow ?? ASPresentationAnchor()
     }
 
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
@@ -117,12 +120,10 @@ final class AuthStore: NSObject {
 
         Task {
             do {
-                let result = try await SignIn.authenticateWithRedirect(
-                    strategy: .oauth(provider: provider)
-                )
+                // Clerk 1.x: use the auth entry point to create + authenticate in one call
+                let result = try await Clerk.shared.auth.signInWithOAuth(provider: provider)
 
                 // After successful OAuth, Clerk SDK updates Clerk.shared.session automatically.
-                // Extract the session token (JWT) for our backend API calls.
                 guard let clerkSession = Clerk.shared.session else {
                     SGLogger.auth.error("OAuth completed but no Clerk session found")
                     self.isLoading = false
@@ -130,7 +131,7 @@ final class AuthStore: NSObject {
                     return
                 }
 
-                let token = try await clerkSession.getToken()?.jwt ?? ""
+                let token = try await clerkSession.getToken() ?? ""
                 let user = Clerk.shared.user
 
                 // Exchange the Clerk session token with our backend
@@ -153,20 +154,25 @@ final class AuthStore: NSObject {
                 )
 
                 SGLogger.auth.debug("OAuth signed in: \(self.userName ?? "Unknown") (\(self.userEmail ?? "no email"))")
+            } catch let error as ClerkAPIError {
+                SGLogger.auth.error("[OAUTH-DEBUG] ClerkAPIError: code=\(error.code ?? "nil") message=\(error.message ?? "nil") longMessage=\(error.longMessage ?? "nil")")
+                self.isLoading = false
+                self.setErrorWithAutoClear(error.longMessage ?? error.message ?? "Sign in failed.")
             } catch let error as ClerkClientError {
-                SGLogger.auth.error("Clerk OAuth failed: \(error.localizedDescription)")
+                SGLogger.auth.error("[OAUTH-DEBUG] ClerkClientError: \(error.localizedDescription)")
                 self.isLoading = false
                 if error.localizedDescription.lowercased().contains("cancel") {
                     return // User canceled
                 }
                 self.setErrorWithAutoClear("Sign in failed. Please try again.")
             } catch {
-                SGLogger.auth.error("OAuth failed: \(error.localizedDescription)")
+                let nsError = error as NSError
+                SGLogger.auth.error("[OAUTH-DEBUG] Raw error: domain=\(nsError.domain) code=\(nsError.code) desc=\(error.localizedDescription) full=\(String(describing: error))")
                 self.isLoading = false
                 if error.localizedDescription.lowercased().contains("cancel") {
                     return
                 }
-                self.setErrorWithAutoClear("Sign in failed. Please try again.")
+                self.setErrorWithAutoClear("Sign in failed: \(error.localizedDescription)")
             }
         }
     }

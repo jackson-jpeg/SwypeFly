@@ -33,7 +33,11 @@ enum FareDropMonitor {
         let request = BGAppRefreshTaskRequest(identifier: taskIdentifier)
         // Check every 4 hours minimum
         request.earliestBeginDate = Date(timeIntervalSinceNow: 4 * 60 * 60)
-        try? BGTaskScheduler.shared.submit(request)
+        do {
+            try BGTaskScheduler.shared.submit(request)
+        } catch {
+            print("[FareDropMonitor] Failed to schedule background task: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Fare Check Logic

@@ -146,10 +146,6 @@ export default function RootLayout() {
             *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
           }
         `}</style>
-        <meta
-          name="description"
-          content="Swipe through stunning destinations and find the cheapest flights from your city. Book in seconds."
-        />
         <meta property="og:title" content="SoGoJet — Discover Cheap Flights" />
         <meta
           property="og:description"
@@ -161,7 +157,6 @@ export default function RootLayout() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="SoGoJet — Discover Cheap Flights" />
         <meta name="twitter:image" content="https://sogojet.com/api/og" />
-        <meta name="theme-color" content="#0A0806" />
         <meta name="apple-itunes-app" content="app-id=6746076960" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/assets/icon-180.png" sizes="180x180" />

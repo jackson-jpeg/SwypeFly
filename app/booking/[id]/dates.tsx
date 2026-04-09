@@ -8,6 +8,8 @@ import { useSettingsStore } from '../../../stores/settingsStore';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import DatePickerSheet from '../../../components/booking/DatePickerSheet';
 import { colors, fonts, spacing } from '../../../theme/tokens';
+import { successHaptic } from '../../../utils/haptics';
+import BookingProgress from '../../../components/booking/BookingProgress';
 
 export default function DatesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,6 +37,7 @@ export default function DatesScreen() {
       deal?.destinationFull || deal?.destination || '',
       deal?.price ?? null,
     );
+    successHaptic();
     router.push(`/booking/${id}`);
   };
 
@@ -56,6 +59,7 @@ export default function DatesScreen() {
           />
         </View>
       </View>
+      <BookingProgress />
       {deal && (
         <Text style={styles.subtitle}>
           {deal.destinationFull || deal.destination} from {departureCode}

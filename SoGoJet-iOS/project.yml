@@ -34,7 +34,7 @@ packages:
     from: "24.0.0"
   clerk-ios:
     url: https://github.com/clerk/clerk-ios.git
-    from: "0.71.0"
+    from: "1.0.0"
 schemes:
   SoGoJet:
     build:
@@ -60,13 +60,16 @@ targets:
       - package: stripe-ios
         product: StripePaymentSheet
       - package: clerk-ios
-        product: Clerk
+        product: ClerkKit
       - target: SoGoJetWidgetExtension
     entitlements:
       path: SoGoJet/SoGoJet.entitlements
       properties:
         com.apple.developer.applesignin:
           - Default
+        aps-environment: development
+        com.apple.security.application-groups:
+          - group.com.sogojet.shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app
@@ -89,6 +92,9 @@ targets:
       - path: SoGoJet/Models/FlightSearchActivity.swift
     entitlements:
       path: SoGoJetWidget/SoGoJetWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.sogojet.shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sogojet.app.Widget
@@ -99,6 +105,7 @@ targets:
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_ENTITLEMENTS: SoGoJetWidget/SoGoJetWidget.entitlements
+        DEBUG_INFORMATION_FORMAT: dwarf
         DEAD_CODE_STRIPPING: true
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         LD_RUNPATH_SEARCH_PATHS:

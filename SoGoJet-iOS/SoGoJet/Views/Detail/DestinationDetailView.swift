@@ -141,6 +141,7 @@ struct DestinationDetailView: View {
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
                 }
+                .accessibilityLabel(String(localized: "common.close"))
                 .padding(.top, 12)
                 .padding(.trailing, 16)
             }
@@ -419,6 +420,7 @@ struct DestinationDetailView: View {
                         .foregroundStyle(Color.sgYellow)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "detail.open_in_maps"))
                 }
                 .padding(.horizontal, 16)
 

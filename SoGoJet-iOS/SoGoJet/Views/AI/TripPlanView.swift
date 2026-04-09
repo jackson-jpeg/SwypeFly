@@ -47,6 +47,7 @@ struct TripPlanView: View {
                         Image(systemName: "xmark")
                             .foregroundStyle(Color.sgWhite)
                     }
+                    .accessibilityLabel("Close trip planner")
                 }
                 ToolbarItem(placement: .principal) {
                     Text("Trip Planner")
@@ -62,6 +63,7 @@ struct TripPlanView: View {
                             Image(systemName: "arrow.counterclockwise")
                                 .foregroundStyle(Color.sgYellow)
                         }
+                        .accessibilityLabel("Start over")
                     }
                 }
             }
@@ -120,6 +122,8 @@ struct TripPlanView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("\(days) days")
+                        .accessibilityAddTraits(duration == days ? .isSelected : [])
                     }
                 }
             }
@@ -150,6 +154,8 @@ struct TripPlanView: View {
                             .clipShape(RoundedRectangle(cornerRadius: Radius.md))
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("\(option.label) style")
+                        .accessibilityAddTraits(style == option ? .isSelected : [])
                     }
                 }
             }
@@ -199,6 +205,8 @@ struct TripPlanView: View {
                 .clipShape(Capsule())
             }
             .buttonStyle(.plain)
+            .disabled(store.isLoading)
+            .accessibilityLabel("Generate itinerary")
         }
         .padding(Spacing.lg)
         .background(Color.sgSurface)
@@ -262,6 +270,7 @@ struct TripPlanView: View {
             .background(Color.sgYellow.opacity(0.12))
             .clipShape(Capsule())
         }
+        .accessibilityLabel("Share trip plan")
     }
 
     // MARK: - Error
@@ -290,6 +299,7 @@ struct TripPlanView: View {
                     .clipShape(Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Try again")
         }
         .padding(Spacing.lg)
         .frame(maxWidth: .infinity)

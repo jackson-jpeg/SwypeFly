@@ -66,6 +66,7 @@ struct BoardingPassView: View {
                 Text(totalPaidLabel)
                     .font(SGFont.display(size: 34))
                     .foregroundStyle(Color.sgWhite)
+                    .accessibilityLabel(String(localized: "boarding.total_paid", defaultValue: "Total paid: \(totalPaidLabel)"))
             }
         } content: {
             VStack(alignment: .leading, spacing: Spacing.md) {
@@ -88,7 +89,11 @@ struct BoardingPassView: View {
                 Spacer()
                 VintageTerminalCaptionBlock(title: "Cabin", value: cabinLabel, tone: .amber, alignment: .trailing)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Passenger \(passengerName), Seat \(seatLabel), Cabin \(cabinLabel)")
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "boarding.reference", defaultValue: "Booking reference \(bookingReference)"))
     }
 
     private var travelerArchive: some View {
@@ -153,7 +158,7 @@ struct BoardingPassView: View {
     private var actionCluster: some View {
         VStack(spacing: Spacing.sm) {
             VintageTerminalActionButton(
-                title: "Back to Deals",
+                title: String(localized: "boarding.back_to_deals"),
                 subtitle: "Return to deals",
                 icon: "airplane",
                 tone: .amber,
@@ -161,9 +166,10 @@ struct BoardingPassView: View {
             ) {
                 onBackToDeals()
             }
+            .accessibilityLabel(String(localized: "boarding.back_to_deals"))
 
             VintageTerminalSecondaryButton(
-                title: "Share Trip",
+                title: String(localized: "boarding.share_trip"),
                 subtitle: "Send the confirmed route and booking reference.",
                 icon: "square.and.arrow.up",
                 tone: .moss,
@@ -172,6 +178,7 @@ struct BoardingPassView: View {
                 HapticEngine.light()
                 onShare()
             }
+            .accessibilityLabel(String(localized: "boarding.share_trip"))
         }
     }
 

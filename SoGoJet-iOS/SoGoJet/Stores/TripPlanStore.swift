@@ -21,19 +21,20 @@ final class TripPlanStore {
         isLoading = true
         error = nil
 
-        activeTask = Task {
+        activeTask = Task { [weak self] in
+            guard let self else { return }
             do {
                 let stream = try await APIClient.shared.streamTripPlan(request)
                 for try await chunk in stream {
                     if Task.isCancelled { break }
-                    planText += chunk
+                    self.planText += chunk
                 }
-                isLoading = false
+                self.isLoading = false
             } catch is CancellationError {
-                isLoading = false
+                self.isLoading = false
             } catch {
                 self.error = (error as? APIError)?.errorDescription ?? "Failed to generate trip plan. Please try again."
-                isLoading = false
+                self.isLoading = false
             }
         }
     }

@@ -183,6 +183,8 @@ struct SeatMapView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "seats.skip"))
+                .accessibilityHint(String(localized: "seats.skip_hint", defaultValue: "The airline will assign your seat at check-in"))
 
                 boardingStub
                 cabinTelemetry
@@ -554,7 +556,8 @@ struct SeatMapView: View {
         .buttonStyle(.plain)
         .disabled(!seat.available)
         .accessibilityLabel("\(seat.label), \(seatNarrative(for: seat))")
-        .accessibilityHint(seat.available ? "" : "This seat is taken")
+        .accessibilityHint(seat.available ? "Double tap to select this seat" : "This seat is taken")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func seatFallbackList(_ seatMap: SeatMap) -> some View {
@@ -709,6 +712,8 @@ struct SeatMapView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Pick number \(index + 1): Seat \(seat.label), \(seatTypeLabel(type)), \(seatPriceLabel(for: seat))")
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
             }
         }

@@ -6,8 +6,10 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Alert,
+  Platform,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
@@ -16,6 +18,8 @@ import { useDealStore } from '../../../stores/dealStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../../theme/tokens';
+import { lightHaptic, successHaptic, errorHaptic } from '../../../utils/haptics';
+import BookingProgress from '../../../components/booking/BookingProgress';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
@@ -99,6 +103,7 @@ function stopsLabel(stops: number): string {
 export default function FlightSelectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   const deal = useDealStore((s) => s.deals.find((d) => d.id === id));
@@ -112,6 +117,23 @@ export default function FlightSelectionScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [animate, setAnimate] = useState(false);
+
+  // Warn before losing flight selection (protects swipe-back on iOS)
+  useEffect(() => {
+    if (!selectedId) return;
+    const unsubscribe = navigation.addListener('beforeRemove', (e: { preventDefault: () => void; data: { action: unknown } }) => {
+      e.preventDefault();
+      if (Platform.OS === 'web') {
+        if (window.confirm('Leave flight selection?')) navigation.dispatch(e.data.action as never);
+        return;
+      }
+      Alert.alert('Leave booking?', 'Your flight selection will be lost.', [
+        { text: 'Stay', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: () => navigation.dispatch(e.data.action as never) },
+      ]);
+    });
+    return unsubscribe;
+  }, [navigation, selectedId]);
 
   // ─── Search flights ─────────────────────────────────────────────
 
@@ -149,6 +171,7 @@ export default function FlightSelectionScreen() {
       }
     } catch (e) {
       setError((e as Error).message);
+      errorHaptic();
     } finally {
       setLoading(false);
     }
@@ -197,6 +220,7 @@ export default function FlightSelectionScreen() {
           />
         </View>
       </View>
+      <BookingProgress />
 
       {/* Trip context */}
       <TripBanner />
@@ -266,8 +290,11 @@ export default function FlightSelectionScreen() {
             return (
               <Pressable
                 key={offer.id}
-                onPress={() => setSelectedId(offer.id)}
+                onPress={() => { setSelectedId(offer.id); lightHaptic(); }}
                 style={[styles.card, isSelected && styles.cardSelected]}
+                accessibilityRole="button"
+                accessibilityLabel={`${outbound?.airline || 'Flight'}, $${offer.totalAmount}, ${outbound?.stops === 0 ? 'nonstop' : `${outbound?.stops} stop${(outbound?.stops ?? 0) > 1 ? 's' : ''}`}`}
+                accessibilityState={{ selected: isSelected }}
               >
                 {/* Card header: airline + price */}
                 <View style={styles.cardHeader}>
@@ -374,10 +401,13 @@ export default function FlightSelectionScreen() {
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.md }]}>
           <Pressable
             onPress={() => {
+              successHaptic();
               useBookingFlowStore.getState().setOfferId(selectedId);
               router.push(`/booking/${id}/passengers?offerId=${selectedId}` as never);
             }}
             style={styles.continueBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Continue to passenger details"
           >
             <Text style={styles.continueBtnText}>Continue</Text>
             <Ionicons name="arrow-forward" size={20} color={colors.bg} />

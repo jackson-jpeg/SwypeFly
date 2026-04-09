@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from './_cors.js';
 import { logApiError } from '../utils/apiLogger';
 import { sendError } from '../utils/apiResponse';
+import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { verifyClerkToken } from '../utils/clerkAuth';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { travelerCreateSchema, travelerUpdateSchema, validateRequest } from '../utils/validation';
@@ -19,23 +20,35 @@ const ENCRYPTION_KEY = env.TRAVELER_ENCRYPTION_KEY || '';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
 
+  // Rate limit: 30 req/min per IP
+  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
+  const rl = checkRateLimit(`travelers:${ip}`, 30, 60_000);
+  if (!rl.allowed) {
+    return sendError(res, 429, 'RATE_LIMITED', 'Too many requests');
+  }
+
   const { action } = req.query;
 
-  switch (action) {
-    case 'list':
-      if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
-      return handleList(req, res);
-    case 'create':
-      if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
-      return handleCreate(req, res);
-    case 'update':
-      if (req.method !== 'PATCH') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
-      return handleUpdate(req, res);
-    case 'delete':
-      if (req.method !== 'DELETE') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
-      return handleDelete(req, res);
-    default:
-      return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid action. Use ?action=list|create|update|delete');
+  try {
+    switch (action) {
+      case 'list':
+        if (req.method !== 'GET') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+        return await handleList(req, res);
+      case 'create':
+        if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+        return await handleCreate(req, res);
+      case 'update':
+        if (req.method !== 'PATCH') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+        return await handleUpdate(req, res);
+      case 'delete':
+        if (req.method !== 'DELETE') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+        return await handleDelete(req, res);
+      default:
+        return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid action. Use ?action=list|create|update|delete');
+    }
+  } catch (err) {
+    logApiError('api/travelers', err);
+    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to process traveler request');
   }
 }
 

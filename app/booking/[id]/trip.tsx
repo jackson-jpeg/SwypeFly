@@ -9,7 +9,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
@@ -20,6 +20,8 @@ import TripHeroCard from '../../../components/booking/TripHeroCard';
 import AlternativeTrips from '../../../components/booking/AlternativeTrips';
 import type { TripOption } from '../../../components/booking/AlternativeTrips';
 import { colors, fonts, spacing } from '../../../theme/tokens';
+import { lightHaptic, successHaptic, errorHaptic } from '../../../utils/haptics';
+import BookingProgress from '../../../components/booking/BookingProgress';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
@@ -56,6 +58,7 @@ function daysBetween(a: string, b: string): number {
 export default function TripScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   const deal = useDealStore((s) => s.deals.find((d) => d.id === id));
@@ -73,6 +76,23 @@ export default function TripScreen() {
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
   const [dealExpired, setDealExpired] = useState(false);
+
+  // Warn before discarding trip selection (protects swipe-back on iOS)
+  useEffect(() => {
+    if (!selectedTrip || booking) return;
+    const unsubscribe = navigation.addListener('beforeRemove', (e: { preventDefault: () => void; data: { action: unknown } }) => {
+      e.preventDefault();
+      if (Platform.OS === 'web') {
+        if (window.confirm('Leave trip selection?')) navigation.dispatch(e.data.action as never);
+        return;
+      }
+      Alert.alert('Leave booking?', 'Your trip selection will be lost.', [
+        { text: 'Stay', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: () => navigation.dispatch(e.data.action as never) },
+      ]);
+    });
+    return unsubscribe;
+  }, [navigation, selectedTrip, booking]);
 
   // ─── Redirect if no cheapestDate ────────────────────────────────
 
@@ -171,6 +191,7 @@ export default function TripScreen() {
   // ─── Handle alternative selection ───────────────────────────────
 
   const handleSelectAlternative = useCallback((trip: TripOption) => {
+    lightHaptic();
     setSelectedTrip({
       departureDate: trip.departureDate,
       returnDate: trip.returnDate,
@@ -278,8 +299,10 @@ export default function TripScreen() {
       const store = useBookingFlowStore.getState();
       store.setDates(selectedTrip.departureDate, selectedTrip.returnDate);
       store.setOfferId(bestOffer.id);
+      successHaptic();
       router.push(`/booking/${id}/passengers?offerId=${bestOffer.id}` as never);
     } catch (e) {
+      errorHaptic();
       if ((e as Error).name === 'AbortError') {
         setBookError('Search timed out — please try again or try different dates');
       } else {
@@ -374,6 +397,7 @@ export default function TripScreen() {
           </Text>
         </View>
       </View>
+      <BookingProgress />
 
       {/* Scrollable content */}
       <ScrollView

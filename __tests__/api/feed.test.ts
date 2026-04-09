@@ -477,4 +477,715 @@ describe('GET /api/feed', () => {
     );
     expect(cacheHeader![1]).toBe('no-store');
   });
+
+  // ─── Pagination edge cases ─────────────────────────────────────────
+
+  describe('pagination', () => {
+    it('returns second page when cursor=20 is passed', async () => {
+      const dests = Array.from({ length: 30 }, (_, i) =>
+        makeDest({
+          id: `pg-${i}`,
+          iata_code: `P${String(i).padStart(2, '0')}`,
+          city: `PageCity${i}`,
+          flight_price: 100 + i * 10,
+        }),
+      );
+      const origin = uniqueOrigin();
+
+      // First request to populate the in-memory destCache
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+      const req1 = makeReq({ query: { origin, sortPreset: 'cheapest' } });
+      const res1 = makeRes();
+      await handler(req1, res1);
+      const body1 = res1.json.mock.calls[0][0];
+      expect(body1.destinations).toHaveLength(20);
+      expect(body1.nextCursor).toBe('20');
+
+      // Second request with cursor=20 — uses cached destinations
+      const req2 = makeReq({ query: { origin, cursor: '20', sortPreset: 'cheapest' } });
+      const res2 = makeRes();
+      await handler(req2, res2);
+      const body2 = res2.json.mock.calls[0][0];
+      expect(body2.destinations).toHaveLength(10);
+      expect(body2.nextCursor).toBeNull();
+    });
+
+    it('returns null nextCursor when all results fit on first page', async () => {
+      const dests = Array.from({ length: 5 }, (_, i) =>
+        makeDest({
+          id: `small-${i}`,
+          iata_code: `S${String(i).padStart(2, '0')}`,
+          city: `SmallCity${i}`,
+        }),
+      );
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin } });
+      const res = makeRes();
+      await handler(req, res);
+
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations.length).toBeLessThanOrEqual(20);
+      expect(body.nextCursor).toBeNull();
+    });
+
+    it('rejects negative cursor values', async () => {
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, cursor: '-5' } });
+      const res = makeRes();
+      await handler(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('rejects non-numeric cursor values', async () => {
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, cursor: 'abc' } });
+      const res = makeRes();
+      await handler(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  // ─── Filter edge cases ────────────────────────────────────────────
+
+  describe('filters', () => {
+    it('filters by regionFilter', async () => {
+      const dests = [
+        makeDest({ id: 'fr1', country: 'France', iata_code: 'CDG' }),
+        makeDest({ id: 'jp1', country: 'Japan', iata_code: 'NRT' }),
+        makeDest({ id: 'mx1', country: 'Mexico', iata_code: 'CUN' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, regionFilter: 'eu-west' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(1);
+      expect(body.destinations[0].country).toBe('France');
+    });
+
+    it('filters by multiple comma-separated vibes', async () => {
+      const dests = [
+        makeDest({ id: 'v1', vibe_tags: ['beach', 'tropical'] }),
+        makeDest({ id: 'v2', vibe_tags: ['city', 'nightlife'] }),
+        makeDest({ id: 'v3', vibe_tags: ['adventure', 'nature'] }),
+        makeDest({ id: 'v4', vibe_tags: ['beach', 'adventure'] }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, vibeFilter: 'adventure' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(2);
+      const ids = body.destinations.map((d: any) => d.id).sort();
+      expect(ids).toEqual(['v3', 'v4']);
+    });
+
+    it('filters nonstop flights via vibeFilter=nonstop', async () => {
+      const origin = uniqueOrigin();
+      const dests = [
+        makeDest({ id: 'ns1', iata_code: 'NS1', vibe_tags: ['beach'] }),
+        makeDest({ id: 'ns2', iata_code: 'NS2', vibe_tags: ['beach'] }),
+        makeDest({ id: 'ns3', iata_code: 'NS3', vibe_tags: ['city'] }),
+      ];
+      // is_nonstop comes from cached_prices, not destinations
+      const prices = [
+        {
+          destination_iata: 'NS1', origin, price: 300, airline: 'AA',
+          duration: '3h', source: 'duffel',
+          fetched_at: new Date().toISOString(),
+          departure_date: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+          return_date: new Date(Date.now() + 21 * 86400000).toISOString().split('T')[0],
+          trip_duration_days: 7, is_nonstop: true, total_stops: 0,
+        },
+        {
+          destination_iata: 'NS2', origin, price: 400, airline: 'UA',
+          duration: '5h', source: 'duffel',
+          fetched_at: new Date().toISOString(),
+          departure_date: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+          return_date: new Date(Date.now() + 21 * 86400000).toISOString().split('T')[0],
+          trip_duration_days: 7, is_nonstop: false, total_stops: 1,
+        },
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushResult('price_calendar', { data: [], error: null });
+      pushResult('cached_prices', { data: prices, error: null });
+      pushResult('cached_hotel_prices', { data: [], error: null });
+      pushResult('destination_images', { data: [], error: null });
+
+      const req = makeReq({ query: { origin, vibeFilter: 'nonstop' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(1);
+      expect(body.destinations[0].id).toBe('ns1');
+    });
+
+    it('filters by durationFilter=weekend (1-3 days)', async () => {
+      const origin = uniqueOrigin();
+      const dests = [
+        makeDest({ id: 'dur1', iata_code: 'D01' }),
+        makeDest({ id: 'dur2', iata_code: 'D02' }),
+        makeDest({ id: 'dur3', iata_code: 'D03' }),
+        makeDest({ id: 'dur4', iata_code: 'D04' }),
+      ];
+      // trip_duration_days comes from cached_prices
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+      const makePrice = (iata: string, days: number) => ({
+        destination_iata: iata, origin, price: 300, airline: 'AA',
+        duration: '4h', source: 'duffel', fetched_at: now.toISOString(),
+        departure_date: futureDate,
+        return_date: new Date(now.getTime() + (14 + days) * 86400000).toISOString().split('T')[0],
+        trip_duration_days: days,
+      });
+      const prices = [
+        makePrice('D01', 2),  // weekend
+        makePrice('D02', 5),  // week
+        makePrice('D03', 12), // extended
+        // D04 has no price entry → no trip_duration_days → excluded
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushResult('price_calendar', { data: [], error: null });
+      pushResult('cached_prices', { data: prices, error: null });
+      pushResult('cached_hotel_prices', { data: [], error: null });
+      pushResult('destination_images', { data: [], error: null });
+
+      const req = makeReq({ query: { origin, durationFilter: 'weekend' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(1);
+      expect(body.destinations[0].id).toBe('dur1');
+    });
+
+    it('filters by durationFilter=week (4-8 days)', async () => {
+      const origin = uniqueOrigin();
+      const dests = [
+        makeDest({ id: 'dw1', iata_code: 'W01' }),
+        makeDest({ id: 'dw2', iata_code: 'W02' }),
+        makeDest({ id: 'dw3', iata_code: 'W03' }),
+        makeDest({ id: 'dw4', iata_code: 'W04' }),
+      ];
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+      const makePrice = (iata: string, days: number) => ({
+        destination_iata: iata, origin, price: 300, airline: 'AA',
+        duration: '4h', source: 'duffel', fetched_at: now.toISOString(),
+        departure_date: futureDate,
+        return_date: new Date(now.getTime() + (14 + days) * 86400000).toISOString().split('T')[0],
+        trip_duration_days: days,
+      });
+      const prices = [
+        makePrice('W01', 2),  // weekend
+        makePrice('W02', 5),  // week
+        makePrice('W03', 7),  // week
+        makePrice('W04', 12), // extended
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushResult('price_calendar', { data: [], error: null });
+      pushResult('cached_prices', { data: prices, error: null });
+      pushResult('cached_hotel_prices', { data: [], error: null });
+      pushResult('destination_images', { data: [], error: null });
+
+      const req = makeReq({ query: { origin, durationFilter: 'week' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(2);
+      const ids = body.destinations.map((d: any) => d.id).sort();
+      expect(ids).toEqual(['dw2', 'dw3']);
+    });
+
+    it('filters by durationFilter=extended (9+ days)', async () => {
+      const origin = uniqueOrigin();
+      const dests = [
+        makeDest({ id: 'de1', iata_code: 'E01' }),
+        makeDest({ id: 'de2', iata_code: 'E02' }),
+        makeDest({ id: 'de3', iata_code: 'E03' }),
+        makeDest({ id: 'de4', iata_code: 'E04' }),
+      ];
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+      const makePrice = (iata: string, days: number) => ({
+        destination_iata: iata, origin, price: 300, airline: 'AA',
+        duration: '4h', source: 'duffel', fetched_at: now.toISOString(),
+        departure_date: futureDate,
+        return_date: new Date(now.getTime() + (14 + days) * 86400000).toISOString().split('T')[0],
+        trip_duration_days: days,
+      });
+      const prices = [
+        makePrice('E01', 3),  // weekend
+        makePrice('E02', 7),  // week
+        makePrice('E03', 10), // extended
+        makePrice('E04', 14), // extended
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushResult('price_calendar', { data: [], error: null });
+      pushResult('cached_prices', { data: prices, error: null });
+      pushResult('cached_hotel_prices', { data: [], error: null });
+      pushResult('destination_images', { data: [], error: null });
+
+      const req = makeReq({ query: { origin, durationFilter: 'extended' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(2);
+      const ids = body.destinations.map((d: any) => d.id).sort();
+      expect(ids).toEqual(['de3', 'de4']);
+    });
+
+    it('excludes destinations by excludeIds', async () => {
+      const dests = [
+        makeDest({ id: 'ex1', iata_code: 'AA1', city: 'Alpha' }),
+        makeDest({ id: 'ex2', iata_code: 'BB1', city: 'Beta' }),
+        makeDest({ id: 'ex3', iata_code: 'CC1', city: 'Gamma' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, excludeIds: 'ex1,ex3' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(1);
+      expect(body.destinations[0].id).toBe('ex2');
+    });
+
+    it('filters out low deal_score destinations (< 30)', async () => {
+      const origin = uniqueOrigin();
+      const dests = [
+        makeDest({ id: 'ds1', iata_code: 'Q01' }),
+        makeDest({ id: 'ds2', iata_code: 'Q02' }),
+        makeDest({ id: 'ds3', iata_code: 'Q03' }),
+        makeDest({ id: 'ds4', iata_code: 'Q04' }),
+      ];
+      // deal_score comes from cached_prices
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+      const returnDate = new Date(now.getTime() + 21 * 86400000).toISOString().split('T')[0];
+      const prices = [
+        { destination_iata: 'Q01', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 80 },
+        { destination_iata: 'Q02', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 15 },
+        // Q03 has no price entry → no deal_score → should be kept
+        { destination_iata: 'Q04', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 30 },
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushResult('price_calendar', { data: [], error: null });
+      pushResult('cached_prices', { data: prices, error: null });
+      pushResult('cached_hotel_prices', { data: [], error: null });
+      pushResult('destination_images', { data: [], error: null });
+
+      const req = makeReq({ query: { origin } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      const ids = body.destinations.map((d: any) => d.id);
+      expect(ids).toContain('ds1');
+      expect(ids).not.toContain('ds2');
+      expect(ids).toContain('ds3');
+      expect(ids).toContain('ds4');
+    });
+
+    it('returns count when countOnly=true', async () => {
+      const dests = [
+        makeDest({ id: 'co1', vibe_tags: ['beach'] }),
+        makeDest({ id: 'co2', vibe_tags: ['city'] }),
+        makeDest({ id: 'co3', vibe_tags: ['beach', 'tropical'] }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, vibeFilter: 'beach', countOnly: 'true' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.count).toBe(2);
+      expect(body.destinations).toBeUndefined();
+    });
+  });
+
+  // ─── Sort presets ─────────────────────────────────────────────────
+
+  describe('sort presets', () => {
+    it('sorts by trending (popularity_score descending)', async () => {
+      const dests = [
+        makeDest({ id: 'tr1', popularity_score: 0.3, city: 'Low' }),
+        makeDest({ id: 'tr2', popularity_score: 0.95, city: 'High' }),
+        makeDest({ id: 'tr3', popularity_score: 0.6, city: 'Mid' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, sortPreset: 'trending' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations[0].city).toBe('High');
+      expect(body.destinations[1].city).toBe('Mid');
+      expect(body.destinations[2].city).toBe('Low');
+    });
+
+    it('sorts by best-deals (deal_score descending)', async () => {
+      const origin = uniqueOrigin();
+      const dests = [
+        makeDest({ id: 'bd1', iata_code: 'BD1', city: 'Fair' }),
+        makeDest({ id: 'bd2', iata_code: 'BD2', city: 'Amazing' }),
+        makeDest({ id: 'bd3', iata_code: 'BD3', city: 'Great' }),
+      ];
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+      const returnDate = new Date(now.getTime() + 21 * 86400000).toISOString().split('T')[0];
+      const prices = [
+        { destination_iata: 'BD1', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 40 },
+        { destination_iata: 'BD2', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 95 },
+        { destination_iata: 'BD3', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 70 },
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushResult('price_calendar', { data: [], error: null });
+      pushResult('cached_prices', { data: prices, error: null });
+      pushResult('cached_hotel_prices', { data: [], error: null });
+      pushResult('destination_images', { data: [], error: null });
+
+      const req = makeReq({ query: { origin, sortPreset: 'best-deals' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations[0].city).toBe('Amazing');
+      expect(body.destinations[1].city).toBe('Great');
+      expect(body.destinations[2].city).toBe('Fair');
+    });
+
+    it('cheapest sort excludes destinations with zero price', async () => {
+      const dests = [
+        makeDest({ id: 'zp1', flight_price: 0, city: 'Free' }),
+        makeDest({ id: 'zp2', flight_price: 300, city: 'Mid' }),
+        makeDest({ id: 'zp3', flight_price: 100, city: 'Cheap' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, sortPreset: 'cheapest' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      // Zero-price destination should be filtered out by cheapest sort
+      const cities = body.destinations.map((d: any) => d.city);
+      expect(cities).not.toContain('Free');
+      expect(body.destinations[0].city).toBe('Cheap');
+    });
+  });
+
+  // ─── Search edge cases ────────────────────────────────────────────
+
+  describe('search', () => {
+    it('search matches vibe tags', async () => {
+      const dests = [
+        makeDest({ id: 'sv1', city: 'Rome', vibe_tags: ['culture', 'foodie', 'historic'] }),
+        makeDest({ id: 'sv2', city: 'Cancun', vibe_tags: ['beach', 'nightlife'] }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, search: 'foodie' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(1);
+      expect(body.destinations[0].city).toBe('Rome');
+    });
+
+    it('search is case-insensitive', async () => {
+      const dests = [
+        makeDest({ id: 'ci1', city: 'Tokyo', country: 'Japan' }),
+        makeDest({ id: 'ci2', city: 'Berlin', country: 'Germany' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, search: 'JAPAN' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(1);
+      expect(body.destinations[0].city).toBe('Tokyo');
+    });
+
+    it('search with no matches returns empty', async () => {
+      const dests = [
+        makeDest({ id: 'nm1', city: 'Paris', country: 'France' }),
+        makeDest({ id: 'nm2', city: 'London', country: 'United Kingdom' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, search: 'zzzznotexist' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(0);
+    });
+
+    it('search matches partial city names', async () => {
+      const dests = [
+        makeDest({ id: 'pc1', city: 'Barcelona', country: 'Spain' }),
+        makeDest({ id: 'pc2', city: 'Barranquilla', country: 'Colombia' }),
+        makeDest({ id: 'pc3', city: 'Paris', country: 'France' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, search: 'bar' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(2);
+      const cities = body.destinations.map((d: any) => d.city).sort();
+      expect(cities).toEqual(['Barcelona', 'Barranquilla']);
+    });
+  });
+
+  // ─── Error handling ───────────────────────────────────────────────
+
+  describe('error handling', () => {
+    it('returns 500 when destinations query throws', async () => {
+      pushResult('destinations', { data: null, error: new Error('Connection refused') });
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin } });
+      const res = makeRes();
+      await handler(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it('returns 429 when rate limited', async () => {
+      const { checkRateLimit } = require('../../utils/rateLimit');
+      checkRateLimit.mockReturnValueOnce({
+        allowed: false,
+        remaining: 0,
+        resetAt: Date.now() + 30000,
+      });
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin } });
+      const res = makeRes();
+      await handler(req, res);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('gracefully handles parallel query failures (prices, images)', async () => {
+      const dests = [makeDest({ id: 'gh1', flight_price: 300 })];
+      pushResult('destinations', { data: dests, error: null });
+      // Push errors for parallel queries — they should not crash the handler
+      pushResult('price_calendar', { data: null, error: new Error('timeout') });
+      pushResult('cached_prices', { data: null, error: new Error('timeout') });
+      pushResult('cached_hotel_prices', { data: null, error: new Error('timeout') });
+      pushResult('destination_images', { data: null, error: new Error('timeout') });
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin } });
+      const res = makeRes();
+      await handler(req, res);
+
+      // Should still return 200 with the base destination data
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  // ─── Empty results ────────────────────────────────────────────────
+
+  describe('empty results', () => {
+    it('returns empty array when no destinations exist', async () => {
+      pushResult('destinations', { data: [], error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(0);
+      expect(body.nextCursor).toBeNull();
+    });
+
+    it('returns empty array when all destinations are filtered out by maxPrice', async () => {
+      const dests = [
+        makeDest({ id: 'ep1', flight_price: 500 }),
+        makeDest({ id: 'ep2', flight_price: 800 }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, maxPrice: '50' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(0);
+    });
+
+    it('returns empty array when vibeFilter matches nothing', async () => {
+      const dests = [
+        makeDest({ id: 'ev1', vibe_tags: ['city', 'culture'] }),
+        makeDest({ id: 'ev2', vibe_tags: ['nightlife'] }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, vibeFilter: 'beach' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(0);
+    });
+
+    it('returns empty array when regionFilter matches nothing', async () => {
+      const dests = [
+        makeDest({ id: 'er1', country: 'France' }),
+        makeDest({ id: 'er2', country: 'Spain' }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, regionFilter: 'asia-east' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(0);
+    });
+
+    it('returns empty array when durationFilter matches nothing', async () => {
+      const origin = uniqueOrigin();
+      const dests = [
+        makeDest({ id: 'ed1', iata_code: 'F01' }),
+        makeDest({ id: 'ed2', iata_code: 'F02' }),
+      ];
+      const now = new Date();
+      const futureDate = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+      const returnDate = new Date(now.getTime() + 21 * 86400000).toISOString().split('T')[0];
+      // Both have week-length trips — extended filter should match nothing
+      const prices = [
+        { destination_iata: 'F01', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7 },
+        { destination_iata: 'F02', origin, price: 400, airline: 'UA', duration: '5h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 5 },
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushResult('price_calendar', { data: [], error: null });
+      pushResult('cached_prices', { data: prices, error: null });
+      pushResult('cached_hotel_prices', { data: [], error: null });
+      pushResult('destination_images', { data: [], error: null });
+
+      const req = makeReq({ query: { origin, durationFilter: 'extended' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(0);
+    });
+  });
+
+  // ─── Combined filters ────────────────────────────────────────────
+
+  describe('combined filters', () => {
+    it('applies vibeFilter + maxPrice together', async () => {
+      const dests = [
+        makeDest({ id: 'cf1', vibe_tags: ['beach'], flight_price: 200 }),
+        makeDest({ id: 'cf2', vibe_tags: ['beach'], flight_price: 800 }),
+        makeDest({ id: 'cf3', vibe_tags: ['city'], flight_price: 200 }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, vibeFilter: 'beach', maxPrice: '500' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(1);
+      expect(body.destinations[0].id).toBe('cf1');
+    });
+
+    it('applies search + sortPreset together', async () => {
+      const dests = [
+        makeDest({ id: 'cs1', city: 'Madrid', country: 'Spain', flight_price: 600 }),
+        makeDest({ id: 'cs2', city: 'Malaga', country: 'Spain', flight_price: 200 }),
+        makeDest({ id: 'cs3', city: 'Tokyo', country: 'Japan', flight_price: 100 }),
+      ];
+      pushResult('destinations', { data: dests, error: null });
+      pushEmptyParallel();
+
+      const origin = uniqueOrigin();
+      const req = makeReq({ query: { origin, search: 'spain', sortPreset: 'cheapest' } });
+      const res = makeRes();
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0][0];
+      expect(body.destinations).toHaveLength(2);
+      // Malaga (200+markup=206) should come before Madrid (600+markup=618)
+      expect(body.destinations[0].city).toBe('Malaga');
+      expect(body.destinations[1].city).toBe('Madrid');
+    });
+  });
 });

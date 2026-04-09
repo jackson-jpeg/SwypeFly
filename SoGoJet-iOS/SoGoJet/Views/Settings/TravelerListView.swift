@@ -32,6 +32,7 @@ struct TravelerListView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .foregroundStyle(Color.sgYellow)
+                        .accessibilityLabel("Done")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -40,6 +41,7 @@ struct TravelerListView: View {
                         Image(systemName: "plus")
                             .foregroundStyle(Color.sgYellow)
                     }
+                    .accessibilityLabel("Add traveler")
                 }
             }
         }
@@ -111,6 +113,7 @@ struct TravelerListView: View {
                     .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Add traveler")
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -162,6 +165,7 @@ private struct TravelerCard: View {
                         .foregroundStyle(Color.sgYellow)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Edit \(traveler.fullName)")
             }
 
             // Info chips
@@ -186,6 +190,7 @@ private struct TravelerCard: View {
                         .foregroundStyle(Color.sgRed.opacity(0.8))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Remove \(traveler.fullName)")
             }
         }
         .padding(Spacing.md)

@@ -11,12 +11,13 @@ import {
   InteractionManager,
   Platform,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { successHaptic, errorHaptic } from '../../../utils/haptics';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
 import TripBanner from '../../../components/booking/TripBanner';
+import BookingProgress from '../../../components/booking/BookingProgress';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import { useBookingHistoryStore } from '../../../stores/bookingHistoryStore';
 import { useDealStore } from '../../../stores/dealStore';
@@ -81,6 +82,7 @@ function formatDate(iso: string): string {
 export default function ReviewPaymentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   const offerId = useBookingFlowStore((s) => s.selectedOfferId);
@@ -103,6 +105,22 @@ export default function ReviewPaymentScreen() {
   const [paying, setPaying] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [bookingRef, setBookingRef] = useState<string | null>(null);
+
+  // Prevent back navigation during payment or after confirmation
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e: { preventDefault: () => void; data: { action: unknown } }) => {
+      if (!paying && !confirmed) return; // allow back if not paying/confirmed
+      e.preventDefault();
+      if (confirmed) return; // don't show alert on confirmed — use Done button
+      if (Platform.OS === 'web') return; // web has no Alert
+      Alert.alert(
+        'Payment in progress',
+        'Your payment is being processed. Please wait.',
+        [{ text: 'OK', style: 'cancel' }],
+      );
+    });
+    return unsubscribe;
+  }, [navigation, paying, confirmed]);
 
   // Price change modal
   const [priceChangeModal, setPriceChangeModal] = useState<{
@@ -496,6 +514,7 @@ export default function ReviewPaymentScreen() {
         </View>
       </View>
 
+      <BookingProgress />
       <TripBanner />
       <View style={styles.divider} />
 

@@ -176,6 +176,7 @@ struct DepartureBoardView: View {
                 .fill(Color.sgBorder.opacity(0.7))
                 .frame(height: 1)
         }
+        .accessibilityHidden(true)
     }
 
     private var boardPanelBackground: some View {
@@ -519,6 +520,8 @@ struct DepartureBoardView: View {
                         .padding(.vertical, Spacing.sm)
                         .background(Color.sgYellow, in: Capsule())
                     }
+                    .accessibilityLabel(String(localized: "feed.clear_filters"))
+                    .accessibilityHint(String(localized: "feed.clear_filters.hint"))
                 } else {
                     HStack(spacing: Spacing.sm) {
                         ForEach(nearbyAirports, id: \.self) { code in
@@ -564,6 +567,7 @@ struct DepartureBoardView: View {
                         .padding(.vertical, Spacing.sm)
                         .background(Color.sgYellow, in: Capsule())
                     }
+                    .accessibilityLabel(String(localized: "feed.error.retry"))
 
                     Button {
                         router.showSearch()
@@ -581,6 +585,7 @@ struct DepartureBoardView: View {
                                 .strokeBorder(Color.sgBorder, lineWidth: 1)
                         )
                     }
+                    .accessibilityLabel(String(localized: "search.title"))
                 }
             }
             .padding(Spacing.lg)

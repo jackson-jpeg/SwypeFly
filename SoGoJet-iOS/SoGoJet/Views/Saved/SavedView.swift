@@ -136,9 +136,13 @@ struct SavedView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(segment.rawValue)
+                .accessibilityAddTraits(activeSegment == segment ? .isSelected : [])
             }
         }
         .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "saved.segment_picker"))
     }
 
     // MARK: - Saved Flights Content
@@ -406,11 +410,11 @@ struct SavedView: View {
                     .font(.system(size: 40, weight: .thin))
                     .foregroundStyle(Color.sgMuted)
 
-                Text("No Saved Routes")
+                Text(String(localized: "saved.empty.title_routes"))
                     .font(SGFont.display(size: 22))
                     .foregroundStyle(Color.sgWhite)
 
-                Text("Tap the heart on any deal to save it here.")
+                Text(String(localized: "saved.empty.hint"))
                     .font(SGFont.body(size: 14))
                     .foregroundStyle(Color.sgMuted)
                     .multilineTextAlignment(.center)
@@ -418,8 +422,8 @@ struct SavedView: View {
             .padding(.top, Spacing.xl)
 
             VintageTerminalActionButton(
-                title: "Explore Deals",
-                subtitle: "Find routes worth saving",
+                title: String(localized: "saved.empty.explore"),
+                subtitle: String(localized: "saved.empty.explore_subtitle"),
                 icon: "airplane",
                 tone: .amber,
                 fillsWidth: true

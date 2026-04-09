@@ -41,6 +41,7 @@ struct ExploreMapView: View {
                     .background(Color.sgBg.opacity(0.8))
                     .clipShape(Circle())
             }
+            .accessibilityLabel(String(localized: "common.close"))
             .padding(.top, 60)
             .padding(.leading, 16)
 
@@ -55,6 +56,7 @@ struct ExploreMapView: View {
                         .padding(.vertical, 8)
                         .background(Color.sgBg.opacity(0.85))
                         .clipShape(Capsule())
+                        .accessibilityLabel("\(mappableDeals.count) destinations on map")
                     Spacer()
                 }
                 .padding(.horizontal, 16)
@@ -92,5 +94,7 @@ struct ExploreMapView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(deal.city), \(deal.priceFormatted)")
+        .accessibilityHint(String(localized: "map.pin.hint"))
     }
 }

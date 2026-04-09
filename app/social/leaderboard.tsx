@@ -8,7 +8,7 @@ import {
   Pressable,
   Platform,
 } from 'react-native';
-import Animated, { FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -129,7 +129,7 @@ export default function LeaderboardScreen() {
           data={leaderboard}
           keyExtractor={(item) => item.user_id}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInRight.delay(Math.min(index, 10) * 40).springify()}>
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 50).springify()}>
               <LeaderboardRow item={item} />
             </Animated.View>
           )}

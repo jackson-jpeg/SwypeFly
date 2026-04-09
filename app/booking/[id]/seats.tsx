@@ -12,8 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
 import TripBanner from '../../../components/booking/TripBanner';
+import BookingProgress from '../../../components/booking/BookingProgress';
 import { useBookingFlowStore } from '../../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../../theme/tokens';
+import { lightHaptic, successHaptic, errorHaptic } from '../../../utils/haptics';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || '';
 
@@ -65,8 +67,8 @@ export default function SeatSelectionScreen() {
 
   useEffect(() => {
     if (!offerId) {
-      setError('No offer selected');
-      setLoading(false);
+      // No offer — redirect back to flight selection
+      router.replace(`/booking/${id}` as never);
       return;
     }
 
@@ -136,6 +138,7 @@ export default function SeatSelectionScreen() {
 
   function handleSeatPress(seat: SeatInfo) {
     if (!seat.available) return;
+    lightHaptic();
     setSelectedSeat((prev) => (prev?.designator === seat.designator ? null : seat));
   }
 
@@ -152,6 +155,7 @@ export default function SeatSelectionScreen() {
     } else {
       setSeats([]);
     }
+    successHaptic();
     router.push(`/booking/${id}/services` as never);
   }
 
@@ -166,6 +170,9 @@ export default function SeatSelectionScreen() {
         key={seat.designator}
         onPress={() => handleSeatPress(seat)}
         disabled={!seat.available}
+        accessibilityRole="button"
+        accessibilityLabel={`Seat ${seat.designator}${seat.extraLegroom ? ', extra legroom' : ''}${seat.price ? `, $${seat.price}` : ''}`}
+        accessibilityState={{ selected: isSelected, disabled: !seat.available }}
         style={[
           styles.seat,
           !seat.available && styles.seatOccupied,
@@ -211,6 +218,7 @@ export default function SeatSelectionScreen() {
         </View>
       </View>
 
+      <BookingProgress />
       <TripBanner />
       <View style={styles.divider} />
 
@@ -338,7 +346,7 @@ export default function SeatSelectionScreen() {
           ) : (
             <View style={styles.bottomInfo} />
           )}
-          <Pressable onPress={handleContinue} style={styles.continueBtn}>
+          <Pressable onPress={handleContinue} style={styles.continueBtn} accessibilityRole="button" accessibilityLabel={selectedSeat ? `Continue with seat ${selectedSeat.designator}` : 'Continue without seat selection'}>
             <Text style={styles.continueBtnText}>
               {selectedSeat ? 'Continue' : 'Continue without seat'}
             </Text>

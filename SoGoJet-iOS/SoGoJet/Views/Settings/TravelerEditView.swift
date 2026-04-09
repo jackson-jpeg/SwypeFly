@@ -51,6 +51,7 @@ struct TravelerEditView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                         .foregroundStyle(Color.sgMuted)
+                        .accessibilityLabel("Cancel editing")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -67,6 +68,7 @@ struct TravelerEditView: View {
                         }
                     }
                     .disabled(!isValid || isSaving)
+                    .accessibilityLabel(isSaving ? "Saving traveler" : "Save traveler")
                 }
             }
         }
@@ -95,7 +97,9 @@ struct TravelerEditView: View {
 
     private var isValid: Bool {
         !givenName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !familyName.trimmingCharacters(in: .whitespaces).isEmpty
+        !familyName.trimmingCharacters(in: .whitespaces).isEmpty &&
+        (email.isEmpty || email.contains("@")) &&
+        (nationality.isEmpty || (nationality.count == 2 && nationality.allSatisfy(\.isLetter)))
     }
 
     // MARK: - Sections
@@ -170,6 +174,7 @@ struct TravelerEditView: View {
                 .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
                 .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.sgBorder))
         }
+        .accessibilityLabel("Title: \(title.isEmpty ? "not set" : title.capitalized)")
     }
 
     private var genderPicker: some View {
@@ -194,6 +199,8 @@ struct TravelerEditView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(g.capitalized)
+                .accessibilityAddTraits(gender == g ? .isSelected : [])
             }
         }
     }

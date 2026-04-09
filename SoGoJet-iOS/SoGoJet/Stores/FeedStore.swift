@@ -7,7 +7,10 @@ import Observation
 @Observable
 final class FeedStore {
     // MARK: State
-    private var loadedDeals: [Deal] = []
+    private var loadedDeals: [Deal] = [] {
+        didSet { updateFilteredDeals() }
+    }
+    private var _filteredDeals: [Deal] = []
     var page: Int = 0
     var isLoading: Bool = false
     var hasMore: Bool = true
@@ -43,13 +46,22 @@ final class FeedStore {
     private static let maxPriceKey = StorageKeys.Feed.filterMaxPrice
 
     var selectedPrices: [String] {
-        didSet { UserDefaults.standard.set(selectedPrices, forKey: Self.pricesKey) }
+        didSet {
+            UserDefaults.standard.set(selectedPrices, forKey: Self.pricesKey)
+            updateFilteredDeals()
+        }
     }
     var selectedVibes: [String] {
-        didSet { UserDefaults.standard.set(selectedVibes, forKey: Self.vibesKey) }
+        didSet {
+            UserDefaults.standard.set(selectedVibes, forKey: Self.vibesKey)
+            updateFilteredDeals()
+        }
     }
     var selectedRegions: [String] {
-        didSet { UserDefaults.standard.set(selectedRegions, forKey: Self.regionsKey) }
+        didSet {
+            UserDefaults.standard.set(selectedRegions, forKey: Self.regionsKey)
+            updateFilteredDeals()
+        }
     }
 
     /// Quick price ceiling filter from the bottom pill bar (e.g. 200, 500, 1000).
@@ -62,6 +74,7 @@ final class FeedStore {
             } else {
                 UserDefaults.standard.removeObject(forKey: Self.maxPriceKey)
             }
+            updateFilteredDeals()
         }
     }
 
@@ -79,11 +92,16 @@ final class FeedStore {
             self.loadedDeals = cached
             self.showingCachedData = true
         }
+        updateFilteredDeals()
     }
 
     // MARK: Derived
     var deals: [Deal] {
-        loadedDeals.filter(matchesActiveFilters)
+        _filteredDeals
+    }
+
+    private func updateFilteredDeals() {
+        _filteredDeals = loadedDeals.filter(matchesActiveFilters)
     }
 
     var allDeals: [Deal] {

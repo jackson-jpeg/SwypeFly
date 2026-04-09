@@ -34,7 +34,13 @@ struct BookingFlowView: View {
     }
 
     private var flowSteps: [String] {
-        ["Search", "Traveler", "Seats", "Review", "Confirmed"]
+        [
+            String(localized: "booking.step.search"),
+            String(localized: "booking.step.traveler"),
+            String(localized: "booking.step.seats"),
+            String(localized: "booking.step.review"),
+            String(localized: "booking.step.confirmed"),
+        ]
     }
 
     private var currentStepIndex: Int {
@@ -55,36 +61,36 @@ struct BookingFlowView: View {
     private var chromeTitle: String {
         switch store.step {
         case .idle, .searching, .trip, .failed:
-            return "Your Trip"
+            return String(localized: "booking.your_trip")
         case .passengers:
-            return "Passenger Details"
+            return String(localized: "booking.passenger_details")
         case .seats:
-            return "Cabin Map"
+            return String(localized: "booking.cabin_map")
         case .review, .paying:
-            return "Final Review"
+            return String(localized: "booking.final_review")
         case .confirmed:
-            return "Confirmed"
+            return String(localized: "booking.confirmed")
         }
     }
 
     private var chromeSubtitle: String {
         switch store.step {
         case .idle, .searching:
-            return "Searching for the best available flights."
+            return String(localized: "booking.searching_subtitle")
         case .trip:
-            return "Pick the flight that works for you, then add your details."
+            return String(localized: "booking.trip_subtitle")
         case .failed:
-            return "We couldn't find flights for this route. Try different dates or check back later."
+            return String(localized: "booking.failed_subtitle")
         case .passengers:
-            return "Enter passenger details as shown on their ID."
+            return String(localized: "booking.passengers_subtitle")
         case .seats:
-            return "Choose your seat or skip to let the airline assign one."
+            return String(localized: "booking.seats_subtitle")
         case .review:
-            return "Review your trip details before paying."
+            return String(localized: "booking.review_subtitle")
         case .paying:
-            return "Processing your payment..."
+            return String(localized: "booking.paying_subtitle")
         case .confirmed:
-            return "Your trip is confirmed!"
+            return String(localized: "booking.confirmed_subtitle")
         }
     }
 
@@ -119,16 +125,16 @@ struct BookingFlowView: View {
                 }
             }
         }
-        .alert("Sign In Required", isPresented: $showSignInPrompt) {
-            Button("Sign In") {
+        .alert(String(localized: "booking.sign_in_required"), isPresented: $showSignInPrompt) {
+            Button(String(localized: "common.sign_in")) {
                 router.dismissFullScreen()
                 // Let the user sign in from the main app
             }
             .accessibilityLabel("Sign in to complete booking")
-            Button("Continue Browsing", role: .cancel) {}
+            Button(String(localized: "booking.continue_browsing"), role: .cancel) {}
                 .accessibilityLabel("Dismiss and continue browsing flights")
         } message: {
-            Text("Create an account to complete your booking. You can browse flights and compare prices without signing in.")
+            Text(String(localized: "booking.sign_in_message"))
         }
     }
 
@@ -156,7 +162,7 @@ struct BookingFlowView: View {
     private var flowChrome: some View {
         VStack(spacing: Spacing.sm) {
             VintageTerminalTopBar(
-                eyebrow: "Booking Flow",
+                eyebrow: String(localized: "booking.title"),
                 title: chromeTitle,
                 subtitle: chromeSubtitle,
                 stamp: currentDeal.iataCode,

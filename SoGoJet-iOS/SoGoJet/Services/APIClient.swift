@@ -11,8 +11,13 @@ actor APIClient {
     private let decoder: JSONDecoder
 
     /// Auth token set by AuthStore — included as Bearer header on all requests when available.
-    /// nonisolated(unsafe) because this is set from @MainActor (AuthStore) and read from the actor.
-    nonisolated(unsafe) static var authToken: String?
+    /// Protected by an unfair lock since it's written from @MainActor and read from the actor.
+    private static let _authTokenLock = NSLock()
+    private static var _authToken: String?
+    static var authToken: String? {
+        get { _authTokenLock.withLock { _authToken } }
+        set { _authTokenLock.withLock { _authToken = newValue } }
+    }
 
     /// Posted when a 401 response invalidates the session token.
     static let sessionExpired = Notification.Name("sg_session_expired")
@@ -483,7 +488,7 @@ actor APIClient {
             }
         }
 
-        throw lastError!
+        throw lastError ?? APIError.invalidResponse
     }
 
     // MARK: Single Request

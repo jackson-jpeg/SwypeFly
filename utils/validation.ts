@@ -269,6 +269,24 @@ export const travelerCreateSchema = z.object({
 
 export const travelerUpdateSchema = travelerCreateSchema.partial();
 
+// ─── Saved endpoint ────────────────────────────────────────────────
+
+export const savedActionSchema = z.object({
+  action: z.enum(['list', 'save', 'unsave', 'get-prefs', 'save-prefs']),
+});
+
+export const savedBodySchema = z.object({
+  destination_id: z.string().min(1).max(100),
+});
+
+export const savePrefsBodySchema = z.object({
+  departure_city: z.string().min(1).max(100).optional(),
+  departure_code: z.string().min(1).max(10).optional(),
+  onboarding_completed: z.boolean().optional(),
+}).refine((data) => Object.keys(data).length > 0, {
+  message: 'At least one preference field is required',
+});
+
 // ─── Validate helper ─────────────────────────────────────────────────
 
 type ValidationSuccess<T> = { success: true; data: T; error?: undefined };

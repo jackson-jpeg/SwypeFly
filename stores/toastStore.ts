@@ -30,6 +30,6 @@ export const useToastStore = create<ToastState>((set) => ({
 }));
 
 // Convenience helpers
-export const showToast = (msg: string) => useToastStore.getState().show(msg, 'success');
+export const showToast = (msg: string, type?: ToastType) => useToastStore.getState().show(msg, type ?? 'success');
 export const showError = (msg: string) => useToastStore.getState().show(msg, 'error', 3500);
 export const showInfo = (msg: string) => useToastStore.getState().show(msg, 'info');

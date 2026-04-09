@@ -11,12 +11,12 @@ const OFFLINE_HTML = `<!DOCTYPE html>
   <title>SoGoJet — Offline</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0F172A;color:#F8FAFC;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0A0806;color:#FFF8F0;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px}
     .c{text-align:center;max-width:360px}
     .icon{font-size:56px;margin-bottom:16px}
-    h1{font-size:22px;font-weight:800;margin-bottom:8px}
-    p{color:#94A3B8;font-size:14px;line-height:1.6;margin-bottom:24px}
-    button{padding:12px 28px;border-radius:9999px;background:#38BDF8;border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+    h1{font-size:22px;font-weight:800;margin-bottom:8px;color:#F7E8A0}
+    p{color:#8B7D6B;font-size:14px;line-height:1.6;margin-bottom:24px}
+    button{padding:12px 28px;border-radius:9999px;background:#F7E8A0;border:none;color:#0A0806;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
   </style>
 </head>
 <body>

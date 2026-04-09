@@ -184,7 +184,7 @@ export const useDealStore = create<DealState>()((set, get) => ({
       const params = new URLSearchParams({ origin, cursor: '0', ...filters });
       const res = await fetch(`${API_BASE}/api/feed?${params}`);
       if (!res.ok) {
-        const text = await res.text().catch(() => '');
+        await res.text().catch(() => ''); // drain body
         throw new Error(res.status === 429 ? 'Too many requests — try again in a moment' : `Failed to load flights (${res.status})`);
       }
       const data = await res.json();

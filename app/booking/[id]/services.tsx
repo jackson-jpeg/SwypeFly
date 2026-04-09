@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SplitFlapRow from '../../../components/board/SplitFlapRow';
 import TripBanner from '../../../components/booking/TripBanner';
+import BookingProgress from '../../../components/booking/BookingProgress';
 import { useBookingFlowStore, type SelectedService } from '../../../stores/bookingFlowStore';
 import { colors, fonts, spacing } from '../../../theme/tokens';
 import { lightHaptic, successHaptic } from '../../../utils/haptics';
@@ -148,6 +149,7 @@ export default function ServicesScreen() {
         </View>
         <Text style={styles.subtitle}>Optional add-ons for your trip</Text>
       </View>
+      <BookingProgress />
       <TripBanner />
 
       <ScrollView
