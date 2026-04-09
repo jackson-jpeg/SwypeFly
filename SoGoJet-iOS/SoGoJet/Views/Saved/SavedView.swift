@@ -62,6 +62,12 @@ struct SavedView: View {
                 }
             }
         }
+        .refreshable {
+            savedStore.syncFromServer()
+            HapticEngine.light()
+            // Give the network call time to update the list
+            try? await Task.sleep(for: .seconds(1))
+        }
         .background(Color.sgBg)
         .navigationTitle("")
         .navigationBarHidden(true)

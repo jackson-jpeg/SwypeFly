@@ -11,7 +11,7 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { colors, fonts } from '../../theme/tokens';
+import { fonts } from '../../theme/tokens';
 import { successHaptic, mediumHaptic } from '../../utils/haptics';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -71,7 +71,7 @@ export default function SwipeGesture({
         runOnJS(fireHaptic)();
       }
     })
-    .onEnd((e) => {
+    .onEnd((_e) => {
       const swipedRight = translateX.value > SWIPE_THRESHOLD;
       const swipedLeft = translateX.value < -SWIPE_THRESHOLD;
 

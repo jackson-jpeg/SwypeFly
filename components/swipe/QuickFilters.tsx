@@ -1,8 +1,8 @@
 import { memo, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFilterStore } from '../../stores/filterStore';
-import { colors, fonts, spacing } from '../../theme/tokens';
+import { colors, fonts } from '../../theme/tokens';
 import { lightHaptic } from '../../utils/haptics';
 
 // Google Flights-style quick filter chips — always visible, horizontally scrollable.
