@@ -73,12 +73,34 @@ jest.mock('@vercel/og', () => ({
   })),
 }));
 
-import handler from '../../api/share-card';
+// Reset the in-memory cache between tests
+jest.mock('../../api/_ogCache', () => {
+  const actual = jest.requireActual('../../api/_ogCache');
+  return {
+    ...actual,
+    tryCacheHit: jest.fn().mockReturnValue(false),
+    cacheAndSend: jest.fn().mockImplementation(
+      (res: any, _key: string, buffer: Buffer) => {
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('ETag', '"test-etag"');
+        res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
+        res.status(200).send(buffer);
+      },
+    ),
+    getCacheKey: actual.getCacheKey,
+    OG_COLORS: actual.OG_COLORS,
+    DEAL_TIER_COLORS: actual.DEAL_TIER_COLORS,
+    DEAL_TIER_LABELS: actual.DEAL_TIER_LABELS,
+  };
+});
 
-function makeReq(query: Record<string, string> = {}): VercelRequest {
+import handler from '../../api/share-card';
+import { tryCacheHit, cacheAndSend } from '../../api/_ogCache';
+
+function makeReq(query: Record<string, string> = {}, headers: Record<string, string> = {}): VercelRequest {
   return {
     method: 'GET',
-    headers: {},
+    headers,
     body: {},
     query,
   } as unknown as VercelRequest;
@@ -103,6 +125,7 @@ describe('GET /api/share-card', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockResultQueues.clear();
+    (tryCacheHit as jest.Mock).mockReturnValue(false);
   });
 
   it('returns 400 when no id or top param provided', async () => {
@@ -121,6 +144,7 @@ describe('GET /api/share-card', () => {
         live_price: 480,
         image_url: 'https://example.com/tokyo.jpg',
         airline_name: 'ANA',
+        hotel_price_per_night: 85,
       },
       error: null,
     });
@@ -176,6 +200,7 @@ describe('GET /api/share-card', () => {
         live_price: null,
         image_url: null,
         airline_name: null,
+        hotel_price_per_night: null,
       },
       error: null,
     });
@@ -211,7 +236,7 @@ describe('GET /api/share-card', () => {
     expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
   });
 
-  it('sets 1-hour cache headers on response', async () => {
+  it('sets ETag and cache headers on response', async () => {
     pushResult('destinations', {
       data: {
         city: 'London',
@@ -229,11 +254,46 @@ describe('GET /api/share-card', () => {
     const res = makeRes();
     await handler(req, res);
 
+    expect(cacheAndSend).toHaveBeenCalled();
+    const etagHeader = res.setHeader.mock.calls.find(
+      (c: string[]) => c[0] === 'ETag',
+    );
+    expect(etagHeader).toBeDefined();
     const cacheHeader = res.setHeader.mock.calls.find(
       (c: string[]) => c[0] === 'Cache-Control',
     );
     expect(cacheHeader).toBeDefined();
     expect(cacheHeader![1]).toContain('s-maxage=3600');
+  });
+
+  it('returns cached response on cache hit', async () => {
+    (tryCacheHit as jest.Mock).mockImplementation(
+      (_req: any, res: any, _key: string) => {
+        res.setHeader('Content-Type', 'image/png');
+        res.status(200).send(Buffer.from('cached'));
+        return true;
+      },
+    );
+
+    pushResult('destinations', {
+      data: {
+        city: 'Cached City',
+        country: 'CacheLand',
+        flight_price: 100,
+        live_price: 90,
+        image_url: 'https://example.com/cached.jpg',
+        airline_name: 'Cache Air',
+      },
+      error: null,
+    });
+    pushResult('price_calendar', { data: [], error: null });
+
+    const req = makeReq({ id: 'dest-cached' });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(cacheAndSend).not.toHaveBeenCalled();
   });
 
   it('returns 500 on database error', async () => {
@@ -323,5 +383,64 @@ describe('GET /api/share-card', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('includes hotel price in single deal card when available', async () => {
+    pushResult('destinations', {
+      data: {
+        city: 'Barcelona',
+        country: 'Spain',
+        flight_price: 320,
+        live_price: 300,
+        image_url: 'https://example.com/bcn.jpg',
+        airline_name: 'Vueling',
+        hotel_price_per_night: 95,
+      },
+      error: null,
+    });
+    pushResult('price_calendar', {
+      data: [{
+        deal_tier: 'amazing',
+        savings_percent: 35,
+        usual_price: 480,
+        is_nonstop: false,
+        deal_score: 92,
+      }],
+      error: null,
+    });
+
+    const req = makeReq({ id: 'dest-bcn' });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(cacheAndSend).toHaveBeenCalled();
+    const callArgs = (cacheAndSend as jest.Mock).mock.calls[0];
+    expect(callArgs[2]).toBeInstanceOf(Buffer);
+  });
+});
+
+// ─── _ogCache unit tests ────────────────────────────────────────────
+
+describe('_ogCache utilities', () => {
+  // Use the real module for these tests
+  const ogCache = jest.requireActual('../../api/_ogCache');
+
+  it('getCacheKey produces consistent hashes for same params', () => {
+    const a = ogCache.getCacheKey({ city: 'Paris', price: 100 });
+    const b = ogCache.getCacheKey({ city: 'Paris', price: 100 });
+    expect(a).toBe(b);
+  });
+
+  it('getCacheKey produces different hashes for different params', () => {
+    const a = ogCache.getCacheKey({ city: 'Paris', price: 100 });
+    const b = ogCache.getCacheKey({ city: 'London', price: 200 });
+    expect(a).not.toBe(b);
+  });
+
+  it('exports shared color constants', () => {
+    expect(ogCache.OG_COLORS.yellow).toBe('#F7E8A0');
+    expect(ogCache.DEAL_TIER_COLORS.amazing).toBe('#4ADE80');
+    expect(ogCache.DEAL_TIER_LABELS.great).toBe('GREAT DEAL');
   });
 });

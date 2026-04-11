@@ -66,6 +66,25 @@ jest.mock('@vercel/og', () => ({
   })),
 }));
 
+jest.mock('../../api/_ogCache', () => {
+  const actual = jest.requireActual('../../api/_ogCache');
+  return {
+    ...actual,
+    tryCacheHit: jest.fn().mockReturnValue(false),
+    cacheAndSend: jest.fn().mockImplementation(
+      (res: any, _key: string, buffer: Buffer) => {
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800');
+        res.status(200).send(buffer);
+      },
+    ),
+    getCacheKey: actual.getCacheKey,
+    OG_COLORS: actual.OG_COLORS,
+    DEAL_TIER_COLORS: actual.DEAL_TIER_COLORS,
+    DEAL_TIER_LABELS: actual.DEAL_TIER_LABELS,
+  };
+});
+
 import handler from '../../api/og';
 
 function makeReq(query: Record<string, string> = {}): VercelRequest {

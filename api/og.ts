@@ -6,22 +6,18 @@ import { ImageResponse } from '@vercel/og';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { env } from '../utils/env';
+import {
+  getCacheKey,
+  tryCacheHit,
+  cacheAndSend,
+  OG_COLORS,
+  DEAL_TIER_COLORS,
+  DEAL_TIER_LABELS,
+} from './_ogCache';
 
 function escapeStr(str: string): string {
   return str.replace(/[<>"'&]/g, '');
 }
-
-const TIER_COLORS: Record<string, string> = {
-  amazing: '#4ADE80',
-  great: '#FBBF24',
-  good: '#60A5FA',
-};
-
-const TIER_LABELS: Record<string, string> = {
-  amazing: 'INCREDIBLE DEAL',
-  great: 'GREAT DEAL',
-  good: 'GOOD PRICE',
-};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
@@ -29,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let cityStr = 'Amazing Destination';
   let countryStr = '';
   let priceStr = '';
+  let hotelPriceStr = '';
   let imageUrl =
     'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630';
   let tagline = '';
@@ -63,6 +60,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         priceStr = effectivePrice ? `$${effectivePrice}` : '';
         flightDuration = escapeStr(dest.flight_duration || '');
         const hotelPrice = dest.hotel_price_per_night || 0;
+        if (hotelPrice > 0) {
+          hotelPriceStr = `$${Math.round(hotelPrice)}/night`;
+        }
         costLevel =
           hotelPrice <= 60
             ? '$'
@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (calendarRows && calendarRows.length > 0) {
           const pd = calendarRows[0];
           const dbTier = (pd.deal_tier as string) || '';
-          if (dbTier in TIER_COLORS) dealTier = dbTier;
+          if (dbTier in DEAL_TIER_COLORS) dealTier = dbTier;
           savingsPercent = Math.max(
             0,
             Math.min(100, (pd.savings_percent as number) || 0),
@@ -111,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (req.query.dealTier) {
     const tier = String(req.query.dealTier);
-    if (tier in TIER_COLORS) dealTier = tier;
+    if (tier in DEAL_TIER_COLORS) dealTier = tier;
   }
   if (req.query.savingsPercent)
     savingsPercent = Math.max(
@@ -119,11 +119,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Math.min(100, parseInt(String(req.query.savingsPercent), 10) || 0),
     );
 
+  // Check cache before rendering
+  const cacheKey = getCacheKey({
+    type: 'og',
+    city: cityStr,
+    country: countryStr,
+    price: priceStr,
+    hotel: hotelPriceStr,
+    image: imageUrl,
+    tagline,
+    dealTier,
+    savingsPercent,
+  });
+  if (tryCacheHit(req, res, cacheKey)) return;
+
   const metaParts = [countryStr, flightDuration, costLevel].filter(Boolean);
   const metaRow = metaParts.join('  ·  ');
 
-  const tierColor = TIER_COLORS[dealTier] || '';
-  const tierLabel = TIER_LABELS[dealTier] || '';
+  const tierColor = DEAL_TIER_COLORS[dealTier] || '';
+  const tierLabel = DEAL_TIER_LABELS[dealTier] || '';
+
+  // Build price pill text: "Flights from $X" and optionally "· Hotels from $Y/night"
+  const priceParts: string[] = [];
+  if (priceStr) priceParts.push(`Flights from ${priceStr}`);
+  if (hotelPriceStr) priceParts.push(`Hotels from ${hotelPriceStr}`);
+  const priceDisplay = priceParts.join('  ·  ') || '';
 
   try {
     const imgResponse = new ImageResponse(
@@ -349,8 +369,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         },
                       ]
                     : []),
-                  // Price pill
-                  ...(priceStr
+                  // Price pill with hotel info
+                  ...(priceDisplay
                     ? [
                         {
                           type: 'div',
@@ -364,12 +384,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                               borderRadius: 999,
                               background:
                                 'linear-gradient(135deg, rgba(168,196,184,0.9), rgba(168,196,184,0.9))',
-                              fontSize: 28,
+                              fontSize: hotelPriceStr ? 22 : 28,
                               fontWeight: 700,
                               color: '#1a1a1a',
                               alignSelf: 'flex-start',
                             },
-                            children: `✈️ From ${priceStr}`,
+                            children: priceDisplay,
                           },
                         },
                       ]
@@ -386,19 +406,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     );
 
-    // Convert the ImageResponse to a buffer and send as PNG
     const arrayBuffer = await imgResponse.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader(
-      'Cache-Control',
-      'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800',
-    );
-    res.status(200).send(buffer);
+    cacheAndSend(res, cacheKey, buffer, 86400);
   } catch (err) {
     console.error('[og] Image generation failed:', err);
-    // Fallback: redirect to destination image directly
     res.setHeader('Location', imageUrl);
     res.status(302).end();
   }

@@ -7,6 +7,14 @@ import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { env } from '../utils/env';
 import { sendError } from '../utils/apiResponse';
+import {
+  getCacheKey,
+  tryCacheHit,
+  cacheAndSend,
+  OG_COLORS,
+  DEAL_TIER_COLORS,
+  DEAL_TIER_LABELS,
+} from './_ogCache';
 
 const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
 function withMarkup(price: number): number {
@@ -16,26 +24,6 @@ function withMarkup(price: number): number {
 function escapeStr(str: string): string {
   return str.replace(/[<>"'&]/g, '');
 }
-
-const COLORS = {
-  bg: '#0A0806',
-  surface: '#151210',
-  yellow: '#F7E8A0',
-  white: '#FFF8F0',
-  muted: '#8B7D6B',
-  green: '#A8C4B8',
-  dealAmazing: '#4ADE80',
-  dealGreat: '#FBBF24',
-  dealGood: '#60A5FA',
-  border: '#2A231A',
-};
-
-const TIER_COLORS: Record<string, string> = {
-  amazing: COLORS.dealAmazing,
-  great: COLORS.dealGreat,
-  good: COLORS.dealGood,
-  fair: COLORS.muted,
-};
 
 // ─── Single deal card (Satori element tree) ─────────────────────────
 
@@ -50,18 +38,12 @@ function singleDealElement(
   airline: string,
   isNonstop: boolean,
   format: 'instagram' | 'twitter',
+  hotelPrice: number | null,
 ) {
   const w = format === 'instagram' ? 1080 : 1200;
   const h = format === 'instagram' ? 1080 : 630;
-  const tierColor = TIER_COLORS[dealTier] || COLORS.muted;
-  const tierLabel =
-    dealTier === 'amazing'
-      ? 'INCREDIBLE DEAL'
-      : dealTier === 'great'
-        ? 'GREAT DEAL'
-        : dealTier === 'good'
-          ? 'GOOD PRICE'
-          : '';
+  const tierColor = DEAL_TIER_COLORS[dealTier] || OG_COLORS.muted;
+  const tierLabel = DEAL_TIER_LABELS[dealTier] || '';
   const fontSize = format === 'instagram' ? 64 : 52;
   const priceSize = format === 'instagram' ? 56 : 44;
   const bottomPad = format === 'instagram' ? 60 : 40;
@@ -77,7 +59,7 @@ function singleDealElement(
           height: h,
           display: 'flex',
           flexDirection: 'column' as const,
-          backgroundColor: COLORS.bg,
+          backgroundColor: OG_COLORS.bg,
           fontFamily: 'sans-serif',
         },
         children: [
@@ -202,7 +184,7 @@ function singleDealElement(
                           style: {
                             fontSize: 24,
                             fontWeight: 800,
-                            color: COLORS.white,
+                            color: OG_COLORS.white,
                             letterSpacing: -0.5,
                           },
                           children: 'SoGo',
@@ -214,7 +196,7 @@ function singleDealElement(
                           style: {
                             fontSize: 24,
                             fontWeight: 800,
-                            color: COLORS.green,
+                            color: OG_COLORS.green,
                             letterSpacing: -0.5,
                           },
                           children: 'Jet',
@@ -246,7 +228,7 @@ function singleDealElement(
                     style: {
                       fontSize,
                       fontWeight: 800,
-                      color: COLORS.white,
+                      color: OG_COLORS.white,
                       lineHeight: 1,
                       letterSpacing: -2,
                     },
@@ -259,7 +241,7 @@ function singleDealElement(
                   props: {
                     style: {
                       fontSize: 18,
-                      color: COLORS.muted,
+                      color: OG_COLORS.muted,
                       marginTop: 6,
                       textTransform: 'uppercase' as const,
                       letterSpacing: 1,
@@ -288,7 +270,7 @@ function singleDealElement(
                           style: {
                             fontSize: priceSize,
                             fontWeight: 800,
-                            color: COLORS.yellow,
+                            color: OG_COLORS.yellow,
                             letterSpacing: -1,
                           },
                           children: `$${price}`,
@@ -301,7 +283,7 @@ function singleDealElement(
                               props: {
                                 style: {
                                   fontSize: 22,
-                                  color: COLORS.muted,
+                                  color: OG_COLORS.muted,
                                   textDecoration: 'line-through',
                                 },
                                 children: `$${usualPrice}`,
@@ -314,12 +296,31 @@ function singleDealElement(
                         props: {
                           style: {
                             fontSize: 14,
-                            color: COLORS.muted,
+                            color: OG_COLORS.muted,
                             letterSpacing: 0.5,
                           },
                           children: 'round trip',
                         },
                       },
+                      ...(hotelPrice && hotelPrice > 0
+                        ? [
+                            {
+                              type: 'div',
+                              props: {
+                                style: {
+                                  fontSize: 14,
+                                  color: OG_COLORS.green,
+                                  letterSpacing: 0.5,
+                                  marginLeft: 8,
+                                  padding: '4px 12px',
+                                  backgroundColor: OG_COLORS.green + '15',
+                                  borderRadius: 4,
+                                },
+                                children: `Hotels from $${hotelPrice}/night`,
+                              },
+                            },
+                          ]
+                        : []),
                     ],
                   },
                 },
@@ -330,7 +331,7 @@ function singleDealElement(
                     style: {
                       marginTop: 20,
                       fontSize: 14,
-                      color: COLORS.muted,
+                      color: OG_COLORS.muted,
                       letterSpacing: 0.5,
                     },
                     children: 'Found on SoGoJet · sogojet.com',
@@ -362,7 +363,7 @@ function boardCardElement(
   const h = 1080;
 
   const rows = deals.map((d, i) => {
-    const tierColor = TIER_COLORS[d.dealTier] || COLORS.muted;
+    const tierColor = DEAL_TIER_COLORS[d.dealTier] || OG_COLORS.muted;
     const savingsStr =
       d.savingsPercent && d.savingsPercent > 0
         ? `−${d.savingsPercent}%`
@@ -376,7 +377,7 @@ function boardCardElement(
           alignItems: 'center',
           padding: '18px 0',
           ...(i < deals.length - 1
-            ? { borderBottom: `1px solid ${COLORS.border}` }
+            ? { borderBottom: `1px solid ${OG_COLORS.border}` }
             : {}),
         },
         children: [
@@ -388,7 +389,7 @@ function boardCardElement(
                 width: 80,
                 fontSize: 28,
                 fontWeight: 800,
-                color: COLORS.muted,
+                color: OG_COLORS.muted,
               },
               children: d.origin,
             },
@@ -399,7 +400,7 @@ function boardCardElement(
             props: {
               style: {
                 fontSize: 16,
-                color: COLORS.muted,
+                color: OG_COLORS.muted,
                 margin: '0 12px',
               },
               children: '→',
@@ -413,7 +414,7 @@ function boardCardElement(
                 flex: 1,
                 fontSize: 24,
                 fontWeight: 700,
-                color: COLORS.white,
+                color: OG_COLORS.white,
                 letterSpacing: 1,
               },
               children: d.city.toUpperCase(),
@@ -435,7 +436,7 @@ function boardCardElement(
                     style: {
                       fontSize: 28,
                       fontWeight: 800,
-                      color: COLORS.yellow,
+                      color: OG_COLORS.yellow,
                     },
                     children: `$${d.price}`,
                   },
@@ -490,7 +491,7 @@ function boardCardElement(
         style: {
           width: w,
           height: h,
-          backgroundColor: COLORS.bg,
+          backgroundColor: OG_COLORS.bg,
           display: 'flex',
           flexDirection: 'column' as const,
           fontFamily: 'sans-serif',
@@ -526,7 +527,7 @@ function boardCardElement(
                                 style: {
                                   fontSize: 32,
                                   fontWeight: 800,
-                                  color: COLORS.white,
+                                  color: OG_COLORS.white,
                                   letterSpacing: -0.5,
                                 },
                                 children: 'SoGo',
@@ -538,7 +539,7 @@ function boardCardElement(
                                 style: {
                                   fontSize: 32,
                                   fontWeight: 800,
-                                  color: COLORS.green,
+                                  color: OG_COLORS.green,
                                   letterSpacing: -0.5,
                                 },
                                 children: 'Jet',
@@ -552,7 +553,7 @@ function boardCardElement(
                         props: {
                           style: {
                             fontSize: 13,
-                            color: COLORS.muted,
+                            color: OG_COLORS.muted,
                             letterSpacing: 1,
                             textTransform: 'uppercase' as const,
                             marginTop: 4,
@@ -568,7 +569,7 @@ function boardCardElement(
                   props: {
                     style: {
                       fontSize: 14,
-                      color: COLORS.muted,
+                      color: OG_COLORS.muted,
                       letterSpacing: 0.5,
                     },
                     children: dateStr,
@@ -598,9 +599,9 @@ function boardCardElement(
                 padding: '20px 40px 40px',
                 textAlign: 'center' as const,
                 fontSize: 14,
-                color: COLORS.muted,
+                color: OG_COLORS.muted,
               },
-              children: '✈️ sogojet.com — Swipe your next trip',
+              children: 'sogojet.com — Swipe your next trip',
             },
           },
         ],
@@ -661,16 +662,14 @@ export default async function handler(
         if (deals.length >= topN) break;
       }
 
+      const cacheKey = getCacheKey({ type: 'board', deals, topN });
+      if (tryCacheHit(req, res, cacheKey)) return;
+
       const { element, width, height } = boardCardElement(deals);
       const imgResponse = new ImageResponse(element, { width, height });
       const buffer = Buffer.from(await imgResponse.arrayBuffer());
 
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader(
-        'Cache-Control',
-        'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
-      );
-      return res.status(200).send(buffer);
+      return cacheAndSend(res, cacheKey, buffer);
     }
 
     // Single deal mode
@@ -723,6 +722,18 @@ export default async function handler(
       dest.image_url ||
       'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80';
     const airline = escapeStr(dest.airline_name || '');
+    const hotelPrice = (dest.hotel_price_per_night as number) || null;
+
+    const cacheKey = getCacheKey({
+      type: 'single',
+      destId,
+      format,
+      price,
+      dealTier,
+      savingsPercent,
+      hotelPrice,
+    });
+    if (tryCacheHit(req, res, cacheKey)) return;
 
     const { element, width, height } = singleDealElement(
       city,
@@ -735,17 +746,13 @@ export default async function handler(
       airline,
       isNonstop,
       format,
+      hotelPrice,
     );
 
     const imgResponse = new ImageResponse(element, { width, height });
     const buffer = Buffer.from(await imgResponse.arrayBuffer());
 
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader(
-      'Cache-Control',
-      'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
-    );
-    return res.status(200).send(buffer);
+    return cacheAndSend(res, cacheKey, buffer);
   } catch (err) {
     console.error('[share-card] Error:', err);
     return sendError(res, 500, 'INTERNAL_ERROR', 'Internal error');
