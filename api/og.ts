@@ -13,6 +13,8 @@ import {
   OG_COLORS,
   DEAL_TIER_COLORS,
   DEAL_TIER_LABELS,
+  VIBE_TAG_COLORS,
+  VIBE_TAG_LABELS,
 } from './_ogCache';
 
 function escapeStr(str: string): string {
@@ -33,6 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let costLevel = '';
   let dealTier = '';
   let savingsPercent = 0;
+  let vibeTags: string[] = [];
 
   const { id, city, country, price, image } = req.query;
 
@@ -71,6 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               : hotelPrice <= 200
                 ? '$$$'
                 : '$$$$';
+        if (Array.isArray(dest.vibe_tags)) vibeTags = dest.vibe_tags;
       }
 
       try {
@@ -130,6 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     tagline,
     dealTier,
     savingsPercent,
+    vibeTags,
   });
   if (tryCacheHit(req, res, cacheKey)) return;
 
@@ -365,6 +370,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                               letterSpacing: 0.5,
                             },
                             children: metaRow,
+                          },
+                        },
+                      ]
+                    : []),
+                  // Vibe tags
+                  ...(vibeTags.length > 0
+                    ? [
+                        {
+                          type: 'div',
+                          props: {
+                            style: {
+                              marginTop: 12,
+                              display: 'flex',
+                              gap: 8,
+                              flexWrap: 'wrap' as const,
+                            },
+                            children: vibeTags.slice(0, 4).map((tag: string, i: number) => ({
+                              type: 'div',
+                              key: String(i),
+                              props: {
+                                style: {
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: VIBE_TAG_COLORS[tag] || OG_COLORS.muted,
+                                  backgroundColor:
+                                    (VIBE_TAG_COLORS[tag] || OG_COLORS.muted) + '18',
+                                  border: `1px solid ${(VIBE_TAG_COLORS[tag] || OG_COLORS.muted) + '40'}`,
+                                  padding: '4px 12px',
+                                  borderRadius: 4,
+                                  letterSpacing: 0.5,
+                                  textTransform: 'uppercase' as const,
+                                },
+                                children: VIBE_TAG_LABELS[tag] || tag,
+                              },
+                            })),
                           },
                         },
                       ]

@@ -14,6 +14,8 @@ import {
   OG_COLORS,
   DEAL_TIER_COLORS,
   DEAL_TIER_LABELS,
+  VIBE_TAG_COLORS,
+  VIBE_TAG_LABELS,
 } from './_ogCache';
 
 const BOOKING_MARKUP_PERCENT = env.BOOKING_MARKUP_PERCENT;
@@ -39,6 +41,7 @@ function singleDealElement(
   isNonstop: boolean,
   format: 'instagram' | 'twitter',
   hotelPrice: number | null,
+  vibeTags: string[] = [],
 ) {
   const w = format === 'instagram' ? 1080 : 1200;
   const h = format === 'instagram' ? 1080 : 630;
@@ -253,6 +256,41 @@ function singleDealElement(
                     ].join(''),
                   },
                 },
+                // Vibe tags
+                ...(vibeTags.length > 0
+                  ? [
+                      {
+                        type: 'div',
+                        props: {
+                          style: {
+                            marginTop: 12,
+                            display: 'flex',
+                            gap: 8,
+                            flexWrap: 'wrap' as const,
+                          },
+                          children: vibeTags.slice(0, 4).map((tag, i) => ({
+                            type: 'div',
+                            key: String(i),
+                            props: {
+                              style: {
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: VIBE_TAG_COLORS[tag] || OG_COLORS.muted,
+                                backgroundColor:
+                                  (VIBE_TAG_COLORS[tag] || OG_COLORS.muted) + '18',
+                                border: `1px solid ${(VIBE_TAG_COLORS[tag] || OG_COLORS.muted) + '40'}`,
+                                padding: '4px 12px',
+                                borderRadius: 4,
+                                letterSpacing: 0.5,
+                                textTransform: 'uppercase' as const,
+                              },
+                              children: VIBE_TAG_LABELS[tag] || tag,
+                            },
+                          })),
+                        },
+                      },
+                    ]
+                  : []),
                 // Price row
                 {
                   type: 'div',
@@ -723,6 +761,7 @@ export default async function handler(
       'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80';
     const airline = escapeStr(dest.airline_name || '');
     const hotelPrice = (dest.hotel_price_per_night as number) || null;
+    const vibeTags: string[] = Array.isArray(dest.vibe_tags) ? dest.vibe_tags : [];
 
     const cacheKey = getCacheKey({
       type: 'single',
@@ -732,6 +771,7 @@ export default async function handler(
       dealTier,
       savingsPercent,
       hotelPrice,
+      vibeTags,
     });
     if (tryCacheHit(req, res, cacheKey)) return;
 
@@ -747,6 +787,7 @@ export default async function handler(
       isNonstop,
       format,
       hotelPrice,
+      vibeTags,
     );
 
     const imgResponse = new ImageResponse(element, { width, height });

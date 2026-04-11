@@ -101,3 +101,37 @@ export const DEAL_TIER_LABELS: Record<string, string> = {
   great: 'GREAT DEAL',
   good: 'GOOD PRICE',
 };
+
+export const VIBE_TAG_COLORS: Record<string, string> = {
+  beach: '#38BDF8',
+  mountain: '#6EE7B7',
+  city: '#A78BFA',
+  culture: '#FB923C',
+  adventure: '#F87171',
+  romantic: '#F472B6',
+  foodie: '#FBBF24',
+  nightlife: '#C084FC',
+  nature: '#34D399',
+  historic: '#D4A574',
+  tropical: '#2DD4BF',
+  winter: '#93C5FD',
+  luxury: '#E2B96F',
+  budget: '#86EFAC',
+};
+
+export const VIBE_TAG_LABELS: Record<string, string> = {
+  beach: 'Beach',
+  mountain: 'Mountain',
+  city: 'City',
+  culture: 'Culture',
+  adventure: 'Adventure',
+  romantic: 'Romantic',
+  foodie: 'Foodie',
+  nightlife: 'Nightlife',
+  nature: 'Nature',
+  historic: 'Historic',
+  tropical: 'Tropical',
+  winter: 'Winter',
+  luxury: 'Luxury',
+  budget: 'Budget',
+};

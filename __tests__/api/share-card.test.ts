@@ -385,6 +385,57 @@ describe('GET /api/share-card', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
+  it('renders vibe tags on single deal card when present', async () => {
+    pushResult('destinations', {
+      data: {
+        city: 'Bali',
+        country: 'Indonesia',
+        flight_price: 700,
+        live_price: 650,
+        image_url: 'https://example.com/bali.jpg',
+        airline_name: 'Singapore Air',
+        hotel_price_per_night: 45,
+        vibe_tags: ['beach', 'tropical', 'romantic', 'foodie'],
+      },
+      error: null,
+    });
+    pushResult('price_calendar', {
+      data: [{ deal_tier: 'good', savings_percent: 10, usual_price: 720, is_nonstop: false, deal_score: 60 }],
+      error: null,
+    });
+
+    const req = makeReq({ id: 'dest-bali-vibes' });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(cacheAndSend).toHaveBeenCalled();
+    const cacheKeyArg = (cacheAndSend as jest.Mock).mock.calls[0];
+    expect(cacheKeyArg[2]).toBeInstanceOf(Buffer);
+  });
+
+  it('handles destinations with empty vibe_tags array', async () => {
+    pushResult('destinations', {
+      data: {
+        city: 'Oslo',
+        country: 'Norway',
+        flight_price: 550,
+        live_price: null,
+        image_url: 'https://example.com/oslo.jpg',
+        airline_name: 'SAS',
+        vibe_tags: [],
+      },
+      error: null,
+    });
+    pushResult('price_calendar', { data: [], error: null });
+
+    const req = makeReq({ id: 'dest-oslo' });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
   it('includes hotel price in single deal card when available', async () => {
     pushResult('destinations', {
       data: {
@@ -442,5 +493,14 @@ describe('_ogCache utilities', () => {
     expect(ogCache.OG_COLORS.yellow).toBe('#F7E8A0');
     expect(ogCache.DEAL_TIER_COLORS.amazing).toBe('#4ADE80');
     expect(ogCache.DEAL_TIER_LABELS.great).toBe('GREAT DEAL');
+  });
+
+  it('exports vibe tag colors and labels', () => {
+    expect(ogCache.VIBE_TAG_COLORS.beach).toBe('#38BDF8');
+    expect(ogCache.VIBE_TAG_COLORS.foodie).toBe('#FBBF24');
+    expect(ogCache.VIBE_TAG_LABELS.romantic).toBe('Romantic');
+    expect(ogCache.VIBE_TAG_LABELS.adventure).toBe('Adventure');
+    expect(Object.keys(ogCache.VIBE_TAG_COLORS)).toHaveLength(14);
+    expect(Object.keys(ogCache.VIBE_TAG_LABELS)).toHaveLength(14);
   });
 });
