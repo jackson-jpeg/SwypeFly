@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable, ScrollView, Modal, RefreshControl, ActionSheetIOS, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal, RefreshControl, ActionSheetIOS, Alert, Platform } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -397,7 +398,11 @@ export default function SavedScreen() {
     ({ item, index }: { item: BoardDeal; index: number }) => (
       <Animated.View
         entering={FadeInDown.delay(Math.min(index, 8) * 50).springify()}
-        style={compareMode && compareSelection.includes(item.id) ? styles.selectedCard : undefined}
+        style={[
+          styles.itemWrapper,
+          index % 2 === 0 ? styles.itemLeft : styles.itemRight,
+          compareMode && compareSelection.includes(item.id) ? styles.selectedCard : undefined,
+        ]}
       >
         <SavedCard
           deal={item}
@@ -506,12 +511,11 @@ export default function SavedScreen() {
           </Pressable>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={sortedDeals}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           numColumns={2}
-          columnWrapperStyle={styles.row}
           contentContainerStyle={styles.grid}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -668,9 +672,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: 100,
   },
-  row: {
-    gap: 12,
+  itemWrapper: {
+    flex: 1,
     marginBottom: 12,
+  },
+  itemLeft: {
+    paddingRight: 6,
+  },
+  itemRight: {
+    paddingLeft: 6,
   },
   empty: {
     flex: 1,
