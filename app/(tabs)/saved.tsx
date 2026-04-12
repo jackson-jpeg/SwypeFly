@@ -12,6 +12,7 @@ import SavedCard from '../../components/saved/SavedCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { lightHaptic, mediumHaptic, successHaptic, warningHaptic } from '../../utils/haptics';
 import { shareDestination } from '../../utils/share';
+import { exportSavedCSV } from '../../utils/exportCSV';
 import { showToast } from '../../stores/toastStore';
 import type { BoardDeal } from '../../types/deal';
 
@@ -278,6 +279,17 @@ export default function SavedScreen() {
     }
   }, [savedDeals, departureCode]);
 
+  const handleExportCSV = useCallback(async () => {
+    if (savedDeals.length === 0) return;
+    lightHaptic();
+    try {
+      await exportSavedCSV(savedDeals);
+      showToast('CSV exported');
+    } catch {
+      showToast('Export failed');
+    }
+  }, [savedDeals]);
+
   // Compute savings stats
   const savingsStats = useMemo(() => {
     const withSavings = savedDeals.filter((d) => d.savingsAmount && d.savingsAmount > 0);
@@ -435,6 +447,17 @@ export default function SavedScreen() {
             </Text>
           </View>
           <View style={styles.headerActions}>
+            {savedDeals.length > 0 && !compareMode && (
+              <Pressable
+                onPress={handleExportCSV}
+                style={styles.compareBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Export saved trips as CSV"
+              >
+                <Ionicons name="download-outline" size={16} color={colors.yellow} />
+                <Text style={styles.compareBtnText}>Export</Text>
+              </Pressable>
+            )}
             {savedDeals.length >= 2 && (
               <Pressable
                 onPress={toggleCompareMode}
