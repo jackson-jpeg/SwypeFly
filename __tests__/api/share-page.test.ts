@@ -235,6 +235,72 @@ describe('GET /api/share/[id]', () => {
     expect(html).toContain('"priceCurrency": "USD"');
   });
 
+  it('includes origin route in OG title when available', async () => {
+    pushResult('destinations', {
+      data: {
+        city: 'Barcelona',
+        country: 'Spain',
+        tagline: 'Mediterranean gem',
+        flight_price: 400,
+        live_price: 350,
+        hotel_price_per_night: 120,
+        airline_name: 'Iberia',
+      },
+      error: null,
+    });
+    pushResult('price_calendar', {
+      data: [{
+        deal_tier: 'great',
+        savings_percent: 25,
+        deal_score: 80,
+        origin: 'LAX',
+      }],
+      error: null,
+    });
+
+    const req = makeReq('dest-bcn', 'Twitterbot/1.0');
+    const res = makeRes();
+    await handler(req, res);
+
+    const html = res.send.mock.calls[0][0] as string;
+    expect(html).toContain('LAX');
+    expect(html).toContain('og:title');
+    // Title should show route format
+    expect(html).toMatch(/LAX.*→.*Barcelona/);
+  });
+
+  it('omits route prefix when no origin in price calendar', async () => {
+    pushResult('destinations', {
+      data: {
+        city: 'Seoul',
+        country: 'South Korea',
+        tagline: 'K-culture hub',
+        flight_price: 600,
+        live_price: 550,
+        hotel_price_per_night: 80,
+        airline_name: 'Korean Air',
+      },
+      error: null,
+    });
+    pushResult('price_calendar', {
+      data: [{
+        deal_tier: 'good',
+        savings_percent: 10,
+        deal_score: 55,
+      }],
+      error: null,
+    });
+
+    const req = makeReq('dest-seoul', 'facebookexternalhit/1.0');
+    const res = makeRes();
+    await handler(req, res);
+
+    const html = res.send.mock.calls[0][0] as string;
+    // Should not have arrow route format
+    expect(html).not.toContain('→');
+    expect(html).toContain('Seoul');
+  });
+
   it('detects various bot user agents', async () => {
     const bots = [
       'Twitterbot/1.0',

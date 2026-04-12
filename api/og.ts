@@ -6,6 +6,15 @@ import { ImageResponse } from '@vercel/og';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { cors } from './_cors.js';
 import { env } from '../utils/env';
+
+function formatTravelDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr + 'T00:00:00Z');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  } catch {
+    return '';
+  }
+}
 import {
   getCacheKey,
   tryCacheHit,
@@ -36,6 +45,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let dealTier = '';
   let savingsPercent = 0;
   let vibeTags: string[] = [];
+  let origin = '';
+  let departDate = '';
+  let returnDate = '';
 
   const { id, city, country, price, image } = req.query;
 
@@ -80,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         const { data: calendarRows } = await supabase
           .from(TABLES.priceCalendar)
-          .select('deal_tier, savings_percent')
+          .select('deal_tier, savings_percent, origin, date, return_date')
           .eq('destination_id', String(id))
           .order('deal_score', { ascending: false })
           .limit(1);
@@ -92,6 +104,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             0,
             Math.min(100, (pd.savings_percent as number) || 0),
           );
+          origin = (pd.origin as string) || '';
+          departDate = (pd.date as string) || '';
+          returnDate = (pd.return_date as string) || '';
         }
       } catch {
         // OK — proceed without deal data
@@ -135,6 +150,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     dealTier,
     savingsPercent,
     vibeTags,
+    origin,
+    departDate,
+    returnDate,
   });
   if (tryCacheHit(req, res, cacheKey)) return;
 
@@ -370,6 +388,73 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                               letterSpacing: 0.5,
                             },
                             children: metaRow,
+                          },
+                        },
+                      ]
+                    : []),
+                  // Route + dates
+                  ...(origin
+                    ? [
+                        {
+                          type: 'div',
+                          props: {
+                            style: {
+                              marginTop: 10,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                            },
+                            children: [
+                              {
+                                type: 'span',
+                                props: {
+                                  style: {
+                                    fontSize: 20,
+                                    fontWeight: 700,
+                                    color: '#fff',
+                                    letterSpacing: 2,
+                                  },
+                                  children: origin,
+                                },
+                              },
+                              {
+                                type: 'span',
+                                props: {
+                                  style: {
+                                    fontSize: 16,
+                                    color: OG_COLORS.green,
+                                  },
+                                  children: '→',
+                                },
+                              },
+                              {
+                                type: 'span',
+                                props: {
+                                  style: {
+                                    fontSize: 20,
+                                    fontWeight: 700,
+                                    color: '#fff',
+                                    letterSpacing: 2,
+                                  },
+                                  children: cityStr.toUpperCase(),
+                                },
+                              },
+                              ...(departDate && returnDate
+                                ? [
+                                    {
+                                      type: 'span',
+                                      props: {
+                                        style: {
+                                          fontSize: 15,
+                                          color: 'rgba(255,255,255,0.5)',
+                                          marginLeft: 8,
+                                        },
+                                        children: `${formatTravelDate(departDate)} – ${formatTravelDate(returnDate)}`,
+                                      },
+                                    },
+                                  ]
+                                : []),
+                            ],
                           },
                         },
                       ]

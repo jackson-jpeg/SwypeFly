@@ -436,6 +436,88 @@ describe('GET /api/share-card', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
+  it('includes origin route and travel dates from price calendar', async () => {
+    pushResult('destinations', {
+      data: {
+        city: 'Tokyo',
+        country: 'Japan',
+        flight_price: 500,
+        live_price: 480,
+        image_url: 'https://example.com/tokyo.jpg',
+        airline_name: 'ANA',
+        hotel_price_per_night: 85,
+        vibe_tags: ['city', 'culture'],
+      },
+      error: null,
+    });
+    pushResult('price_calendar', {
+      data: [{
+        deal_tier: 'great',
+        savings_percent: 22,
+        usual_price: 620,
+        is_nonstop: true,
+        deal_score: 75,
+        origin: 'JFK',
+        date: '2026-05-15',
+        return_date: '2026-05-22',
+      }],
+      error: null,
+    });
+
+    const req = makeReq({ id: 'dest-tokyo-route' });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(cacheAndSend).toHaveBeenCalled();
+    // Verify the cache key includes route data
+    const { ImageResponse } = require('@vercel/og');
+    const elementArg = ImageResponse.mock.calls[0][0];
+    // The element tree should contain the origin code
+    const elementStr = JSON.stringify(elementArg);
+    expect(elementStr).toContain('JFK');
+    expect(elementStr).toContain('May 15');
+    expect(elementStr).toContain('May 22');
+  });
+
+  it('renders without route when price calendar has no origin', async () => {
+    pushResult('destinations', {
+      data: {
+        city: 'Dublin',
+        country: 'Ireland',
+        flight_price: 400,
+        live_price: 380,
+        image_url: 'https://example.com/dublin.jpg',
+        airline_name: 'Aer Lingus',
+      },
+      error: null,
+    });
+    pushResult('price_calendar', {
+      data: [{
+        deal_tier: 'good',
+        savings_percent: 12,
+        usual_price: 450,
+        is_nonstop: false,
+        deal_score: 60,
+        origin: null,
+        date: null,
+        return_date: null,
+      }],
+      error: null,
+    });
+
+    const req = makeReq({ id: 'dest-dublin' });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const { ImageResponse } = require('@vercel/og');
+    const lastCall = ImageResponse.mock.calls[ImageResponse.mock.calls.length - 1];
+    const elementStr = JSON.stringify(lastCall[0]);
+    // Should still contain the country in fallback mode
+    expect(elementStr).toContain('Ireland');
+  });
+
   it('includes hotel price in single deal card when available', async () => {
     pushResult('destinations', {
       data: {

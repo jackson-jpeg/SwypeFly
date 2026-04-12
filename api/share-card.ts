@@ -29,6 +29,15 @@ function escapeStr(str: string): string {
 
 // ─── Single deal card (Satori element tree) ─────────────────────────
 
+function formatTravelDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr + 'T00:00:00Z');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  } catch {
+    return '';
+  }
+}
+
 function singleDealElement(
   city: string,
   country: string,
@@ -42,6 +51,9 @@ function singleDealElement(
   format: 'instagram' | 'twitter',
   hotelPrice: number | null,
   vibeTags: string[] = [],
+  origin: string | null = null,
+  departDate: string | null = null,
+  returnDate: string | null = null,
 ) {
   const w = format === 'instagram' ? 1080 : 1200;
   const h = format === 'instagram' ? 1080 : 630;
@@ -238,7 +250,7 @@ function singleDealElement(
                     children: city,
                   },
                 },
-                // Country + airline
+                // Route + country + airline
                 {
                   type: 'div',
                   props: {
@@ -246,16 +258,110 @@ function singleDealElement(
                       fontSize: 18,
                       color: OG_COLORS.muted,
                       marginTop: 6,
-                      textTransform: 'uppercase' as const,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0,
                       letterSpacing: 1,
                     },
                     children: [
-                      country,
-                      airline ? ` · ${airline}` : '',
-                      isNonstop ? ' · Nonstop' : '',
-                    ].join(''),
+                      ...(origin
+                        ? [
+                            {
+                              type: 'span',
+                              props: {
+                                style: {
+                                  fontWeight: 700,
+                                  color: OG_COLORS.white,
+                                  fontSize: 20,
+                                  letterSpacing: 2,
+                                },
+                                children: origin,
+                              },
+                            },
+                            {
+                              type: 'span',
+                              props: {
+                                style: {
+                                  color: OG_COLORS.green,
+                                  margin: '0 10px',
+                                  fontSize: 16,
+                                },
+                                children: '→',
+                              },
+                            },
+                            {
+                              type: 'span',
+                              props: {
+                                style: {
+                                  fontWeight: 700,
+                                  color: OG_COLORS.white,
+                                  fontSize: 20,
+                                  letterSpacing: 2,
+                                },
+                                children: country.toUpperCase(),
+                              },
+                            },
+                            {
+                              type: 'span',
+                              props: {
+                                style: {
+                                  color: OG_COLORS.muted,
+                                  margin: '0 8px',
+                                },
+                                children: [
+                                  airline ? ` · ${airline}` : '',
+                                  isNonstop ? ' · Nonstop' : '',
+                                ].join(''),
+                              },
+                            },
+                          ]
+                        : [
+                            {
+                              type: 'span',
+                              props: {
+                                style: {
+                                  textTransform: 'uppercase' as const,
+                                },
+                                children: [
+                                  country,
+                                  airline ? ` · ${airline}` : '',
+                                  isNonstop ? ' · Nonstop' : '',
+                                ].join(''),
+                              },
+                            },
+                          ]),
+                    ],
                   },
                 },
+                // Travel dates
+                ...(departDate && returnDate
+                  ? [
+                      {
+                        type: 'div',
+                        props: {
+                          style: {
+                            marginTop: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                          },
+                          children: [
+                            {
+                              type: 'span',
+                              props: {
+                                style: {
+                                  fontSize: 15,
+                                  color: OG_COLORS.muted,
+                                  letterSpacing: 0.5,
+                                },
+                                children: `${formatTravelDate(departDate)} – ${formatTravelDate(returnDate)}`,
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ]
+                  : []),
                 // Vibe tags
                 ...(vibeTags.length > 0
                   ? [
@@ -733,6 +839,9 @@ export default async function handler(
     let savingsPercent: number | null = null;
     let usualPrice: number | null = null;
     let isNonstop = false;
+    let origin: string | null = null;
+    let departDate: string | null = null;
+    let returnDate: string | null = null;
 
     try {
       const { data: priceData } = await supabase
@@ -747,6 +856,9 @@ export default async function handler(
         savingsPercent = pd.savings_percent || null;
         usualPrice = pd.usual_price || null;
         isNonstop = pd.is_nonstop || false;
+        origin = pd.origin || null;
+        departDate = pd.date || null;
+        returnDate = pd.return_date || null;
       }
     } catch {
       // OK — proceed without deal context
@@ -772,6 +884,9 @@ export default async function handler(
       savingsPercent,
       hotelPrice,
       vibeTags,
+      origin,
+      departDate,
+      returnDate,
     });
     if (tryCacheHit(req, res, cacheKey)) return;
 
@@ -788,6 +903,9 @@ export default async function handler(
       format,
       hotelPrice,
       vibeTags,
+      origin,
+      departDate,
+      returnDate,
     );
 
     const imgResponse = new ImageResponse(element, { width, height });

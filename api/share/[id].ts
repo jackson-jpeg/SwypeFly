@@ -46,10 +46,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let dealBadge = '';
     let savingsText = '';
+    let origin = '';
     try {
       const { data: calendarRows } = await supabase
         .from(TABLES.priceCalendar)
-        .select('deal_tier, savings_percent')
+        .select('deal_tier, savings_percent, origin')
         .eq('destination_id', destId)
         .order('deal_score', { ascending: false })
         .limit(1);
@@ -61,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         else if (tier === 'great') dealBadge = 'Great Deal';
         else if (tier === 'good') dealBadge = 'Good Price';
         if (savings > 0) savingsText = `${savings}% below average`;
+        origin = escapeHtml((pd.origin as string) || '');
       }
     } catch {
       // OK — proceed without deal context
@@ -74,14 +76,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const ogImageUrl = `https://sogojet.com/api/og?id=${destId}`;
     const destUrl = `https://sogojet.com/destination/${destId}`;
+    const routePrefix = origin ? `${origin} → ` : '';
 
     const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${city}, ${country}${priceText} — SoGoJet</title>
+  <title>${routePrefix}${city}, ${country}${priceText} — SoGoJet</title>
   <meta name="description" content="${ogDescription}">
-  <meta property="og:title" content="${city}, ${country}${priceText}">
+  <meta property="og:title" content="${routePrefix}${city}, ${country}${priceText}">
   <meta property="og:description" content="${ogDescription}">
   <meta property="og:image" content="${ogImageUrl}">
   <meta property="og:image:width" content="1200">
@@ -90,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SoGoJet">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${city}${priceText} — SoGoJet">
+  <meta name="twitter:title" content="${routePrefix}${city}${priceText} — SoGoJet">
   <meta name="twitter:description" content="${ogDescription}">
   <meta name="twitter:image" content="${ogImageUrl}">
   <meta http-equiv="refresh" content="0;url=/destination/${destId}">
