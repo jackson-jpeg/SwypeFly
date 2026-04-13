@@ -216,10 +216,11 @@ struct TravelerEditView: View {
                 .foregroundStyle(Color.sgMuted)
                 .tracking(1.2)
 
+            let builtContent = VStack(alignment: .leading, spacing: Spacing.sm) {
+                content()
+            }
             SGCard(elevation: .flush) {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    content()
-                }
+                builtContent
             }
         }
     }

@@ -233,8 +233,8 @@ struct SeatMapView: View {
                     maxLength: 7,
                     animate: true,
                     startDelay: 0,
-                    hapticOnSettle: true,
-                    animationID: runningTotalAnimationID
+                    animationID: runningTotalAnimationID,
+                    hapticOnSettle: true
                 )
             }
         }

@@ -89,11 +89,10 @@ struct PriceExplainerSheetWithSparkline: View {
                 Text(deal.priceFormatted)
                     .font(SGFont.display(size: 28))
                     .foregroundStyle(Color.sgYellow)
-                if let trend = deal.priceTrend {
-                    Image(systemName: trend == .down ? "arrow.down.right" : "arrow.up.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(trend == .down ? Color.sgDealAmazing : Color.sgRed)
-                }
+                let trend = deal.priceTrend
+                Image(systemName: trend == .down ? "arrow.down.right" : "arrow.up.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(trend == .down ? Color.sgDealAmazing : Color.sgRed)
             }
 
             // Sparkline using Swift Charts

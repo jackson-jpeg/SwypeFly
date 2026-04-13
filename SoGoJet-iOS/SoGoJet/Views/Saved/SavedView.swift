@@ -33,7 +33,7 @@ struct SavedView: View {
     /// Flip to true on first appear to kick off card cascade.
     @State private var gridAppeared = false
 
-    private enum PrintPhase {
+    enum PrintPhase {
         case hidden, pulling, settled, sharing
     }
 

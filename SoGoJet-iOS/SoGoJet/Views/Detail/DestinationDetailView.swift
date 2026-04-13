@@ -178,7 +178,7 @@ struct DestinationDetailView: View {
         }
         .fullScreenCover(isPresented: $showGallery) {
             if let urls = deal.imageUrls, urls.count >= 2 {
-                DetailGalleryView(imageUrls: urls, onDismissRequest: { showGallery = false })
+                DetailGalleryView(imageUrls: urls.compactMap { URL(string: $0) }, onDismissRequest: { showGallery = false })
             }
         }
     }

@@ -93,7 +93,13 @@ struct MyTripsView: View {
     }
 
     private func tickerPill(booking: BookingHistoryItem, now: Date) -> some View {
-        let countdown = countdownString(from: now, to: booking.departureDate)
+        let departureDateParsed: Date = {
+            let fmt = DateFormatter()
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            fmt.dateFormat = "yyyy-MM-dd"
+            return fmt.date(from: booking.departureDate) ?? now
+        }()
+        let countdown = countdownString(from: now, to: departureDateParsed)
         let label = "\(booking.destinationIata) · DEPARTS \(countdown)"
 
         return SGCard(elevation: .lifted, padding: 0) {

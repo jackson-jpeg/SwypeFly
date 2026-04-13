@@ -32,19 +32,7 @@ struct DetailGalleryView: View {
             TabView(selection: $currentPage) {
                 ForEach(Array(imageUrls.enumerated()), id: \.offset) { index, url in
                     GeometryReader { geo in
-                        ZStack {
-                            // Parallax back layer: translates at 0.6× of page offset
-                            let pageOffset = CGFloat(index - currentPage)
-                            let parallaxOffset = reduceMotion ? 0 : pageOffset * geo.size.width * 0.40
-
-                            CachedAsyncImage(url: url) {
-                                Rectangle().fill(Color.sgSurface)
-                            }
-                            .frame(width: geo.size.width, height: geo.size.height)
-                            .offset(x: parallaxOffset)
-                            .scaleEffect(scale, anchor: scaleAnchor)
-                            .clipped()
-                        }
+                        parallaxImage(url: url, index: index, geo: geo)
                     }
                     .tag(index)
                     .ignoresSafeArea()
@@ -106,6 +94,21 @@ struct DetailGalleryView: View {
             }
         }
         .statusBarHidden(true)
+    }
+
+    // MARK: - Parallax Image
+    private func parallaxImage(url: URL, index: Int, geo: GeometryProxy) -> some View {
+        let pageOffset = CGFloat(index - currentPage)
+        let parallaxOffset: CGFloat = reduceMotion ? 0 : pageOffset * geo.size.width * 0.40
+        return ZStack {
+            CachedAsyncImage(url: url.absoluteString) {
+                Rectangle().fill(Color.sgSurface)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .offset(x: parallaxOffset)
+            .scaleEffect(scale, anchor: scaleAnchor)
+            .clipped()
+        }
     }
 
     // MARK: - Page Indicator

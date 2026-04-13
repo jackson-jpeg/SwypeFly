@@ -60,7 +60,7 @@ struct SGMechanicalSwitchStyle: ToggleStyle {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(configuration.label)
+        .accessibilityLabel("Toggle")
         .accessibilityValue(configuration.isOn ? "On" : "Off")
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Double tap to toggle")

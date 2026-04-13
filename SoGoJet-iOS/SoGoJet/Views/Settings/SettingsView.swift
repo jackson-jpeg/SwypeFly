@@ -277,8 +277,9 @@ struct SettingsView: View {
                 .foregroundStyle(Color.sgMuted)
                 .padding(.leading, Spacing.xs)
 
+            let builtContent = content()
             SGCard(elevation: .flush) {
-                content()
+                builtContent
             }
         }
     }

@@ -2572,22 +2572,6 @@ struct TripView: View {
 }
 
 private extension String {
-    /// Parse an ISO8601 (with or without timezone) datetime string and return
-    /// a short "h:mm a" board-style time label, e.g. "9:55 AM".
-    var boardTime: String {
-        var date = ISO8601DateFormatter().date(from: self)
-        if date == nil {
-            let fmt = DateFormatter()
-            fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-            fmt.locale = Locale(identifier: "en_US_POSIX")
-            date = fmt.date(from: self)
-        }
-        guard let d = date else { return self }
-        let out = DateFormatter()
-        out.dateFormat = "h:mm"
-        return out.string(from: d)
-    }
-
     var parsedISODate: Date? {
         let isoFormatter = ISO8601DateFormatter()
         if let isoDate = isoFormatter.date(from: self) {

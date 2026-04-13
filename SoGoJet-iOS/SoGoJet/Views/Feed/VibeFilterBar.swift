@@ -58,9 +58,13 @@ struct VibeFilterBar: View {
                     .padding(.horizontal, Spacing.sm + 2)
                     .padding(.vertical, Spacing.xs + 1)
                     .background(
-                        isSelected
-                            ? Color.clear
-                            : Capsule().fill(Color.sgSurfaceElevated)
+                        Group {
+                            if isSelected {
+                                Color.clear
+                            } else {
+                                Capsule().fill(Color.sgSurfaceElevated)
+                            }
+                        }
                     )
                     .overlay(
                         Capsule()
