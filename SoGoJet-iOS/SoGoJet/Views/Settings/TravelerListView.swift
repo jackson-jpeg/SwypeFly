@@ -1,7 +1,8 @@
 import SwiftUI
 
 // MARK: - Traveler List View
-// Displays saved travelers with add/edit/delete capabilities.
+// Phase 6: swipe-to-reveal edit/delete actions per traveler row.
+// Edit opens TravelerEditView in an SGSheet(.large).
 
 struct TravelerListView: View {
     @Environment(TravelerStore.self) private var travelerStore
@@ -12,20 +13,23 @@ struct TravelerListView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    if travelerStore.isLoading && travelerStore.travelers.isEmpty {
-                        loadingState
-                    } else if travelerStore.travelers.isEmpty {
-                        emptyState
-                    } else {
-                        travelerCards
+            ZStack {
+                Color.sgBg.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        if travelerStore.isLoading && travelerStore.travelers.isEmpty {
+                            loadingState
+                        } else if travelerStore.travelers.isEmpty {
+                            emptyState
+                        } else {
+                            travelerSection
+                        }
                     }
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.lg)
                 }
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.lg)
             }
-            .background(Color.sgBg)
             .navigationTitle("Saved Travelers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -36,6 +40,7 @@ struct TravelerListView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        HapticEngine.selection()
                         showAddSheet = true
                     } label: {
                         Image(systemName: "plus")
@@ -44,32 +49,54 @@ struct TravelerListView: View {
                     .accessibilityLabel("Add traveler")
                 }
             }
+            .toolbarBackground(Color.sgSurface, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
         .task {
             await travelerStore.fetchTravelers()
         }
         .sheet(isPresented: $showAddSheet) {
             TravelerEditView(traveler: nil)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
         .sheet(item: $editingTraveler) { traveler in
             TravelerEditView(traveler: traveler)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
     }
 
-    // MARK: - Traveler Cards
+    // MARK: - Traveler Section
 
-    private var travelerCards: some View {
-        ForEach(travelerStore.travelers) { traveler in
-            TravelerCard(
-                traveler: traveler,
-                onEdit: { editingTraveler = traveler },
-                onDelete: {
-                    Task {
-                        HapticEngine.medium()
-                        _ = await travelerStore.deleteTraveler(id: traveler.id)
+    private var travelerSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("TRAVELERS")
+                .font(SGFont.accent(size: 14))
+                .foregroundStyle(Color.sgMuted)
+                .padding(.leading, Spacing.xs)
+
+            SGCard(elevation: .flush, padding: 0) {
+                VStack(spacing: 0) {
+                    ForEach(Array(travelerStore.travelers.enumerated()), id: \.element.id) { index, traveler in
+                        SwipeableTravelerRow(
+                            traveler: traveler,
+                            onEdit: { editingTraveler = traveler },
+                            onDelete: {
+                                Task {
+                                    HapticEngine.warning()
+                                    _ = await travelerStore.deleteTraveler(id: traveler.id)
+                                }
+                            }
+                        )
+                        if index < travelerStore.travelers.count - 1 {
+                            Divider()
+                                .overlay(Color.sgHairline)
+                                .padding(.horizontal, Spacing.md)
+                        }
                     }
                 }
-            )
+            }
         }
     }
 
@@ -102,17 +129,10 @@ struct TravelerListView: View {
                 .font(SGFont.body(size: 14))
                 .foregroundStyle(Color.sgMuted)
                 .multilineTextAlignment(.center)
-            Button {
+            SGButton("Add Traveler", style: .primary) {
                 showAddSheet = true
-            } label: {
-                Text("Add Traveler")
-                    .font(SGFont.bodyBold(size: 14))
-                    .foregroundStyle(Color.sgBg)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 10)
-                    .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, Spacing.xl)
             .accessibilityLabel("Add traveler")
             Spacer()
         }
@@ -120,91 +140,168 @@ struct TravelerListView: View {
     }
 }
 
-// MARK: - Traveler Card
+// MARK: - Swipeable Traveler Row
 
-private struct TravelerCard: View {
+private struct SwipeableTravelerRow: View {
     let traveler: SavedTraveler
     let onEdit: () -> Void
     let onDelete: () -> Void
 
-    @State private var showDeleteConfirmation = false
+    @State private var offset: CGFloat = 0
+    @State private var showActions = false
+
+    private let actionWidth: CGFloat = 140   // edit + delete combined
+    private let threshold: CGFloat = 70
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack {
-                Image(systemName: traveler.isPrimary ? "star.circle.fill" : "person.circle")
-                    .font(.system(size: 20))
-                    .foregroundStyle(traveler.isPrimary ? Color.sgYellow : Color.sgMuted)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(traveler.fullName)
-                            .font(SGFont.bodyBold(size: 15))
-                            .foregroundStyle(Color.sgWhite)
-                        if traveler.isPrimary {
-                            Text("PRIMARY")
-                                .font(SGFont.bodyBold(size: 9))
-                                .foregroundStyle(Color.sgYellow)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.sgYellow.opacity(0.15), in: Capsule())
+        ZStack(alignment: .trailing) {
+            // Revealed action buttons
+            if showActions {
+                HStack(spacing: 0) {
+                    // Edit
+                    Button {
+                        resetSwipe()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            onEdit()
                         }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Edit")
+                                .font(SGFont.body(size: 11))
+                        }
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(width: 70)
+                        .frame(maxHeight: .infinity)
+                        .background(Color.sgYellow.opacity(0.3))
                     }
-                    if let email = traveler.email, !email.isEmpty {
-                        Text(email)
-                            .font(SGFont.body(size: 12))
-                            .foregroundStyle(Color.sgMuted)
+                    .accessibilityLabel("Edit \(traveler.fullName)")
+
+                    // Delete
+                    Button(role: .destructive) {
+                        resetSwipe()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            HapticEngine.warning()
+                            onDelete()
+                        }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Remove")
+                                .font(SGFont.body(size: 11))
+                        }
+                        .foregroundStyle(Color.sgWhite)
+                        .frame(width: 70)
+                        .frame(maxHeight: .infinity)
+                        .background(Color.sgRed)
                     }
+                    .accessibilityLabel("Remove \(traveler.fullName)")
                 }
-
-                Spacer()
-
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.sgYellow)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Edit \(traveler.fullName)")
+                .frame(width: actionWidth)
             }
 
-            // Info chips
-            HStack(spacing: 8) {
-                if let passport = traveler.maskedPassport {
-                    infoChip(icon: "doc.text", text: passport)
-                }
-                if let dob = traveler.bornOn, !dob.isEmpty {
-                    infoChip(icon: "calendar", text: dob)
-                }
-                infoChip(icon: "flag", text: traveler.nationality)
+            // Row content
+            travelerRowContent
+                .offset(x: offset)
+                .gesture(
+                    DragGesture(minimumDistance: 10)
+                        .onChanged { value in
+                            guard value.translation.width < 0 || showActions else { return }
+                            let drag = value.translation.width
+                            offset = showActions
+                                ? max(drag - actionWidth, -actionWidth)
+                                : max(drag, -actionWidth - 10)
+                            if drag < -threshold / 2 && !showActions {
+                                HapticEngine.warning()
+                            }
+                        }
+                        .onEnded { value in
+                            withAnimation(SGSpring.snappy) {
+                                if value.translation.width < -threshold {
+                                    offset = -actionWidth
+                                    showActions = true
+                                } else {
+                                    offset = 0
+                                    showActions = false
+                                }
+                            }
+                        }
+                )
+        }
+        .clipped()
+    }
+
+    private var travelerRowContent: some View {
+        HStack(spacing: Spacing.sm) {
+            // Avatar circle
+            ZStack {
+                Circle()
+                    .fill(traveler.isPrimary ? Color.sgYellow.opacity(0.15) : Color.sgSurface)
+                    .frame(width: 40, height: 40)
+                Image(systemName: traveler.isPrimary ? "star.circle.fill" : "person.circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(traveler.isPrimary ? Color.sgYellow : Color.sgMuted)
             }
 
-            // Delete button
-            HStack {
-                Spacer()
-                Button(role: .destructive) {
-                    showDeleteConfirmation = true
-                } label: {
-                    Text("Remove")
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(traveler.fullName)
+                        .font(SGFont.bodyBold(size: 15))
+                        .foregroundStyle(Color.sgWhite)
+                        .lineLimit(1)
+                    if traveler.isPrimary {
+                        Text("PRIMARY")
+                            .sgFont(.micro)
+                            .foregroundStyle(Color.sgYellow)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.sgYellow.opacity(0.15), in: Capsule())
+                    }
+                }
+                if let email = traveler.email, !email.isEmpty {
+                    Text(email)
                         .font(SGFont.body(size: 12))
-                        .foregroundStyle(Color.sgRed.opacity(0.8))
+                        .foregroundStyle(Color.sgMuted)
+                        .lineLimit(1)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Remove \(traveler.fullName)")
+
+                // Info chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        if let passport = traveler.maskedPassport {
+                            infoChip(icon: "doc.text", text: passport)
+                        }
+                        if let dob = traveler.bornOn, !dob.isEmpty {
+                            infoChip(icon: "calendar", text: dob)
+                        }
+                        infoChip(icon: "flag", text: traveler.nationality)
+                    }
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.left")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.sgFaint)
+                .opacity(showActions ? 0 : 1)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm + 2)
+        .background(Color.sgSurfaceElevated)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if showActions {
+                resetSwipe()
+            } else {
+                onEdit()
             }
         }
-        .padding(Spacing.md)
-        .background(Color.sgWhite.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.lg)
-                .strokeBorder(Color.sgBorder, lineWidth: 1)
-        )
-        .alert("Remove Traveler?", isPresented: $showDeleteConfirmation) {
-            Button("Remove", role: .destructive, action: onDelete)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Remove \(traveler.fullName) from saved travelers?")
-        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(traveler.fullName)\(traveler.isPrimary ? ", primary traveler" : ""), \(traveler.nationality)")
+        .accessibilityHint("Swipe left for edit and delete options, tap to edit")
     }
 
     private func infoChip(icon: String, text: String) -> some View {
@@ -212,11 +309,18 @@ private struct TravelerCard: View {
             Image(systemName: icon)
                 .font(.system(size: 9))
             Text(text)
-                .font(SGFont.body(size: 11))
+                .font(SGFont.body(size: 10))
         }
         .foregroundStyle(Color.sgMuted)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
         .background(Color.sgBorder, in: Capsule())
+    }
+
+    private func resetSwipe() {
+        withAnimation(SGSpring.snappy) {
+            offset = 0
+            showActions = false
+        }
     }
 }

@@ -1,6 +1,8 @@
 import SwiftUI
 
 // MARK: - Settings View
+// Phase 6: grouped SGCard sections, profile header, mechanical toggles,
+// CRT easter egg on long-press version number.
 
 struct SettingsView: View {
     @Environment(SettingsStore.self) private var settings
@@ -9,6 +11,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @Environment(AuthStore.self) private var auth
     @Environment(TravelerStore.self) private var travelerStore
+    @Environment(BookingHistoryStore.self) private var historyStore
 
     @State private var showClearConfirmation = false
     @State private var showSignOutConfirmation = false
@@ -21,414 +24,317 @@ struct SettingsView: View {
     @State private var showTravelers = false
     @State private var showPriceAlerts = false
 
+    // CRT easter egg
+    @State private var showCRTOverlay = false
+
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                // Header
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text(String(localized: "settings.title"))
-                        .font(SGFont.cardTitle)
-                        .foregroundStyle(Color.sgWhite)
-                    Text("v\(appVersion)")
-                        .font(SGFont.body(size: 12))
-                        .foregroundStyle(Color.sgMuted)
+        ZStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: Spacing.lg) {
+                    profileHeader
+                        .padding(.top, Spacing.lg)
+
+                    settingsCard(title: "DEPARTURE") { departureContent }
+                    settingsCard(title: "VIEW MODE") { displayContent }
+                    settingsCard(title: "UNITS") { unitsContent }
+                    settingsCard(title: "NOTIFICATIONS") { notificationsContent }
+
+                    if auth.isAuthenticated {
+                        settingsCard(title: "TRAVELERS") { travelersContent }
+                    }
+
+                    settingsCard(title: "SAVED FLIGHTS") { savedContent }
+                    settingsCard(title: "ABOUT") { aboutContent }
+
+                    if auth.isAuthenticated {
+                        dangerZoneSection
+                    }
+
+                    // Version number — long-press triggers CRT easter egg
+                    versionFooter
                 }
-                .padding(.top, Spacing.lg)
-
-                accountSection
-                departureSection
-                displaySection
-                unitsSection
-                notificationsSection
-
-                if auth.isAuthenticated {
-                    travelersSection
-                }
-
-                savedSection
-                aboutSection
-
-                if auth.isAuthenticated {
-                    dangerZoneSection
-                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.bottom, Spacing.xl)
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.bottom, Spacing.xl)
-        }
-        .background(Color.sgBg)
-        .navigationTitle("")
-        .navigationBarHidden(true)
-        .alert(String(localized: "settings.clear_saved.title"), isPresented: $showClearConfirmation) {
-            Button(String(localized: "settings.clear_all"), role: .destructive) {
-                HapticEngine.heavy()
-                savedStore.clear()
+            .background(Color.sgBg)
+            .navigationTitle("")
+            .navigationBarHidden(true)
+            .alert(String(localized: "settings.clear_saved.title"), isPresented: $showClearConfirmation) {
+                Button(String(localized: "settings.clear_all"), role: .destructive) {
+                    HapticEngine.heavy()
+                    savedStore.clear()
+                }
+                Button(String(localized: "common.cancel"), role: .cancel) {}
+            } message: {
+                Text(String(format: String(localized: "settings.clear_saved.message"), savedStore.count))
             }
-            Button(String(localized: "common.cancel"), role: .cancel) {}
-        } message: {
-            Text(String(format: String(localized: "settings.clear_saved.message"), savedStore.count))
+
+            // CRT Easter Egg Overlay
+            if showCRTOverlay {
+                CRTOverlay(appVersion: appVersion) {
+                    withAnimation(.easeOut(duration: SGDuration.base)) {
+                        showCRTOverlay = false
+                    }
+                }
+                .ignoresSafeArea()
+                .zIndex(100)
+                .transition(.opacity)
+            }
         }
+        .animation(.easeOut(duration: SGDuration.base), value: showCRTOverlay)
     }
 
-    // MARK: - Account
+    // MARK: - Profile Header
 
-    private var accountSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(String(localized: "settings.account"))
-                .font(SGFont.bodyBold(size: 16))
-                .foregroundStyle(Color.sgWhite)
+    private var profileHeader: some View {
+        SGCard(elevation: .hero) {
+            ZStack {
+                PaperTexture(intensity: 0.04)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
 
-            if auth.isAuthenticated {
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    if isEditingName {
-                        // Inline name edit
-                        VStack(alignment: .leading, spacing: Spacing.sm) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "person.circle.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundStyle(Color.sgYellow)
-                                Text(String(localized: "settings.edit_name"))
-                                    .font(SGFont.bodyBold(size: 15))
-                                    .foregroundStyle(Color.sgWhite)
-                            }
-
-                            HStack(spacing: 8) {
-                                TextField(String(localized: "common.first"), text: $editFirstName)
-                                    .font(SGFont.body(size: 14))
-                                    .foregroundStyle(Color.sgWhite)
-                                    .padding(8)
-                                    .background(Color.sgSurface)
-                                    .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
-                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.sgBorder))
-
-                                TextField(String(localized: "common.last"), text: $editLastName)
-                                    .font(SGFont.body(size: 14))
-                                    .foregroundStyle(Color.sgWhite)
-                                    .padding(8)
-                                    .background(Color.sgSurface)
-                                    .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
-                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.sgBorder))
-                            }
-
-                            HStack(spacing: 8) {
-                                Button {
-                                    isEditingName = false
-                                } label: {
-                                    Text(String(localized: "common.cancel"))
-                                        .font(SGFont.bodyBold(size: 13))
-                                        .foregroundStyle(Color.sgMuted)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 8)
-                                        .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
-                                }
-                                .buttonStyle(.plain)
-
-                                Button {
-                                    Task { await saveProfileName() }
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        if isSavingProfile {
-                                            ProgressView()
-                                                .tint(Color.sgBg)
-                                                .scaleEffect(0.8)
-                                        }
-                                        Text(String(localized: "common.save"))
-                                            .font(SGFont.bodyBold(size: 13))
-                                    }
-                                    .foregroundStyle(Color.sgBg)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                                    .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(isSavingProfile || editFirstName.trimmingCharacters(in: .whitespaces).isEmpty)
-                            }
-                        }
+                VStack(spacing: Spacing.md) {
+                    if auth.isAuthenticated {
+                        authenticatedProfileContent
                     } else {
-                        // Display mode
-                        HStack(spacing: 8) {
-                            Image(systemName: "person.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundStyle(Color.sgYellow)
-                            VStack(alignment: .leading, spacing: 2) {
-                                if let name = auth.userName {
-                                    Text(name)
-                                        .font(SGFont.bodyBold(size: 15))
-                                        .foregroundStyle(Color.sgWhite)
-                                }
-                                if let email = auth.userEmail {
-                                    Text(email)
-                                        .font(SGFont.body(size: 12))
-                                        .foregroundStyle(Color.sgMuted)
-                                }
-                                if let created = profileCreatedAt {
-                                    Text(String(format: String(localized: "settings.member_since"), created))
-                                        .font(SGFont.body(size: 11))
-                                        .foregroundStyle(Color.sgMuted.opacity(0.7))
-                                }
-                            }
-                            Spacer()
-                            Button {
-                                editFirstName = auth.userName?.components(separatedBy: " ").first ?? ""
-                                editLastName = auth.userName?.components(separatedBy: " ").dropFirst().joined(separator: " ") ?? ""
-                                isEditingName = true
-                            } label: {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color.sgYellow)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Edit your name")
-                        }
+                        guestProfileContent
                     }
-
-                    Button {
-                        showSignOutConfirmation = true
-                    } label: {
-                        Text(String(localized: "settings.sign_out"))
-                            .font(SGFont.bodyBold(size: 14))
-                            .foregroundStyle(Color.sgRed)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(Color.sgRed.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Sign out of your account")
                 }
-                .task { await loadProfile() }
-            } else {
-                HStack(spacing: 8) {
-                    Image(systemName: "person.circle")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color.sgMuted)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(String(localized: "settings.guest_mode"))
-                            .font(SGFont.bodyBold(size: 15))
+            }
+        }
+        .task { if auth.isAuthenticated { await loadProfile() } }
+    }
+
+    private var authenticatedProfileContent: some View {
+        VStack(spacing: Spacing.sm) {
+            // Avatar + name row
+            HStack(spacing: Spacing.md) {
+                // Avatar circle
+                ZStack {
+                    Circle()
+                        .fill(Color.sgYellow.opacity(0.15))
+                        .frame(width: 56, height: 56)
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(Color.sgYellow)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    if let name = auth.userName {
+                        Text(name)
+                            .font(SGFont.accent(size: 22))
                             .foregroundStyle(Color.sgWhite)
-                        Text(String(localized: "settings.guest_mode.subtitle"))
+                            .lineLimit(1)
+                    }
+                    if let email = auth.userEmail {
+                        Text(email)
                             .font(SGFont.body(size: 12))
                             .foregroundStyle(Color.sgMuted)
+                            .lineLimit(1)
+                    }
+                    if let created = profileCreatedAt {
+                        Text(String(format: String(localized: "settings.member_since"), created))
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgMuted.opacity(0.7))
                     }
                 }
 
-                // Sign in with Apple
-                Button {
-                    auth.signInWithApple()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 14))
-                        Text(String(localized: "settings.sign_in_apple"))
-                            .font(SGFont.bodyBold(size: 14))
-                    }
-                    .foregroundStyle(Color.sgBg)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(Color.sgWhite)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                }
-                .buttonStyle(.plain)
-                .disabled(auth.isLoading)
-                .accessibilityLabel("Sign in with Apple")
-
-                HStack(spacing: 8) {
-                    // Sign in with Google
-                    Button {
-                        auth.signInWithGoogle()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "g.circle.fill")
-                                .font(.system(size: 14))
-                            Text("Google")
-                                .font(SGFont.bodyBold(size: 13))
-                        }
-                        .foregroundStyle(Color.sgBg)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.sgWhite)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(auth.isLoading)
-                    .accessibilityLabel("Sign in with Google")
-
-                    // Sign in with TikTok
-                    Button {
-                        auth.signInWithTikTok()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.system(size: 12))
-                            Text("TikTok")
-                                .font(SGFont.bodyBold(size: 13))
-                        }
-                        .foregroundStyle(Color.sgWhite)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.sgSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.md)
-                                .strokeBorder(Color.sgBorder, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(auth.isLoading)
-                    .accessibilityLabel("Sign in with TikTok")
-                }
-
-                if auth.isLoading {
-                    ProgressView()
-                        .tint(Color.sgYellow)
-                }
-
-                if let error = auth.authError {
-                    Text(error)
-                        .font(SGFont.body(size: 12))
-                        .foregroundStyle(Color.sgRed)
-                }
-            }
-        }
-        .alert(String(localized: "settings.sign_out_confirm.title"), isPresented: $showSignOutConfirmation) {
-            Button(String(localized: "settings.sign_out"), role: .destructive) {
-                auth.signOut()
-            }
-            Button(String(localized: "common.cancel"), role: .cancel) {}
-        } message: {
-            Text(String(localized: "settings.sign_out_confirm.message"))
-        }
-    }
-
-    // MARK: - Profile
-
-    private func loadProfile() async {
-        do {
-            let profile: ProfileResponse = try await APIClient.shared.fetch(.profile)
-            if let createdAt = profile.createdAt {
-                let isoFormatter = ISO8601DateFormatter()
-                if let date = isoFormatter.date(from: createdAt) {
-                    let displayFormatter = DateFormatter()
-                    displayFormatter.dateFormat = "MMM yyyy"
-                    profileCreatedAt = displayFormatter.string(from: date)
-                }
-            }
-        } catch {
-            // Non-critical — silently ignore
-        }
-    }
-
-    private func saveProfileName() async {
-        isSavingProfile = true
-        defer { isSavingProfile = false }
-
-        let first = editFirstName.trimmingCharacters(in: .whitespaces)
-        let last = editLastName.trimmingCharacters(in: .whitespaces)
-
-        do {
-            let profile: ProfileResponse = try await APIClient.shared.fetch(
-                .updateProfile(firstName: first, lastName: last)
-            )
-            // Update AuthStore with new name
-            await MainActor.run {
-                auth.userName = profile.name
-                isEditingName = false
-            }
-            HapticEngine.success()
-        } catch {
-            HapticEngine.error()
-        }
-    }
-
-    // MARK: - Delete Account
-
-    private func deleteAccount() async {
-        // Call backend to delete user data
-        do {
-            if let token = auth.authToken {
-                let _: EmptyResponse = try await APIClient.shared.fetch(.deleteAccount(authToken: token))
-            }
-        } catch {
-            // Even if backend fails, sign out locally
-        }
-        auth.signOut()
-        settings.hasOnboarded = false // Reset to onboarding
-    }
-
-    // MARK: - Departure Airport
-
-    private var departureSection: some View {
-        settingsSection(String(localized: "settings.departure")) {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack(alignment: .center, spacing: Spacing.md) {
-                    SplitFlapRow(
-                        text: settings.departureCode,
-                        maxLength: 3,
-                        size: .lg,
-                        color: Color.sgWhite,
-                        animate: true,
-                        staggerMs: 35
-                    )
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(settings.departureCity)
-                            .font(SGFont.sectionHead)
-                            .foregroundStyle(Color.sgWhite)
-
-                        Text(String(localized: "settings.departure_subtitle"))
-                            .font(SGFont.body(size: 12))
-                            .foregroundStyle(Color.sgMuted)
-                    }
-
-                    Spacer(minLength: 0)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Departure airport: \(settings.departureCode), \(settings.departureCity)")
+                Spacer()
 
                 Button {
-                    HapticEngine.selection()
-                    router.showDeparturePicker()
+                    editFirstName = auth.userName?.components(separatedBy: " ").first ?? ""
+                    editLastName = auth.userName?.components(separatedBy: " ").dropFirst().joined(separator: " ") ?? ""
+                    isEditingName = true
                 } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "airplane.departure")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text(String(localized: "settings.change_airport"))
-                            .font(SGFont.bodyBold(size: 14))
-                    }
-                    .foregroundStyle(Color.sgBg)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.sm)
-                    .background(Color.sgYellow, in: RoundedRectangle(cornerRadius: Radius.md))
+                    Image(systemName: "pencil")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.sgYellow)
+                        .frame(width: 32, height: 32)
+                        .background(Color.sgYellow.opacity(0.12), in: Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Change departure airport")
+                .accessibilityLabel("Edit your name")
+            }
+
+            Divider().overlay(Color.sgHairline)
+
+            // Stats row
+            HStack(spacing: 0) {
+                statCell(value: "\(savedStore.count)", label: "trips saved")
+                Divider()
+                    .frame(height: 30)
+                    .overlay(Color.sgHairline)
+                statCell(value: "\(historyStore.bookings.count)", label: "booked")
+                Divider()
+                    .frame(height: 30)
+                    .overlay(Color.sgHairline)
+                statCell(value: "\(travelerStore.travelers.count)", label: "travelers")
+            }
+
+            if isEditingName {
+                nameEditForm
+            }
+
+            // Sign out
+            if !isEditingName {
+                SGButton(String(localized: "settings.sign_out"), style: .destructive) {
+                    showSignOutConfirmation = true
+                }
+                .alert(String(localized: "settings.sign_out_confirm.title"), isPresented: $showSignOutConfirmation) {
+                    Button(String(localized: "settings.sign_out"), role: .destructive) { auth.signOut() }
+                    Button(String(localized: "common.cancel"), role: .cancel) {}
+                } message: {
+                    Text(String(localized: "settings.sign_out_confirm.message"))
+                }
             }
         }
     }
 
-    // MARK: - Display Mode
+    private func statCell(value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .sgFont(.cardTitle)
+                .foregroundStyle(Color.sgYellow)
+            Text(label)
+                .font(SGFont.body(size: 10))
+                .foregroundStyle(Color.sgMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value) \(label)")
+    }
 
-    private var displaySection: some View {
-        settingsSection(String(localized: "settings.view_mode")) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                // Segmented-style picker
-                HStack(spacing: 0) {
-                    viewModeButton(id: "grid", label: String(localized: "settings.view_mode.swipe"), icon: "rectangle.portrait.on.rectangle.portrait")
-                    viewModeButton(id: "list", label: String(localized: "settings.view_mode.board"), icon: "rectangle.grid.1x2")
+    @ViewBuilder
+    private var nameEditForm: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(spacing: 8) {
+                TextField(String(localized: "common.first"), text: $editFirstName)
+                    .sgTextField()
+                TextField(String(localized: "common.last"), text: $editLastName)
+                    .sgTextField()
+            }
+
+            HStack(spacing: 8) {
+                SGButton(String(localized: "common.cancel"), style: .ghost) {
+                    isEditingName = false
                 }
-                .modifier(GlassSegmentModifier())
+                SGButton(isSavingProfile ? "Saving…" : String(localized: "common.save"), style: .primary) {
+                    Task { await saveProfileName() }
+                }
+                .disabled(isSavingProfile || editFirstName.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+    }
 
-                Text(settings.preferredView == "list"
-                     ? String(localized: "settings.view_mode.board_desc")
-                     : String(localized: "settings.view_mode.swipe_desc"))
-                    .font(SGFont.body(size: 12))
+    private var guestProfileContent: some View {
+        VStack(spacing: Spacing.md) {
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "person.circle")
+                    .font(.system(size: 32))
                     .foregroundStyle(Color.sgMuted)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "settings.guest_mode"))
+                        .font(SGFont.accent(size: 18))
+                        .foregroundStyle(Color.sgWhite)
+                    Text(String(localized: "settings.guest_mode.subtitle"))
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgMuted)
+                }
+                Spacer()
             }
+
+            SGButton("Sign in with Apple", style: .primary) {
+                auth.signInWithApple()
+            }
+            .disabled(auth.isLoading)
+
+            HStack(spacing: Spacing.sm) {
+                SGButton("Google", style: .ghost) { auth.signInWithGoogle() }
+                    .disabled(auth.isLoading)
+                SGButton("TikTok", style: .ghost) { auth.signInWithTikTok() }
+                    .disabled(auth.isLoading)
+            }
+
+            if auth.isLoading {
+                ProgressView().tint(Color.sgYellow)
+            }
+            if let error = auth.authError {
+                Text(error).font(SGFont.body(size: 12)).foregroundStyle(Color.sgRed)
+            }
+        }
+    }
+
+    // MARK: - Card Helper
+
+    private func settingsCard<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text(title)
+                .font(SGFont.accent(size: 14))
+                .foregroundStyle(Color.sgMuted)
+                .padding(.leading, Spacing.xs)
+
+            SGCard(elevation: .flush) {
+                content()
+            }
+        }
+    }
+
+    // MARK: - Departure Content
+
+    private var departureContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack(alignment: .center, spacing: Spacing.md) {
+                SplitFlapRow(
+                    text: settings.departureCode,
+                    maxLength: 3,
+                    size: .lg,
+                    color: Color.sgWhite,
+                    animate: true,
+                    staggerMs: 35
+                )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(settings.departureCity)
+                        .font(SGFont.sectionHead)
+                        .foregroundStyle(Color.sgWhite)
+                    Text(String(localized: "settings.departure_subtitle"))
+                        .font(SGFont.body(size: 12))
+                        .foregroundStyle(Color.sgMuted)
+                }
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Departure airport: \(settings.departureCode), \(settings.departureCity)")
+
+            SGButton(String(localized: "settings.change_airport"), style: .primary) {
+                HapticEngine.selection()
+                router.showDeparturePicker()
+            }
+        }
+    }
+
+    // MARK: - Display Content
+
+    private var displayContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(spacing: 0) {
+                viewModeButton(id: "grid", label: String(localized: "settings.view_mode.swipe"), icon: "rectangle.portrait.on.rectangle.portrait")
+                viewModeButton(id: "list", label: String(localized: "settings.view_mode.board"), icon: "rectangle.grid.1x2")
+            }
+            .modifier(GlassSegmentModifier())
+
+            Text(settings.preferredView == "list"
+                 ? String(localized: "settings.view_mode.board_desc")
+                 : String(localized: "settings.view_mode.swipe_desc"))
+                .font(SGFont.body(size: 12))
+                .foregroundStyle(Color.sgMuted)
         }
     }
 
     private func viewModeButton(id: String, label: String, icon: String) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(SGSpring.snappy) {
                 HapticEngine.selection()
                 settings.preferredView = id
             }
@@ -453,29 +359,27 @@ struct SettingsView: View {
         .accessibilityAddTraits(settings.preferredView == id ? .isSelected : [])
     }
 
-    // MARK: - Units
+    // MARK: - Units Content
 
-    private var unitsSection: some View {
-        settingsSection(String(localized: "settings.units")) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack(spacing: 0) {
-                    unitButton(metric: false, label: "°F / mi", icon: "ruler")
-                    unitButton(metric: true, label: "°C / km", icon: "ruler")
-                }
-                .modifier(GlassSegmentModifier())
-
-                Text(settings.usesMetric
-                     ? String(localized: "settings.units.metric_desc")
-                     : String(localized: "settings.units.imperial_desc"))
-                    .font(SGFont.body(size: 12))
-                    .foregroundStyle(Color.sgMuted)
+    private var unitsContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(spacing: 0) {
+                unitButton(metric: false, label: "°F / mi", icon: "ruler")
+                unitButton(metric: true, label: "°C / km", icon: "ruler")
             }
+            .modifier(GlassSegmentModifier())
+
+            Text(settings.usesMetric
+                 ? String(localized: "settings.units.metric_desc")
+                 : String(localized: "settings.units.imperial_desc"))
+                .font(SGFont.body(size: 12))
+                .foregroundStyle(Color.sgMuted)
         }
     }
 
     private func unitButton(metric: Bool, label: String, icon: String) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(SGSpring.snappy) {
                 HapticEngine.selection()
                 settings.usesMetric = metric
             }
@@ -500,128 +404,104 @@ struct SettingsView: View {
         .accessibilityAddTraits(settings.usesMetric == metric ? .isSelected : [])
     }
 
-    // MARK: - Notifications
+    // MARK: - Notifications Content
 
-    private var notificationsSection: some View {
-        settingsSection(String(localized: "settings.notifications")) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                toggleRow(
-                    icon: "bell.badge.fill",
-                    title: String(localized: "settings.push_notifications"),
-                    isOn: notificationBinding
-                )
+    private var notificationsContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Toggle(isOn: notificationBinding) {
+                Label {
+                    Text(String(localized: "settings.push_notifications"))
+                        .font(SGFont.bodyBold(size: 14))
+                        .foregroundStyle(Color.sgWhite)
+                } icon: {
+                    Image(systemName: "bell.badge.fill")
+                        .foregroundStyle(Color.sgYellow)
+                        .frame(width: 20)
+                }
+            }
+            .toggleStyle(SGMechanicalSwitchStyle())
 
-                Divider().overlay(Color.sgBorder)
+            Divider().overlay(Color.sgHairline)
 
-                toggleRow(
-                    icon: "tag.fill",
-                    title: String(localized: "settings.price_alert_emails"),
-                    isOn: priceAlertsBinding
-                )
+            Toggle(isOn: priceAlertsBinding) {
+                Label {
+                    Text(String(localized: "settings.price_alert_emails"))
+                        .font(SGFont.bodyBold(size: 14))
+                        .foregroundStyle(Color.sgWhite)
+                } icon: {
+                    Image(systemName: "tag.fill")
+                        .foregroundStyle(Color.sgYellow)
+                        .frame(width: 20)
+                }
+            }
+            .toggleStyle(SGMechanicalSwitchStyle())
 
-                if !settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text(maskedEmail(settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines)))
-                        .font(SGFont.body(size: 12))
+            if !settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text(maskedEmail(settings.alertEmail.trimmingCharacters(in: .whitespacesAndNewlines)))
+                    .font(SGFont.body(size: 12))
+                    .foregroundStyle(Color.sgMuted)
+                    .padding(.leading, 28)
+            }
+
+            Divider().overlay(Color.sgHairline)
+
+            Button {
+                HapticEngine.light()
+                showPriceAlerts = true
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "bell.badge")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.sgYellow)
+                        .frame(width: 20)
+                    Text(String(localized: "settings.manage_alerts"))
+                        .font(SGFont.bodyBold(size: 14))
+                        .foregroundStyle(Color.sgWhite)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
                         .foregroundStyle(Color.sgMuted)
-                        .padding(.leading, 28)
                 }
-
-                Divider().overlay(Color.sgBorder)
-
-                Button {
-                    HapticEngine.light()
-                    showPriceAlerts = true
-                } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "bell.badge")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Color.sgYellow)
-                            .frame(width: 20)
-
-                        Text(String(localized: "settings.manage_alerts"))
-                            .font(SGFont.bodyBold(size: 14))
-                            .foregroundStyle(Color.sgWhite)
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.sgMuted)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Manage price alerts")
-                .sheet(isPresented: $showPriceAlerts) {
-                    PriceAlertsListView()
-                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Manage price alerts")
+            .sheet(isPresented: $showPriceAlerts) {
+                PriceAlertsListView()
             }
         }
     }
 
-    private func toggleRow(icon: String, title: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundStyle(Color.sgYellow)
-                .frame(width: 20)
+    // MARK: - Travelers Content
 
-            Text(title)
-                .font(SGFont.bodyBold(size: 14))
-                .foregroundStyle(Color.sgWhite)
-
-            Spacer()
-
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(Color.sgYellow)
-                .accessibilityLabel(title)
-                .accessibilityValue(isOn.wrappedValue ? "On" : "Off")
-        }
-        .contentShape(Rectangle())
-    }
-
-    // MARK: - Travelers
-
-    private var travelersSection: some View {
-        settingsSection(String(localized: "settings.saved_travelers")) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                if travelerStore.travelers.isEmpty {
-                    Text(String(localized: "settings.saved_travelers.empty"))
-                        .font(SGFont.body(size: 13))
+    private var travelersContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            if !travelerStore.travelers.isEmpty {
+                HStack {
+                    Text("\(travelerStore.travelers.count)")
+                        .sgFont(.cardTitle)
+                        .foregroundStyle(Color.sgYellow)
+                    Text(travelerStore.travelers.count == 1
+                         ? String(localized: "settings.traveler_saved")
+                         : String(localized: "settings.travelers_saved"))
+                        .font(SGFont.body(size: 14))
                         .foregroundStyle(Color.sgMuted)
-                } else {
-                    HStack {
-                        Text("\(travelerStore.travelers.count)")
-                            .font(SGFont.cardTitle)
-                            .foregroundStyle(Color.sgYellow)
-                        Text(travelerStore.travelers.count == 1 ? String(localized: "settings.traveler_saved") : String(localized: "settings.travelers_saved"))
-                            .font(SGFont.body(size: 14))
-                            .foregroundStyle(Color.sgMuted)
-                        Spacer()
-                    }
+                    Spacer()
                 }
-
-                Button {
-                    showTravelers = true
-                } label: {
-                    HStack(spacing: Spacing.xs) {
-                        Image(systemName: "person.2.fill")
-                            .font(.system(size: 12))
-                        Text(travelerStore.travelers.isEmpty ? String(localized: "settings.add_traveler") : String(localized: "settings.manage_travelers"))
-                            .font(SGFont.bodyBold(size: 14))
-                    }
-                    .foregroundStyle(Color.sgYellow)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(Color.sgYellow.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.md))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Radius.md)
-                            .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(travelerStore.travelers.isEmpty ? "Add a traveler" : "Manage saved travelers")
+            } else {
+                Text(String(localized: "settings.saved_travelers.empty"))
+                    .font(SGFont.body(size: 13))
+                    .foregroundStyle(Color.sgMuted)
             }
+
+            SGButton(
+                travelerStore.travelers.isEmpty
+                    ? String(localized: "settings.add_traveler")
+                    : String(localized: "settings.manage_travelers"),
+                style: .ghost
+            ) {
+                showTravelers = true
+            }
+            .accessibilityLabel(travelerStore.travelers.isEmpty ? "Add a traveler" : "Manage saved travelers")
         }
         .sheet(isPresented: $showTravelers) {
             TravelerListView()
@@ -633,86 +513,52 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Saved
+    // MARK: - Saved Content
 
-    private var savedSection: some View {
-        settingsSection(String(localized: "settings.saved_flights")) {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                HStack {
-                    Text("\(savedStore.count)")
-                        .font(SGFont.cardTitle)
-                        .foregroundStyle(Color.sgYellow)
-                    Text(savedStore.count == 1 ? String(localized: "settings.trip_saved") : String(localized: "settings.trips_saved"))
-                        .font(SGFont.body(size: 14))
-                        .foregroundStyle(Color.sgMuted)
-                    Spacer()
+    private var savedContent: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack {
+                Text("\(savedStore.count)")
+                    .sgFont(.cardTitle)
+                    .foregroundStyle(Color.sgYellow)
+                Text(savedStore.count == 1
+                     ? String(localized: "settings.trip_saved")
+                     : String(localized: "settings.trips_saved"))
+                    .font(SGFont.body(size: 14))
+                    .foregroundStyle(Color.sgMuted)
+                Spacer()
+            }
+
+            HStack(spacing: Spacing.sm) {
+                SGButton(String(localized: "settings.view_saved"), style: .ghost) {
+                    router.activeTab = .saved
                 }
+                .accessibilityLabel("View saved flights")
 
-                HStack(spacing: Spacing.sm) {
-                    Button {
-                        router.activeTab = .saved
-                    } label: {
-                        HStack(spacing: Spacing.xs) {
-                            Image(systemName: "heart.fill")
-                                .font(.system(size: 12))
-                            Text(String(localized: "settings.view_saved"))
-                                .font(SGFont.bodyBold(size: 13))
-                        }
-                        .foregroundStyle(Color.sgYellow)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.sgYellow.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.md))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.md)
-                                .strokeBorder(Color.sgYellow.opacity(0.28), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("View saved flights")
-
-                    Button {
-                        showClearConfirmation = true
-                    } label: {
-                        HStack(spacing: Spacing.xs) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 12))
-                            Text(String(localized: "settings.clear_all"))
-                                .font(SGFont.bodyBold(size: 13))
-                        }
-                        .foregroundStyle(Color.sgMuted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(savedStore.count == 0)
-                    .opacity(savedStore.count == 0 ? 0.4 : 1)
-                    .accessibilityLabel("Clear all saved flights")
+                SGButton(String(localized: "settings.clear_all"), style: .destructive) {
+                    showClearConfirmation = true
                 }
+                .disabled(savedStore.count == 0)
+                .opacity(savedStore.count == 0 ? 0.4 : 1)
+                .accessibilityLabel("Clear all saved flights")
             }
         }
     }
 
-    // MARK: - About
+    // MARK: - About Content
 
-    private var aboutSection: some View {
-        settingsSection(String(localized: "settings.about")) {
-            VStack(alignment: .leading, spacing: 0) {
-                linkRow(icon: "lock.shield", title: String(localized: "settings.privacy_policy")) {
-                    if let url = URL(string: "https://sogojet.com/legal/privacy") { openURL(url) }
-                }
-
-                Divider().overlay(Color.sgBorder)
-
-                linkRow(icon: "doc.text", title: String(localized: "settings.terms")) {
-                    if let url = URL(string: "https://sogojet.com/legal/terms") { openURL(url) }
-                }
-
-                Divider().overlay(Color.sgBorder)
-
-                linkRow(icon: "envelope", title: String(localized: "settings.contact_us")) {
-                    if let url = URL(string: "mailto:hello@sogojet.com") { openURL(url) }
-                }
+    private var aboutContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            linkRow(icon: "lock.shield", title: String(localized: "settings.privacy_policy")) {
+                if let url = URL(string: "https://sogojet.com/legal/privacy") { openURL(url) }
+            }
+            Divider().overlay(Color.sgHairline)
+            linkRow(icon: "doc.text", title: String(localized: "settings.terms")) {
+                if let url = URL(string: "https://sogojet.com/legal/terms") { openURL(url) }
+            }
+            Divider().overlay(Color.sgHairline)
+            linkRow(icon: "envelope", title: String(localized: "settings.contact_us")) {
+                if let url = URL(string: "mailto:hello@sogojet.com") { openURL(url) }
             }
         }
     }
@@ -722,9 +568,9 @@ struct SettingsView: View {
     private var dangerZoneSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             Text(String(localized: "settings.danger_zone"))
-                .font(SGFont.bodyBold(size: 11))
+                .font(SGFont.accent(size: 14))
                 .foregroundStyle(Color.sgRed)
-                .tracking(1.2)
+                .padding(.leading, Spacing.xs)
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text(String(localized: "settings.delete_account.description"))
@@ -767,22 +613,28 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Reusable Components
+    // MARK: - Version Footer (CRT long-press trigger)
 
-    private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(title.uppercased())
-                .font(SGFont.bodyBold(size: 11))
-                .foregroundStyle(Color.sgMuted)
-                .tracking(1.2)
-
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                content()
-            }
-            .padding(Spacing.md)
-            .modifier(GlassSectionModifier())
+    private var versionFooter: some View {
+        HStack {
+            Spacer()
+            Text("v\(appVersion)")
+                .font(SGFont.body(size: 12))
+                .foregroundStyle(Color.sgFaint)
+                .onLongPressGesture(minimumDuration: 1.0) {
+                    HapticEngine.boardingPass()
+                    withAnimation(.easeOut(duration: SGDuration.base)) {
+                        showCRTOverlay = true
+                    }
+                }
+                .accessibilityLabel("App version \(appVersion)")
+                .accessibilityHint("Long press for a surprise")
+            Spacer()
         }
+        .padding(.vertical, Spacing.sm)
     }
+
+    // MARK: - Reusable Row
 
     private func linkRow(icon: String, title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -791,13 +643,10 @@ struct SettingsView: View {
                     .font(.system(size: 14))
                     .foregroundStyle(Color.sgMuted)
                     .frame(width: 20)
-
                 Text(title)
                     .font(SGFont.body(size: 14))
                     .foregroundStyle(Color.sgWhite)
-
                 Spacer()
-
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.sgMuted)
@@ -825,23 +674,190 @@ struct SettingsView: View {
     }
 
     private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
     }
 
     private func maskedEmail(_ email: String) -> String {
         let parts = email.split(separator: "@", maxSplits: 1).map(String.init)
         guard parts.count == 2 else { return email }
-
         let local = parts[0]
-        let visiblePrefix = String(local.prefix(2))
-        let maskCount = max(local.count - visiblePrefix.count, 2)
-        return "\(visiblePrefix)\(String(repeating: "*", count: maskCount))@\(parts[1])"
+        let prefix = String(local.prefix(2))
+        return "\(prefix)\(String(repeating: "*", count: max(local.count - prefix.count, 2)))@\(parts[1])"
+    }
+
+    private func loadProfile() async {
+        do {
+            let profile: ProfileResponse = try await APIClient.shared.fetch(.profile)
+            if let createdAt = profile.createdAt {
+                let iso = ISO8601DateFormatter()
+                if let date = iso.date(from: createdAt) {
+                    let fmt = DateFormatter()
+                    fmt.dateFormat = "MMM yyyy"
+                    profileCreatedAt = fmt.string(from: date)
+                }
+            }
+        } catch { /* non-critical */ }
+    }
+
+    private func saveProfileName() async {
+        isSavingProfile = true
+        defer { isSavingProfile = false }
+        let first = editFirstName.trimmingCharacters(in: .whitespaces)
+        let last = editLastName.trimmingCharacters(in: .whitespaces)
+        do {
+            let profile: ProfileResponse = try await APIClient.shared.fetch(
+                .updateProfile(firstName: first, lastName: last)
+            )
+            await MainActor.run {
+                auth.userName = profile.name
+                isEditingName = false
+            }
+            HapticEngine.success()
+        } catch {
+            HapticEngine.error()
+        }
+    }
+
+    private func deleteAccount() async {
+        do {
+            if let token = auth.authToken {
+                let _: EmptyResponse = try await APIClient.shared.fetch(.deleteAccount(authToken: token))
+            }
+        } catch { }
+        auth.signOut()
+        settings.hasOnboarded = false
     }
 }
 
-// MARK: - Liquid Glass Section Modifier
+// MARK: - TextField SGStyle Helper
 
-/// Liquid glass tinted red for danger zone, falling back to solid red tint.
+private extension View {
+    func sgTextField() -> some View {
+        self
+            .font(SGFont.body(size: 14))
+            .foregroundStyle(Color.sgWhite)
+            .padding(10)
+            .background(Color.sgSurface)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.sm)
+                    .strokeBorder(Color.sgBorder)
+            )
+    }
+}
+
+// MARK: - CRT Easter Egg Overlay
+
+private struct CRTOverlay: View {
+    let appVersion: String
+    let onDismiss: () -> Void
+
+    @State private var scanlinesOpacity: Double = 0
+    @State private var textVisible = false
+    @State private var creditsVisible = false
+
+    var body: some View {
+        ZStack {
+            Color.sgInk.ignoresSafeArea()
+
+            // Scanlines
+            CRTScanlines()
+                .opacity(scanlinesOpacity)
+                .ignoresSafeArea()
+
+            // Runway shimmer over scanlines
+            RunwayShimmer(duration: SGDuration.epic, intensity: 0.15, isActive: textVisible)
+                .ignoresSafeArea()
+
+            VStack(spacing: Spacing.lg) {
+                Spacer()
+
+                if textVisible {
+                    SplitFlapText(
+                        text: "SOGOJET",
+                        style: .headline,
+                        animate: true
+                    )
+                    .transition(.opacity)
+
+                    Text("v\(appVersion)")
+                        .sgFont(.ticker)
+                        .foregroundStyle(Color.sgYellow)
+                        .transition(.opacity)
+                }
+
+                if creditsVisible {
+                    VStack(spacing: Spacing.xs) {
+                        Text("THE WORLD AS A LIVING DEPARTURE BOARD")
+                            .sgFont(.micro)
+                            .foregroundStyle(Color.sgMuted)
+                            .tracking(2)
+
+                        Text("Built with intention.")
+                            .font(SGFont.accent(size: 14))
+                            .foregroundStyle(Color.sgWhiteDim)
+                    }
+                    .transition(.opacity)
+                }
+
+                Spacer()
+
+                Text("Tap anywhere to dismiss")
+                    .sgFont(.caption)
+                    .foregroundStyle(Color.sgFaint)
+                    .opacity(creditsVisible ? 1 : 0)
+                    .padding(.bottom, Spacing.xl)
+            }
+        }
+        .onTapGesture { onDismiss() }
+        .onAppear {
+            // Phase 1: scanlines fade in
+            withAnimation(.easeIn(duration: SGDuration.slow)) {
+                scanlinesOpacity = 1
+            }
+            // Phase 2: text flaps in
+            DispatchQueue.main.asyncAfter(deadline: .now() + SGDuration.slow) {
+                withAnimation(.easeOut(duration: SGDuration.base)) {
+                    textVisible = true
+                }
+                HapticEngine.flapSettle(count: 8, staggerMs: 40)
+            }
+            // Phase 3: credits
+            DispatchQueue.main.asyncAfter(deadline: .now() + SGDuration.slow + SGDuration.slow) {
+                withAnimation(.easeOut(duration: SGDuration.base)) {
+                    creditsVisible = true
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Easter egg. Tap to dismiss.")
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+// MARK: - CRT Scanlines
+
+private struct CRTScanlines: View {
+    var body: some View {
+        GeometryReader { geo in
+            Canvas { context, size in
+                let lineHeight: CGFloat = 3
+                let gap: CGFloat = 3
+                var y: CGFloat = 0
+                while y < size.height {
+                    let rect = CGRect(x: 0, y: y, width: size.width, height: lineHeight)
+                    context.fill(Path(rect), with: .color(Color.black.opacity(0.35)))
+                    y += lineHeight + gap
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Liquid Glass Modifiers
+
 private struct GlassDangerModifier: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
@@ -858,7 +874,6 @@ private struct GlassDangerModifier: ViewModifier {
     }
 }
 
-/// Liquid glass for segmented pickers, falling back to solid border on older iOS.
 private struct GlassSegmentModifier: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
@@ -867,23 +882,6 @@ private struct GlassSegmentModifier: ViewModifier {
         } else {
             content
                 .background(Color.sgBorder, in: RoundedRectangle(cornerRadius: Radius.md))
-        }
-    }
-}
-
-/// Uses liquid glass on iOS 26+, falls back to a subtle tinted card on earlier versions.
-private struct GlassSectionModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content
-                .glassEffect(.regular.tint(Color.sgWhite.opacity(0.06)), in: .rect(cornerRadius: Radius.lg))
-        } else {
-            content
-                .background(Color.sgWhite.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.lg)
-                        .strokeBorder(Color.sgBorder, lineWidth: 1)
-                )
         }
     }
 }
@@ -897,4 +895,7 @@ private struct GlassSectionModifier: ViewModifier {
     .environment(SettingsStore())
     .environment(SavedStore())
     .environment(Router())
+    .environment(AuthStore())
+    .environment(TravelerStore())
+    .environment(BookingHistoryStore())
 }

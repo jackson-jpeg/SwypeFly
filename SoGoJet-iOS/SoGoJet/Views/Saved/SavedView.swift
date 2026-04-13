@@ -1,7 +1,8 @@
 import SwiftUI
 
 // MARK: - Saved View
-// Clean grid of saved destinations with minimal chrome.
+// Clean grid of saved destinations.
+// Phase 4: cascade entrance, swipe-to-delete + undo toast, PDF print overlay.
 
 struct SavedView: View {
     @Environment(SavedStore.self) private var savedStore
@@ -21,9 +22,20 @@ struct SavedView: View {
     @State private var showCompareView = false
     @State private var compareA: Deal?
     @State private var compareB: Deal?
-    @State private var showExportSheet = false
+
+    // PDF export / print overlay
+    @State private var showPrintOverlay = false
+    @State private var printOverlayPhase: PrintPhase = .hidden
+    @State private var showShareSheet = false
     @State private var exportPDFData: Data?
+
     @State private var compareBannerPulse = false
+    /// Flip to true on first appear to kick off card cascade.
+    @State private var gridAppeared = false
+
+    private enum PrintPhase {
+        case hidden, pulling, settled, sharing
+    }
 
     private enum SortMode: String, CaseIterable {
         case recent = "Latest"
@@ -37,43 +49,56 @@ struct SavedView: View {
     ]
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    headerSection
-                        .padding(.top, Spacing.lg)
-                        .id("saved-top")
+        ZStack {
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        headerSection
+                            .padding(.top, Spacing.lg)
+                            .id("saved-top")
 
-                    segmentPicker
+                        segmentPicker
 
-                    if activeSegment == .flights {
-                        savedFlightsContent
-                    } else {
-                        MyTripsView()
+                        if activeSegment == .flights {
+                            savedFlightsContent
+                        } else {
+                            MyTripsView()
+                        }
+                    }
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.bottom, Spacing.xl)
+                }
+                .onChange(of: router.scrollToTopTrigger) { _, _ in
+                    guard router.activeTab == .saved else { return }
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo("saved-top", anchor: .top)
                     }
                 }
-                .padding(.horizontal, Spacing.md)
-                .padding(.bottom, Spacing.xl)
             }
-            .onChange(of: router.scrollToTopTrigger) { _, _ in
-                guard router.activeTab == .saved else { return }
-                withAnimation(.easeOut(duration: 0.3)) {
-                    proxy.scrollTo("saved-top", anchor: .top)
+            .refreshable {
+                savedStore.syncFromServer()
+                HapticEngine.light()
+                try? await Task.sleep(for: .seconds(1))
+            }
+            .background(Color.sgBg)
+            .navigationTitle("")
+            .navigationBarHidden(true)
+            .onAppear {
+                SiriShortcuts.donateSaved(count: savedStore.count)
+                // Trigger grid cascade on first appear
+                if !gridAppeared {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        gridAppeared = true
+                    }
                 }
             }
-        }
-        .refreshable {
-            savedStore.syncFromServer()
-            HapticEngine.light()
-            // Give the network call time to update the list
-            try? await Task.sleep(for: .seconds(1))
-        }
-        .background(Color.sgBg)
-        .navigationTitle("")
-        .navigationBarHidden(true)
-        .onAppear {
-            // Donate Siri shortcut so "Show my saved flights" appears in suggestions
-            SiriShortcuts.donateSaved(count: savedStore.count)
+
+            // PDF print overlay
+            if showPrintOverlay {
+                printOverlayView
+                    .ignoresSafeArea()
+                    .zIndex(100)
+            }
         }
         .sheet(isPresented: $showComparePicker) {
             ComparePickerView(
@@ -81,7 +106,6 @@ struct SavedView: View {
                 selectedA: $compareA,
                 selectedB: $compareB,
                 onCompare: {
-                    // Small delay so picker sheet dismisses first
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         showCompareView = true
                     }
@@ -97,7 +121,7 @@ struct SavedView: View {
                     .presentationDragIndicator(.visible)
             }
         }
-        .sheet(isPresented: $showExportSheet) {
+        .sheet(isPresented: $showShareSheet) {
             if let data = exportPDFData {
                 ActivityViewRepresentable(activityItems: [PDFDataItem(data: data)])
             }
@@ -110,7 +134,7 @@ struct SavedView: View {
         HStack(spacing: 0) {
             ForEach(SavedSegment.allCases, id: \.self) { segment in
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(SGSpring.snappy) {
                         HapticEngine.selection()
                         activeSegment = segment
                     }
@@ -120,7 +144,6 @@ struct SavedView: View {
                             .font(.system(size: 12, weight: .semibold))
                         Text(segment.rawValue)
                             .font(SGFont.bodyBold(size: 13))
-                        // Badge for trip count
                         if segment == .trips && auth.isAuthenticated && historyStore.hasBookings {
                             Text("\(historyStore.bookings.count)")
                                 .font(SGFont.bodyBold(size: 10))
@@ -158,7 +181,6 @@ struct SavedView: View {
         if savedStore.savedDeals.isEmpty {
             emptyState
         } else {
-            // Savings banner (2+ deals with savings data)
             if savedStore.savedDeals.count >= 2 {
                 let totalSavings = savedStore.totalSavings
                 let totalValue = savedStore.savedDeals.compactMap(\.displayPrice).reduce(0, +)
@@ -207,7 +229,6 @@ struct SavedView: View {
 
     // MARK: - Region Stamps
 
-    /// Unique regions derived from saved deals, capped at 5.
     private var regionStamps: [String] {
         var seen = Set<String>()
         var result: [String] = []
@@ -259,7 +280,6 @@ struct SavedView: View {
 
     // MARK: - Comparable Deals
 
-    /// Number of saved deals available for comparison.
     private var comparableDealsCount: Int {
         savedStore.savedDeals.count
     }
@@ -315,14 +335,12 @@ struct SavedView: View {
         }
         .accessibilityLabel("Compare \(savedStore.count) saved destinations side by side")
         .onAppear {
-            // Subtle pulse to draw attention, then stop
             withAnimation(
                 .easeInOut(duration: 0.8)
                 .repeatCount(3, autoreverses: true)
             ) {
                 compareBannerPulse = true
             }
-            // Reset after animation completes
             DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) {
                 compareBannerPulse = false
             }
@@ -347,11 +365,10 @@ struct SavedView: View {
                 }
             }
 
-            // Export button (1+ saved)
             if !savedStore.savedDeals.isEmpty {
                 Button {
-                    HapticEngine.selection()
-                    exportTripPlan()
+                    HapticEngine.boardingPass()
+                    triggerPrintAnimation()
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "square.and.arrow.up")
@@ -396,12 +413,14 @@ struct SavedView: View {
 
     private var cardGrid: some View {
         LazyVGrid(columns: columns, spacing: Spacing.sm) {
-            ForEach(sortedDeals) { deal in
+            ForEach(Array(sortedDeals.enumerated()), id: \.element.id) { index, deal in
                 SavedCard(
                     deal: deal,
                     onTap: { router.showDeal(deal) },
                     onBook: { bookDeal(deal) },
-                    onRemove: { removeDeal(deal) }
+                    onRemove: { removeDeal(deal) },
+                    cardIndex: index,
+                    appeared: gridAppeared
                 )
             }
         }
@@ -460,37 +479,165 @@ struct SavedView: View {
         router.startBooking(deal)
     }
 
-    private func exportTripPlan() {
-        let data = TripPlanPDFRenderer.render(deals: sortedDeals)
-        exportPDFData = data
-        showExportSheet = true
-    }
-
     private func removeDeal(_ deal: Deal) {
+        HapticEngine.warning()
         let store = savedStore
 
-        // Optimistically remove from list
-        withAnimation(.easeOut(duration: 0.25)) {
+        withAnimation(SGSpring.snappy) {
             store.remove(id: deal.id)
         }
 
-        // Show undo toast (4s auto-dismiss; tap Undo to re-add)
         toastManager.show(
             message: "\(deal.city) removed",
             type: .info,
             duration: 4.0,
             actionLabel: "Undo"
         ) {
-            withAnimation(.easeOut(duration: 0.25)) {
+            withAnimation(SGSpring.bouncy) {
                 store.add(deal: deal)
             }
             HapticEngine.success()
         }
     }
+
+    // MARK: - PDF Print Animation
+
+    private func triggerPrintAnimation() {
+        let data = TripPlanPDFRenderer.render(deals: sortedDeals)
+        exportPDFData = data
+        showPrintOverlay = true
+
+        // Phase 1: ticket pulls down (0 → base duration)
+        withAnimation(
+            UIAccessibility.isReduceMotionEnabled
+                ? .easeOut(duration: SGDuration.fast)
+                : .timingCurve(0.32, 0.04, 0.15, 0.98, duration: SGDuration.slow)
+        ) {
+            printOverlayPhase = .pulling
+        }
+
+        // Phase 2: settle + shimmer
+        DispatchQueue.main.asyncAfter(deadline: .now() + SGDuration.slow) {
+            withAnimation(SGSpring.mechanical) {
+                printOverlayPhase = .settled
+            }
+        }
+
+        // Phase 3: transition to share sheet after epic duration
+        DispatchQueue.main.asyncAfter(deadline: .now() + SGDuration.epic) {
+            showPrintOverlay = false
+            printOverlayPhase = .hidden
+            showShareSheet = true
+        }
+    }
+
+    // MARK: - Print Overlay
+
+    @ViewBuilder
+    private var printOverlayView: some View {
+        ZStack {
+            Color.sgInk.opacity(0.92)
+                .transition(.opacity)
+
+            VStack(spacing: 0) {
+                if printOverlayPhase != .hidden {
+                    BoardingPassTicket(
+                        deals: sortedDeals,
+                        phase: printOverlayPhase
+                    )
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .top).combined(with: .scale(scale: 0.92, anchor: .top)),
+                            removal: .opacity
+                        )
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.top, 60)
+        }
+        .animation(
+            UIAccessibility.isReduceMotionEnabled
+                ? .easeOut(duration: SGDuration.fast)
+                : .timingCurve(0.32, 0.04, 0.15, 0.98, duration: SGDuration.slow),
+            value: printOverlayPhase
+        )
+    }
+}
+
+// MARK: - Boarding Pass Ticket (print animation)
+
+private struct BoardingPassTicket: View {
+    let deals: [Deal]
+    let phase: SavedView.PrintPhase
+
+    private var isSettled: Bool { phase == .settled }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Perforated top edge
+            perforationEdge
+
+            // Ticket body
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                // Header
+                HStack {
+                    Text("SOGOJET")
+                        .sgFont(.micro)
+                        .foregroundStyle(Color.sgYellow)
+                        .tracking(3)
+                    Spacer()
+                    Text("TRIP PLAN")
+                        .sgFont(.micro)
+                        .foregroundStyle(Color.sgMuted)
+                        .tracking(2)
+                }
+
+                Divider().overlay(Color.sgHairline)
+
+                Text("PREPARING YOUR ITINERARY")
+                    .sgFont(.ticker)
+                    .foregroundStyle(Color.sgWhite)
+
+                Text("\(deals.count) destinations")
+                    .sgFont(.body)
+                    .foregroundStyle(Color.sgMuted)
+
+                // Runway shimmer bar
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.sgSurfaceHigh)
+                    .frame(height: 6)
+                    .runwayShimmer(active: isSettled)
+            }
+            .padding(Spacing.lg)
+            .background(Color.sgSurfaceHigh)
+
+            // Perforated bottom edge (inverted)
+            perforationEdge
+                .rotation3DEffect(.degrees(180), axis: (1, 0, 0))
+        }
+        .padding(.horizontal, Spacing.lg)
+        .shadow(color: Color.sgYellow.opacity(isSettled ? 0.15 : 0), radius: 24, y: 8)
+        .animation(SGSpring.mechanical, value: isSettled)
+    }
+
+    private var perforationEdge: some View {
+        GeometryReader { geo in
+            HStack(spacing: 0) {
+                ForEach(0..<Int(geo.size.width / 12), id: \.self) { _ in
+                    Circle()
+                        .fill(Color.sgInk)
+                        .frame(width: 10, height: 10)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .frame(height: 10)
+        .background(Color.sgSurfaceHigh)
+    }
 }
 
 // MARK: - PDF Data Item
-// Wraps raw Data as a named PDF file for UIActivityViewController.
 
 private final class PDFDataItem: NSObject, UIActivityItemSource {
     let data: Data
@@ -527,7 +674,6 @@ private final class PDFDataItem: NSObject, UIActivityItemSource {
 }
 
 // MARK: - Activity View Representable
-// Bridges UIActivityViewController into SwiftUI via a sheet.
 
 private struct ActivityViewRepresentable: UIViewControllerRepresentable {
     let activityItems: [Any]

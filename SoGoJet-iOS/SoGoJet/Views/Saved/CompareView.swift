@@ -1,42 +1,160 @@
 import SwiftUI
 
 // MARK: - Compare View
-// Side-by-side destination comparison sheet.
-// Highlights the "better" value for each metric in green.
+// Phase 4: vertical split-flap board comparing 2 trips side-by-side.
+// Swipe left/right pages between pairs when >2 deals available.
+// Wrap in SGCard(elevation: .hero).
 
 struct CompareView: View {
     let dealA: Deal
     let dealB: Deal
     @Environment(\.dismiss) private var dismiss
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(SavedStore.self) private var savedStore
+
+    // Paging: all saved deals so user can swipe to next pair
+    @State private var pairIndex: Int = 0
+    @State private var dragOffset: CGFloat = 0
+    @State private var animateRows: Bool = false
+
+    // Build all consecutive pairs from saved deals
+    private var allDeals: [Deal] { savedStore.savedDeals }
+    private var pairs: [(Deal, Deal)] {
+        guard allDeals.count >= 2 else { return [(dealA, dealB)] }
+        var result: [(Deal, Deal)] = []
+        for i in stride(from: 0, to: allDeals.count - 1, by: 2) {
+            result.append((allDeals[i], allDeals[i + 1]))
+        }
+        // If odd count, add a pair with the last deal repeated from the previous
+        if allDeals.count % 2 == 1, let last = allDeals.last, allDeals.count >= 2 {
+            result.append((allDeals[allDeals.count - 2], last))
+        }
+        return result.isEmpty ? [(dealA, dealB)] : result
+    }
+
+    private var currentA: Deal { pairs[pairIndex].0 }
+    private var currentB: Deal { pairs[pairIndex].1 }
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // Photo + name headers
-                    headerRow
+            ZStack {
+                Color.sgBg.ignoresSafeArea()
 
-                    Divider()
-                        .background(Color.sgBorder)
-                        .padding(.vertical, Spacing.sm)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: Spacing.md) {
+                        // Paging indicator (only if multiple pairs)
+                        if pairs.count > 1 {
+                            pagingIndicator
+                        }
 
-                    // Metric rows
-                    VStack(spacing: 2) {
-                        priceRow
-                        flightDurationRow
-                        stopsRow
-                        tripDurationRow
-                        bestMonthsRow
-                        averageTempRow
-                        vibeTagsRow
-                        airlineRow
+                        // Main board card
+                        SGCard(elevation: .hero) {
+                            VStack(spacing: 0) {
+                                // Destination headers
+                                boardHeaderRow
+
+                                // Metric rows — split-flap style
+                                VStack(spacing: 2) {
+                                    boardRow(
+                                        metric: "PRICE",
+                                        leftText: currentA.hasPrice ? currentA.priceFormatted : "--",
+                                        rightText: currentB.hasPrice ? currentB.priceFormatted : "--",
+                                        leftWins: compareWins(currentA.displayPrice, currentB.displayPrice, lowerIsBetter: true),
+                                        rightWins: compareWins(currentB.displayPrice, currentA.displayPrice, lowerIsBetter: true),
+                                        rowIndex: 0
+                                    )
+                                    boardRow(
+                                        metric: "FLIGHT",
+                                        leftText: currentA.safeFlightDuration,
+                                        rightText: currentB.safeFlightDuration,
+                                        leftWins: compareWins(parseMins(currentA.flightDuration), parseMins(currentB.flightDuration), lowerIsBetter: true),
+                                        rightWins: compareWins(parseMins(currentB.flightDuration), parseMins(currentA.flightDuration), lowerIsBetter: true),
+                                        rowIndex: 1
+                                    )
+                                    boardRow(
+                                        metric: "STOPS",
+                                        leftText: currentA.stopsLabel.isEmpty ? "--" : currentA.stopsLabel,
+                                        rightText: currentB.stopsLabel.isEmpty ? "--" : currentB.stopsLabel,
+                                        leftWins: compareWins(effectiveStops(currentA), effectiveStops(currentB), lowerIsBetter: true),
+                                        rightWins: compareWins(effectiveStops(currentB), effectiveStops(currentA), lowerIsBetter: true),
+                                        rowIndex: 2
+                                    )
+                                    boardRow(
+                                        metric: "NIGHTS",
+                                        leftText: currentA.tripDurationDays.map { "\($0)d" } ?? "--",
+                                        rightText: currentB.tripDurationDays.map { "\($0)d" } ?? "--",
+                                        leftWins: compareWins(currentA.tripDurationDays, currentB.tripDurationDays, lowerIsBetter: false),
+                                        rightWins: compareWins(currentB.tripDurationDays, currentA.tripDurationDays, lowerIsBetter: false),
+                                        rowIndex: 3
+                                    )
+                                    boardRow(
+                                        metric: "SAVINGS",
+                                        leftText: currentA.savingsLabel ?? "--",
+                                        rightText: currentB.savingsLabel ?? "--",
+                                        leftWins: false,
+                                        rightWins: false,
+                                        rowIndex: 4
+                                    )
+                                    boardRow(
+                                        metric: "AIRLINE",
+                                        leftText: currentA.airlineName,
+                                        rightText: currentB.airlineName,
+                                        leftWins: false,
+                                        rightWins: false,
+                                        rowIndex: 5
+                                    )
+                                    boardRow(
+                                        metric: "TEMP",
+                                        leftText: currentA.averageTemp.map { Deal.formatTemp($0, metric: settingsStore.usesMetric) } ?? "--",
+                                        rightText: currentB.averageTemp.map { Deal.formatTemp($0, metric: settingsStore.usesMetric) } ?? "--",
+                                        leftWins: false,
+                                        rightWins: false,
+                                        rowIndex: 6
+                                    )
+                                }
+                            }
+                        }
+                        .padding(.horizontal, Spacing.md)
+
+                        // Swipe hint
+                        if pairs.count > 1 {
+                            Text("Swipe left or right to compare other pairs")
+                                .sgFont(.caption)
+                                .foregroundStyle(Color.sgFaint)
+                        }
                     }
+                    .padding(.vertical, Spacing.md)
+                    .padding(.bottom, Spacing.xl)
                 }
-                .padding(.horizontal, Spacing.md)
-                .padding(.bottom, Spacing.xl)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            guard pairs.count > 1 else { return }
+                            dragOffset = value.translation.width
+                        }
+                        .onEnded { value in
+                            guard pairs.count > 1 else { return }
+                            let threshold: CGFloat = 60
+                            if value.translation.width < -threshold && pairIndex < pairs.count - 1 {
+                                HapticEngine.selection()
+                                withAnimation(SGSpring.snappy) {
+                                    pairIndex += 1
+                                }
+                                resetRowAnimation()
+                            } else if value.translation.width > threshold && pairIndex > 0 {
+                                HapticEngine.selection()
+                                withAnimation(SGSpring.snappy) {
+                                    pairIndex -= 1
+                                }
+                                resetRowAnimation()
+                            }
+                            withAnimation(SGSpring.snappy) {
+                                dragOffset = 0
+                            }
+                        }
+                )
+                .offset(x: dragOffset * 0.15)
             }
-            .background(Color.sgBg)
             .navigationTitle("Compare")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -48,242 +166,191 @@ struct CompareView: View {
             }
             .toolbarBackground(Color.sgSurface, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .onAppear {
+                // Find initial pair index matching dealA
+                if let idx = pairs.firstIndex(where: { $0.0.id == dealA.id || $0.1.id == dealA.id }) {
+                    pairIndex = idx
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    animateRows = true
+                    HapticEngine.flapSettle(count: 7, staggerMs: 40)
+                }
+            }
         }
     }
 
-    // MARK: - Header Row
+    // MARK: - Paging Indicator
 
-    private var headerRow: some View {
-        HStack(alignment: .top, spacing: Spacing.sm) {
-            destinationHeader(dealA)
-            destinationHeader(dealB)
+    private var pagingIndicator: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<pairs.count, id: \.self) { i in
+                Capsule()
+                    .fill(i == pairIndex ? Color.sgYellow : Color.sgFaint)
+                    .frame(width: i == pairIndex ? 18 : 6, height: 6)
+                    .animation(SGSpring.snappy, value: pairIndex)
+            }
         }
-        .padding(.top, Spacing.md)
+        .padding(.top, Spacing.xs)
+    }
+
+    // MARK: - Board Header Row
+
+    private var boardHeaderRow: some View {
+        HStack(spacing: 0) {
+            destinationHeader(currentA)
+
+            // Center divider with board label
+            VStack(spacing: 4) {
+                Text("VS")
+                    .sgFont(.micro)
+                    .foregroundStyle(Color.sgYellow)
+                    .tracking(2)
+                Rectangle()
+                    .fill(Color.sgHairline)
+                    .frame(width: 1)
+                    .frame(maxHeight: .infinity)
+            }
+            .frame(width: 44)
+
+            destinationHeader(currentB)
+        }
+        .frame(height: 130)
+        .animation(SGSpring.snappy, value: pairIndex)
     }
 
     private func destinationHeader(_ deal: Deal) -> some View {
-        VStack(spacing: Spacing.sm) {
+        VStack(spacing: Spacing.xs) {
             CachedAsyncImage(url: deal.imageUrl) {
                 RoundedRectangle(cornerRadius: Radius.sm)
                     .fill(Color.sgSurface)
                     .overlay {
                         Text(deal.city.prefix(3).uppercased())
-                            .font(SGFont.display(size: 20))
+                            .sgFont(.cardTitle)
                             .foregroundStyle(Color.sgMuted.opacity(0.4))
                     }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 120)
+            .frame(height: 80)
             .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
 
-            VStack(spacing: 2) {
-                Text(deal.city.uppercased())
-                    .font(SGFont.bodyBold(size: 14))
-                    .foregroundStyle(Color.sgWhite)
-                    .lineLimit(1)
+            Text(deal.city.uppercased())
+                .sgFont(.micro)
+                .foregroundStyle(Color.sgWhite)
+                .lineLimit(1)
 
-                Text(deal.country.uppercased())
-                    .font(SGFont.body(size: 11))
-                    .foregroundStyle(Color.sgMuted)
-                    .lineLimit(1)
-            }
+            Text(deal.country.uppercased())
+                .font(SGFont.body(size: 10))
+                .foregroundStyle(Color.sgMuted)
+                .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(deal.city), \(deal.country)")
     }
 
-    // MARK: - Metric Rows
+    // MARK: - Board Row (split-flap style)
 
-    private var priceRow: some View {
-        let priceA = dealA.displayPrice
-        let priceB = dealB.displayPrice
-        let winA = compareOptional(priceA, priceB, lowerIsBetter: true)
-        let winB = compareOptional(priceB, priceA, lowerIsBetter: true)
-
-        return metricRow(
-            label: "Price",
-            leftValue: dealA.hasPrice ? dealA.priceFormatted : "--",
-            rightValue: dealB.hasPrice ? dealB.priceFormatted : "--",
-            leftWins: winA,
-            rightWins: winB
-        )
-    }
-
-    private var flightDurationRow: some View {
-        let minsA = parseDurationMinutes(dealA.flightDuration)
-        let minsB = parseDurationMinutes(dealB.flightDuration)
-        let winA = compareOptional(minsA, minsB, lowerIsBetter: true)
-        let winB = compareOptional(minsB, minsA, lowerIsBetter: true)
-
-        return metricRow(
-            label: "Flight",
-            leftValue: dealA.safeFlightDuration,
-            rightValue: dealB.safeFlightDuration,
-            leftWins: winA,
-            rightWins: winB
-        )
-    }
-
-    private var stopsRow: some View {
-        let stopsA = effectiveStops(dealA)
-        let stopsB = effectiveStops(dealB)
-        let winA = compareOptional(stopsA, stopsB, lowerIsBetter: true)
-        let winB = compareOptional(stopsB, stopsA, lowerIsBetter: true)
-
-        return metricRow(
-            label: "Stops",
-            leftValue: dealA.stopsLabel.isEmpty ? "--" : dealA.stopsLabel,
-            rightValue: dealB.stopsLabel.isEmpty ? "--" : dealB.stopsLabel,
-            leftWins: winA,
-            rightWins: winB
-        )
-    }
-
-    private var tripDurationRow: some View {
-        let daysA = dealA.tripDurationDays
-        let daysB = dealB.tripDurationDays
-        // Longer trip is "better" (more vacation)
-        let winA = compareOptional(daysA, daysB, lowerIsBetter: false)
-        let winB = compareOptional(daysB, daysA, lowerIsBetter: false)
-
-        return metricRow(
-            label: "Trip length",
-            leftValue: daysA.map { "\($0) days" } ?? "--",
-            rightValue: daysB.map { "\($0) days" } ?? "--",
-            leftWins: winA,
-            rightWins: winB
-        )
-    }
-
-    private var bestMonthsRow: some View {
-        let leftMonths = dealA.bestMonths?.prefix(3).joined(separator: ", ") ?? "--"
-        let rightMonths = dealB.bestMonths?.prefix(3).joined(separator: ", ") ?? "--"
-        // No winner for best months — just informational
-        return metricRow(
-            label: "Best months",
-            leftValue: leftMonths,
-            rightValue: rightMonths,
-            leftWins: false,
-            rightWins: false
-        )
-    }
-
-    private var averageTempRow: some View {
-        // No clear "better" for temperature — just informational
-        return metricRow(
-            label: "Avg temp",
-            leftValue: dealA.averageTemp.map { Deal.formatTemp($0, metric: settingsStore.usesMetric) } ?? "--",
-            rightValue: dealB.averageTemp.map { Deal.formatTemp($0, metric: settingsStore.usesMetric) } ?? "--",
-            leftWins: false,
-            rightWins: false
-        )
-    }
-
-    private var vibeTagsRow: some View {
-        let leftVibes = dealA.safeVibeTags.prefix(3).joined(separator: ", ")
-        let rightVibes = dealB.safeVibeTags.prefix(3).joined(separator: ", ")
-
-        return metricRow(
-            label: "Vibes",
-            leftValue: leftVibes.isEmpty ? "--" : leftVibes,
-            rightValue: rightVibes.isEmpty ? "--" : rightVibes,
-            leftWins: false,
-            rightWins: false
-        )
-    }
-
-    private var airlineRow: some View {
-        return metricRow(
-            label: "Airline",
-            leftValue: dealA.airlineName,
-            rightValue: dealB.airlineName,
-            leftWins: false,
-            rightWins: false
-        )
-    }
-
-    // MARK: - Generic Metric Row
-
-    private func metricRow(
-        label: String,
-        leftValue: String,
-        rightValue: String,
+    private func boardRow(
+        metric: String,
+        leftText: String,
+        rightText: String,
         leftWins: Bool,
-        rightWins: Bool
+        rightWins: Bool,
+        rowIndex: Int
     ) -> some View {
-        HStack(spacing: 0) {
-            // Left value
-            Text(leftValue)
-                .font(SGFont.bodyBold(size: 13))
-                .foregroundStyle(leftWins ? Color.sgDealAmazing : Color.sgWhite)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.vertical, 10)
-                .padding(.horizontal, Spacing.sm)
-                .background(leftWins ? Color.sgDealAmazing.opacity(0.08) : Color.clear)
+        let delay = SGSpring.cascadeDelay(index: rowIndex, staggerMs: 45)
 
-            // Center label
-            Text(label.uppercased())
-                .font(SGFont.body(size: 10))
+        return HStack(spacing: 0) {
+            // Left flap cell
+            flapCell(
+                text: leftText,
+                wins: leftWins,
+                alignment: .trailing,
+                rowIndex: rowIndex,
+                delay: delay
+            )
+
+            // Center metric label
+            Text(metric)
+                .font(SGFont.body(size: 9))
                 .foregroundStyle(Color.sgMuted)
-                .tracking(0.5)
-                .frame(width: 80)
+                .tracking(0.8)
+                .frame(width: 52)
                 .multilineTextAlignment(.center)
-                .padding(.vertical, 10)
+                .padding(.vertical, 11)
+                .background(Color.sgSurfaceElevated)
 
-            // Right value
-            Text(rightValue)
-                .font(SGFont.bodyBold(size: 13))
-                .foregroundStyle(rightWins ? Color.sgDealAmazing : Color.sgWhite)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 10)
-                .padding(.horizontal, Spacing.sm)
-                .background(rightWins ? Color.sgDealAmazing.opacity(0.08) : Color.clear)
+            // Right flap cell
+            flapCell(
+                text: rightText,
+                wins: rightWins,
+                alignment: .leading,
+                rowIndex: rowIndex,
+                delay: delay
+            )
         }
-        .background(Color.sgSurface.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: Radius.sm))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(label): \(leftValue) versus \(rightValue)")
+        .accessibilityLabel("\(metric): \(leftText) versus \(rightText)")
+    }
+
+    private func flapCell(
+        text: String,
+        wins: Bool,
+        alignment: HorizontalAlignment,
+        rowIndex: Int,
+        delay: Double
+    ) -> some View {
+        SplitFlapText(
+            text: text,
+            style: .ticker,
+            maxLength: 10,
+            animate: animateRows,
+            startDelay: delay
+        )
+        .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
+        .padding(.vertical, 9)
+        .padding(.horizontal, Spacing.sm)
+        .background(wins ? Color.sgDealAmazing.opacity(0.10) : Color.sgSurface.opacity(0.5))
+        .overlay(alignment: alignment == .trailing ? .leading : .trailing) {
+            if wins {
+                Rectangle()
+                    .fill(Color.sgDealAmazing)
+                    .frame(width: 2)
+            }
+        }
     }
 
     // MARK: - Helpers
 
-    /// Compare two optional numeric values. Returns true if `a` wins.
-    private func compareOptional<T: Comparable>(_ a: T?, _ b: T?, lowerIsBetter: Bool) -> Bool {
-        guard let a = a, let b = b else { return false }
-        if a == b { return false }
+    private func resetRowAnimation() {
+        animateRows = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            animateRows = true
+            HapticEngine.flapSettle(count: 7, staggerMs: 40)
+        }
+    }
+
+    private func compareWins<T: Comparable>(_ a: T?, _ b: T?, lowerIsBetter: Bool) -> Bool {
+        guard let a, let b, a != b else { return false }
         return lowerIsBetter ? a < b : a > b
     }
 
-    /// Parse flight duration string like "9h 30m" or "7h 10m" to minutes.
-    private func parseDurationMinutes(_ duration: String?) -> Int? {
-        guard let duration = duration else { return nil }
-        var totalMinutes = 0
+    private func parseMins(_ duration: String?) -> Int? {
+        guard let duration else { return nil }
+        var total = 0
         var found = false
-
-        // Match hours
-        if let hRange = duration.range(of: #"(\d+)\s*h"#, options: .regularExpression) {
-            let numStr = duration[hRange].filter(\.isNumber)
-            if let h = Int(numStr) {
-                totalMinutes += h * 60
-                found = true
-            }
+        if let h = duration.range(of: #"(\d+)\s*h"#, options: .regularExpression) {
+            if let v = Int(duration[h].filter(\.isNumber)) { total += v * 60; found = true }
         }
-        // Match minutes
-        if let mRange = duration.range(of: #"(\d+)\s*m"#, options: .regularExpression) {
-            let numStr = duration[mRange].filter(\.isNumber)
-            if let m = Int(numStr) {
-                totalMinutes += m
-                found = true
-            }
+        if let m = duration.range(of: #"(\d+)\s*m"#, options: .regularExpression) {
+            if let v = Int(duration[m].filter(\.isNumber)) { total += v; found = true }
         }
-        return found ? totalMinutes : nil
+        return found ? total : nil
     }
 
-    /// Effective stops count for comparison. Nonstop = 0.
     private func effectiveStops(_ deal: Deal) -> Int? {
-        if deal.isNonstop == true { return 0 }
-        return deal.totalStops
+        deal.isNonstop == true ? 0 : deal.totalStops
     }
 }
 
@@ -306,14 +373,12 @@ struct ComparePickerView: View {
                         .padding(.horizontal, Spacing.md)
                         .padding(.top, Spacing.sm)
 
-                    // Selection slots
                     HStack(spacing: Spacing.sm) {
                         selectionSlot(label: "First", deal: selectedA)
                         selectionSlot(label: "Second", deal: selectedB)
                     }
                     .padding(.horizontal, Spacing.md)
 
-                    // Deal list
                     LazyVStack(spacing: 2) {
                         ForEach(deals) { deal in
                             pickerRow(deal)
@@ -425,7 +490,6 @@ struct ComparePickerView: View {
                     }
                 }
 
-                // Selection indicator
                 ZStack {
                     Circle()
                         .strokeBorder(isSelected ? Color.sgYellow : Color.sgBorder, lineWidth: 1.5)
@@ -448,24 +512,11 @@ struct ComparePickerView: View {
     }
 
     private func handleSelection(_ deal: Deal) {
-        // If already selected, deselect
-        if selectedA?.id == deal.id {
-            selectedA = nil
-            return
-        }
-        if selectedB?.id == deal.id {
-            selectedB = nil
-            return
-        }
-        // Fill first empty slot
-        if selectedA == nil {
-            selectedA = deal
-        } else if selectedB == nil {
-            selectedB = deal
-        } else {
-            // Both full — replace the second
-            selectedB = deal
-        }
+        if selectedA?.id == deal.id { selectedA = nil; return }
+        if selectedB?.id == deal.id { selectedB = nil; return }
+        if selectedA == nil { selectedA = deal }
+        else if selectedB == nil { selectedB = deal }
+        else { selectedB = deal }
     }
 }
 
@@ -473,6 +524,8 @@ struct ComparePickerView: View {
 
 #Preview("Compare View") {
     CompareView(dealA: .preview, dealB: .previewNonstop)
+        .environment(SettingsStore())
+        .environment(SavedStore())
 }
 
 #Preview("Compare Picker") {

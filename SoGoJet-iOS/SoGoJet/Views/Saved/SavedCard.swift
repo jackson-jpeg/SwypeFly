@@ -3,12 +3,19 @@ import SwiftUI
 // MARK: - Saved Card
 // Photo-forward grid card — mini version of the feed's DealCard.
 // Full-bleed destination photo with bottom gradient overlay for text.
+// Supports cascade entrance animation via `cardIndex` + `appeared` flag.
 
 struct SavedCard: View {
     let deal: Deal
     var onTap: () -> Void = {}
     var onBook: () -> Void = {}
     var onRemove: () -> Void = {}
+    /// Index in the grid — drives stagger delay for entrance cascade.
+    var cardIndex: Int = 0
+    /// Set to true after the grid appears to trigger the entrance spring.
+    var appeared: Bool = true
+
+    @State private var isVisible = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -153,6 +160,28 @@ struct SavedCard: View {
             HapticEngine.light()
             onTap()
         }
+        // Cascade entrance animation
+        .opacity(isVisible ? 1 : 0)
+        .scaleEffect(isVisible ? 1 : 0.88)
+        .offset(y: isVisible ? 0 : 16)
+        .onAppear {
+            guard appeared else {
+                isVisible = true
+                return
+            }
+            let reduceMotion = UIAccessibility.isReduceMotionEnabled
+            let delay = reduceMotion ? 0 : SGSpring.cascadeDelay(
+                index: cardIndex,
+                staggerMs: SGDuration.instant * 1000
+            )
+            withAnimation(
+                reduceMotion
+                    ? .easeOut(duration: SGDuration.fast).delay(delay)
+                    : SGSpring.silky.delay(delay)
+            ) {
+                isVisible = true
+            }
+        }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Cap scaling — tight grid cards
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(deal.destination), \(deal.country), \(deal.priceFormatted)")
@@ -179,8 +208,8 @@ struct SavedCard: View {
         GridItem(.flexible(), spacing: Spacing.sm),
         GridItem(.flexible(), spacing: Spacing.sm),
     ], spacing: Spacing.sm) {
-        SavedCard(deal: .preview)
-        SavedCard(deal: .previewNonstop)
+        SavedCard(deal: .preview, cardIndex: 0)
+        SavedCard(deal: .previewNonstop, cardIndex: 1)
     }
     .padding(Spacing.md)
     .background(Color.sgBg)

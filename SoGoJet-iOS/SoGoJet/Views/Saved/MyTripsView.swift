@@ -1,7 +1,9 @@
 import SwiftUI
 
 // MARK: - My Trips View
-// Displays booking history split into upcoming and past sections.
+// Phase 4: horizontal ticker rail at the top showing upcoming trips
+// with flapping live countdown ("PARIS · DEPARTS 42D 06H 14M"),
+// updated every 60s via TimelineView(.periodic).
 
 struct MyTripsView: View {
     @Environment(BookingHistoryStore.self) private var historyStore
@@ -41,6 +43,11 @@ struct MyTripsView: View {
 
     private var bookingList: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
+            // Ticker rail — upcoming trips with live countdown
+            if !historyStore.upcomingBookings.isEmpty {
+                upcomingTickerRail
+            }
+
             if !historyStore.upcomingBookings.isEmpty {
                 sectionHeader("Upcoming")
                 ForEach(historyStore.upcomingBookings) { booking in
@@ -62,6 +69,73 @@ struct MyTripsView: View {
                         }
                 }
             }
+        }
+    }
+
+    // MARK: - Ticker Rail
+
+    /// Horizontal scrollable rail showing split-flap countdowns for upcoming trips.
+    /// TimelineView fires every 60 seconds so the countdown stays fresh.
+    private var upcomingTickerRail: some View {
+        TimelineView(.periodic(from: Date(), by: 60)) { timeline in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.sm) {
+                    ForEach(historyStore.upcomingBookings.prefix(6)) { booking in
+                        tickerPill(booking: booking, now: timeline.date)
+                    }
+                }
+                .padding(.horizontal, Spacing.xs)
+                .padding(.vertical, Spacing.xs)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Upcoming trips ticker")
+    }
+
+    private func tickerPill(booking: BookingHistoryItem, now: Date) -> some View {
+        let countdown = countdownString(from: now, to: booking.departureDate)
+        let label = "\(booking.destinationIata) · DEPARTS \(countdown)"
+
+        return SGCard(elevation: .lifted, padding: 0) {
+            HStack(spacing: Spacing.xs) {
+                Image(systemName: "airplane.departure")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.sgYellow)
+                    .accessibilityHidden(true)
+
+                SplitFlapText(
+                    text: label,
+                    style: .ticker,
+                    maxLength: label.count + 2,
+                    animate: true
+                )
+            }
+            .padding(.horizontal, Spacing.sm)
+            .padding(.vertical, Spacing.xs + 2)
+        }
+        .fixedSize()
+        .accessibilityLabel("Flight to \(booking.destinationCity), departs in \(countdown)")
+        .onTapGesture {
+            HapticEngine.selection()
+            selectedBooking = booking
+        }
+    }
+
+    /// Produces a compact countdown string like "42D 06H 14M".
+    private func countdownString(from now: Date, to departure: Date) -> String {
+        let interval = departure.timeIntervalSince(now)
+        guard interval > 0 else { return "NOW" }
+        let totalSeconds = Int(interval)
+        let days = totalSeconds / 86400
+        let hours = (totalSeconds % 86400) / 3600
+        let minutes = (totalSeconds % 3600) / 60
+
+        if days > 0 {
+            return String(format: "%dD %02dH %02dM", days, hours, minutes)
+        } else if hours > 0 {
+            return String(format: "%dH %02dM", hours, minutes)
+        } else {
+            return String(format: "%dM", max(minutes, 1))
         }
     }
 
