@@ -39,17 +39,22 @@ struct DepartureBoardProvider: TimelineProvider {
 
             if allFlights.isEmpty {
                 // API failed — rotate samples so widget still feels alive
-                let rowCount = family == .systemLarge ? 5 : 3
+                let fallbackRowCount: Int
+                switch family {
+                case .systemSmall:  fallbackRowCount = 1
+                case .systemLarge:  fallbackRowCount = 5
+                default:            fallbackRowCount = 3
+                }
                 let samples = WidgetFlight.samples
                 var fallbackEntries: [FlightEntry] = []
                 let now = Date()
                 for offset in 0..<3 {
                     let entryDate = now.addingTimeInterval(Double(offset) * 300) // 5 min apart
-                    let rotated = Array(samples.dropFirst(offset).prefix(rowCount))
-                        + Array(samples.prefix(max(0, rowCount - (samples.count - offset))))
+                    let rotated = Array(samples.dropFirst(offset).prefix(fallbackRowCount))
+                        + Array(samples.prefix(max(0, fallbackRowCount - (samples.count - offset))))
                     fallbackEntries.append(FlightEntry(
                         date: entryDate,
-                        flights: Array(rotated.prefix(rowCount)),
+                        flights: Array(rotated.prefix(fallbackRowCount)),
                         departureCode: code
                     ))
                 }
@@ -62,7 +67,12 @@ struct DepartureBoardProvider: TimelineProvider {
             // WidgetKit coalesces rapid updates, so space them 3+ min apart.
             // With 12 flights and showing 3-5 at a time, this creates a
             // "scrolling departure board" effect throughout the hour.
-            let rowCount = family == .systemLarge ? 5 : 3
+            let rowCount: Int
+            switch family {
+            case .systemSmall:  rowCount = 1
+            case .systemLarge:  rowCount = 5
+            default:            rowCount = 3
+            }
             var entries: [FlightEntry] = []
             let now = Date()
             let rotationCount = max(allFlights.count / rowCount, 4)
@@ -106,7 +116,7 @@ struct DepartureBoardWidget: Widget {
         }
         .configurationDisplayName("Flight Deals")
         .description("Departure board showing estimated flight deals from your airport. Tap to see confirmed prices.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabled()
     }
 }
@@ -120,6 +130,8 @@ struct DepartureBoardEntryView: View {
     var body: some View {
         Group {
             switch family {
+            case .systemSmall:
+                SmallBoardView(entry: entry)
             case .systemLarge:
                 LargeBoardView(entry: entry)
             default:
@@ -131,6 +143,17 @@ struct DepartureBoardEntryView: View {
 }
 
 // MARK: - Previews
+
+#Preview("Small", as: .systemSmall) {
+    DepartureBoardWidget()
+} timeline: {
+    FlightEntry.snapshot
+    FlightEntry(
+        date: .now.addingTimeInterval(60),
+        flights: Array(WidgetFlight.samples.prefix(1)),
+        departureCode: "TPA"
+    )
+}
 
 #Preview("Medium", as: .systemMedium) {
     DepartureBoardWidget()

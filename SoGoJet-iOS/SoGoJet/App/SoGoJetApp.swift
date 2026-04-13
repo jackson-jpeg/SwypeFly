@@ -392,6 +392,9 @@ struct SoGoJetApp: App {
                 .onContinueUserActivity(ActivityTypes.board) { _ in
                     router.handleQuickAction(ActivityTypes.board)
                 }
+                .onContinueUserActivity(ActivityTypes.cheapest) { _ in
+                    router.handleQuickAction(ActivityTypes.cheapest)
+                }
                 .onContinueUserActivity(ActivityTypes.searchFlights) { _ in
                     router.handleQuickAction(ActivityTypes.search)
                 }

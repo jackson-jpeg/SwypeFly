@@ -122,6 +122,114 @@ struct FlightRow: View {
     }
 }
 
+// MARK: - Small Board (1 row — cheapest deal + countdown)
+//
+// Widgets can't run animations at full fidelity, so SplitFlapText falls back
+// to static rendered state here. We use the custom SplitFlapText (widget-local)
+// which never animates.
+
+struct SmallBoardView: View {
+    let entry: FlightEntry
+
+    // Small widget ~155x155pt
+    private let cw: CGFloat = 14
+    private let ch: CGFloat = 20
+    private let fs: CGFloat = 11
+
+    private var topFlight: WidgetFlight? { entry.flights.first }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header line
+            HStack(spacing: 3) {
+                Image(systemName: "airplane.departure")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(WD.gold)
+                Text(entry.departureCode)
+                    .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(WD.muted)
+                    .tracking(1)
+                Spacer()
+                Text("DEALS")
+                    .font(.system(size: 7, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(WD.muted.opacity(0.5))
+                    .tracking(1)
+            }
+
+            Spacer(minLength: 4)
+
+            if let flight = topFlight {
+                Link(destination: deepLink(for: flight)) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        // City name — full width
+                        SplitFlapText(text: flight.city, length: 8, color: WD.white,
+                                      w: cw, h: ch, fs: fs)
+
+                        // Price row
+                        HStack(spacing: 3) {
+                            Text("from")
+                                .font(.system(size: max(fs - 4, 6), weight: .medium))
+                                .foregroundStyle(WD.muted.opacity(0.6))
+                            SplitFlapText(text: "$\(flight.price)", length: 5,
+                                          color: priceColor(flight), w: cw, h: ch, fs: fs,
+                                          align: .trailing)
+                        }
+
+                        // Countdown label
+                        Text(countdownLabel)
+                            .font(.system(size: 8, weight: .medium, design: .monospaced))
+                            .foregroundStyle(WD.muted.opacity(0.5))
+                    }
+                }
+            } else {
+                // Placeholder rows
+                VStack(alignment: .leading, spacing: 5) {
+                    emptyRow(cw: cw, ch: ch, destLen: 8)
+                    emptyRow(cw: cw, ch: ch, destLen: 8)
+                }
+                .opacity(0.3)
+            }
+
+            Spacer(minLength: 2)
+
+            // Mini branding
+            HStack {
+                Spacer()
+                Text("SOGOJET")
+                    .font(.system(size: 5, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(WD.muted.opacity(0.25))
+                    .tracking(1.5)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(WD.bg)
+        // Subtle paper grain at low opacity for widget legibility
+        .overlay(
+            WD.bg.opacity(0.06)
+        )
+    }
+
+    private var countdownLabel: String {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.day, .hour], from: Date(), to: entry.date.addingTimeInterval(3600))
+        if let h = comps.hour, let d = comps.day {
+            if d > 0 { return "UPDATES IN \(d)D \(h)H" }
+            if h > 0 { return "UPDATES IN \(h)H" }
+        }
+        return "LIVE"
+    }
+
+    private func priceColor(_ flight: WidgetFlight) -> Color {
+        switch flight.dealTier {
+        case "amazing": return WD.green
+        case "great":   return WD.gold
+        default:        return WD.white
+        }
+    }
+}
+
 // MARK: - Medium Board (3 rows, fills entire widget)
 
 struct MediumBoardView: View {

@@ -68,7 +68,7 @@
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Search Flights</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>magnifyingglass</string>
+			<string>airplane.departure</string>
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemType</key>
@@ -84,7 +84,17 @@
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Departure Board</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>rectangle.split.3x1</string>
+			<string>rectangle.split.3x1.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.sogojet.cheapest</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Cheapest From Here</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Best deals from your airport</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>tag.fill</string>
 		</dict>
 	</array>
 	<key>CFBundleURLTypes</key>

@@ -2,8 +2,7 @@ import SwiftUI
 import AuthenticationServices
 
 // MARK: - Auth View
-// Beautiful split-flap themed sign-in screen.
-// Animated departure board welcomes the user before auth.
+// Split-flap themed sign-in screen with LivingBoard background.
 
 struct AuthView: View {
     @Environment(AuthStore.self) private var auth
@@ -19,12 +18,13 @@ struct AuthView: View {
 
     var body: some View {
         ZStack {
-            Color.sgBg.ignoresSafeArea()
+            // Living board behind everything
+            LivingBoardBackground()
 
             VStack(spacing: 0) {
                 Spacer()
 
-                // Animated split-flap title
+                // Brand mark
                 VStack(spacing: 16) {
                     SplitFlapRow(
                         text: "SOGOJET",
@@ -36,7 +36,6 @@ struct AuthView: View {
                         staggerMs: 60
                     )
 
-                    // Rotating word under the title
                     SplitFlapRow(
                         text: rotatingWords[currentWord],
                         maxLength: 8,
@@ -50,9 +49,8 @@ struct AuthView: View {
                 }
                 .padding(.bottom, 24)
 
-                // Tagline
                 Text(String(localized: "auth.tagline"))
-                    .font(SGFont.body(size: 17))
+                    .font(SGFont.accent(size: 17))
                     .foregroundStyle(Color.sgWhiteDim)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
@@ -63,7 +61,7 @@ struct AuthView: View {
                 // Auth buttons
                 if showButtons {
                     VStack(spacing: 12) {
-                        // Sign in with Apple
+                        // Sign in with Apple (native ASButton)
                         SignInWithAppleButton(.signIn) { request in
                             request.requestedScopes = [.fullName, .email]
                         } onCompletion: { result in
@@ -83,81 +81,65 @@ struct AuthView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .disabled(auth.isLoading)
 
-                        // Sign in with Google
-                        Button {
-                            HapticEngine.light()
-                            auth.signInWithGoogle()
-                        } label: {
-                            HStack(spacing: 10) {
+                        // Google — SGButton secondary
+                        SGButton(
+                            action: {
+                                HapticEngine.light()
+                                auth.signInWithGoogle()
+                            },
+                            style: .secondary,
+                            size: .regular,
+                            isEnabled: !auth.isLoading
+                        ) {
+                            HStack(spacing: Spacing.sm) {
                                 Image(systemName: "g.circle.fill")
-                                    .font(.system(size: 20))
+                                    .font(.system(size: 18))
                                 Text(String(localized: "auth.continue_google"))
-                                    .font(SGFont.bodyBold(size: 16))
                             }
-                            .foregroundStyle(Color.sgBg)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
-                        .buttonStyle(.plain)
-                        .disabled(auth.isLoading)
                         .accessibilityLabel("Sign in with Google")
 
-                        // Sign in with TikTok
-                        Button {
-                            HapticEngine.light()
-                            auth.signInWithTikTok()
-                        } label: {
-                            HStack(spacing: 10) {
+                        // TikTok — SGButton ghost
+                        SGButton(
+                            action: {
+                                HapticEngine.light()
+                                auth.signInWithTikTok()
+                            },
+                            style: .ghost,
+                            size: .regular,
+                            isEnabled: !auth.isLoading
+                        ) {
+                            HStack(spacing: Spacing.sm) {
                                 Image(systemName: "play.rectangle.fill")
-                                    .font(.system(size: 18))
+                                    .font(.system(size: 16))
                                 Text(String(localized: "auth.continue_tiktok"))
-                                    .font(SGFont.bodyBold(size: 16))
                             }
-                            .foregroundStyle(Color.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Color(red: 0.07, green: 0.07, blue: 0.07))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(Color.sgBorder, lineWidth: 1)
-                            )
                         }
-                        .buttonStyle(.plain)
-                        .disabled(auth.isLoading)
                         .accessibilityLabel("Sign in with TikTok")
 
-                        // Continue as guest
-                        Button {
-                            HapticEngine.light()
-                            auth.continueAsGuest()
-                            settings.hasOnboarded = true
-                        } label: {
+                        // Continue as guest — ghost
+                        SGButton(
+                            action: {
+                                HapticEngine.light()
+                                auth.continueAsGuest()
+                                settings.hasOnboarded = true
+                            },
+                            style: .ghost,
+                            size: .regular
+                        ) {
                             Text(String(localized: "auth.continue_guest"))
-                                .font(SGFont.bodyBold(size: 15))
-                                .foregroundStyle(Color.sgMuted)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 48)
-                                .background(Color.sgSurface)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .strokeBorder(Color.sgBorder, lineWidth: 1)
-                                )
                         }
-                        .buttonStyle(.plain)
                         .accessibilityLabel("Continue without signing in")
 
-                        // Loading indicator
                         if auth.isLoading {
                             ProgressView()
                                 .tint(Color.sgYellow)
                                 .padding(.top, 8)
                         }
 
-                        // Error message
                         if let error = auth.authError {
                             Text(error)
                                 .font(SGFont.body(size: 13))
@@ -172,7 +154,6 @@ struct AuthView: View {
 
                 Spacer().frame(height: 50)
 
-                // Terms
                 if showButtons {
                     HStack(spacing: 4) {
                         Text(String(localized: "auth.terms_prefix"))
@@ -192,9 +173,7 @@ struct AuthView: View {
                 }
             }
         }
-        .onAppear {
-            startAnimationSequence()
-        }
+        .onAppear { startAnimationSequence() }
         .onDisappear {
             cyclingTask?.cancel()
             cyclingTask = nil
@@ -204,20 +183,15 @@ struct AuthView: View {
     // MARK: - Animation Sequence
 
     private func startAnimationSequence() {
-        // Phase 1: Title flips in (0.3s delay)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             animateTitle = true
         }
-
-        // Phase 2: Rotating word starts (1s delay)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             animateSubtitle = true
             startWordRotation()
         }
-
-        // Phase 3: Buttons slide up (1.5s delay)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            withAnimation(SGSpring.silky) {
                 showButtons = true
             }
         }
@@ -235,7 +209,6 @@ struct AuthView: View {
             }
         }
     }
-
 }
 
 #Preview {

@@ -241,6 +241,8 @@ final class Router {
             handleQuickAction(ActivityTypes.saved)
         case "board":
             handleQuickAction(ActivityTypes.board)
+        case "cheapest":
+            handleQuickAction(ActivityTypes.cheapest)
         case "home":
             activeTab = .feed
         default:
@@ -351,10 +353,19 @@ final class Router {
         case ActivityTypes.board:
             activeTab = .feed
             // The board view is toggled via SettingsStore.preferredView
+        case ActivityTypes.cheapest:
+            // "Cheapest From Here" — switch to feed and signal cheapest-sort
+            activeTab = .feed
+            cheapestSortRequested = true
         default:
             break
         }
     }
+
+    // MARK: - Cheapest Sort Signal
+    // Set to true when the "Cheapest From Here" quick action fires.
+    // FeedView observes this and applies the price-asc sort preset.
+    var cheapestSortRequested: Bool = false
 
     private func presentFullScreen(_ destination: FullScreenDestination) {
         queuedPresentationTask?.cancel()

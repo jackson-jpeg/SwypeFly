@@ -13,6 +13,7 @@ struct OnboardingView: View {
     @State private var cyclingTask: Task<Void, Never>?
     @State private var liveShowcases: [OnboardingShowcase]?
     @State private var isPickingAirport = false
+    @State private var showPermissionBriefing = false
 
     private static let fallbackShowcases: [OnboardingShowcase] = [
         .init(code: "BCN", city: "BARCELONA", country: "Spain", price: "$287", vibe: "Culture"),
@@ -28,22 +29,25 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            // Living Board background
+            LivingBoardBackground()
+
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: Spacing.xl) {
                     welcomeHeader
                     dealPreview
                     airportSelection
+                    // Spacer for sticky button area
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, Spacing.xl)
-                .padding(.bottom, 160) // space for sticky buttons
+                .padding(.bottom, 200)
             }
             .scrollDismissesKeyboard(.interactively)
 
             // Sticky bottom — sign in options + start button
             VStack(spacing: 10) {
-                // Optional sign-in buttons (compact row)
                 signInOptions
                     .padding(.horizontal, Spacing.md)
 
@@ -52,7 +56,7 @@ struct OnboardingView: View {
             }
             .padding(.bottom, Spacing.md)
             .background(
-                Color.sgBg.opacity(0.95)
+                Color.sgBg.opacity(0.92)
                     .background(.ultraThinMaterial)
                     .ignoresSafeArea(edges: .bottom)
             )
@@ -60,15 +64,9 @@ struct OnboardingView: View {
         .background(Color.sgBg)
         .navigationTitle("")
         .navigationBarHidden(true)
-        .onAppear {
-            startCycling()
-        }
-        .onDisappear {
-            stopCycling()
-        }
+        .onAppear { startCycling() }
+        .onDisappear { stopCycling() }
         .task {
-            // Fetch curated top deals (sorted by deal_score) instead of
-            // whatever the generic feed returns first.
             do {
                 let response: TopDealsResponse = try await APIClient.shared.fetch(
                     .topDeals(origin: settings.departureCode, limit: 5)
@@ -86,7 +84,6 @@ struct OnboardingView: View {
                     }
                 }
             } catch {
-                // Fall back to feed deals if top-deals fails
                 await feedStore.fetchDeals(origin: settings.departureCode)
                 let fallbackDeals = feedStore.deals
                     .filter { !$0.city.isEmpty && $0.city.lowercased() != "unknown" && $0.displayPrice ?? 0 > 0 }
@@ -102,156 +99,10 @@ struct OnboardingView: View {
                         )
                     }
                 }
-                // If still no valid deals, fallbackShowcases will be used automatically
             }
         }
-    }
-
-    // MARK: - Welcome Header
-
-    private var welcomeHeader: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            SplitFlapRow(
-                text: "SOGOJET",
-                maxLength: 7,
-                size: .lg,
-                color: Color.sgWhite,
-                alignment: .leading,
-                animate: animateFlap,
-                staggerMs: 50
-            )
-
-            Text(String(localized: "auth.tagline"))
-                .font(SGFont.body(size: 17))
-                .foregroundStyle(Color.sgWhiteDim)
-                .lineSpacing(4)
-        }
-        .padding(.top, Spacing.lg)
-    }
-
-    // MARK: - Deal Preview
-
-    private var dealPreview: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text(liveShowcases != nil ? String(localized: "onboarding.live_deals") : String(localized: "onboarding.sample_deals"))
-                .font(SGFont.bodyBold(size: 11))
-                .foregroundStyle(Color.sgMuted)
-                .tracking(1.4)
-
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                SplitFlapRow(
-                    text: currentShowcase.city,
-                    maxLength: 12,
-                    size: .md,
-                    color: Color.sgWhite,
-                    alignment: .leading,
-                    animate: animateFlap,
-                    staggerMs: 34
-                )
-
-                HStack(spacing: Spacing.sm) {
-                    SplitFlapRow(
-                        text: currentShowcase.price,
-                        maxLength: 6,
-                        size: .md,
-                        color: Color.sgWhite,
-                        alignment: .leading,
-                        animate: animateFlap,
-                        startDelay: 0.12,
-                        staggerMs: 50
-                    )
-
-                    Text(String(format: String(localized: "onboarding.from_airport"), settings.departureCode))
-                        .font(SGFont.body(size: 13))
-                        .foregroundStyle(Color.sgMuted)
-                }
-
-                HStack(spacing: Spacing.sm) {
-                    dealChip(currentShowcase.code, color: Color.sgYellow)
-                    dealChip(currentShowcase.country, color: Color.sgWhiteDim)
-                    dealChip(currentShowcase.vibe, color: Color.sgGreen)
-                }
-            }
-            .padding(Spacing.md)
-            .background(Color.sgSurface)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg)
-                    .strokeBorder(Color.sgBorder, lineWidth: 1)
-            )
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Deal board showing \(currentShowcase.city) for \(currentShowcase.price) from \(settings.departureCode)")
-    }
-
-    private func dealChip(_ text: String, color: Color) -> some View {
-        Text(text)
-            .font(SGFont.bodyBold(size: 11))
-            .foregroundStyle(color)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(Color.sgBg)
-            .clipShape(Capsule())
-            .overlay(
-                Capsule().strokeBorder(Color.sgBorder, lineWidth: 1)
-            )
-    }
-
-    // MARK: - Airport Selection
-
-    private var airportSelection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(String(localized: "onboarding.where_fly_from"))
-                .font(SGFont.bodyBold(size: 11))
-                .foregroundStyle(Color.sgMuted)
-                .tracking(1.4)
-
-            Button {
-                HapticEngine.selection()
-                isPickingAirport = true
-            } label: {
-                HStack(alignment: .center, spacing: Spacing.md) {
-                    SplitFlapRow(
-                        text: settings.departureCode.isEmpty ? "---" : settings.departureCode,
-                        maxLength: 3,
-                        size: .lg,
-                        color: Color.sgYellow,
-                        alignment: .leading,
-                        animate: true,
-                        staggerMs: 28
-                    )
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(settings.departureCity.isEmpty ? "Choose departure airport" : settings.departureCity)
-                            .font(SGFont.bodyBold(size: 15))
-                            .foregroundStyle(Color.sgWhite)
-                            .lineLimit(1)
-                        Text(settings.departureCode.isEmpty ? "Tap to select" : "Tap to change")
-                            .font(SGFont.body(size: 11))
-                            .foregroundStyle(Color.sgMuted)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.sgFaint)
-                }
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.md)
-                .background(Color.sgSurfaceElevated)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
-                        .strokeBorder(Color.sgHairline, lineWidth: 0.5)
-                )
-                .sgShadow(.lift)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Departure airport: \(settings.departureCity.isEmpty ? "not selected" : settings.departureCity)")
-            .accessibilityHint("Opens airport picker")
-        }
-        .sheet(isPresented: $isPickingAirport) {
+        // Airport picker sheet — migrated to sgSheet
+        .sgSheet(isPresented: $isPickingAirport, configuration: SGSheetConfiguration(detents: [.large])) {
             NavigationStack {
                 AirportPicker(
                     selectedCode: Binding(
@@ -270,13 +121,143 @@ struct OnboardingView: View {
                     }
                 }
             }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color.sgBg)
+        }
+        // Permission briefing sheet
+        .sgSheet(isPresented: $showPermissionBriefing, configuration: SGSheetConfiguration(detents: [.medium])) {
+            PermissionBriefingSheet()
         }
     }
 
-    // MARK: - Sign In Options
+    // MARK: - Welcome Header
+
+    private var welcomeHeader: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            // Brand mark in elevated card with shimmer
+            SGCard(elevation: .hero, shimmer: !reduceMotion) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    SplitFlapText(
+                        text: "SOGOJET",
+                        style: .headline,
+                        maxLength: 7,
+                        animate: animateFlap,
+                        hapticOnSettle: true
+                    )
+
+                    Text(String(localized: "auth.tagline"))
+                        .font(SGFont.accent(size: 15))
+                        .foregroundStyle(Color.sgWhiteDim)
+                        .lineSpacing(4)
+                }
+            }
+            .padding(.top, Spacing.lg)
+        }
+    }
+
+    // MARK: - Deal Preview
+
+    private var dealPreview: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text(liveShowcases != nil ? String(localized: "onboarding.live_deals") : String(localized: "onboarding.sample_deals"))
+                .font(SGFont.bodyBold(size: 11))
+                .foregroundStyle(Color.sgMuted)
+                .tracking(1.4)
+
+            SGCard(elevation: .lifted) {
+                VStack(alignment: .leading, spacing: Spacing.md) {
+                    SplitFlapText(
+                        text: currentShowcase.city,
+                        style: .ticker,
+                        maxLength: 12,
+                        animate: animateFlap
+                    )
+
+                    HStack(spacing: Spacing.sm) {
+                        SplitFlapText(
+                            text: currentShowcase.price,
+                            style: .price,
+                            maxLength: 6,
+                            animate: animateFlap,
+                            startDelay: 0.12
+                        )
+
+                        Text(String(format: String(localized: "onboarding.from_airport"), settings.departureCode))
+                            .font(SGFont.body(size: 13))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+
+                    HStack(spacing: Spacing.sm) {
+                        dealChip(currentShowcase.code, color: Color.sgYellow)
+                        dealChip(currentShowcase.country, color: Color.sgWhiteDim)
+                        dealChip(currentShowcase.vibe, color: Color.sgGreen)
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Deal board showing \(currentShowcase.city) for \(currentShowcase.price) from \(settings.departureCode)")
+    }
+
+    private func dealChip(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(SGFont.bodyBold(size: 11))
+            .foregroundStyle(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color.sgBg)
+            .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(Color.sgBorder, lineWidth: 1))
+    }
+
+    // MARK: - Airport Selection (compact tap-to-open row)
+
+    private var airportSelection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text(String(localized: "onboarding.where_fly_from"))
+                .font(SGFont.bodyBold(size: 11))
+                .foregroundStyle(Color.sgMuted)
+                .tracking(1.4)
+
+            Button {
+                HapticEngine.selection()
+                isPickingAirport = true
+            } label: {
+                SGCard(elevation: .lifted) {
+                    HStack(alignment: .center, spacing: Spacing.md) {
+                        // IATA flap — headline size
+                        SplitFlapText(
+                            text: settings.departureCode.isEmpty ? "---" : settings.departureCode,
+                            style: .headline,
+                            maxLength: 3,
+                            animate: true
+                        )
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(settings.departureCity.isEmpty ? "Choose departure airport" : settings.departureCity)
+                                .font(SGFont.bodyBold(size: 15))
+                                .foregroundStyle(Color.sgWhite)
+                                .lineLimit(1)
+
+                            // "TAP TO CHANGE" affordance using tag-style flap
+                            SplitFlapText(
+                                text: settings.departureCode.isEmpty ? "TAP TO SELECT" : "TAP TO CHANGE",
+                                style: .tag,
+                                maxLength: 14,
+                                animate: true
+                            )
+                        }
+
+                        Spacer(minLength: 0)
+                    }
+                }
+                .sgShadow(.lift)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Departure airport: \(settings.departureCity.isEmpty ? "not selected" : settings.departureCity)")
+            .accessibilityHint("Opens airport picker")
+        }
+    }
+
+    // MARK: - Sign In Options (SGButton variants)
 
     private var signInOptions: some View {
         VStack(spacing: 8) {
@@ -285,71 +266,53 @@ struct OnboardingView: View {
                     .font(SGFont.body(size: 12))
                     .foregroundStyle(Color.sgMuted)
 
-                HStack(spacing: 8) {
-                    // Apple
-                    Button {
-                        auth.signInWithApple()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "apple.logo")
-                                .font(.system(size: 13))
-                            Text("Apple")
-                                .font(SGFont.bodyBold(size: 13))
-                        }
-                        .foregroundStyle(Color.sgBg)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(Color.sgWhite)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                // Apple — secondary full-width
+                SGButton(
+                    action: { auth.signInWithApple() },
+                    style: .secondary,
+                    size: .regular,
+                    isEnabled: !auth.isLoading
+                ) {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Continue with Apple")
                     }
-                    .buttonStyle(.plain)
-                    .disabled(auth.isLoading)
-                    .accessibilityLabel("Sign in with Apple")
-
-                    // Google
-                    Button {
-                        auth.signInWithGoogle()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "g.circle.fill")
-                                .font(.system(size: 13))
-                            Text("Google")
-                                .font(SGFont.bodyBold(size: 13))
-                        }
-                        .foregroundStyle(Color.sgBg)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(Color.sgWhite)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(auth.isLoading)
-                    .accessibilityLabel("Sign in with Google")
-
-                    // TikTok
-                    Button {
-                        auth.signInWithTikTok()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.system(size: 11))
-                            Text("TikTok")
-                                .font(SGFont.bodyBold(size: 13))
-                        }
-                        .foregroundStyle(Color.sgWhite)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(Color.sgSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .strokeBorder(Color.sgBorder, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(auth.isLoading)
-                    .accessibilityLabel("Sign in with TikTok")
+                    .frame(maxWidth: .infinity)
                 }
+                .accessibilityLabel("Sign in with Apple")
+
+                // Google — secondary full-width
+                SGButton(
+                    action: { auth.signInWithGoogle() },
+                    style: .secondary,
+                    size: .regular,
+                    isEnabled: !auth.isLoading
+                ) {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "g.circle.fill")
+                            .font(.system(size: 14))
+                        Text("Continue with Google")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .accessibilityLabel("Sign in with Google")
+
+                // TikTok — ghost
+                SGButton(
+                    action: { auth.signInWithTikTok() },
+                    style: .ghost,
+                    size: .regular,
+                    isEnabled: !auth.isLoading
+                ) {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 13))
+                        Text("Continue with TikTok")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .accessibilityLabel("Sign in with TikTok")
 
                 if auth.isLoading {
                     ProgressView()
@@ -366,7 +329,7 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: - CTA
+    // MARK: - CTA (SGButton primary prominent)
 
     private var getStartedButton: some View {
         VStack(spacing: 6) {
@@ -376,24 +339,29 @@ struct OnboardingView: View {
                     .foregroundStyle(Color.sgOrange)
             }
 
-            Button {
-                HapticEngine.success()
-                settings.hasOnboarded = true
-            } label: {
+            SGButton(
+                action: {
+                    // Show permission briefing before completing onboarding
+                    showPermissionBriefing = true
+                },
+                style: .primary,
+                size: .prominent,
+                isEnabled: !settings.departureCode.isEmpty
+            ) {
                 HStack(spacing: 8) {
                     Image(systemName: "airplane.departure")
                     Text(String(localized: "onboarding.start_exploring"))
-                        .font(SGFont.bodyBold(size: 17))
                 }
-                .foregroundStyle(Color.sgBg)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(settings.departureCode.isEmpty ? Color.sgYellow.opacity(0.4) : Color.sgYellow)
-                .clipShape(Capsule())
             }
-            .buttonStyle(.plain)
-            .disabled(settings.departureCode.isEmpty)
             .accessibilityLabel("Finish onboarding and start exploring deals")
+            // Complete onboarding once briefing is dismissed
+            .onChange(of: showPermissionBriefing) { _, showing in
+                if !showing && !settings.departureCode.isEmpty {
+                    HapticEngine.success()
+                    settings.hasOnboarded = true
+                }
+            }
         }
     }
 
@@ -450,9 +418,6 @@ private struct OnboardingShowcase {
 
 // MARK: - Top Deals API Response
 
-/// Matches the JSON returned by GET /api/top-deals?origin=XXX&limit=N
-/// Fields differ from the feed's Deal model (e.g. `iata` not `iataCode`,
-/// `price` not `flightPrice`), so we decode into a lightweight struct.
 struct TopDealsResponse: Codable, Sendable {
     let deals: [TopDeal]
     let total: Int?

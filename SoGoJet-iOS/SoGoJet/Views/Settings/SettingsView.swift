@@ -23,6 +23,7 @@ struct SettingsView: View {
     @State private var profileCreatedAt: String?
     @State private var showTravelers = false
     @State private var showPriceAlerts = false
+    @State private var showAppIconPicker = false
 
     // CRT easter egg
     @State private var showCRTOverlay = false
@@ -44,6 +45,7 @@ struct SettingsView: View {
                     }
 
                     settingsCard(title: "SAVED FLIGHTS") { savedContent }
+                    settingsCard(title: "APP ICON") { appIconContent }
                     settingsCard(title: "ABOUT") { aboutContent }
 
                     if auth.isAuthenticated {
@@ -548,6 +550,38 @@ struct SettingsView: View {
                 .opacity(savedStore.count == 0 ? 0.4 : 1)
                 .accessibilityLabel("Clear all saved flights")
             }
+        }
+    }
+
+    // MARK: - App Icon Content
+
+    private var appIconContent: some View {
+        Button {
+            HapticEngine.selection()
+            showAppIconPicker = true
+        } label: {
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "app.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.sgYellow)
+                    .frame(width: 20)
+                Text("Choose App Icon")
+                    .font(SGFont.bodyBold(size: 14))
+                    .foregroundStyle(Color.sgWhite)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.sgMuted)
+            }
+            .padding(.vertical, Spacing.xs)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Choose app icon")
+        .sgSheet(
+            isPresented: $showAppIconPicker,
+            configuration: SGSheetConfiguration(detents: [.large])
+        ) {
+            AppIconPickerView()
         }
     }
 

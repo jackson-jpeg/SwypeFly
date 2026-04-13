@@ -177,12 +177,65 @@ struct AirportPicker: View {
         }
     }
 
+    // MARK: - Ticker Results Header
+    // When user types, top-3 IATA codes flap into a horizontal ticker row.
+
+    private var tickerResultsHeader: some View {
+        let topThree = Array(filteredAirports.prefix(3))
+        return Group {
+            if !searchText.isEmpty && !topThree.isEmpty {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "text.magnifyingglass")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color.sgMuted)
+
+                    ForEach(topThree, id: \.code) { airport in
+                        SplitFlapText(
+                            text: airport.code,
+                            style: .tag,
+                            maxLength: 3,
+                            animate: true,
+                            animationID: airport.code.hashValue
+                        )
+                        .onTapGesture { selectAirport(airport) }
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.xs)
+                .background(Color.sgSurfaceElevated)
+                .overlay(
+                    Rectangle()
+                        .fill(Color.sgHairline)
+                        .frame(height: 0.5),
+                    alignment: .bottom
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+    }
+
     private var resultsPanel: some View {
-        VintageTerminalManifestCard(
-            title: searchText.isEmpty ? "All Airports" : "Search Results",
-            subtitle: resultsSubtitle,
-            tone: .ivory
-        ) {
+        VStack(spacing: 0) {
+            // Animated ticker of top-3 matches
+            tickerResultsHeader
+                .animation(SGSpring.snappy, value: searchText)
+
+            VintageTerminalManifestCard(
+                title: searchText.isEmpty ? "All Airports" : "Search Results",
+                subtitle: resultsSubtitle,
+                tone: .ivory
+            ) {
+                resultsContent
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.md)
+        }
+    }
+
+    private var resultsContent: some View {
+        Group {
             if filteredAirports.isEmpty {
                 VintageTerminalInfoRow(
                     icon: "magnifyingglass",
@@ -214,8 +267,6 @@ struct AirportPicker: View {
                 .frame(minHeight: 220, maxHeight: dismissOnSelection ? .infinity : 320)
             }
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.bottom, Spacing.md)
     }
 
     private func airportRow(_ airport: Airport) -> some View {

@@ -8,6 +8,8 @@ enum ActivityTypes {
     static let search = "com.sogojet.search"
     static let saved = "com.sogojet.saved"
     static let board = "com.sogojet.board"
+    /// "Cheapest From Here" — navigates to feed sorted by price ascending.
+    static let cheapest = "com.sogojet.cheapest"
 
     // MARK: Siri Shortcuts
     static let searchFlights = "com.sogojet.search-flights"
