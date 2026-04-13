@@ -45,6 +45,12 @@ jest.mock('../../api/_cors', () => ({
   cors: () => false,
 }));
 
+const mockCheckRateLimit = jest.fn().mockReturnValue({ allowed: true, remaining: 19, resetAt: Date.now() + 60000 });
+jest.mock('../../utils/rateLimit', () => ({
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getClientIp: jest.fn().mockReturnValue('127.0.0.1'),
+}));
+
 import handler from '../../api/leaderboard';
 
 function makeReq(query: Record<string, string> = {}, method = 'GET') {
@@ -76,6 +82,7 @@ function makeRes() {
 beforeEach(() => {
   mockResults.clear();
   mockFrom.mockClear();
+  mockCheckRateLimit.mockReturnValue({ allowed: true, remaining: 19, resetAt: Date.now() + 60000 });
 });
 
 describe('GET /api/leaderboard', () => {
@@ -161,5 +168,103 @@ describe('GET /api/leaderboard', () => {
     const body = res._json as any;
     expect(body.data.leaderboard.length).toBe(2);
     expect(body.data.total).toBe(3);
+  });
+
+  it('returns 429 when rate limited', async () => {
+    mockCheckRateLimit.mockReturnValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 30000 });
+    const res = makeRes();
+    await handler(makeReq(), res as unknown as VercelResponse);
+    expect(res._status).toBe(429);
+  });
+
+  it('returns 500 on database error', async () => {
+    mockResults.set('saved_trips', { data: null, error: { message: 'connection failed' } });
+    const res = makeRes();
+    await handler(makeReq(), res as unknown as VercelResponse);
+    expect(res._status).toBe(500);
+  });
+
+  it('sets cache headers on success with data', async () => {
+    mockResults.set('saved_trips', {
+      data: [{ user_id: 'user-cache', destination_id: 'dest-1' }],
+      error: null,
+    });
+    mockResults.set('destinations', {
+      data: [{ id: 'dest-1', city: 'Rome', country: 'Italy', iata_code: 'FCO' }],
+      error: null,
+    });
+    mockResults.set('cached_prices', { data: [], error: null });
+    const res = makeRes();
+    await handler(makeReq(), res as unknown as VercelResponse);
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', expect.stringContaining('max-age'));
+  });
+
+  it('generates anonymous username from user_id suffix', async () => {
+    mockResults.set('saved_trips', {
+      data: [{ user_id: 'user_abc1234f', destination_id: 'dest-1' }],
+      error: null,
+    });
+    mockResults.set('destinations', {
+      data: [{ id: 'dest-1', city: 'Berlin', country: 'Germany', iata_code: 'BER' }],
+      error: null,
+    });
+    mockResults.set('cached_prices', { data: [], error: null });
+
+    const res = makeRes();
+    await handler(makeReq(), res as unknown as VercelResponse);
+    const body = res._json as any;
+    expect(body.data.leaderboard[0].username).toBe('Traveler 234F');
+  });
+
+  it('caps limit at 100 even with large input', async () => {
+    mockResults.set('saved_trips', { data: [], error: null });
+    const res = makeRes();
+    await handler(makeReq({ limit: '9999' }), res as unknown as VercelResponse);
+    expect(res._status).toBe(200);
+  });
+
+  it('computes savings_percent correctly from price/usual_price', async () => {
+    mockResults.set('saved_trips', {
+      data: [{ user_id: 'user-s1', destination_id: 'dest-cheap' }],
+      error: null,
+    });
+    mockResults.set('destinations', {
+      data: [{ id: 'dest-cheap', city: 'Lima', country: 'Peru', iata_code: 'LIM' }],
+      error: null,
+    });
+    mockResults.set('cached_prices', {
+      data: [{ destination_iata: 'LIM', price: 200, usual_price: 500, fetched_at: '2026-04-01' }],
+      error: null,
+    });
+
+    const res = makeRes();
+    await handler(makeReq(), res as unknown as VercelResponse);
+    const entry = (res._json as any).data.leaderboard[0];
+    // (500 - 200) / 500 = 60%
+    expect(entry.avg_savings_percent).toBe(60);
+    // score = avg_savings * total_saves = 60 * 1
+    expect(entry.score).toBe(60);
+  });
+
+  it('skips entries with missing user_id or destination_id', async () => {
+    mockResults.set('saved_trips', {
+      data: [
+        { user_id: null, destination_id: 'dest-1' },
+        { user_id: 'user-ok', destination_id: null },
+        { user_id: 'user-ok', destination_id: 'dest-1' },
+      ],
+      error: null,
+    });
+    mockResults.set('destinations', {
+      data: [{ id: 'dest-1', city: 'Lisbon', country: 'Portugal', iata_code: 'LIS' }],
+      error: null,
+    });
+    mockResults.set('cached_prices', { data: [], error: null });
+
+    const res = makeRes();
+    await handler(makeReq(), res as unknown as VercelResponse);
+    const body = res._json as any;
+    expect(body.data.leaderboard.length).toBe(1);
+    expect(body.data.leaderboard[0].user_id).toBe('user-ok');
   });
 });
