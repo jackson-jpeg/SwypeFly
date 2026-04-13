@@ -46,10 +46,11 @@ struct PriceAlertsListView: View {
                 await store.fetchAlerts()
             }
         }
-        .sheet(item: $selectedAlert) { alert in
+        .sgSheet(
+            item: $selectedAlert,
+            configuration: SGSheetConfiguration(detents: [.medium])
+        ) { alert in
             AlertDetailSheet(alert: alert)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
         }
     }
 

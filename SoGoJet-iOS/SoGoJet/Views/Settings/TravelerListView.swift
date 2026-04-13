@@ -55,15 +55,17 @@ struct TravelerListView: View {
         .task {
             await travelerStore.fetchTravelers()
         }
-        .sheet(isPresented: $showAddSheet) {
+        .sgSheet(
+            isPresented: $showAddSheet,
+            configuration: SGSheetConfiguration(detents: [.large])
+        ) {
             TravelerEditView(traveler: nil)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
         }
-        .sheet(item: $editingTraveler) { traveler in
+        .sgSheet(
+            item: $editingTraveler,
+            configuration: SGSheetConfiguration(detents: [.large])
+        ) { traveler in
             TravelerEditView(traveler: traveler)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
         }
     }
 

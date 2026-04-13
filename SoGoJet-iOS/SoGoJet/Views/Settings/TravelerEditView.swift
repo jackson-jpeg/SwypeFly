@@ -40,6 +40,22 @@ struct TravelerEditView: View {
                     contactSection
                     personalSection
                     passportSection
+
+                    // SGButton save/cancel — Phase 6 spec
+                    VStack(spacing: Spacing.sm) {
+                        SGButton(
+                            isSaving ? "Saving…" : (isEditing ? "Update Traveler" : "Save Traveler"),
+                            style: .primary
+                        ) {
+                            Task { await save() }
+                        }
+                        .disabled(!isValid || isSaving)
+
+                        SGButton("Cancel", style: .ghost) {
+                            dismiss()
+                        }
+                    }
+                    .padding(.top, Spacing.sm)
                 }
                 .padding(.horizontal, Spacing.md)
                 .padding(.vertical, Spacing.lg)
@@ -48,27 +64,12 @@ struct TravelerEditView: View {
             .navigationTitle(isEditing ? "Edit Traveler" : "Add Traveler")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundStyle(Color.sgMuted)
-                        .accessibilityLabel("Cancel editing")
-                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task { await save() }
-                    } label: {
-                        if isSaving {
-                            ProgressView()
-                                .tint(Color.sgYellow)
-                                .scaleEffect(0.8)
-                        } else {
-                            Text("Save")
-                                .font(SGFont.bodyBold(size: 16))
-                                .foregroundStyle(isValid ? Color.sgYellow : Color.sgMuted)
-                        }
+                    if isSaving {
+                        ProgressView()
+                            .tint(Color.sgYellow)
+                            .scaleEffect(0.8)
                     }
-                    .disabled(!isValid || isSaving)
-                    .accessibilityLabel(isSaving ? "Saving traveler" : "Save traveler")
                 }
             }
         }
@@ -209,19 +210,17 @@ struct TravelerEditView: View {
 
     private func formSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
+            // Playfair italic section heads per Phase 6 spec
             Text(title.uppercased())
-                .font(SGFont.bodyBold(size: 11))
+                .sgFont(.accent)
                 .foregroundStyle(Color.sgMuted)
                 .tracking(1.2)
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                content()
+
+            SGCard(elevation: .flush) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    content()
+                }
             }
-            .padding(Spacing.md)
-            .background(Color.sgWhite.opacity(0.04), in: RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg)
-                    .strokeBorder(Color.sgBorder, lineWidth: 1)
-            )
         }
     }
 

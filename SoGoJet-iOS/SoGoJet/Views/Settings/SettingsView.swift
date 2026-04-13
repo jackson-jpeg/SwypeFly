@@ -465,7 +465,10 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Manage price alerts")
-            .sheet(isPresented: $showPriceAlerts) {
+            .sgSheet(
+                isPresented: $showPriceAlerts,
+                configuration: SGSheetConfiguration(detents: [.large])
+            ) {
                 PriceAlertsListView()
             }
         }
@@ -503,7 +506,10 @@ struct SettingsView: View {
             }
             .accessibilityLabel(travelerStore.travelers.isEmpty ? "Add a traveler" : "Manage saved travelers")
         }
-        .sheet(isPresented: $showTravelers) {
+        .sgSheet(
+            isPresented: $showTravelers,
+            configuration: SGSheetConfiguration(detents: [.large])
+        ) {
             TravelerListView()
         }
         .task {

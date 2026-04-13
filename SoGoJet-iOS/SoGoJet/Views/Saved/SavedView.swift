@@ -100,7 +100,10 @@ struct SavedView: View {
                     .zIndex(100)
             }
         }
-        .sheet(isPresented: $showComparePicker) {
+        .sgSheet(
+            isPresented: $showComparePicker,
+            configuration: SGSheetConfiguration(detents: [.large])
+        ) {
             ComparePickerView(
                 deals: sortedDeals,
                 selectedA: $compareA,
@@ -111,14 +114,13 @@ struct SavedView: View {
                     }
                 }
             )
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $showCompareView) {
+        .sgSheet(
+            isPresented: $showCompareView,
+            configuration: SGSheetConfiguration(detents: [.large])
+        ) {
             if let a = compareA, let b = compareB {
                 CompareView(dealA: a, dealB: b)
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
             }
         }
         .sheet(isPresented: $showShareSheet) {
