@@ -36,6 +36,11 @@ struct FeedView: View {
     @State private var showMap: Bool = false
     @State private var showTripPlanner: Bool = false
 
+    /// Hero namespace — Phase 2. Wired to DealCard images with id "dest-<deal.id>".
+    /// Ready for Phase 3 overlay presentation that replaces the sheet to allow
+    /// true matchedGeometryEffect continuity across the feed→detail transition.
+    @Namespace private var heroNS
+
     private var currentDeal: Deal? {
         guard let currentIndex,
               currentIndex >= 0,
@@ -406,7 +411,26 @@ struct FeedView: View {
             if !feedStore.deals.isEmpty {
                 statsRow
                     .padding(.horizontal, Spacing.md)
-                    .padding(.bottom, Spacing.sm)
+                    .padding(.bottom, Spacing.xs)
+            }
+
+            // Vibe filter pills with matchedGeometryEffect capsule glide
+            if !availableVibes.isEmpty {
+                VibeFilterBar(
+                    vibes: availableVibes,
+                    selected: feedStore.selectedVibes.first
+                ) { vibe in
+                    if let vibe {
+                        filterByVibe(vibe)
+                    } else {
+                        // "ALL" — clear vibe filters
+                        feedStore.selectedVibes.removeAll()
+                        currentIndex = 0
+                        swipeCount = 0
+                        Task { await feedStore.fetchDeals(origin: settingsStore.departureCode) }
+                    }
+                }
+                .padding(.bottom, Spacing.xs)
             }
         }
         .background(Color.sgBg.opacity(0.84))
@@ -417,6 +441,22 @@ struct FeedView: View {
                 .fill(Color.sgBorder.opacity(0.45))
                 .frame(height: 1)
         }
+    }
+
+    /// Unique vibe tags from visible deals (stable order, max 8).
+    private var availableVibes: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for deal in feedStore.deals {
+            for tag in deal.safeVibeTags {
+                if seen.insert(tag).inserted {
+                    result.append(tag)
+                }
+                if result.count >= 8 { break }
+            }
+            if result.count >= 8 { break }
+        }
+        return result
     }
 
     private var collapsedHeaderPill: some View {

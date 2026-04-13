@@ -17,6 +17,9 @@ struct DealCard: View {
     var onBook: () -> Void = {}
     var onTap: () -> Void = {}
     var onVibeFilter: (String) -> Void = { _ in }
+    /// Hero namespace from FeedView. When provided, the card image gets
+    /// matchedGeometryEffect(id: "dest-<deal.id>") for Phase 3 overlay transition.
+    var heroNamespace: Namespace.ID? = nil
 
     @Environment(SettingsStore.self) private var settingsStore
 
@@ -26,13 +29,29 @@ struct DealCard: View {
     @State private var hintTask: DispatchWorkItem?
     @State private var hideHintTask: DispatchWorkItem?
 
+    // Price reveal choreography — delayed 140ms after image settles
+    @State private var priceRevealed: Bool = false
+    // Savings shimmer quiets after 600ms
+    @State private var savingsShimmerActive: Bool = false
+    @State private var priceRevealTask: Task<Void, Never>?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 // Full-bleed photo — CachedAsyncImage handles frame + clip internally
                 // Default ShimmerView placeholder gives smooth animated loading;
                 // fallbackBackground only used in context menu preview now.
-                CachedAsyncImage(url: deal.imageUrl)
+                // Hero namespace: "dest-<deal.id>" — matches DetailHero for Phase 3 overlay transition.
+                Group {
+                    if let ns = heroNamespace {
+                        CachedAsyncImage(url: deal.imageUrl)
+                            .matchedGeometryEffect(id: "dest-\(deal.id)", in: ns)
+                    } else {
+                        CachedAsyncImage(url: deal.imageUrl)
+                    }
+                }
 
                 // Bottom gradient for text legibility
                 VStack {
@@ -204,6 +223,7 @@ struct DealCard: View {
         .accessibilityHint("Swipe up for next deal, or double tap to view details")
         .accessibilityAddTraits(.isButton)
         .onAppear {
+            triggerPriceReveal()
             guard isFirst else { return }
             // Delay appearance so the card loads first
             let showWork = DispatchWorkItem {
@@ -223,9 +243,16 @@ struct DealCard: View {
             hideHintTask = hideWork
             DispatchQueue.main.asyncAfter(deadline: .now() + 4.5, execute: hideWork)
         }
+        .onChange(of: animationTrigger) { _, _ in
+            // New card became active — replay price reveal
+            priceRevealed = false
+            savingsShimmerActive = false
+            triggerPriceReveal()
+        }
         .onDisappear {
             hintTask?.cancel()
             hideHintTask?.cancel()
+            priceRevealTask?.cancel()
         }
     }
 
@@ -255,6 +282,31 @@ struct DealCard: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    /// Trigger the price reveal: wait 140ms after image settle, then reveal.
+    /// Also arms the savings shimmer and quiets it after 600ms.
+    private func triggerPriceReveal() {
+        priceRevealTask?.cancel()
+        priceRevealTask = Task { @MainActor in
+            // Image fade-in is 300ms; reveal price at 140ms after that settles
+            try? await Task.sleep(nanoseconds: 140_000_000) // 140ms
+            guard !Task.isCancelled else { return }
+
+            withAnimation(reduceMotion ? .easeOut(duration: SGDuration.fast) : SGCurve.terminal) {
+                priceRevealed = true
+            }
+
+            // Arm savings shimmer (plays alongside reveal)
+            savingsShimmerActive = true
+
+            // Quiet shimmer after 600ms
+            try? await Task.sleep(nanoseconds: 600_000_000) // 600ms
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.3)) {
+                savingsShimmerActive = false
+            }
+        }
     }
 
     private func startSwipeHintBounce() {
@@ -341,6 +393,8 @@ struct DealCard: View {
                         .foregroundStyle(Color.sgDealAmazing)
                         .fixedSize()
                 }
+                .opacity(priceRevealed ? 1 : 0)
+                .offset(x: priceRevealed ? 0 : -8)
             } else if deal.hasPrice {
                 let confidence = deal.priceConfidence
                 let dotColor: Color = confidence == .live ? .sgDealAmazing
@@ -358,6 +412,10 @@ struct DealCard: View {
                         .foregroundStyle(dotColor)
                         .fixedSize()
                 }
+                .opacity(priceRevealed ? 1 : 0)
+                // Savings badge slides in from leading edge with shimmer
+                .offset(x: priceRevealed ? 0 : -8)
+                .runwayShimmer(active: savingsShimmerActive, tint: dotColor, intensity: 0.35)
             }
 
             HStack(spacing: 4) {
@@ -368,16 +426,15 @@ struct DealCard: View {
                         .foregroundStyle(deal.priceTrend == .down ? Color.sgDealAmazing : Color.sgRed)
                 }
 
-                SplitFlapRow(
+                // Price split-flaps in after reveal is triggered
+                SplitFlapText(
                     text: effectivePrice,
+                    style: .price,
                     maxLength: priceMaxLength,
-                    size: .md,
-                    color: Color.sgWhite,
-                    alignment: .trailing,
-                    animate: animate,
-                    startDelay: 0.3,
-                    staggerMs: 60,
-                    animationID: animationTrigger
+                    animate: priceRevealed && animate,
+                    startDelay: 0,
+                    animationID: animationTrigger,
+                    hapticOnSettle: animate
                 )
             }
             .padding(.horizontal, 14)
@@ -385,6 +442,8 @@ struct DealCard: View {
             .background(deal.tierColor)
             .clipShape(Capsule())
             .fixedSize()
+            .opacity(priceRevealed ? 1 : 0)
+            .scaleEffect(priceRevealed ? 1.0 : 0.88)
 
             // Compact price age — always show so users know how old the price is
             if let age = deal.priceAgeMinutes {
@@ -392,6 +451,7 @@ struct DealCard: View {
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.5))
                     .fixedSize()
+                    .opacity(priceRevealed ? 1 : 0)
             }
 
             // Google Flights-style price level indicator
@@ -404,6 +464,7 @@ struct DealCard: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(levelColor)
                     .fixedSize()
+                    .opacity(priceRevealed ? 1 : 0)
             }
         }
     }

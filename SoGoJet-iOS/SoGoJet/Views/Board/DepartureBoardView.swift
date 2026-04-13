@@ -20,6 +20,9 @@ struct DepartureBoardView: View {
     @State private var boardTransitionTask: Task<Void, Never>?
     @State private var isBoardTransitioning = false
 
+    /// Hero namespace — Phase 2 agent wires matched-geometry continuity from row tap → detail hero.
+    @Namespace var heroNS
+
     private let visibleCount = 5
 
     // MARK: Derived
@@ -312,7 +315,9 @@ struct DepartureBoardView: View {
                         slot: slot,
                         isActive: index == 0 && !slot.isBlank,
                         animate: true,
-                        animationID: animationCycle
+                        animationID: animationCycle,
+                        startDelay: Double(index) * 0.06,  // 60ms stagger per row
+                        heroNamespace: heroNS
                     )
                     .frame(minHeight: 80, maxHeight: .infinity)
                     .contentShape(Rectangle())

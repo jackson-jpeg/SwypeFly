@@ -93,7 +93,7 @@ struct SGButton<Label: View>: View {
         switch style {
         case .destructive:
             HapticEngine.warning()
-        case .primary, .prominent:
+        case .primary:
             HapticEngine.medium()
         default:
             HapticEngine.selection()

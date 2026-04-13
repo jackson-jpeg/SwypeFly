@@ -82,11 +82,12 @@ class SoGoJetAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCen
             let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
             var sysInfo = utsname()
             uname(&sysInfo)
-            let deviceModel: String = withUnsafePointer(to: &sysInfo.machine) { ptr in
-                ptr.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout.size(ofValue: sysInfo.machine)) { buf in
-                    let size = MemoryLayout.size(ofValue: sysInfo.machine)
+            var machineCopy = sysInfo.machine
+            let machineSize = MemoryLayout.size(ofValue: machineCopy)
+            let deviceModel: String = withUnsafePointer(to: &machineCopy) { ptr in
+                ptr.withMemoryRebound(to: UInt8.self, capacity: machineSize) { buf in
                     // Find null terminator to avoid reading past the string
-                    let len = (0..<size).first(where: { buf[$0] == 0 }) ?? size
+                    let len: Int = (0..<machineSize).first(where: { buf[$0] == 0 }) ?? machineSize
                     return String(bytes: UnsafeBufferPointer(start: buf, count: len), encoding: .utf8) ?? "unknown"
                 }
             }

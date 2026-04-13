@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Swipeable Card Stack
 // Tinder-style card deck: right-swipe to save, left-swipe to skip.
 // Cards rotate and fly off screen with satisfying physics.
-// The top card is fully interactive; cards behind peek through for depth.
+// Back cards breathe in/out as the top card is dragged.
 
 struct SwipeableCardStack: View {
     let deals: [Deal]
@@ -32,22 +32,55 @@ struct SwipeableCardStack: View {
     @State private var isDragging = false
     @State private var isFlying = false
     @State private var flyDirection: SwipeDirection = .none
-    @State private var stampOpacity: Double = 0
     @State private var hapticFired = false
     @State private var cardEntrance = false
     @State private var swipeTask: Task<Void, Never>?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum SwipeDirection {
         case left, right, none
     }
 
+    // MARK: - Drag Progress Helpers
+
+    /// 0...1 progress toward right swipe commit
+    private var rightSwipeProgress: Double {
+        guard dragOffset.width > 0 else { return 0 }
+        let dragWidth = Double(dragOffset.width)
+        let deadZone = Double(swipeThreshold) * 0.3
+        return min(max(0, (dragWidth - deadZone) / (Double(swipeThreshold) * 0.7)), 1.0)
+    }
+
+    /// 0...1 progress toward left swipe commit
+    private var leftSwipeProgress: Double {
+        guard dragOffset.width < 0 else { return 0 }
+        let dragWidth = Double(-dragOffset.width)
+        let deadZone = Double(swipeThreshold) * 0.3
+        return min(max(0, (dragWidth - deadZone) / (Double(swipeThreshold) * 0.7)), 1.0)
+    }
+
+    /// Card rotation during drag (degrees)
+    private var dragRotation: Double {
+        let progress = Double(dragOffset.width) / 300.0
+        return progress * maxRotation
+    }
+
+    /// Normalized drag magnitude 0...1 for back-card breathing
+    private var dragMagnitude: Double {
+        let w = abs(dragOffset.width)
+        return min(Double(w) / Double(swipeThreshold), 1.0)
+    }
+
+    // MARK: - Body
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // Render the peek cards behind the top card (back to front)
+                // Render peek cards back → front so lower indices sit behind
                 ForEach(peekCards.reversed(), id: \.offset) { index, deal in
                     let depth = index - currentIndex
-                    peekCard(deal: deal, depth: depth, screenSize: geo.size)
+                    peekCard(deal: deal, depth: depth)
                         .accessibilityHidden(true)
                 }
 
@@ -57,11 +90,19 @@ struct SwipeableCardStack: View {
                         .scaleEffect(cardEntrance ? 0.95 : 1.0)
                         .offset(y: cardEntrance ? 12 : 0)
                         .opacity(cardEntrance ? 0.0 : 1.0)
-                        .animation(.easeOut(duration: 0.3), value: cardEntrance)
+                        .animation(
+                            reduceMotion
+                                ? .easeOut(duration: SGDuration.fast)
+                                : SGSpring.silky,
+                            value: cardEntrance
+                        )
                         .onAppear {
-                            // If cardEntrance is true, animate to full size
                             if cardEntrance {
-                                withAnimation(.easeOut(duration: 0.3)) {
+                                withAnimation(
+                                    reduceMotion
+                                        ? .easeOut(duration: SGDuration.fast)
+                                        : SGSpring.silky
+                                ) {
                                     cardEntrance = false
                                 }
                             }
@@ -95,6 +136,7 @@ struct SwipeableCardStack: View {
                 // Empty state when deck is exhausted
                 if topDeal == nil && !isFlying {
                     endOfDeck
+                        .zIndex(50)
                 }
 
                 // Card counter at bottom
@@ -108,6 +150,25 @@ struct SwipeableCardStack: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Prefetch images when index changes
+            .onChange(of: currentIndex) { _, newIndex in
+                prefetchUpcoming(from: newIndex)
+            }
+            .onAppear {
+                prefetchUpcoming(from: currentIndex)
+            }
+        }
+    }
+
+    // MARK: - Image Prefetch
+
+    private func prefetchUpcoming(from index: Int) {
+        for offset in 1...2 {
+            let i = index + offset
+            guard i < deals.count, let url = deals[i].imageUrl else { continue }
+            Task {
+                await ImageCache.shared.prefetch(url)
+            }
         }
     }
 
@@ -126,58 +187,36 @@ struct SwipeableCardStack: View {
     // MARK: - End of Deck
 
     private var endOfDeck: some View {
-        VStack(spacing: Spacing.lg) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(Color.sgYellow.opacity(0.7))
+        SGCard(elevation: .hero) {
+            VStack(spacing: Spacing.lg) {
+                // END OF LINE headline — flap in on appear
+                EndOfLineFlapper()
 
-            VStack(spacing: Spacing.xs) {
-                Text("All caught up!")
-                    .font(SGFont.display(size: 24))
-                    .foregroundStyle(Color.sgWhite)
-
-                Text("You've swiped through every deal")
-                    .font(SGFont.body(size: 14))
-                    .foregroundStyle(Color.sgWhiteDim)
-            }
-
-            VStack(spacing: Spacing.sm) {
-                Button {
-                    HapticEngine.medium()
-                    onLoadMore()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.down.circle.fill")
-                        Text("Load More Deals")
-                    }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.sgWhite)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 14)
-                    .background(Color.sgYellow)
-                    .clipShape(Capsule())
+                VStack(spacing: Spacing.xs) {
+                    Text("No more flights right now.")
+                        .sgFont(.body)
+                        .foregroundStyle(Color.sgWhiteDim)
+                        .multilineTextAlignment(.center)
                 }
-                .accessibilityLabel("Load more deals")
 
-                Button {
-                    HapticEngine.light()
-                    onStartOver()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.counterclockwise")
-                        Text("Start Over")
+                VStack(spacing: Spacing.sm) {
+                    SGButton("Load More Deals", style: .primary) {
+                        HapticEngine.medium()
+                        onLoadMore()
                     }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.sgWhiteDim)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 10)
-                    .background(Color.sgWhite.opacity(0.08))
-                    .clipShape(Capsule())
+
+                    SGButton("Start Over", style: .ghost) {
+                        HapticEngine.light()
+                        onStartOver()
+                    }
                 }
-                .accessibilityLabel("Start over from the beginning")
+                .padding(.top, Spacing.xs)
             }
-            .padding(.top, Spacing.sm)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.xl)
         }
+        .padding(.horizontal, Spacing.lg)
+        .accessibilityElement(children: .contain)
     }
 
     // MARK: - Top Card (Draggable)
@@ -227,7 +266,6 @@ struct SwipeableCardStack: View {
         )
         .offset(x: dragOffset.width, y: dragOffset.height * 0.15)
         .rotationEffect(.degrees(dragRotation))
-        .scaleEffect(1.0)
         .gesture(dragGesture(screenSize: screenSize))
         .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: dragOffset)
     }
@@ -267,10 +305,20 @@ struct SwipeableCardStack: View {
     }
 
     // MARK: - Peek Cards (Behind Top)
+    //
+    // depth=1: scale 0.94, yOffset 8pt (tokens from plan)
+    // depth=2: scale 0.88, yOffset 14pt
+    // As drag progresses, back cards breathe toward the top card:
+    //   scale nudges up by dragMagnitude * 0.03, yOffset shrinks proportionally.
 
-    private func peekCard(deal: Deal, depth: Int, screenSize: CGSize) -> some View {
-        let scale = 1.0 - Double(depth) * 0.08
-        let yOffset = CGFloat(depth) * 20
+    private func peekCard(deal: Deal, depth: Int) -> some View {
+        let baseScale = depth == 1 ? 0.94 : 0.88
+        let baseYOffset: CGFloat = depth == 1 ? 8 : 14
+        let dimAlpha = 0.0 + Double(depth) * 0.18   // tint dim overlay per depth
+
+        // Breathing: back cards inch forward as the top card is dragged
+        let breathScale = baseScale + (reduceMotion ? 0 : dragMagnitude * 0.03)
+        let breathOffset = baseYOffset * CGFloat(1.0 - (reduceMotion ? 0 : dragMagnitude * 0.5))
 
         return DealCard(
             deal: deal,
@@ -279,10 +327,16 @@ struct SwipeableCardStack: View {
             animate: false
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .scaleEffect(scale)
-        .offset(y: yOffset)
-        .opacity(1.0 - Double(depth) * 0.15)
+        // Dim tint overlay per depth level
+        .overlay(
+            Color.sgBg.opacity(dimAlpha)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .allowsHitTesting(false)
+        )
+        .scaleEffect(breathScale)
+        .offset(y: breathOffset)
         .allowsHitTesting(false)
+        .animation(SGSpring.silky, value: dragMagnitude)
     }
 
     // MARK: - Stamp Overlay
@@ -360,7 +414,7 @@ struct SwipeableCardStack: View {
                 } else {
                     // Snap back with haptic feedback
                     HapticEngine.light()
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    withAnimation(SGSpring.silky) {
                         dragOffset = .zero
                     }
                 }
@@ -379,7 +433,7 @@ struct SwipeableCardStack: View {
 
         // Fire appropriate action
         if direction == .right {
-            HapticEngine.success()
+            HapticEngine.boardingPass()
             onSave(deal)
         } else {
             HapticEngine.light()
@@ -413,7 +467,7 @@ struct SwipeableCardStack: View {
             try? await Task.sleep(nanoseconds: 50_000_000) // 0.05s
             guard !Task.isCancelled else { return }
 
-            withAnimation(.easeOut(duration: 0.3)) {
+            withAnimation(reduceMotion ? .easeOut(duration: SGDuration.fast) : SGSpring.silky) {
                 cardEntrance = false
             }
 
@@ -443,29 +497,29 @@ struct SwipeableCardStack: View {
         guard start < end else { return [] }
         return Array(deals[start..<end].enumerated().map { (offset: $0.offset + start, element: $0.element) })
     }
+}
 
-    /// 0...1 progress toward right swipe commit
-    /// Stamps start appearing at 30% of threshold for earlier visual feedback
-    private var rightSwipeProgress: Double {
-        guard dragOffset.width > 0 else { return 0 }
-        let dragWidth = Double(dragOffset.width)
-        let deadZone = Double(swipeThreshold) * 0.3
-        return min(max(0, (dragWidth - deadZone) / (Double(swipeThreshold) * 0.7)), 1.0)
-    }
+// MARK: - End Of Line Flapper
+// Isolated view so the SplitFlapText animation fires on appear.
 
-    /// 0...1 progress toward left swipe commit
-    /// Stamps start appearing at 30% of threshold for earlier visual feedback
-    private var leftSwipeProgress: Double {
-        guard dragOffset.width < 0 else { return 0 }
-        let dragWidth = Double(-dragOffset.width)
-        let deadZone = Double(swipeThreshold) * 0.3
-        return min(max(0, (dragWidth - deadZone) / (Double(swipeThreshold) * 0.7)), 1.0)
-    }
+private struct EndOfLineFlapper: View {
+    @State private var animate = false
 
-    /// Card rotation during drag (degrees)
-    private var dragRotation: Double {
-        let progress = Double(dragOffset.width) / 300.0
-        return progress * maxRotation
+    var body: some View {
+        SplitFlapText(
+            text: "END OF LINE",
+            style: .headline,
+            maxLength: 11,
+            animate: animate,
+            startDelay: 0.1,
+            hapticOnSettle: true
+        )
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                animate = true
+            }
+        }
+        .accessibilityLabel("End of line — no more flight deals")
     }
 }
 

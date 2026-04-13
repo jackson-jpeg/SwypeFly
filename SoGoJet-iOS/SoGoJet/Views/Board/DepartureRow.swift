@@ -76,6 +76,11 @@ struct DepartureRow: View {
     var isActive: Bool = false
     var animate: Bool = false
     var animationID: Int = 0
+    /// Stagger offset in seconds for board load-in. Each row starts later than the previous.
+    var startDelay: Double = 0
+    /// Optional hero namespace — Phase 2 uses this to wire shared-element from row → detail hero.
+    /// Pass `heroNS` from `DepartureBoardView` and the matched ID is `"dest-\(slot.id)"`.
+    var heroNamespace: Namespace.ID? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -108,6 +113,42 @@ struct DepartureRow: View {
         return isActive ? [.isSelected, .isButton] : .isButton
     }
 
+    // MARK: - Destination Cell
+    // Marked with matchedGeometryEffect when a heroNamespace is provided.
+    // Phase 2 agent wires this ID ("dest-<deal.id>") to the detail hero.
+
+    @ViewBuilder
+    private var destinationCell: some View {
+        if let ns = heroNamespace, let deal = slot.deal {
+            SplitFlapRow(
+                text: slot.destination,
+                maxLength: 9,
+                size: .md,
+                color: destinationColor,
+                alignment: .leading,
+                animate: animate,
+                startDelay: startDelay + 0.05,
+                staggerMs: 40,
+                animationID: animationID
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .matchedGeometryEffect(id: "dest-\(deal.id)", in: ns)
+        } else {
+            SplitFlapRow(
+                text: slot.destination,
+                maxLength: 9,
+                size: .md,
+                color: destinationColor,
+                alignment: .leading,
+                animate: animate,
+                startDelay: startDelay + 0.05,
+                staggerMs: 40,
+                animationID: animationID
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: Spacing.sm) {
@@ -118,24 +159,13 @@ struct DepartureRow: View {
                     color: slot.isBlank ? Color.sgFaint.opacity(0.5) : Color.sgWhite,
                     alignment: .leading,
                     animate: animate,
-                    startDelay: 0,
+                    startDelay: startDelay,
                     staggerMs: 40,
                     animationID: animationID
                 )
                 .frame(width: 64, alignment: .leading)
 
-                SplitFlapRow(
-                    text: slot.destination,
-                    maxLength: 9,
-                    size: .md,
-                    color: destinationColor,
-                    alignment: .leading,
-                    animate: animate,
-                    startDelay: 0.05,
-                    staggerMs: 40,
-                    animationID: animationID
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
+                destinationCell
 
                 SplitFlapRow(
                     text: slot.price,
@@ -144,7 +174,7 @@ struct DepartureRow: View {
                     color: priceColor,
                     alignment: .trailing,
                     animate: animate,
-                    startDelay: 0.10,
+                    startDelay: startDelay + 0.10,
                     staggerMs: 40,
                     animationID: animationID
                 )

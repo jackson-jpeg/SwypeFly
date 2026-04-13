@@ -115,6 +115,15 @@ actor ImageCache {
         }
     }
 
+    /// Prefetch multiple images concurrently. Convenience for warming a window of cards.
+    func prefetch(urls: [String]) async {
+        await withTaskGroup(of: Void.self) { group in
+            for url in urls {
+                group.addTask { await self.prefetch(url) }
+            }
+        }
+    }
+
     /// Prefetch an image into cache without returning it.
     /// Fires and forgets — used to warm the cache for upcoming cards.
     func prefetch(_ urlString: String) async {
