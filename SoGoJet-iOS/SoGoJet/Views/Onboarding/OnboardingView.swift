@@ -167,22 +167,28 @@ struct OnboardingView: View {
                     SplitFlapText(
                         text: currentShowcase.city,
                         style: .ticker,
-                        maxLength: 12,
+                        maxLength: 9,
                         animate: animateFlap
                     )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
-                    HStack(spacing: Spacing.sm) {
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
                         SplitFlapText(
                             text: currentShowcase.price,
                             style: .price,
-                            maxLength: 6,
+                            maxLength: 5,
                             animate: animateFlap,
                             startDelay: 0.12
                         )
+                        .layoutPriority(1)
 
                         Text(String(format: String(localized: "onboarding.from_airport"), settings.departureCode))
                             .font(SGFont.body(size: 13))
                             .foregroundStyle(Color.sgMuted)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .layoutPriority(0)
                     }
 
                     HStack(spacing: Spacing.sm) {
@@ -236,17 +242,19 @@ struct OnboardingView: View {
                                 .font(SGFont.bodyBold(size: 15))
                                 .foregroundStyle(Color.sgWhite)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.75)
 
-                            // "TAP TO CHANGE" affordance using tag-style flap
-                            SplitFlapText(
-                                text: settings.departureCode.isEmpty ? "TAP TO SELECT" : "TAP TO CHANGE",
-                                style: .tag,
-                                maxLength: 14,
-                                animate: true
-                            )
+                            Text(settings.departureCode.isEmpty ? "TAP TO SELECT" : "TAP TO CHANGE")
+                                .sgFont(.micro)
+                                .foregroundStyle(Color.sgMuted)
                         }
+                        .layoutPriority(1)
 
                         Spacer(minLength: 0)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.sgFaint)
                     }
                 }
                 .sgShadow(.lift)
