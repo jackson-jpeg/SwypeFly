@@ -939,24 +939,15 @@ struct TripView: View {
     }
 
     private var searchButton: some View {
-        Button {
-            performSearch()
-        } label: {
+        SGButton(action: performSearch, style: .primary, size: .prominent) {
             HStack(spacing: Spacing.sm) {
                 Image(systemName: "airplane.departure")
                     .font(.system(size: 14, weight: .semibold))
                 Text("Search Live Prices")
-                    .font(SGFont.bodyBold(size: 16))
                 Spacer()
                 Text("\(departureDateString.shortDate) to \(returnDateString.shortDate)")
                     .font(SGFont.body(size: 12))
             }
-            .foregroundStyle(Color.sgBg)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.md)
-            .padding(.horizontal, Spacing.md)
-            .background(Color.sgYellow)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
         }
         .accessibilityLabel("Search for live flight prices")
     }
@@ -1631,57 +1622,130 @@ struct TripView: View {
     }
 
     private func bestOfferCard(_ offer: TripOption) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                Text("Best Available")
-                    .font(SGFont.bodyBold(size: 12))
-                    .foregroundStyle(Color.sgGreen)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
-                    .background(Color.sgGreen.opacity(0.15))
-                    .clipShape(Capsule())
+        SGCard(elevation: .hero) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                HStack {
+                    Text("BEST AVAILABLE")
+                        .font(SGFont.bodyBold(size: 10))
+                        .foregroundStyle(Color.sgGreen)
+                        .tracking(1.2)
+                        .padding(.horizontal, Spacing.sm)
+                        .padding(.vertical, Spacing.xs)
+                        .background(Color.sgGreen.opacity(0.15))
+                        .clipShape(Capsule())
+
+                    Spacer()
+
+                    if isUsingDealDates {
+                        Label("Price match", systemImage: "checkmark.seal.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.green)
+                    }
+
+                    // Departure-board style price flap
+                    SplitFlapText(
+                        text: "$\(Int(offer.price))",
+                        style: .price,
+                        maxLength: 6,
+                        animate: true,
+                        startDelay: 0.1,
+                        hapticOnSettle: true
+                    )
+                }
+
+                if let outbound = offer.outboundSlice {
+                    departureBoardFlightRow(
+                        label: "OUTBOUND",
+                        slice: outbound,
+                        accent: Color.sgYellow,
+                        staggerDelay: 0.0
+                    )
+                }
+
+                if let inbound = offer.returnSlice {
+                    departureBoardFlightRow(
+                        label: "RETURN",
+                        slice: inbound,
+                        accent: Color.sgGreen,
+                        staggerDelay: 0.06
+                    )
+                }
+
+                HStack(spacing: Spacing.md) {
+                    statChip(label: "Cabin", value: displayCabinName(offer.cabinClass), color: Color.sgWhite)
+                    statChip(label: "Stops", value: offer.stops == 0 ? "Nonstop" : "\(offer.stops)", color: offer.stops == 0 ? Color.sgGreen : Color.sgWhite)
+                }
+            }
+        }
+    }
+
+    // Departure-board style row for a single flight slice.
+    // Times flap in via SplitFlapText.
+    private func departureBoardFlightRow(
+        label: String,
+        slice: FlightSlice,
+        accent: Color,
+        staggerDelay: Double
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text(label)
+                .font(SGFont.bodyBold(size: 10))
+                .foregroundStyle(Color.sgMuted)
+                .tracking(1.2)
+
+            HStack(alignment: .center, spacing: 0) {
+                // Departure time — split-flap ticker
+                VStack(alignment: .leading, spacing: 2) {
+                    SplitFlapText(
+                        text: slice.departureTime.boardTime,
+                        style: .ticker,
+                        maxLength: 5,
+                        animate: true,
+                        startDelay: staggerDelay
+                    )
+                    Text(slice.origin)
+                        .font(SGFont.bodyBold(size: 11))
+                        .foregroundStyle(accent)
+                }
 
                 Spacer()
 
-                if isUsingDealDates {
-                    Label("Price match", systemImage: "checkmark.seal.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.green)
+                VStack(spacing: 2) {
+                    Image(systemName: "airplane")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(accent)
+                    Text(slice.duration)
+                        .font(SGFont.body(size: 10))
+                        .foregroundStyle(Color.sgMuted)
+                    if let segs = slice.segments, segs.count > 1 {
+                        Text("\(segs.count - 1) stop")
+                            .font(SGFont.bodyBold(size: 9))
+                            .foregroundStyle(Color.sgOrange)
+                    }
                 }
+                .frame(maxWidth: .infinity)
 
-                Text("$\(Int(offer.price))")
-                    .font(SGFont.price)
-                    .foregroundStyle(Color.sgYellow)
+                // Arrival time — split-flap ticker
+                VStack(alignment: .trailing, spacing: 2) {
+                    SplitFlapText(
+                        text: slice.arrivalTime.boardTime,
+                        style: .ticker,
+                        maxLength: 5,
+                        animate: true,
+                        startDelay: staggerDelay + 0.04
+                    )
+                    Text(slice.destination)
+                        .font(SGFont.bodyBold(size: 11))
+                        .foregroundStyle(accent)
+                }
             }
 
-            if let outbound = offer.outboundSlice {
-                flightSliceRow(
-                    title: "Outbound",
-                    slice: outbound,
-                    accent: Color.sgYellow
-                )
-            }
-
-            if let inbound = offer.returnSlice {
-                flightSliceRow(
-                    title: "Return",
-                    slice: inbound,
-                    accent: Color.sgGreen
-                )
-            }
-
-            HStack(spacing: Spacing.md) {
-                statChip(label: "Cabin", value: displayCabinName(offer.cabinClass), color: Color.sgWhite)
-                statChip(label: "Stops", value: offer.stops == 0 ? "Nonstop" : "\(offer.stops)", color: offer.stops == 0 ? Color.sgGreen : Color.sgWhite)
-            }
+            Text(slice.airline)
+                .font(SGFont.body(size: 11))
+                .foregroundStyle(Color.sgMuted)
         }
-        .padding(Spacing.md)
-        .background(Color.sgCell)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.md)
-                .strokeBorder(Color.sgBorder, lineWidth: 1)
-        )
+        .padding(Spacing.sm)
+        .background(Color.sgSurface, in: RoundedRectangle(cornerRadius: Radius.sm))
     }
 
     private func flightSliceRow(title: String, slice: FlightSlice, accent: Color) -> some View {
@@ -1879,8 +1943,18 @@ struct TripView: View {
             .accessibilityLabel(alternativesExpanded ? "Hide additional flights" : "Show additional flights")
 
             if alternativesExpanded {
-                ForEach(options) { option in
+                ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                     alternativeRow(option, cheapest: options.first?.price ?? option.price)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .top).combined(with: .opacity),
+                            removal: .opacity
+                        ))
+                        .animation(
+                            SGSpring.silky
+                                .delay(SGSpring.cascadeDelay(index: index, staggerMs: 60))
+                                .respectingReduceMotion(),
+                            value: alternativesExpanded
+                        )
                 }
             }
         }
@@ -1894,122 +1968,117 @@ struct TripView: View {
         return Button {
             handleOfferSelection(option)
         } label: {
-            HStack(alignment: .center, spacing: Spacing.sm) {
-                // Left: Route timeline
-                VStack(spacing: 4) {
-                    // Departure
-                    Text(option.departureTime)
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.sgWhite)
+            SGCard(elevation: .lifted) {
+                HStack(alignment: .center, spacing: Spacing.sm) {
+                    // Left: Departure-board times column
+                    VStack(spacing: 4) {
+                        SplitFlapText(
+                            text: option.departureTime,
+                            style: .ticker,
+                            maxLength: 5,
+                            animate: true
+                        )
 
-                    // Duration + stops
-                    VStack(spacing: 2) {
                         // Flight path visualization
-                        HStack(spacing: 3) {
-                            Circle().fill(Color.sgYellow).frame(width: 4, height: 4)
-                            Rectangle().fill(Color.sgBorder).frame(height: 1)
-                            if option.stops > 0 {
-                                ForEach(0..<min(option.stops, 2), id: \.self) { _ in
-                                    Circle().fill(Color.sgMuted).frame(width: 3, height: 3)
-                                    Rectangle().fill(Color.sgBorder).frame(height: 1)
+                        VStack(spacing: 2) {
+                            HStack(spacing: 3) {
+                                Circle().fill(Color.sgYellow).frame(width: 4, height: 4)
+                                Rectangle().fill(Color.sgBorder).frame(height: 1)
+                                if option.stops > 0 {
+                                    ForEach(0..<min(option.stops, 2), id: \.self) { _ in
+                                        Circle().fill(Color.sgMuted).frame(width: 3, height: 3)
+                                        Rectangle().fill(Color.sgBorder).frame(height: 1)
+                                    }
                                 }
+                                Circle().fill(Color.sgWhite.opacity(0.5)).frame(width: 4, height: 4)
                             }
-                            Circle().fill(Color.sgWhite.opacity(0.5)).frame(width: 4, height: 4)
+                            .frame(width: 56)
+                            Text(option.duration)
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(Color.sgMuted)
                         }
-                        .frame(width: 60)
 
-                        Text(option.duration)
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Color.sgMuted)
+                        SplitFlapText(
+                            text: option.arrivalTime,
+                            style: .ticker,
+                            maxLength: 5,
+                            animate: true,
+                            startDelay: 0.04
+                        )
                     }
+                    .frame(width: 68)
 
-                    // Arrival
-                    Text(option.arrivalTime)
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color.sgWhite)
-                }
-                .frame(width: 70)
+                    // Center: Airline + route info
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(option.airline)
+                            .font(SGFont.bodyBold(size: 13))
+                            .foregroundStyle(Color.sgWhite)
+                            .lineLimit(1)
 
-                // Center: Airline + stops + connection info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(option.airline)
-                        .font(SGFont.bodyBold(size: 13))
-                        .foregroundStyle(Color.sgWhite)
-                        .lineLimit(1)
+                        HStack(spacing: 6) {
+                            Text(stopsLabel)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(stopsColor)
 
-                    HStack(spacing: 6) {
-                        Text(stopsLabel)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(stopsColor)
+                            if let out = option.outboundSlice {
+                                Text("\(out.origin) \u{2192} \(out.destination)")
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(Color.sgMuted)
+                            }
+                        }
 
-                        if let out = option.outboundSlice {
-                            Text("\(out.origin) \u{2192} \(out.destination)")
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        if let segments = option.outboundSlice?.segments, segments.count > 1 {
+                            let connectionCities = segments.dropLast().map { seg in
+                                seg.destinationCityName.isEmpty ? seg.destination : seg.destinationCityName
+                            }
+                            Text("via \(connectionCities.joined(separator: ", "))")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.sgOrange)
+                        } else if option.flightNumber != "—" {
+                            Text(option.flightNumber)
+                                .font(.system(size: 10, weight: .medium))
                                 .foregroundStyle(Color.sgMuted)
                         }
                     }
 
-                    // Show connection cities from segment data
-                    if let segments = option.outboundSlice?.segments, segments.count > 1 {
-                        let connectionCities = segments.dropLast().map { seg in
-                            seg.destinationCityName.isEmpty ? seg.destination : seg.destinationCityName
+                    Spacer()
+
+                    // Right: Price flap
+                    VStack(alignment: .trailing, spacing: 2) {
+                        SplitFlapText(
+                            text: "$\(Int(option.price))",
+                            style: .price,
+                            maxLength: 6,
+                            animate: true,
+                            startDelay: 0.08,
+                            hapticOnSettle: false
+                        )
+
+                        if isGoodDeal && option.price > cheapest {
+                            Text("SIMILAR")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(Color.sgGreen)
+                                .tracking(0.8)
                         }
-                        Text("via \(connectionCities.joined(separator: ", "))")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(Color.sgOrange)
-                    } else if option.flightNumber != "—" {
-                        Text(option.flightNumber)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(Color.sgMuted)
-                    }
-                }
-
-                Spacer()
-
-                // Right: Price
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("$\(Int(option.price))")
-                        .font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundStyle(isGoodDeal ? Color.sgYellow : Color.sgWhite)
-
-                    if isGoodDeal && option.price > cheapest {
-                        Text("Similar")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Color.sgGreen)
                     }
                 }
             }
-            .padding(Spacing.md)
-            .background(Color.sgCell)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md)
-                    .strokeBorder(
-                        isGoodDeal ? Color.sgYellow.opacity(0.2) : Color.sgBorder,
-                        lineWidth: 1
-                    )
-            )
         }
         .buttonStyle(.plain)
     }
 
     private func continueButton(_ bestOffer: TripOption) -> some View {
-        Button {
-            handleOfferSelection(bestOffer)
-        } label: {
+        SGButton(
+            action: { handleOfferSelection(bestOffer) },
+            style: .primary,
+            size: .prominent
+        ) {
             HStack {
                 Text("Continue to Booking")
-                    .font(SGFont.bodyBold(size: 16))
                 Spacer()
                 Text("$\(Int(bestOffer.price))")
                     .font(SGFont.bodyBold(size: 15))
             }
-            .foregroundStyle(Color.sgBg)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.md)
-            .padding(.horizontal, Spacing.md)
-            .background(Color.sgYellow)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.md))
         }
         .accessibilityLabel("Continue to booking for $\(Int(bestOffer.price))")
         .padding(.top, Spacing.sm)
@@ -2503,6 +2572,22 @@ struct TripView: View {
 }
 
 private extension String {
+    /// Parse an ISO8601 (with or without timezone) datetime string and return
+    /// a short "h:mm a" board-style time label, e.g. "9:55 AM".
+    var boardTime: String {
+        var date = ISO8601DateFormatter().date(from: self)
+        if date == nil {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            date = fmt.date(from: self)
+        }
+        guard let d = date else { return self }
+        let out = DateFormatter()
+        out.dateFormat = "h:mm"
+        return out.string(from: d)
+    }
+
     var parsedISODate: Date? {
         let isoFormatter = ISO8601DateFormatter()
         if let isoDate = isoFormatter.date(from: self) {

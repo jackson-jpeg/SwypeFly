@@ -201,12 +201,62 @@ struct SeatMapView: View {
                     noSeatMapDesk
                 }
 
+                runningPriceFooter
                 actionCluster
             }
             .padding(.horizontal, Spacing.md)
             .padding(.top, Spacing.lg)
             .padding(.bottom, Spacing.xl)
         }
+    }
+
+    // MARK: - Running Price Footer
+
+    private var runningPriceFooter: some View {
+        SGCard(elevation: .lifted) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("RUNNING TOTAL")
+                        .font(SGFont.bodyBold(size: 9))
+                        .foregroundStyle(Color.sgMuted)
+                        .tracking(1.2)
+                    Text(selectedSeat == nil ? "Seat not selected" : "Base fare + seat add-on")
+                        .font(SGFont.body(size: 11))
+                        .foregroundStyle(Color.sgMuted)
+                }
+
+                Spacer()
+
+                SplitFlapText(
+                    text: runningTotalLabel,
+                    style: .price,
+                    maxLength: 7,
+                    animate: true,
+                    startDelay: 0,
+                    hapticOnSettle: true,
+                    animationID: runningTotalAnimationID
+                )
+            }
+        }
+        .onChange(of: store.selectedSeatId) { _, _ in
+            // Trigger flap re-animate on seat change
+        }
+    }
+
+    private var runningTotalLabel: String {
+        let baseFare = store.selectedOffer?.price ?? 0
+        let seatAddon = selectedSeat?.price ?? 0
+        let total = baseFare + seatAddon
+        if total > 0 { return "$\(Int(total))" }
+        return selectedSeat == nil ? "—" : selectedSeatFareLabel
+    }
+
+    private var runningTotalAnimationID: Int {
+        // Hash seat ID + price to produce a stable animation trigger
+        var hasher = Hasher()
+        hasher.combine(store.selectedSeatId ?? "")
+        hasher.combine(Int(selectedSeat?.price ?? 0))
+        return abs(hasher.finalize())
     }
 
     // MARK: - Header
@@ -552,6 +602,16 @@ struct SeatMapView: View {
                 tone: tone,
                 size: seatSize
             )
+            // Spring scale on selection; glow via shadow on selected seat
+            .scaleEffect(isSelected ? 1.15 : 1.0)
+            .animation(SGSpring.bouncy.respectingReduceMotion(), value: isSelected)
+            .shadow(
+                color: isSelected ? Color.sgYellow.opacity(0.5) : .clear,
+                radius: isSelected ? 12 : 0,
+                x: 0,
+                y: 0
+            )
+            .animation(SGSpring.bouncy.respectingReduceMotion(), value: isSelected)
         }
         .buttonStyle(.plain)
         .disabled(!seat.available)
@@ -1057,6 +1117,15 @@ private struct CabinSeatCell: View {
                         .strokeBorder(borderColor, lineWidth: isSelected || isExtraLegroom || isBestValue ? 2 : 1)
                 )
 
+            // Unavailable: crosshatch pattern + slow shimmer
+            if !seat.available {
+                CrosshatchPattern(size: size)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    // Slow shimmer at low intensity signals "check back later" energy
+                    .runwayShimmer(active: true, tint: .sgWhite, intensity: 0.08)
+                    .allowsHitTesting(false)
+            }
+
             if isBestValue && !isSelected {
                 Circle()
                     .fill(Color.sgOrange)
@@ -1077,7 +1146,44 @@ private struct CabinSeatCell: View {
                 }
             }
         }
-        .opacity(seat.available ? 1 : 0.6)
+        .opacity(seat.available ? 1 : 0.55)
+    }
+}
+
+// MARK: - CrosshatchPattern
+
+private struct CrosshatchPattern: View {
+    let size: CGFloat
+
+    var body: some View {
+        Canvas { ctx, sz in
+            let spacing: CGFloat = 6
+            let lineWidth: CGFloat = 0.8
+
+            ctx.stroke(
+                {
+                    var p = Path()
+                    // Diagonal lines \
+                    var x: CGFloat = -sz.height
+                    while x < sz.width + sz.height {
+                        p.move(to: CGPoint(x: x, y: 0))
+                        p.addLine(to: CGPoint(x: x + sz.height, y: sz.height))
+                        x += spacing
+                    }
+                    // Diagonal lines /
+                    x = -sz.height
+                    while x < sz.width + sz.height {
+                        p.move(to: CGPoint(x: x + sz.height, y: 0))
+                        p.addLine(to: CGPoint(x: x, y: sz.height))
+                        x += spacing
+                    }
+                    return p
+                }(),
+                with: .color(Color.sgWhite.opacity(0.12)),
+                lineWidth: lineWidth
+            )
+        }
+        .frame(width: size, height: size)
     }
 }
 

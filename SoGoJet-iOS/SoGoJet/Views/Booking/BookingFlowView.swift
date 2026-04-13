@@ -150,12 +150,26 @@ struct BookingFlowView: View {
         case .review, .paying:
             ReviewView()
         case .confirmed:
-            BoardingPassView(onBackToDeals: {
-                store.reset()
-                router.dismissFullScreen()
-            }, onShare: {
-                shareBoardingPass()
-            })
+            ZStack {
+                // Legacy scroll view content
+                BoardingPassView(onBackToDeals: {
+                    store.reset()
+                    router.dismissFullScreen()
+                }, onShare: {
+                    shareBoardingPass()
+                })
+
+                // Animated boarding pass overlay — covers screen, then done dismisses
+                BoardingPass(
+                    onDone: {
+                        store.reset()
+                        router.dismissFullScreen()
+                    },
+                    onShare: {
+                        shareBoardingPass()
+                    }
+                )
+            }
         }
     }
 
@@ -179,10 +193,10 @@ struct BookingFlowView: View {
                 }
             )
 
-            VintageTerminalProgressRail(
-                steps: flowSteps,
+            RunwayProgress(
+                stepCount: flowSteps.count,
                 currentIndex: currentStepIndex,
-                tone: .amber
+                labels: flowSteps
             )
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Booking progress: step \(currentStepIndex + 1) of \(flowSteps.count)")
