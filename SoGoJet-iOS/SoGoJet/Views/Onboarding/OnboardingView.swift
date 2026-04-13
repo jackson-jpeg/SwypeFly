@@ -12,6 +12,7 @@ struct OnboardingView: View {
     @State private var animateFlap = false
     @State private var cyclingTask: Task<Void, Never>?
     @State private var liveShowcases: [OnboardingShowcase]?
+    @State private var isPickingAirport = false
 
     private static let fallbackShowcases: [OnboardingShowcase] = [
         .init(code: "BCN", city: "BARCELONA", country: "Spain", price: "$287", vibe: "Culture"),
@@ -199,41 +200,79 @@ struct OnboardingView: View {
     // MARK: - Airport Selection
 
     private var airportSelection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             Text(String(localized: "onboarding.where_fly_from"))
                 .font(SGFont.bodyBold(size: 11))
                 .foregroundStyle(Color.sgMuted)
                 .tracking(1.4)
 
-            HStack(spacing: Spacing.sm) {
-                SplitFlapRow(
-                    text: settings.departureCode,
-                    maxLength: 3,
-                    size: .md,
-                    color: Color.sgWhite,
-                    alignment: .leading,
-                    animate: true,
-                    staggerMs: 28
+            Button {
+                HapticEngine.selection()
+                isPickingAirport = true
+            } label: {
+                HStack(alignment: .center, spacing: Spacing.md) {
+                    SplitFlapRow(
+                        text: settings.departureCode.isEmpty ? "---" : settings.departureCode,
+                        maxLength: 3,
+                        size: .lg,
+                        color: Color.sgYellow,
+                        alignment: .leading,
+                        animate: true,
+                        staggerMs: 28
+                    )
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(settings.departureCity.isEmpty ? "Choose departure airport" : settings.departureCity)
+                            .font(SGFont.bodyBold(size: 15))
+                            .foregroundStyle(Color.sgWhite)
+                            .lineLimit(1)
+                        Text(settings.departureCode.isEmpty ? "Tap to select" : "Tap to change")
+                            .font(SGFont.body(size: 11))
+                            .foregroundStyle(Color.sgMuted)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.sgFaint)
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.md)
+                .background(Color.sgSurfaceElevated)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.lg, style: .continuous)
+                        .strokeBorder(Color.sgHairline, lineWidth: 0.5)
                 )
-
-                Text(settings.departureCity)
-                    .font(SGFont.sectionHead)
-                    .foregroundStyle(Color.sgWhite)
+                .sgShadow(.lift)
             }
-
-            AirportPicker(
-                selectedCode: Binding(
-                    get: { settings.departureCode },
-                    set: updateDeparture(code:)
-                ),
-                dismissOnSelection: false
-            )
-            .frame(height: 580)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.lg)
-                    .strokeBorder(Color.sgBorder, lineWidth: 1)
-            )
+            .buttonStyle(.plain)
+            .accessibilityLabel("Departure airport: \(settings.departureCity.isEmpty ? "not selected" : settings.departureCity)")
+            .accessibilityHint("Opens airport picker")
+        }
+        .sheet(isPresented: $isPickingAirport) {
+            NavigationStack {
+                AirportPicker(
+                    selectedCode: Binding(
+                        get: { settings.departureCode },
+                        set: { code in
+                            updateDeparture(code: code)
+                            isPickingAirport = false
+                        }
+                    ),
+                    dismissOnSelection: true
+                )
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { isPickingAirport = false }
+                            .foregroundStyle(Color.sgYellow)
+                    }
+                }
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color.sgBg)
         }
     }
 
