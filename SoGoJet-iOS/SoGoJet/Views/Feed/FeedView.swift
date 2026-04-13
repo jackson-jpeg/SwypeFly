@@ -36,6 +36,13 @@ struct FeedView: View {
     @State private var showMap: Bool = false
     @State private var showTripPlanner: Bool = false
 
+    // MARK: - Phase 3: Departure Transition state
+    @StateObject private var departureTransition = DepartureTransition()
+    /// Saved-tab icon center point captured via SavedTabIconFrameKey from ContentView.
+    @State private var savedTabCenter: CGPoint = .zero
+    /// Board screen center — approximated as screen mid-x, ~55% screen height.
+    @State private var boardCenter: CGPoint = .zero
+
     /// Hero namespace — Phase 2. Wired to DealCard images with id "dest-<deal.id>".
     /// Ready for Phase 3 overlay presentation that replaces the sheet to allow
     /// true matchedGeometryEffect continuity across the feed→detail transition.
@@ -52,6 +59,7 @@ struct FeedView: View {
     }
 
     var body: some View {
+        GeometryReader { geo in
         ZStack {
             Color.sgBg.ignoresSafeArea()
 
@@ -64,6 +72,65 @@ struct FeedView: View {
             } else {
                 feedContent
             }
+
+            // MARK: Phase 3 — Departure Overlay (top-layer; not a sheet)
+            if let deal = departureTransition.pendingDeal,
+               departureTransition.phase != .idle {
+                DepartureOverlay(transition: departureTransition, deal: deal)
+                    .ignoresSafeArea()
+                    .zIndex(500)
+                    .transition(.opacity)
+            }
+
+            // MARK: Phase 3 — Flight Arc Badge
+            FlightArcBadge(
+                progress: departureTransition.arcProgress,
+                startPoint: boardCenter,
+                endPoint: savedTabCenter,
+                isVisible: departureTransition.badgeVisible
+            )
+            .ignoresSafeArea()
+            .zIndex(600)
+        }
+        // Capture board center and saved-tab icon center once geometry is known.
+        // Board center: middle of the screen, ~52% down.
+        // Saved-tab center: second of three tab items sits at ~33% from left edge,
+        //   ~24pt above the bottom of the safe area (tab bar icon center is ~24pt
+        //   from the bottom of the 49pt tab bar, plus safeAreaInsets.bottom).
+        // TODO: If a more precise tab frame is needed, wire SavedTabIconFrameKey
+        //   from a GeometryReader overlay inside ContentView's savedTab and pass
+        //   the value in via a shared @State or EnvironmentObject.
+        .onAppear {
+            let w = geo.size.width
+            let h = geo.size.height
+            boardCenter = CGPoint(x: w / 2, y: h * 0.52)
+            // Three equal tab columns; saved is the second (index 1)
+            let tabColWidth = w / 3.0
+            let tabX = tabColWidth * 1.5   // center of second tab column
+            let tabBarIconCenter: CGFloat = 24   // icon center from bottom of bar
+            let tabY = h + geo.safeAreaInsets.bottom - tabBarIconCenter
+            savedTabCenter = CGPoint(x: tabX, y: tabY)
+        }
+        .onChange(of: geo.size) { _, size in
+            let w = size.width
+            let h = size.height
+            boardCenter = CGPoint(x: w / 2, y: h * 0.52)
+            let tabColWidth = w / 3.0
+            let tabX = tabColWidth * 1.5
+            let tabBarIconCenter: CGFloat = 24
+            let tabY = h + geo.safeAreaInsets.bottom - tabBarIconCenter
+            savedTabCenter = CGPoint(x: tabX, y: tabY)
+        }
+        // Receive saved-tab center if ContentView reports a more precise frame
+        .onPreferenceChange(SavedTabIconFrameKey.self) { center in
+            if center != .zero { savedTabCenter = center }
+        }
+        // When transition reaches .done, commit the actual save
+        .onChange(of: departureTransition.phase) { _, newPhase in
+            if newPhase == .done, let deal = departureTransition.pendingDeal {
+                swipeSaveDeal(deal)
+            }
+        }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             if !network.isConnected {
@@ -216,7 +283,16 @@ struct FeedView: View {
                 onTap: { deal in openDeal(deal) },
                 onBook: { deal in bookDeal(deal) },
                 onVibeFilter: { vibe in filterByVibe(vibe) },
-                onAdvance: { advanceSwipeIndex() }
+                onAdvance: { advanceSwipeIndex() },
+                // Phase 3: intercept right-swipe save; actual store toggle fires
+                // when DepartureTransition reaches .done (see .onChange in body).
+                onDepartureCommit: { deal in
+                    guard departureTransition.phase == .idle else { return }
+                    departureTransition.start(deal: deal)
+                    // Advance card index immediately so the stack moves on while
+                    // the overlay plays over the new top card.
+                    advanceSwipeIndex()
+                }
             )
             .ignoresSafeArea()
 

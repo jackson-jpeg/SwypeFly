@@ -12,6 +12,12 @@ struct ContentView: View {
     @Environment(RecentlyViewedStore.self) private var recentlyViewedStore
     @Environment(TravelerStore.self) private var travelerStore
 
+    // MARK: - Phase 3: Saved tab icon frame reporting
+    /// Scale driven by DepartureTransition.tabIconScale — bounces 1.2→1.0 when badge lands.
+    /// Received via SavedTabIconFrameKey preference from FeedView; we publish it back
+    /// here as state so the saved tab label can animate.
+    @State private var savedTabIconScale: Double = 1.0
+
     var body: some View {
         ZStack {
             if RemoteConfig.shared.maintenanceMode {
@@ -154,12 +160,25 @@ struct ContentView: View {
     private var savedTab: some View {
         NavigationStack {
             SavedView()
+                // Brief yellow glow flash when badge lands (visible behind tab chrome)
+                .overlay(
+                    savedTabIconScale > 1.0
+                        ? Color.sgYellow.opacity(0.08).ignoresSafeArea()
+                        : nil
+                )
         }
         .tabItem {
             Label(Router.Tab.saved.title, systemImage: Router.Tab.saved.iconName)
         }
         .tag(Router.Tab.saved)
         .badge(savedBadgeCount)
+        .onReceive(NotificationCenter.default.publisher(for: .departureArcLanded)) { _ in
+            // Bounce the saved tab content scale as the badge "lands"
+            withAnimation(SGSpring.bouncy) { savedTabIconScale = 1.06 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                withAnimation(SGSpring.snappy) { savedTabIconScale = 1.0 }
+            }
+        }
     }
 
     private var settingsTab: some View {

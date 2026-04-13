@@ -18,6 +18,12 @@ struct SwipeableCardStack: View {
     var onLoadMore: () -> Void = {}
     var onStartOver: () -> Void = {}
 
+    /// Injected by FeedView so the card stack can trigger the Departure overlay.
+    /// When non-nil, the stack calls `onDepartureCommit(deal)` instead of `onSave`
+    /// for right-swipes. FeedView then starts the transition; `onSave` fires when
+    /// the transition reaches `.done`.
+    var onDepartureCommit: ((Deal) -> Void)? = nil
+
     /// How many cards peek behind the top card
     private let peekCount = 2
 
@@ -434,7 +440,13 @@ struct SwipeableCardStack: View {
         // Fire appropriate action
         if direction == .right {
             HapticEngine.boardingPass()
-            onSave(deal)
+            if let onDepartureCommit {
+                // Phase 3: trigger Departure overlay; actual save deferred until
+                // transition completes (FeedView calls onSave when state == .done).
+                onDepartureCommit(deal)
+            } else {
+                onSave(deal)
+            }
         } else {
             HapticEngine.light()
             onSkip(deal)
