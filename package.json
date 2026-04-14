@@ -47,7 +47,9 @@
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
+    "express": "^5.2.1",
     "node-appwrite": "^22.1.1",
+    "node-cron": "^4.2.1",
     "pg": "^8.20.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -64,7 +66,9 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/jest": "29.5.14",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "~19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",
