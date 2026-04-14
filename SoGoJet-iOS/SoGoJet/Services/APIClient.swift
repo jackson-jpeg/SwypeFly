@@ -69,6 +69,15 @@ actor APIClient {
         )
         case bookingCreateOrder(BookingCreateOrderRequest)
         case bookingOrder(orderId: String)
+        case bookingConfirmOffer(
+            offerId: String,
+            origin: String,
+            destination: String,
+            departureDate: String,
+            returnDate: String?,
+            cabinClass: String?,
+            expectedPrice: Double?
+        )
         case swipe(dealId: String, action: String)
         case alertCreate(destination: String, maxPrice: Int)
         case subscribe(email: String)
@@ -105,7 +114,8 @@ actor APIClient {
                      .bookingOffer,
                      .bookingPaymentIntent,
                      .bookingCreateOrder,
-                     .bookingOrder:
+                     .bookingOrder,
+                     .bookingConfirmOffer:
                     return "/booking"
                 case .swipe:          return "/swipe"
                 case .alertCreate:    return "/alerts"
@@ -142,6 +152,7 @@ actor APIClient {
                  .bookingSearch,
                  .bookingPaymentIntent,
                  .bookingCreateOrder,
+                 .bookingConfirmOffer,
                  .auth,
                  .authOAuth,
                  .savedSave,
@@ -227,6 +238,9 @@ actor APIClient {
 
             case .bookingCreateOrder:
                 return [URLQueryItem(name: "action", value: "create-order")]
+
+            case .bookingConfirmOffer:
+                return [URLQueryItem(name: "action", value: "confirm-offer")]
 
             case .auth:
                 return [URLQueryItem(name: "action", value: "apple")]
@@ -347,6 +361,18 @@ actor APIClient {
             case let .bookingCreateOrder(request):
                 let encoder = JSONEncoder()
                 return try? encoder.encode(request)
+
+            case let .bookingConfirmOffer(offerId, origin, destination, departureDate, returnDate, cabinClass, expectedPrice):
+                var body: [String: Any] = [
+                    "offerId": offerId,
+                    "origin": origin,
+                    "destination": destination,
+                    "departureDate": departureDate,
+                ]
+                if let returnDate { body["returnDate"] = returnDate }
+                if let cabinClass { body["cabinClass"] = cabinClass }
+                if let expectedPrice { body["expectedPrice"] = expectedPrice }
+                return try? JSONSerialization.data(withJSONObject: body)
 
             case let .auth(identityToken, givenName, familyName, email):
                 var body: [String: Any] = ["identityToken": identityToken]

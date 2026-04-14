@@ -11,7 +11,7 @@ import { showToast } from '../../stores/toastStore';
 import { useFilterStore } from '../../stores/filterStore';
 import PriceSparkline from './PriceSparkline';
 import ExpiryCountdown from '../common/ExpiryCountdown';
-import { getPriceConfidence, getPriceAgeLabel } from '../../utils/formatPrice';
+import { getPriceConfidence, getLivePillLabel } from '../../utils/formatPrice';
 import type { BoardDeal } from '../../types/deal';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -274,17 +274,17 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
             animate={animate}
           />
           <Text style={styles.priceLabel}>round trip</Text>
-          {/* Price confidence indicator — dot + age label */}
+          {/* Live-price pill — green dot + age (just now / Xm ago / checking…) */}
           {(() => {
             const confidence = getPriceConfidence(deal.priceSource, deal.priceFetchedAt, deal.offerExpiresAt);
-            const ageLabel = getPriceAgeLabel(deal.priceFetchedAt);
-            const dotColor = confidence === 'live' ? '#22c55e' : confidence === 'recent' ? '#eab308' : '#f97316';
+            if (confidence === 'estimate') return null;
+            const label = getLivePillLabel(deal.priceFetchedAt);
+            const isLive = confidence === 'live' && label !== 'checking…';
+            const dotColor = isLive ? colors.green : colors.yellow;
             return (
-              <View style={styles.confidenceRow}>
-                <View style={[styles.confidenceDot, { backgroundColor: dotColor }]} />
-                {ageLabel && (
-                  <Text style={styles.priceFreshness}>{ageLabel}</Text>
-                )}
+              <View style={styles.livePill}>
+                <View style={[styles.livePillDot, { backgroundColor: dotColor }]} />
+                <Text style={styles.livePillText}>live · {label}</Text>
               </View>
             );
           })()}
@@ -338,12 +338,15 @@ function SwipeCard({ deal, isSaved, isFirst, animate, onSave, onBook, onTap }: S
           {deal.nearbyOriginLabel ? `  ·  ${deal.nearbyOriginLabel}` : ''}
         </Text>
 
-        {/* Trip window badge */}
+        {/* Trip window badge — explicit depart → return + nights */}
         {deal.departureDate && deal.tripDays > 0 && (
           <View style={styles.tripWindowRow}>
             <Ionicons name="calendar-outline" size={11} color={colors.green} />
             <Text style={styles.tripWindowText}>
-              {formatShortDate(deal.departureDate)} · {deal.tripDays} days
+              {formatShortDate(deal.departureDate)}
+              {deal.returnDate ? ` – ${formatShortDate(deal.returnDate)}` : ''}
+              {' · '}
+              {deal.tripDays} {deal.tripDays === 1 ? 'night' : 'nights'}
             </Text>
           </View>
         )}
@@ -600,21 +603,28 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  confidenceRow: {
+  livePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 4,
+    marginTop: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  confidenceDot: {
-    width: 6,
-    height: 6,
+  livePillDot: {
+    width: 5,
+    height: 5,
     borderRadius: 3,
   },
-  priceFreshness: {
+  livePillText: {
     fontFamily: fonts.body,
     fontSize: 9,
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.3,
   },
   typicalRange: {
     fontFamily: fonts.body,

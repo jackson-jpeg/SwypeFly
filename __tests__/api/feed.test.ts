@@ -162,10 +162,68 @@ function makeDest(overrides: Record<string, unknown> = {}) {
   };
 }
 
-/** Push empty results for the 4 parallel feed tables */
-function pushEmptyParallel() {
+/**
+ * Build a synthetic Duffel-sourced cached_prices row for a destination.
+ * Phase 4: feed excludes destinations lacking a fresh Duffel price, so
+ * test fixtures must attach one per destination.
+ */
+let __iataCounter = 0;
+function makeDuffelPrice(dest: Record<string, unknown>) {
+  const price = (dest.flight_price as number) ?? 450;
+  // Assign a unique IATA code per destination so that cached_prices (keyed by
+  // iata_code) join 1:1 with destinations even when tests reuse the default
+  // IATA across multiple fixtures.
+  const n = __iataCounter++;
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const iata = `${letters[Math.floor(n / 676) % 26]}${letters[Math.floor(n / 26) % 26]}${letters[n % 26]}`;
+  dest.iata_code = iata;
+  const now = new Date();
+  const dep = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+  const ret = new Date(now.getTime() + 21 * 86400000).toISOString().split('T')[0];
+  return {
+    destination_iata: iata,
+    price,
+    airline: 'TestAir',
+    duration: '8h 0m',
+    source: 'duffel',
+    fetched_at: now.toISOString(),
+    offer_expires_at: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+    departure_date: dep,
+    return_date: ret,
+    trip_duration_days: 7,
+  };
+}
+
+/**
+ * Push parallel-fetch results with Duffel prices auto-generated from the
+ * destinations list so they survive the Phase 4 Duffel-only feed filter.
+ */
+function pushParallelWithPrices(dests: Array<Record<string, unknown>>) {
   pushResult('price_calendar', { data: [], error: null });
-  pushResult('cached_prices', { data: [], error: null });
+  pushResult('cached_prices', { data: dests.map(makeDuffelPrice), error: null });
+  pushResult('cached_hotel_prices', { data: [], error: null });
+  pushResult('destination_images', { data: [], error: null });
+}
+
+/**
+ * Push parallel-table results. Auto-derives Duffel cached_prices from the
+ * most recently pushed `destinations` queue entry so tests don't have to
+ * spell them out. Phase 4 requires a fresh Duffel price per destination
+ * or the feed excludes it.
+ *
+ * Pass `{ noPrices: true }` to keep cached_prices empty (for tests
+ * asserting the Duffel-only exclusion behaviour).
+ */
+function pushEmptyParallel(opts: { noPrices?: boolean } = {}) {
+  pushResult('price_calendar', { data: [], error: null });
+  if (opts.noPrices) {
+    pushResult('cached_prices', { data: [], error: null });
+  } else {
+    const destQueue = mockResultQueues.get('destinations');
+    const lastDestsEntry = destQueue && destQueue.length > 0 ? destQueue[destQueue.length - 1] : null;
+    const dests = Array.isArray(lastDestsEntry?.data) ? (lastDestsEntry!.data as Array<Record<string, unknown>>) : [];
+    pushResult('cached_prices', { data: dests.map(makeDuffelPrice), error: null });
+  }
   pushResult('cached_hotel_prices', { data: [], error: null });
   pushResult('destination_images', { data: [], error: null });
 }
@@ -791,7 +849,7 @@ describe('GET /api/feed', () => {
       const prices = [
         { destination_iata: 'Q01', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 80 },
         { destination_iata: 'Q02', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 15 },
-        // Q03 has no price entry → no deal_score → should be kept
+        // Q03 has no price entry → Phase 4 excludes it from the feed (Duffel-only)
         { destination_iata: 'Q04', origin, price: 300, airline: 'AA', duration: '4h', source: 'duffel', fetched_at: now.toISOString(), departure_date: futureDate, return_date: returnDate, trip_duration_days: 7, deal_score: 30 },
       ];
       pushResult('destinations', { data: dests, error: null });
@@ -809,7 +867,9 @@ describe('GET /api/feed', () => {
       const ids = body.destinations.map((d: any) => d.id);
       expect(ids).toContain('ds1');
       expect(ids).not.toContain('ds2');
-      expect(ids).toContain('ds3');
+      // Phase 4: destinations without a Duffel cached price are excluded
+      // from the feed (no Travelpayouts/indicative fallback).
+      expect(ids).not.toContain('ds3');
       expect(ids).toContain('ds4');
     });
 

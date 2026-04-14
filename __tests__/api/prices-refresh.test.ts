@@ -88,6 +88,19 @@ jest.mock('../../utils/config', () => ({
   REFRESH_BATCH_SIZE: 30,
   DUFFEL_CONCURRENCY: 15,
   PRICE_CHANGE_THRESHOLD: 0.05,
+  SEARCH_WINDOW_MONTHS: 6,
+  MAX_LAYOVER_HOURS: 8,
+  MIN_DEST_TIME_RATIO: 4,
+  TRIP_LENGTH_BUCKETS: [
+    { maxFlightHours: 2, nights: [3, 4, 2, 5] },
+    { maxFlightHours: 5, nights: [5, 4, 3, 6, 7] },
+    { maxFlightHours: 9, nights: [7, 8, 5, 10] },
+    { maxFlightHours: Infinity, nights: [10, 12, 7, 14] },
+  ],
+  SEARCH_MONTH_OFFSETS: [1, 3, 5],
+  TRIP_LENGTHS_PER_ROUTE: 2,
+  STALE_PRICE_MS: 15 * 60 * 1000,
+  OFFER_EXPIRY_SAFETY_MS: 5 * 60 * 1000,
 }));
 
 jest.mock('../../utils/apiLogger', () => ({ logApiError: jest.fn() }));
@@ -310,8 +323,9 @@ describe('api/prices/refresh', () => {
     expect(responseData.origins[0].sources.duffel).toBe(2);
     expect(responseData.batchSize).toBe(30);
 
-    // Verify Duffel was called for each destination
-    expect(mockSearchFlights).toHaveBeenCalledTimes(2);
+    // Verify Duffel was called for each destination: 1 probe + (SEARCH_MONTH_OFFSETS × TRIP_LENGTHS_PER_ROUTE)
+    // narrow searches per dest = 1 + 3*2 = 7 calls per dest; 2 destinations → 14 total.
+    expect(mockSearchFlights).toHaveBeenCalledTimes(14);
 
     // Verify cached_prices inserts (one per destination)
     const cachedPriceInserts = mockInsertCalls.filter((c) => c.table === 'cached_prices');

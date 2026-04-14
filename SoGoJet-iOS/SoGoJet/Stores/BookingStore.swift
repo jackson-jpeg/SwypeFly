@@ -45,6 +45,25 @@ final class BookingStore {
     private(set) var lastTripOptions: [TripOption] = []
     var paymentError: String?
 
+    // MARK: Confirm-Offer (live price parity)
+
+    /// The cached offer id carried from the feed deal, if any. Passed to confirm-offer
+    /// so the server can re-validate against the same cached fare.
+    var cachedOfferId: String?
+
+    /// Price the user saw on the feed card when they tapped Book. Used by confirm-offer
+    /// to detect drift between feed and live pricing.
+    var expectedPrice: Double?
+
+    /// Price-change alert payload surfaced after confirm-offer reports "expired".
+    /// When non-nil, the UI should show a "Prices just updated" dialog.
+    struct PriceUpdateAlert: Equatable, Sendable {
+        let oldPrice: Double?
+        let newPrice: Double?
+        let newOfferId: String?    // nil → flight no longer available
+    }
+    var priceUpdateAlert: PriceUpdateAlert?
+
     // MARK: Offer Expiration
 
     /// Parsed expiration date of the currently selected offer.
@@ -164,6 +183,9 @@ final class BookingStore {
         }
 
         self.deal = deal
+        cachedOfferId = deal.cachedOfferId
+        expectedPrice = deal.displayPrice
+        priceUpdateAlert = nil
         step = .idle
         selectedOffer = nil
         offerExpirationDate = nil
@@ -384,6 +406,12 @@ final class BookingStore {
             return
         }
 
+        // Live-price parity gate: re-validate the offer against the backend right before
+        // presenting payment. If the fare drifted, surface a "Prices just updated" alert
+        // via `priceUpdateAlert` and bail — the UI prompts the user to continue or cancel.
+        let confirmed = await confirmOfferBeforePayment(offer)
+        if !confirmed { return }
+
         let requestID = UUID()
         activeCheckoutRequestID = requestID
         paymentError = nil
@@ -580,6 +608,9 @@ final class BookingStore {
 
         step = .idle
         deal = nil
+        cachedOfferId = nil
+        expectedPrice = nil
+        priceUpdateAlert = nil
         selectedOffer = nil
         offerExpirationDate = nil
         offerSecondsRemaining = nil
@@ -602,6 +633,88 @@ final class BookingStore {
         lastSearchStartedAt = nil
         lastSearchCompletedAt = nil
         lastSearchErrorMessage = nil
+    }
+
+    // MARK: - Confirm Offer (live-price parity)
+
+    /// Hit POST /api/booking?action=confirm-offer to re-validate the offer before
+    /// presenting the payment sheet. Returns true when the offer is still valid and
+    /// payment can proceed; false when pricing drifted (caller should bail and let
+    /// the UI show the `priceUpdateAlert` dialog).
+    private func confirmOfferBeforePayment(_ offer: TripOption) async -> Bool {
+        guard let origin = searchOrigin ?? offer.outboundSlice?.origin ?? deal?.nearbyOrigin ?? deal?.iataCode,
+              let destination = searchDestination ?? offer.outboundSlice?.destination ?? deal?.iataCode,
+              let departureDate = searchDepartureDate else {
+            // Not enough context to confirm — proceed optimistically.
+            return true
+        }
+
+        do {
+            let response: ConfirmOfferResponse = try await APIClient.shared.fetch(
+                .bookingConfirmOffer(
+                    offerId: offer.id,
+                    origin: origin,
+                    destination: destination,
+                    departureDate: departureDate,
+                    returnDate: searchReturnDate,
+                    cabinClass: offer.cabinClass ?? searchCabinClass.rawValue,
+                    expectedPrice: expectedPrice ?? offer.price
+                )
+            )
+
+            if response.status == "valid" {
+                if let refreshed = response.offer {
+                    selectedOffer = refreshed
+                    startOfferExpirationTimer(for: refreshed)
+                }
+                return true
+            }
+
+            // expired — surface the price update alert and stop.
+            priceUpdateAlert = PriceUpdateAlert(
+                oldPrice: response.oldPrice ?? expectedPrice ?? offer.price,
+                newPrice: response.newPrice ?? response.newOffer?.price,
+                newOfferId: response.newOffer?.id
+            )
+            if let newOffer = response.newOffer {
+                // Stash the refreshed offer so `continueAfterPriceUpdate` can swap to it.
+                pendingRefreshedOffer = newOffer
+            } else {
+                pendingRefreshedOffer = nil
+            }
+            HapticEngine.warning()
+            return false
+        } catch {
+            // Network/decoding error — don't block checkout, proceed optimistically.
+            SGLogger.booking.debug("confirm-offer failed, proceeding: \(error)")
+            return true
+        }
+    }
+
+    /// Set by `confirmOfferBeforePayment` when the server returned a refreshed offer.
+    /// Applied by `continueAfterPriceUpdate` if the user taps Continue.
+    @ObservationIgnored private var pendingRefreshedOffer: TripOption?
+
+    /// User tapped "Continue" on the "Prices just updated" dialog. Swap to the refreshed
+    /// offer and resume the payment-preparation flow. No-op if no refreshed offer was
+    /// returned (e.g. flight no longer available).
+    func continueAfterPriceUpdate() async {
+        guard let refreshed = pendingRefreshedOffer else {
+            priceUpdateAlert = nil
+            return
+        }
+        selectedOffer = refreshed
+        expectedPrice = refreshed.price
+        startOfferExpirationTimer(for: refreshed)
+        pendingRefreshedOffer = nil
+        priceUpdateAlert = nil
+        await preparePayment()
+    }
+
+    /// User tapped "Cancel" on the price-update dialog. Clear state so the UI can dismiss.
+    func dismissPriceUpdateAlert() {
+        priceUpdateAlert = nil
+        pendingRefreshedOffer = nil
     }
 
     func retryLastSearch() async {

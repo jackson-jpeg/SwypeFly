@@ -174,7 +174,7 @@ describe('GET /api/destination?action=calendar', () => {
     expect(body.calendar[1].price).toBe(258);
   });
 
-  it('falls back to Travelpayouts API when no cached data', async () => {
+  it('does not fall back to Travelpayouts when no cached data (Phase 4)', async () => {
     pushResult('price_calendar', { data: [], error: null });
     mockFetchPriceCalendar.mockResolvedValueOnce([
       { date: '2026-05-15', price: 400, airline: 'BA', transferCount: 0 },
@@ -187,15 +187,16 @@ describe('GET /api/destination?action=calendar', () => {
     await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(mockFetchPriceCalendar).toHaveBeenCalled();
+    // Phase 4: Travelpayouts calendar fallback removed.
+    expect(mockFetchPriceCalendar).not.toHaveBeenCalled();
     const body = res.json.mock.calls[0][0];
-    expect(body.calendar).toHaveLength(1);
-    // Price with markup: Math.round(400 * 1.03) = 412
-    expect(body.calendar[0].price).toBe(412);
-    expect(body.cheapestDate).toBe('2026-05-15');
+    expect(body.calendar).toBeNull();
+    expect(body.cheapestDate).toBeNull();
+    expect(body.cheapestPrice).toBeNull();
+    expect(body.reason).toBe('not_yet_indexed');
   });
 
-  it('returns empty calendar when no data anywhere', async () => {
+  it('returns not_yet_indexed when no calendar data cached', async () => {
     pushResult('price_calendar', { data: [], error: null });
     mockFetchPriceCalendar.mockResolvedValueOnce([]);
 
@@ -207,9 +208,12 @@ describe('GET /api/destination?action=calendar', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
-    expect(body.calendar).toHaveLength(0);
+    expect(body.calendar).toBeNull();
     expect(body.cheapestDate).toBeNull();
     expect(body.cheapestPrice).toBeNull();
+    expect(body.reason).toBe('not_yet_indexed');
+    // Travelpayouts fallback is gone.
+    expect(mockFetchPriceCalendar).not.toHaveBeenCalled();
   });
 
   it('sets Cache-Control header', async () => {
@@ -247,7 +251,7 @@ describe('GET /api/destination?action=monthly', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it('returns monthly prices', async () => {
+  it('returns not_yet_indexed (Travelpayouts removed in Phase 4)', async () => {
     mockFetchMonthlyPrices.mockResolvedValueOnce([
       { month: '2026-05', price: 350 },
       { month: '2026-06', price: 280 },
@@ -262,13 +266,15 @@ describe('GET /api/destination?action=monthly', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
-    expect(body.months).toHaveLength(3);
-    expect(body.cheapestMonth).toBe('2026-06');
-    // 280 * 1.03 = 288.4 -> 288
-    expect(body.cheapestPrice).toBe(288);
+    // Phase 4: monthly overview no longer backed by Travelpayouts; returns empty with reason.
+    expect(body.months).toHaveLength(0);
+    expect(body.cheapestMonth).toBeNull();
+    expect(body.cheapestPrice).toBeNull();
+    expect(body.reason).toBe('not_yet_indexed');
+    expect(mockFetchMonthlyPrices).not.toHaveBeenCalled();
   });
 
-  it('returns empty months when Travelpayouts has no data', async () => {
+  it('returns empty months with not_yet_indexed reason', async () => {
     mockFetchMonthlyPrices.mockResolvedValueOnce([]);
 
     const req = makeReq({
@@ -281,6 +287,7 @@ describe('GET /api/destination?action=monthly', () => {
     const body = res.json.mock.calls[0][0];
     expect(body.months).toHaveLength(0);
     expect(body.cheapestMonth).toBeNull();
+    expect(body.reason).toBe('not_yet_indexed');
   });
 });
 
@@ -310,7 +317,7 @@ describe('GET /api/destination?action=week-matrix', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it('returns matrix data on valid request', async () => {
+  it('returns not_yet_indexed on valid request (Travelpayouts removed in Phase 4)', async () => {
     mockFetchWeekMatrix.mockResolvedValueOnce([
       { departDate: '2026-05-01', returnDate: '2026-05-08', price: 320 },
       { departDate: '2026-05-02', returnDate: '2026-05-09', price: 290 },
@@ -330,10 +337,11 @@ describe('GET /api/destination?action=week-matrix', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
-    expect(body.matrix).toHaveLength(2);
-    expect(body.cheapest).toBeDefined();
-    // First element after markup (sorted by fetchWeekMatrix)
-    expect(body.cheapest.departDate).toBe('2026-05-01');
+    // Phase 4: week-matrix is no longer backed by Travelpayouts.
+    expect(body.matrix).toHaveLength(0);
+    expect(body.cheapest).toBeNull();
+    expect(body.reason).toBe('not_yet_indexed');
+    expect(mockFetchWeekMatrix).not.toHaveBeenCalled();
   });
 
   it('returns null cheapest when matrix is empty', async () => {
@@ -459,9 +467,11 @@ describe('destination handler — error paths', () => {
     mockResultQueues.clear();
   });
 
-  it('returns 500 when calendar DB throws', async () => {
-    // Force the price_calendar query to fail
-    pushResult('price_calendar', { data: null, error: null });
+  it('calendar swallows DB errors and returns not_yet_indexed (Phase 4)', async () => {
+    // Force the price_calendar query to fail. The handler now catches the DB
+    // error internally, returns an empty cached set, and reports not_yet_indexed
+    // (since there is no Travelpayouts fallback to trigger).
+    pushResult('price_calendar', { data: null, error: new Error('DB down') });
     mockFetchPriceCalendar.mockRejectedValueOnce(new Error('Travelpayouts timeout'));
 
     const req = makeReq({
@@ -470,10 +480,17 @@ describe('destination handler — error paths', () => {
     const res = makeRes();
     await handler(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.calendar).toBeNull();
+    expect(body.reason).toBe('not_yet_indexed');
+    // Travelpayouts is not touched even on DB failure.
+    expect(mockFetchPriceCalendar).not.toHaveBeenCalled();
   });
 
-  it('returns 500 when monthly API throws', async () => {
+  it('monthly no longer throws: Travelpayouts path removed (Phase 4)', async () => {
+    // Even if Travelpayouts would error, the handler never calls it anymore,
+    // so the response is the stable not_yet_indexed shape.
     mockFetchMonthlyPrices.mockRejectedValueOnce(new Error('API failure'));
 
     const req = makeReq({
@@ -482,10 +499,14 @@ describe('destination handler — error paths', () => {
     const res = makeRes();
     await handler(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.months).toHaveLength(0);
+    expect(body.reason).toBe('not_yet_indexed');
+    expect(mockFetchMonthlyPrices).not.toHaveBeenCalled();
   });
 
-  it('returns 500 when week-matrix API throws', async () => {
+  it('week-matrix no longer throws: Travelpayouts path removed (Phase 4)', async () => {
     mockFetchWeekMatrix.mockRejectedValueOnce(new Error('API failure'));
 
     const req = makeReq({
@@ -500,6 +521,11 @@ describe('destination handler — error paths', () => {
     const res = makeRes();
     await handler(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.matrix).toHaveLength(0);
+    expect(body.cheapest).toBeNull();
+    expect(body.reason).toBe('not_yet_indexed');
+    expect(mockFetchWeekMatrix).not.toHaveBeenCalled();
   });
 });

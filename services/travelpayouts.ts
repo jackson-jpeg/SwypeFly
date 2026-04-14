@@ -1,3 +1,4 @@
+// DEPRECATED for user-facing paths. Only used by admin/analytics tooling. Do not re-introduce to feed/destination.
 import { env } from '../utils/env';
 
 const TRAVELPAYOUTS_TOKEN = env.TRAVELPAYOUTS_API_TOKEN || '';

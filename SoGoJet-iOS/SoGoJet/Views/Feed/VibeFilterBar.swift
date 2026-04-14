@@ -45,37 +45,29 @@ struct VibeFilterBar: View {
                 onSelect(id)
             }
         } label: {
-            ZStack {
-                // Moving background capsule — sits behind the text
-                if isSelected {
-                    Capsule()
-                        .fill(Color.sgYellow)
-                        .matchedGeometryEffect(id: "selectedPill", in: pillNS)
-                }
-                Text(label)
-                    .sgFont(.micro)
-                    .foregroundStyle(isSelected ? Color.sgBg : Color.sgWhiteDim)
-                    .padding(.horizontal, Spacing.sm + 2)
-                    .padding(.vertical, Spacing.xs + 1)
-                    .background(
-                        Group {
-                            if isSelected {
-                                Color.clear
-                            } else {
-                                Capsule().fill(Color.sgSurfaceElevated)
-                            }
-                        }
-                    )
-                    .overlay(
+            Text(label)
+                .sgFont(.micro)
+                .foregroundStyle(isSelected ? Color.sgBg : Color.sgWhiteDim)
+                .padding(.horizontal, Spacing.sm + 2)
+                .padding(.vertical, Spacing.xs + 1)
+                .background {
+                    if isSelected {
                         Capsule()
-                            .strokeBorder(
-                                isSelected
-                                    ? Color.clear
-                                    : Color.sgHairline,
-                                lineWidth: 0.5
-                            )
-                    )
-            }
+                            .fill(Color.sgYellow)
+                            .matchedGeometryEffect(id: "selectedPill", in: pillNS)
+                    } else {
+                        Capsule()
+                            .fill(Color.sgSurfaceElevated)
+                    }
+                }
+                .overlay(
+                    Capsule()
+                        .strokeBorder(
+                            isSelected ? Color.clear : Color.sgHairline,
+                            lineWidth: 0.5
+                        )
+                )
+                .fixedSize(horizontal: true, vertical: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isAll ? "All destinations" : label.lowercased())

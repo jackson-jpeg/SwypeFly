@@ -16,6 +16,20 @@ struct ReviewView: View {
         store.selectedOffer
     }
 
+    private var priceUpdateBinding: Binding<Bool> {
+        Binding(
+            get: { store.priceUpdateAlert != nil },
+            set: { isPresented in
+                if !isPresented { store.dismissPriceUpdateAlert() }
+            }
+        )
+    }
+
+    private var priceUpdateAlertTitle: String {
+        guard let update = store.priceUpdateAlert else { return "" }
+        return update.newOfferId == nil ? "Flight unavailable" : "Prices just updated"
+    }
+
     var body: some View {
         Group {
             if store.step == .paying {
@@ -26,6 +40,32 @@ struct ReviewView: View {
         }
         .sheet(isPresented: $showSignInSheet) {
             BookingSignInSheet()
+        }
+        .alert(
+            priceUpdateAlertTitle,
+            isPresented: priceUpdateBinding,
+            presenting: store.priceUpdateAlert
+        ) { update in
+            if update.newOfferId != nil {
+                Button("Continue") {
+                    Task { await store.continueAfterPriceUpdate() }
+                }
+                Button("Cancel", role: .cancel) {
+                    store.dismissPriceUpdateAlert()
+                }
+            } else {
+                Button("OK", role: .cancel) {
+                    store.dismissPriceUpdateAlert()
+                }
+            }
+        } message: { update in
+            if update.newOfferId == nil {
+                Text("This flight is no longer available. Please pick another fare.")
+            } else if let old = update.oldPrice, let new = update.newPrice {
+                Text("The price for this fare updated from $\(Int(old)) to $\(Int(new)). Continue to book at the new price?")
+            } else {
+                Text("The price for this fare just updated. Continue to review the new price?")
+            }
         }
         .onChange(of: auth.isAuthenticated) { _, isAuth in
             if isAuth, proceedAfterSignIn {

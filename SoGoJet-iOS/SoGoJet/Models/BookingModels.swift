@@ -216,6 +216,21 @@ struct AvailableService: Codable, Hashable, Sendable {
     let currency: String
 }
 
+// MARK: - Confirm Offer (live-price parity)
+
+/// Response from POST /api/booking?action=confirm-offer.
+/// Called right before payment to verify the cached offer is still valid and priced as expected.
+struct ConfirmOfferResponse: Codable, Sendable {
+    let status: String              // "valid" | "expired"
+    let reason: String?             // "offer_expired" when expired
+    let offer: TripOption?          // present when status == "valid"
+    let priceMatched: Bool?         // present when status == "valid"
+    let price: Double?              // present when status == "valid"
+    let newOffer: TripOption?       // present when status == "expired", may be null if no fares
+    let oldPrice: Double?
+    let newPrice: Double?
+}
+
 struct BookingOfferResponse: Codable, Sendable {
     let offer: TripOption
     let seatMap: SeatMap?

@@ -32,6 +32,21 @@ export function getPriceAgeLabel(priceFetchedAt: string | undefined): string | n
   return `${days}d ago`;
 }
 
+/**
+ * Live-price pill label. <60s → "just now", <15m → "Xm ago", else "checking…".
+ * Backend re-fetches stale offers, so >15min means a refresh is in flight.
+ */
+export function getLivePillLabel(priceFetchedAt: string | undefined): string {
+  if (!priceFetchedAt) return 'checking…';
+  const ageMs = Date.now() - new Date(priceFetchedAt).getTime();
+  if (isNaN(ageMs) || ageMs < 0) return 'checking…';
+  const seconds = Math.floor(ageMs / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes <= 15) return `${minutes}m ago`;
+  return 'checking…';
+}
+
 export function formatPriceWithConfidence(
   price: number | null,
   _confidence: PriceConfidence,

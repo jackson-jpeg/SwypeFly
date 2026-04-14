@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { OfferRequest } from '@duffel/api/types';
 import { supabase, TABLES } from '../services/supabaseServer';
 import { destinationQuerySchema, priceCalendarQuerySchema, weekMatrixQuerySchema, priceHistoryQuerySchema, validateRequest } from '../utils/validation';
-import { fetchPriceCalendar, fetchMonthlyPrices, fetchWeekMatrix } from '../services/travelpayouts';
 import { getOffersFromResult, sortOffersByPrice, extractCheapestOfferData } from '../utils/duffelMapper';
 import { logApiError } from '../utils/apiLogger';
 import { cors } from './_cors.js';
@@ -141,25 +140,14 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Fallback: live Travelpayouts call
-    const rawCalendar = await fetchPriceCalendar(origin, destination, 'USD', month);
-    if (rawCalendar.length === 0) {
-      return res.status(200).json({ calendar: [], cheapestDate: null, cheapestPrice: null });
-    }
-
-    const calendar = rawCalendar.map((entry) => ({
-      ...entry,
-      price: withMarkup(entry.price) ?? entry.price,
-    }));
-
-    const cheapest = calendar.reduce((min, entry) =>
-      entry.price < min.price ? entry : min, calendar[0]);
-
-    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+    // Phase 4: no Travelpayouts fallback. If price_calendar is empty for this
+    // route, signal "not yet indexed" instead of serving stale indicative data.
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({
-      calendar,
-      cheapestDate: cheapest.date,
-      cheapestPrice: cheapest.price,
+      calendar: null,
+      cheapestDate: null,
+      cheapestPrice: null,
+      reason: 'not_yet_indexed',
     });
   } catch (err) {
     logApiError('api/destination?action=calendar', err);
@@ -172,32 +160,16 @@ async function handleCalendar(req: VercelRequest, res: VercelResponse) {
 async function handleMonthly(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(priceCalendarQuerySchema, req.query);
   if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
-  const { origin, destination } = v.data;
 
-  try {
-    const rawMonthly = await fetchMonthlyPrices(origin, destination, 'USD');
-    if (rawMonthly.length === 0) {
-      return res.status(200).json({ months: [], cheapestMonth: null, cheapestPrice: null });
-    }
-
-    const monthly = rawMonthly.map((entry) => ({
-      ...entry,
-      price: withMarkup(entry.price) ?? entry.price,
-    }));
-
-    const cheapest = monthly.reduce((min, entry) =>
-      entry.price < min.price ? entry : min, monthly[0]);
-
-    res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate=14400');
-    return res.status(200).json({
-      months: monthly,
-      cheapestMonth: cheapest.month,
-      cheapestPrice: cheapest.price,
-    });
-  } catch (err) {
-    logApiError('api/destination?action=monthly', err);
-    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load monthly prices');
-  }
+  // Phase 4: Travelpayouts removed from user-facing paths. Monthly overview
+  // is not backed by Duffel yet — return empty with a reason.
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+  return res.status(200).json({
+    months: [],
+    cheapestMonth: null,
+    cheapestPrice: null,
+    reason: 'not_yet_indexed',
+  });
 }
 
 // ─── Week flexibility matrix handler ─────────────────────────────────
@@ -205,27 +177,15 @@ async function handleMonthly(req: VercelRequest, res: VercelResponse) {
 async function handleWeekMatrix(req: VercelRequest, res: VercelResponse) {
   const v = validateRequest(weekMatrixQuerySchema, req.query);
   if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
-  const { origin, destination, departDate, returnDate } = v.data;
 
-  try {
-    const rawMatrix = await fetchWeekMatrix(origin, destination, departDate, returnDate);
-    const matrix = rawMatrix.map((entry) => ({
-      ...entry,
-      price: withMarkup(entry.price) ?? entry.price,
-    }));
-    const cheapest = matrix.length > 0 ? matrix[0] : null;
-
-    res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate=14400');
-    return res.status(200).json({
-      matrix,
-      cheapest: cheapest
-        ? { departDate: cheapest.departDate, returnDate: cheapest.returnDate, price: cheapest.price }
-        : null,
-    });
-  } catch (err) {
-    logApiError('api/destination?action=week-matrix', err);
-    return sendError(res, 500, 'INTERNAL_ERROR', 'Failed to load week matrix');
-  }
+  // Phase 4: Travelpayouts removed from user-facing paths. Week-matrix
+  // flexibility grid is not backed by Duffel yet — return empty with a reason.
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+  return res.status(200).json({
+    matrix: [],
+    cheapest: null,
+    reason: 'not_yet_indexed',
+  });
 }
 
 // ─── Price history handler ───────────────────────────────────────────
@@ -379,7 +339,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     dest = destData;
 
-    // Fetch cached prices for this origin + destination
+    // Fetch cached prices for this origin + destination.
+    // Phase 4: only Duffel-sourced prices are user-facing. Ignore any
+    // Travelpayouts / indicative cache rows.
     let price: Record<string, unknown> | null = null;
     try {
       const { data: priceData } = await supabase
@@ -387,6 +349,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('*')
         .eq('origin', origin)
         .eq('destination_iata', dest.iata_code as string)
+        .eq('source', 'duffel')
         .order('price', { ascending: true })
         .limit(1);
       if (priceData && priceData.length > 0) {
@@ -394,6 +357,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch {
       // No cached prices
+    }
+
+    // If no cached Duffel price, try an on-demand Duffel search synchronously
+    // (best-effort, short timeout). Falls through to null if Duffel doesn't
+    // support the route.
+    if (!price && origin && dest.iata_code) {
+      try {
+        const { searchFlights } = await import('../services/duffel.js');
+        const now = new Date();
+        const offset = 14 + Math.floor(Math.random() * 14);
+        const dep = new Date(now.getTime() + offset * 86400000);
+        const dow = dep.getDay();
+        if (dow === 0) dep.setDate(dep.getDate() + 2);
+        else if (dow === 6) dep.setDate(dep.getDate() + 3);
+        else if (dow === 5) dep.setDate(dep.getDate() + 4);
+        else if (dow === 1) dep.setDate(dep.getDate() + 1);
+        const ret = new Date(dep.getTime() + 7 * 86400000);
+        const depStr = dep.toISOString().slice(0, 10);
+        const retStr = ret.toISOString().slice(0, 10);
+
+        const result = await searchFlights({
+          origin,
+          destination: dest.iata_code as string,
+          departureDate: depStr,
+          returnDate: retStr,
+          passengers: [{ type: 'adult' }],
+          cabinClass: 'economy',
+        });
+        const offers = getOffersFromResult(result as OfferRequest);
+        if (offers.length) {
+          const sorted = sortOffersByPrice(offers);
+          const data = extractCheapestOfferData(sorted[0]);
+          price = {
+            price: data.price,
+            airline: data.airlineCode,
+            duration: data.duration,
+            source: 'duffel',
+            fetched_at: new Date().toISOString(),
+            departure_date: depStr,
+            return_date: retStr,
+            trip_duration_days: 7,
+          };
+          // Best-effort cache write
+          supabase.from(TABLES.cachedPrices).upsert(
+            {
+              origin,
+              destination_iata: dest.iata_code as string,
+              price: data.price,
+              currency: 'USD',
+              airline: data.airlineCode,
+              duration: data.duration,
+              source: 'duffel',
+              fetched_at: new Date().toISOString(),
+              departure_date: depStr,
+              return_date: retStr,
+              trip_duration_days: 7,
+            },
+            { onConflict: 'origin,destination_iata' },
+          ).then(() => {}, () => {});
+        }
+      } catch (err) {
+        console.warn(`[destination] On-demand Duffel fetch failed:`, err instanceof Error ? err.message : err);
+      }
     }
 
     // If cached price is stale (>2h old), trigger a background Duffel search.
@@ -438,10 +464,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const refreshedImage = imageResult[0];
 
+    // Phase 4: similarDestinations no longer carries Travelpayouts indicative
+    // flightPrice. Clients should fetch live Duffel price on tap if needed.
     const similarDestinations = similarResult.map((d) => ({
       id: d.id as string,
       city: d.city as string,
-      flightPrice: withMarkup((d.flight_price as number) ?? 0) ?? 0,
+      flightPrice: null,
       imageUrl: (d.image_url as string) ?? '',
     }));
 
@@ -468,7 +496,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       description: dest.description,
       imageUrl: (refreshedImage?.url_regular as string) || dest.image_url,
       imageUrls: dest.image_urls,
-      flightPrice: withMarkup((price?.price as number) ?? dest.flight_price),
+      // Phase 4: no Travelpayouts/indicative fallback. If no Duffel price, null.
+      flightPrice: withMarkup((price?.price as number) ?? null),
       hotelPricePerNight: (hotelPrice?.price_per_night as number) ?? dest.hotel_price_per_night,
       currency: dest.currency,
       vibeTags: dest.vibe_tags,
@@ -476,7 +505,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       averageTemp: dest.average_temp,
       flightDuration: (price?.duration as string) || dest.flight_duration,
       livePrice: withMarkup((price?.price as number) ?? null),
-      priceSource: price ? ((price.source as string) || 'estimate') : 'estimate',
+      priceSource: price ? ((price.source as string) || 'duffel') : null,
       priceFetchedAt: (price?.fetched_at as string) || undefined,
       liveHotelPrice: (hotelPrice?.price_per_night as number) ?? null,
       hotelPriceSource: hotelPrice ? ((hotelPrice.source as string) || 'estimate') : 'estimate',

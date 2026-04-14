@@ -4,7 +4,9 @@ import { feedQuerySchema, budgetDiscoveryQuerySchema, detectOriginQuerySchema, v
 import { logApiError } from '../utils/apiLogger';
 import { generateAviasalesLink } from '../utils/affiliateLinks';
 import { verifyClerkToken } from '../utils/clerkAuth';
-import { fetchByPriceRange, detectOriginAirport } from '../services/travelpayouts';
+// Phase 4: Travelpayouts removed from user-facing pricing paths.
+// Only detectOriginAirport (IP → airport geolocation, no pricing data) remains.
+import { detectOriginAirport } from '../services/travelpayouts';
 import { searchFlights } from '../services/duffel';
 import type { OfferRequest, OfferSlice, OfferSliceSegment } from '@duffel/api/types';
 import {
@@ -18,7 +20,7 @@ import { bulkGetRouteStats } from '../utils/priceStats';
 import { nearbyAirports } from '../data/airports';
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import { env } from '../utils/env';
-import { FEED_PAGE_SIZE, STALE_PRICE_MS, DUFFEL_CONCURRENCY } from '../utils/config';
+import { FEED_PAGE_SIZE, STALE_PRICE_MS, OFFER_EXPIRY_SAFETY_MS, DUFFEL_CONCURRENCY } from '../utils/config';
 import { sendError } from '../utils/apiResponse';
 
 const PAGE_SIZE = FEED_PAGE_SIZE;
@@ -170,9 +172,16 @@ async function fetchLivePriceForDest(
 
 const ON_DEMAND_CONCURRENCY = DUFFEL_CONCURRENCY;
 
-function isPriceStale(fetchedAt: string | undefined): boolean {
+function isPriceStale(fetchedAt: string | undefined, offerExpiresAt?: string | undefined): boolean {
   if (!fetchedAt) return true;
-  return Date.now() - new Date(fetchedAt).getTime() > STALE_PRICE_MS;
+  if (Date.now() - new Date(fetchedAt).getTime() > STALE_PRICE_MS) return true;
+  // Offer-expiry awareness: if the Duffel offer is within OFFER_EXPIRY_SAFETY_MS of
+  // expiring (or already expired), treat as stale so we re-fetch a bookable offer.
+  if (offerExpiresAt) {
+    const expiresMs = new Date(offerExpiresAt).getTime();
+    if (!Number.isNaN(expiresMs) && expiresMs - Date.now() < OFFER_EXPIRY_SAFETY_MS) return true;
+  }
+  return false;
 }
 
 async function fillMissingPrices(
@@ -180,7 +189,7 @@ async function fillMissingPrices(
   origin: string,
 ): Promise<ReturnType<typeof toFrontend>[]> {
   const missing = page.filter(
-    (d) => !d.flightPrice || d.flightPrice <= 0 || d.priceSource !== 'duffel' || isPriceStale(d.priceFetchedAt),
+    (d) => !d.flightPrice || d.flightPrice <= 0 || d.priceSource !== 'duffel' || isPriceStale(d.priceFetchedAt, d.offerExpiresAt),
   );
   if (missing.length === 0) return page;
 
@@ -1692,35 +1701,28 @@ async function handleBudgetDiscovery(req: VercelRequest, res: VercelResponse) {
   const { origin, minPrice, maxPrice } = v.data;
 
   try {
-    const results = await fetchByPriceRange(origin, minPrice ?? 1, maxPrice);
-
-    // Enrich with destination metadata from our DB
+    // Phase 4: Travelpayouts removed. Budget discovery now filters
+    // destinations by cached Duffel prices only. If no Duffel price exists
+    // for a route, it's excluded — no indicative/stale pricing.
     const allDests = await getDestinationsWithPrices(origin);
-    const destMap = new Map(allDests.map((d) => [d.iata_code, d]));
-
-    const enriched = results
-      .map((r) => {
-        const dest = destMap.get(r.destination);
-        if (!dest) return null;
-        return {
-          ...toFrontend(dest, origin),
-          // Override price with the budget search result
-          flightPrice: r.price,
-          livePrice: r.price,
-          priceSource: 'travelpayouts' as const,
-          departureDate: r.departureDate,
-          returnDate: r.returnDate,
-          airline: r.airline,
-          affiliateUrl: generateAviasalesLink(origin, r.destination, r.departureDate, r.returnDate),
-        };
-      })
-      .filter(Boolean);
+    const lo = minPrice ?? 1;
+    const hi = maxPrice;
+    const enriched = allDests
+      .map((dest) => toFrontend(dest, origin))
+      .filter(
+        (d) =>
+          d.priceSource === 'duffel' &&
+          d.flightPrice != null &&
+          d.flightPrice >= lo &&
+          d.flightPrice <= hi,
+      )
+      .sort((a, b) => (a.flightPrice ?? 0) - (b.flightPrice ?? 0));
 
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
     return res.status(200).json({
       destinations: enriched,
-      budget: { min: minPrice ?? 1, max: maxPrice },
-      totalResults: results.length,
+      budget: { min: lo, max: hi },
+      totalResults: enriched.length,
       matchedDestinations: enriched.length,
     });
   } catch (err) {
@@ -1976,13 +1978,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const nextCursor = cursor + effectivePageSize < scored.length ? String(cursor + effectivePageSize) : null;
 
     // Separate destinations with and without prices
-    const withPrice = page.filter((d) => d.flightPrice && d.flightPrice > 0 && d.priceSource === 'duffel' && !isPriceStale(d.priceFetchedAt));
-    const withoutPrice = page.filter((d) => !d.flightPrice || d.flightPrice <= 0 || d.priceSource !== 'duffel' || isPriceStale(d.priceFetchedAt));
+    const withPrice = page.filter((d) => d.flightPrice && d.flightPrice > 0 && d.priceSource === 'duffel' && !isPriceStale(d.priceFetchedAt, d.offerExpiresAt));
+    const withoutPrice = page.filter((d) => !d.flightPrice || d.flightPrice <= 0 || d.priceSource !== 'duffel' || isPriceStale(d.priceFetchedAt, d.offerExpiresAt));
 
     if (withPrice.length >= 10) {
       // Plenty of priced destinations — show them, but refresh stale ones in background
       page = withPrice;
-      const stale = withPrice.filter((d) => isPriceStale(d.priceFetchedAt));
+      const stale = withPrice.filter((d) => isPriceStale(d.priceFetchedAt, d.offerExpiresAt));
       if (stale.length > 0) {
         // Fire-and-forget: refresh stale prices so NEXT page load is fresh
         fillMissingPrices(stale, origin).catch(() => {});
@@ -1994,7 +1996,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const fillResult = Promise.race([fillMissingPrices(withoutPrice, origin), timeout]);
       const filled = await fillResult;
       if (filled) {
-        const filledWithPrice = filled.filter((d) => d.flightPrice && d.flightPrice > 0);
+        const filledWithPrice = filled.filter(
+          (d) =>
+            d.flightPrice &&
+            d.flightPrice > 0 &&
+            d.priceSource === 'duffel' &&
+            !isPriceStale(d.priceFetchedAt, d.offerExpiresAt),
+        );
         page = [...withPrice, ...filledWithPrice];
       } else {
         page = withPrice; // Timeout — just use what we have
@@ -2002,7 +2010,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       // Very few cached prices — do full on-demand Duffel pricing
       page = await fillMissingPrices(page, origin);
-      page = page.filter((d) => d.flightPrice && d.flightPrice > 0);
+      page = page.filter(
+        (d) =>
+          d.flightPrice &&
+          d.flightPrice > 0 &&
+          d.priceSource === 'duffel' &&
+          !isPriceStale(d.priceFetchedAt, d.offerExpiresAt),
+      );
     }
 
     // Fire-and-forget: backfill remaining unpriced destinations
@@ -2012,6 +2026,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (stillUnpriced.length > 0) {
       fillMissingPrices(stillUnpriced, origin).catch(() => {});
     }
+
+    // Final safety: only Duffel-priced destinations ever reach the client.
+    // Phase 4: no Travelpayouts/indicative pricing in user-facing feed.
+    page = page.filter(
+      (d) =>
+        d.flightPrice &&
+        d.flightPrice > 0 &&
+        d.priceSource === 'duffel',
+    );
 
     const cacheTime = sessionId ? 0 : 60;
     res.setHeader(

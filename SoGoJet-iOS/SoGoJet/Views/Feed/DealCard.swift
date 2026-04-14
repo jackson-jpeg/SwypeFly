@@ -114,7 +114,7 @@ struct DealCard: View {
                         SplitFlapRow(
                             text: deal.city.uppercased(),
                             maxLength: 16,
-                            size: .md,
+                            size: cityFlapSize,
                             color: Color.sgWhite,
                             alignment: .leading,
                             animate: animate,
@@ -149,10 +149,9 @@ struct DealCard: View {
                             }
                         }
 
-                        HStack(alignment: .bottom, spacing: 8) {
-                            flightTeaser
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 6) {
                             priceBadge
+                            flightTeaser
                         }
                     }
                     .padding(.horizontal, 16)
@@ -375,47 +374,82 @@ struct DealCard: View {
         return deal.cardPriceLabelEnhanced
     }
 
-    /// Dynamic max length for split-flap — just enough cells for the price text.
+    /// Dynamic max length for split-flap — just enough cells for the price text,
+    /// clamped so absurdly long placeholders ("Check price") don't explode the pill.
     private var priceMaxLength: Int {
-        max(effectivePrice.count, 4) // At least 4 cells (e.g. "$271"), up to whatever the price needs
+        min(max(effectivePrice.count, 4), 6)
+    }
+
+    /// Text actually shown in the split-flap pill — truncated/substituted when
+    /// `effectivePrice` doesn't look like a price (e.g. "Check price").
+    private var priceDisplay: String {
+        if effectivePrice.hasPrefix("$") { return effectivePrice }
+        return "—"
+    }
+
+    /// Pick a split-flap cell size based on city name length so long names
+    /// ("MARTHA'S VINEYARD") still fit on the card without clipping.
+    private var cityFlapSize: SplitFlapSize {
+        let len = deal.city.count
+        if len <= 9 { return .lg }
+        if len <= 13 { return .md }
+        return .sm
+    }
+
+    /// Live-price freshness pill shown above the price badge.
+    /// Format: "live · 3m ago" / "live · just now" / "checking…"
+    /// Based on `priceFetchedAt` thresholds: <60s → just now, 1–15min → Xm ago,
+    /// >15min or missing → checking…
+    private var livePill: (text: String, color: Color)? {
+        // When we have a live override price from a booking search, always show "live · just now"
+        if livePriceOverride != nil {
+            return ("live · just now", Color.sgDealAmazing)
+        }
+        guard deal.hasPrice else { return nil }
+
+        // Parse priceFetchedAt — mirrors logic in Deal.priceAgeMinutes but second-precision.
+        let ageSeconds: Int? = {
+            guard let raw = deal.priceFetchedAt, !raw.isEmpty else { return nil }
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            var date = iso.date(from: raw)
+            if date == nil {
+                iso.formatOptions = [.withInternetDateTime]
+                date = iso.date(from: raw)
+            }
+            guard let d = date else { return nil }
+            return max(Int(Date().timeIntervalSince(d)), 0)
+        }()
+
+        guard let secs = ageSeconds else {
+            return ("checking…", Color.sgMuted)
+        }
+        if secs < 60 {
+            return ("live · just now", Color.sgDealAmazing)
+        }
+        let minutes = secs / 60
+        if minutes <= 15 {
+            return ("live · \(minutes)m ago", Color.sgDealAmazing)
+        }
+        return ("checking…", Color.sgMuted)
     }
 
     private var priceBadge: some View {
-        VStack(alignment: .trailing, spacing: 2) {
-            // Confidence indicator — color and label reflect source freshness
-            if livePriceOverride != nil {
+        VStack(alignment: .leading, spacing: 2) {
+            // Live price freshness pill — "live · Xm ago" / "just now" / "checking…"
+            if let pill = livePill {
                 HStack(spacing: 3) {
                     Circle()
-                        .fill(Color.sgDealAmazing)
+                        .fill(pill.color)
                         .frame(width: 5, height: 5)
-                    Text("live fare")
+                    Text(pill.text)
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Color.sgDealAmazing)
+                        .foregroundStyle(pill.color)
                         .fixedSize()
                 }
                 .opacity(priceRevealed ? 1 : 0)
                 .offset(x: priceRevealed ? 0 : -8)
-            } else if deal.hasPrice {
-                let confidence = deal.priceConfidence
-                let dotColor: Color = confidence == .live ? .sgDealAmazing
-                    : confidence == .recent ? .sgYellow
-                    : .orange
-                let label: String = confidence == .live ? "live fare"
-                    : confidence == .recent ? "recent fare"
-                    : "est. fare"
-                HStack(spacing: 3) {
-                    Circle()
-                        .fill(dotColor)
-                        .frame(width: 5, height: 5)
-                    Text(label)
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(dotColor)
-                        .fixedSize()
-                }
-                .opacity(priceRevealed ? 1 : 0)
-                // Savings badge slides in from leading edge with shimmer
-                .offset(x: priceRevealed ? 0 : -8)
-                .runwayShimmer(active: savingsShimmerActive, tint: dotColor, intensity: 0.35)
+                .runwayShimmer(active: savingsShimmerActive, tint: pill.color, intensity: 0.35)
             }
 
             HStack(spacing: 4) {
@@ -426,33 +460,20 @@ struct DealCard: View {
                         .foregroundStyle(deal.priceTrend == .down ? Color.sgDealAmazing : Color.sgRed)
                 }
 
-                // Price split-flaps in after reveal is triggered
-                SplitFlapText(
-                    text: effectivePrice,
-                    style: .price,
-                    maxLength: priceMaxLength,
-                    animate: priceRevealed && animate,
-                    startDelay: 0,
-                    animationID: animationTrigger,
-                    hapticOnSettle: animate
-                )
+                // Price — plain Bebas text for feed card legibility.
+                // (Split-flap animation lives on the detail page.)
+                Text(priceDisplay)
+                    .font(SGFont.display(size: 22))
+                    .foregroundStyle(Color.sgBg)
+                    .tracking(0.5)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(deal.tierColor)
             .clipShape(Capsule())
             .fixedSize()
-            .opacity(priceRevealed ? 1 : 0)
-            .scaleEffect(priceRevealed ? 1.0 : 0.88)
-
-            // Compact price age — always show so users know how old the price is
-            if let age = deal.priceAgeMinutes {
-                Text(age < 60 ? "\(age)m ago" : age < 1440 ? "\(age / 60)h ago" : "\(age / 1440)d ago")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.5))
-                    .fixedSize()
-                    .opacity(priceRevealed ? 1 : 0)
-            }
+            .layoutPriority(2)
 
             // Google Flights-style price level indicator
             if let level = deal.priceLevelLabel {

@@ -122,12 +122,14 @@ export default function ReviewPaymentScreen() {
     return unsubscribe;
   }, [navigation, paying, confirmed]);
 
-  // Price change modal
+  // Price change / expiry modal. `unavailable` = Duffel returned no replacement.
   const [priceChangeModal, setPriceChangeModal] = useState<{
     visible: boolean;
+    oldPrice: number;
     newPrice: number;
     newOfferId: string;
-  }>({ visible: false, newPrice: 0, newOfferId: '' });
+    unavailable: boolean;
+  }>({ visible: false, oldPrice: 0, newPrice: 0, newOfferId: '', unavailable: false });
 
   // ─── Fetch offer details ───────────────────────────────────────
 
@@ -226,6 +228,38 @@ export default function ReviewPaymentScreen() {
     setPaying(true);
 
     try {
+      // Step 0: Preflight confirm-offer — verify the cached offer is still valid
+      // at the expected price before charging the card.
+      const flowState = useBookingFlowStore.getState();
+      const expectedPrice = flowState.expectedPrice ?? offer.totalAmount;
+      const confirmRes = await fetch(`${API_BASE}/api/booking?action=confirm-offer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          offerId,
+          origin: flowState.origin || departureCode,
+          destination: flowState.destination || deal?.iataCode || '',
+          departureDate: flowState.departureDate || deal?.departureDate || '',
+          returnDate: flowState.returnDate || deal?.returnDate || '',
+          cabinClass: 'economy',
+          expectedPrice,
+        }),
+      });
+      if (confirmRes.ok) {
+        const cdata = await confirmRes.json();
+        if (cdata?.status === 'expired') {
+          setPriceChangeModal({
+            visible: true,
+            oldPrice: cdata.oldPrice ?? expectedPrice,
+            newPrice: cdata.newPrice ?? 0,
+            newOfferId: cdata.newOffer?.id ?? '',
+            unavailable: !cdata.newOffer,
+          });
+          setPaying(false);
+          return;
+        }
+      }
+
       // Step 1: Create payment intent
       const piRes = await fetch(`${API_BASE}/api/booking?action=payment-intent`, {
         method: 'POST',
@@ -242,8 +276,10 @@ export default function ReviewPaymentScreen() {
         const piData = await piRes.json();
         setPriceChangeModal({
           visible: true,
+          oldPrice: totalAmount,
           newPrice: piData.newPrice || totalAmount,
           newOfferId: piData.newOfferId || offerId,
+          unavailable: !piData.newOfferId,
         });
         setPaying(false);
         return;
@@ -293,8 +329,10 @@ export default function ReviewPaymentScreen() {
         const orderData = await orderRes.json();
         setPriceChangeModal({
           visible: true,
+          oldPrice: totalAmount,
           newPrice: orderData.newPrice || totalAmount,
           newOfferId: orderData.newOfferId || offerId,
+          unavailable: !orderData.newOfferId,
         });
         setPaying(false);
         return;
@@ -351,9 +389,20 @@ export default function ReviewPaymentScreen() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
   }
 
+  function closePriceChangeModal() {
+    setPriceChangeModal({ visible: false, oldPrice: 0, newPrice: 0, newOfferId: '', unavailable: false });
+  }
+
   function handlePriceChangeAccept() {
+    if (priceChangeModal.unavailable || !priceChangeModal.newOfferId) {
+      // No replacement offer available — send the user back to the feed.
+      closePriceChangeModal();
+      router.dismissAll();
+      router.replace('/(tabs)');
+      return;
+    }
     useBookingFlowStore.getState().setOfferId(priceChangeModal.newOfferId);
-    setPriceChangeModal({ visible: false, newPrice: 0, newOfferId: '' });
+    closePriceChangeModal();
   }
 
   // ─── Confirmed view ───────────────────────────────────────────
@@ -686,29 +735,43 @@ export default function ReviewPaymentScreen() {
         visible={priceChangeModal.visible}
         transparent
         animationType="fade"
-        onRequestClose={() =>
-          setPriceChangeModal({ visible: false, newPrice: 0, newOfferId: '' })
-        }
+        onRequestClose={closePriceChangeModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Ionicons name="alert-circle" size={40} color={colors.orange} />
-            <Text style={styles.modalTitle}>Price Changed</Text>
-            <Text style={styles.modalBody}>
-              The price has changed to ${priceChangeModal.newPrice.toFixed(0)}. Would you like to
-              continue with the new price?
+            <Text style={styles.modalTitle}>
+              {priceChangeModal.unavailable ? 'No longer available' : 'Prices just updated'}
             </Text>
+            {priceChangeModal.unavailable ? (
+              <Text style={styles.modalBody}>
+                This flight is no longer available. Search again?
+              </Text>
+            ) : (
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <Text style={styles.modalBody}>
+                  The fare for this itinerary changed.
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10, marginTop: 4 }}>
+                  <Text style={[styles.modalBody, { textDecorationLine: 'line-through', color: colors.muted }]}>
+                    ${priceChangeModal.oldPrice.toFixed(0)}
+                  </Text>
+                  <Text style={[styles.modalTitle, { color: colors.yellow }]}>
+                    ${priceChangeModal.newPrice.toFixed(0)}
+                  </Text>
+                </View>
+              </View>
+            )}
             <View style={styles.modalActions}>
-              <Pressable
-                onPress={() =>
-                  setPriceChangeModal({ visible: false, newPrice: 0, newOfferId: '' })
-                }
-                style={styles.modalCancelBtn}
-              >
+              <Pressable onPress={closePriceChangeModal} style={styles.modalCancelBtn}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </Pressable>
               <Pressable onPress={handlePriceChangeAccept} style={styles.modalAcceptBtn}>
-                <Text style={styles.modalAcceptText}>Continue</Text>
+                <Text style={styles.modalAcceptText}>
+                  {priceChangeModal.unavailable
+                    ? 'Search again'
+                    : `Continue at $${priceChangeModal.newPrice.toFixed(0)}`}
+                </Text>
               </Pressable>
             </View>
           </View>

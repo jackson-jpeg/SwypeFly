@@ -22,7 +22,7 @@ enum SplitFlapStyle {
         switch self {
         case .headline: return .lg
         case .ticker:   return .md
-        case .price:    return .md
+        case .price:    return .sm
         case .tag:      return .sm
         }
     }

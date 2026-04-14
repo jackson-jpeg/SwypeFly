@@ -4,6 +4,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   bookingSearchSchema,
   bookingOfferSchema,
+  bookingConfirmOfferSchema,
   paymentIntentSchema,
   createOrderSchema,
   bookingOrderSchema,
@@ -1672,6 +1673,131 @@ async function handleHotelBook(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Confirm Offer (Phase 3: price parity guarantee) ───────────────────────
+//
+// Validates a cached Duffel offer ID right before checkout. If the offer is
+// still live on Duffel, we return it with the marked-up price. If Duffel 404s
+// or the offer has expired, we re-search the same route/dates and return a
+// fresh offer so the client can surface a "price changed" modal.
+
+async function handleConfirmOffer(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+
+  const v = validateRequest(bookingConfirmOfferSchema, req.body);
+  if (!v.success) return sendError(res, 400, 'VALIDATION_ERROR', v.error);
+
+  if (STUB_MODE) {
+    // In stub mode we can't meaningfully validate a Duffel offer. Return a
+    // stub offer so dev/preview environments still render a checkout.
+    const stub = stubOffer(v.data.offerId);
+    const stubPrice = stub.offer?.totalAmount ?? 0;
+    return res.status(200).json({
+      status: 'valid',
+      offer: stub.offer,
+      priceMatched: true,
+      price: stubPrice,
+    });
+  }
+
+  const { getOffer, searchFlights } = await import('../services/duffel.js');
+
+  // ── 1. Try to fetch the live offer from Duffel ──────────────────────────
+  let liveOffer: Awaited<ReturnType<typeof getOffer>> | null = null;
+  let fetchError: unknown = null;
+  try {
+    liveOffer = await getOffer(v.data.offerId);
+  } catch (err) {
+    fetchError = err;
+  }
+
+  // Treat expires_at in the past as expired even if Duffel returned the record.
+  const isExpired = liveOffer?.expires_at
+    ? new Date(liveOffer.expires_at).getTime() <= Date.now()
+    : false;
+
+  if (liveOffer && !isExpired) {
+    const transformed = transformOffer(
+      liveOffer as unknown as Record<string, unknown>,
+      v.data.cabinClass || 'economy',
+    );
+    return res.status(200).json({
+      status: 'valid',
+      offer: transformed,
+      priceMatched: true,
+      price: transformed.totalAmount,
+    });
+  }
+
+  // ── 2. Offer expired or Duffel 404'd — re-search if we have route info ──
+  if (fetchError) {
+    console.info(
+      `[booking/confirm-offer] Offer ${v.data.offerId} fetch failed: ${getErrorMessage(fetchError)}`,
+    );
+  } else if (isExpired) {
+    console.info(`[booking/confirm-offer] Offer ${v.data.offerId} expired at ${liveOffer?.expires_at}`);
+  }
+
+  const oldPrice = v.data.expectedPrice
+    ?? (liveOffer
+      ? (() => {
+          const base = parseFloat(liveOffer.total_amount) || 0;
+          return base + Math.round(base * (BOOKING_MARKUP_PERCENT / 100));
+        })()
+      : 0);
+
+  if (!v.data.origin || !v.data.destination || !v.data.departureDate) {
+    // We can't re-search without route context — tell the client the offer
+    // is gone and let them fall back to a fresh search path.
+    return res.status(200).json({
+      status: 'expired',
+      reason: 'offer_expired',
+      newOffer: null,
+      oldPrice,
+      newPrice: null,
+    });
+  }
+
+  try {
+    const result = await searchFlights({
+      origin: v.data.origin,
+      destination: v.data.destination,
+      departureDate: v.data.departureDate,
+      returnDate: v.data.returnDate,
+      passengers: [{ type: 'adult' }],
+      cabinClass: v.data.cabinClass || 'economy',
+    });
+
+    const offers = (result.offers || []).slice().sort(
+      (a, b) => parseFloat(a.total_amount) - parseFloat(b.total_amount),
+    );
+    if (offers.length === 0) {
+      return res.status(200).json({
+        status: 'expired',
+        reason: 'offer_expired',
+        newOffer: null,
+        oldPrice,
+        newPrice: null,
+      });
+    }
+
+    const newOffer = transformOffer(
+      offers[0] as unknown as Record<string, unknown>,
+      v.data.cabinClass || 'economy',
+    );
+
+    return res.status(200).json({
+      status: 'expired',
+      reason: 'offer_expired',
+      newOffer,
+      oldPrice,
+      newPrice: newOffer.totalAmount,
+    });
+  } catch (err) {
+    logApiError('api/booking/confirm-offer', err);
+    return sendError(res, 502, 'UPSTREAM_ERROR', 'Failed to refresh expired offer');
+  }
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -1694,7 +1820,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
       return sendError(res, 429, 'RATE_LIMITED', 'Too many requests', { retryAfter });
     }
-  } else if (action === 'search' || action === 'hotel-search') {
+  } else if (action === 'search' || action === 'hotel-search' || action === 'confirm-offer') {
     const rl = checkRateLimit(`booking-search:${ip}`, 15, 60_000);
     if (!rl.allowed) {
       const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
@@ -1707,6 +1833,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleSearch(req, res);
     case 'offer':
       return handleOffer(req, res);
+    case 'confirm-offer':
+      return handleConfirmOffer(req, res);
     case 'payment-intent':
       return handlePaymentIntent(req, res);
     case 'create-order':

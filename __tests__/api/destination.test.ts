@@ -214,11 +214,12 @@ describe('GET /api/destination', () => {
     const body = res.json.mock.calls[0][0];
     expect(body.id).toBe(VALID_UUID);
     expect(body.city).toBe('Barcelona');
-    // withMarkup(450) = Math.round(450 * 1.03) = 464
-    expect(body.flightPrice).toBe(464);
+    // Phase 4: no Travelpayouts indicative fallback. With no cached Duffel price,
+    // flightPrice and livePrice are null and priceSource is null.
+    expect(body.flightPrice).toBeNull();
     expect(body.vibeTags).toEqual(['city', 'culture']);
     expect(body.livePrice).toBeNull();
-    expect(body.priceSource).toBe('estimate');
+    expect(body.priceSource).toBeNull();
   });
 
   it('merges live price when available', async () => {

@@ -198,6 +198,21 @@ export const bookingOfferSchema = z.object({
   offerId: z.string().min(1).max(200),
 });
 
+// Phase 3: validate a cached Duffel offer just before checkout to guarantee
+// price parity between the card and the payment step. If expired, the server
+// re-searches the same route/dates and returns a fresh offer for client confirmation.
+export const bookingConfirmOfferSchema = z.object({
+  offerId: z.string().min(1).max(200),
+  // Route/date context for fallback re-search when the offer has expired.
+  origin: iataCode.optional(),
+  destination: iataCode.optional(),
+  departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD').optional(),
+  returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD').optional(),
+  cabinClass: z.enum(['economy', 'premium_economy', 'business', 'first']).optional(),
+  // Price the card showed (marked-up USD amount) — used to compute oldPrice/newPrice delta.
+  expectedPrice: z.number().positive().optional(),
+});
+
 export const paymentIntentSchema = z.object({
   offerId: z.string().min(1).max(200),
   amount: z.number().int().positive(),

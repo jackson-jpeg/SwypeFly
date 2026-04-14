@@ -40,6 +40,8 @@ interface BookingFlowState {
   destination: string | null;
   destinationCity: string | null;
   feedPrice: number | null; // Travelpayouts price from feed (for transparency)
+  cachedOfferId: string | null; // Offer shown on the card (for confirm-offer preflight)
+  expectedPrice: number | null; // Price shown on the card (for confirm-offer preflight)
 
   setOfferId: (id: string) => void;
   setPassengers: (passengers: Passenger[]) => void;
@@ -51,6 +53,8 @@ interface BookingFlowState {
     destination: string,
     city: string,
     feedPrice: number | null,
+    cachedOfferId?: string | null,
+    expectedPrice?: number | null,
   ) => void;
   reset: () => void;
 }
@@ -68,14 +72,16 @@ export const useBookingFlowStore = create<BookingFlowState>()((set) => ({
   destination: null,
   destinationCity: null,
   feedPrice: null,
+  cachedOfferId: null,
+  expectedPrice: null,
 
   setOfferId: (id) => set({ selectedOfferId: id }),
   setPassengers: (passengers) => set({ passengers }),
   setSeats: (seats) => set({ selectedSeats: seats }),
   setServices: (services) => set({ selectedServices: services }),
   setDates: (dep, ret) => set({ departureDate: dep, returnDate: ret }),
-  setTripContext: (origin, destination, city, feedPrice) =>
-    set({ origin, destination, destinationCity: city, feedPrice }),
+  setTripContext: (origin, destination, city, feedPrice, cachedOfferId = null, expectedPrice = null) =>
+    set({ origin, destination, destinationCity: city, feedPrice, cachedOfferId, expectedPrice }),
   reset: () =>
     set({
       selectedOfferId: null,
@@ -88,5 +94,7 @@ export const useBookingFlowStore = create<BookingFlowState>()((set) => ({
       destination: null,
       destinationCity: null,
       feedPrice: null,
+      cachedOfferId: null,
+      expectedPrice: null,
     }),
 }));

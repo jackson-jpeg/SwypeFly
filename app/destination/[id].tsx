@@ -296,7 +296,15 @@ export default function DestinationDetailScreen() {
       deal.iataCode,
       deal.destinationFull || deal.destination,
       deal.price ?? null,
+      deal.cachedOfferId ?? null,
+      deal.price ?? null,
     );
+    // Pre-seed selected offer + dates so the booking flow opens on the exact
+    // card offer, not a generic "browse dates" view.
+    if (deal.cachedOfferId) store.setOfferId(deal.cachedOfferId);
+    if (deal.departureDate && deal.returnDate) {
+      store.setDates(deal.departureDate, deal.returnDate);
+    }
     router.push(`/booking/${deal.id}/trip`);
   }, [deal, router, departureCode]);
 

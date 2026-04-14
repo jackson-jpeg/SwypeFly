@@ -23,7 +23,17 @@ import {
   clearStatsCache,
 } from '../../utils/priceStats';
 import { env } from '../../utils/env';
-import { REFRESH_BATCH_SIZE, DUFFEL_CONCURRENCY, PRICE_CHANGE_THRESHOLD } from '../../utils/config';
+import {
+  REFRESH_BATCH_SIZE,
+  DUFFEL_CONCURRENCY,
+  PRICE_CHANGE_THRESHOLD,
+  SEARCH_WINDOW_MONTHS,
+  MAX_LAYOVER_HOURS,
+  MIN_DEST_TIME_RATIO,
+  TRIP_LENGTH_BUCKETS,
+  SEARCH_MONTH_OFFSETS,
+  TRIP_LENGTHS_PER_ROUTE,
+} from '../../utils/config';
 import { sendError } from '../../utils/apiResponse';
 
 // ─── Price history snapshot (stored in ai_cache with 30-day TTL) ─────
@@ -156,21 +166,93 @@ async function pickNextOrigins(count: number): Promise<string[]> {
 
 // ─── Date strategy for discovery searches ────────────────────────────
 
-function getSearchDates(): { departureDate: string; returnDate: string } {
-  // ~2 weeks out, shifted to next Wednesday (cheaper mid-week flights)
-  const now = new Date();
-  const twoWeeksOut = new Date(now.getTime() + 14 * 86400000);
-  const dayOfWeek = twoWeeksOut.getDay(); // 0=Sun, 3=Wed
-  const daysUntilWed = (3 - dayOfWeek + 7) % 7 || 7;
-  const departure = new Date(twoWeeksOut.getTime() + daysUntilWed * 86400000);
-  // Return: departure + 7 days (standard 1-week trip)
-  const returnDate = new Date(departure.getTime() + 7 * 86400000);
-
-  return {
-    departureDate: departure.toISOString().split('T')[0],
-    returnDate: returnDate.toISOString().split('T')[0],
-  };
+/** Parse ISO 8601 duration string like "PT6H30M" → minutes. Returns null if unparseable. */
+function parseIsoDurationToMinutes(iso: string | undefined | null): number | null {
+  if (!iso) return null;
+  const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/.exec(iso);
+  if (!m) return null;
+  const days = m[1] ? parseInt(m[1], 10) : 0;
+  const hours = m[2] ? parseInt(m[2], 10) : 0;
+  const mins = m[3] ? parseInt(m[3], 10) : 0;
+  return days * 24 * 60 + hours * 60 + mins;
 }
+
+/** Shift a Date to the next Wednesday (cheaper mid-week flight heuristic). */
+function shiftToWednesday(d: Date): Date {
+  const day = d.getUTCDay(); // 0=Sun, 3=Wed
+  const delta = (3 - day + 7) % 7;
+  return new Date(d.getTime() + delta * 86400000);
+}
+
+function toYmd(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+/** Build candidate departure dates across the 6-month window. */
+function buildDepartureDates(): string[] {
+  const now = new Date();
+  const out: string[] = [];
+  for (const monthOffset of SEARCH_MONTH_OFFSETS) {
+    if (monthOffset >= SEARCH_WINDOW_MONTHS) continue;
+    const d = new Date(now.getTime());
+    d.setUTCMonth(d.getUTCMonth() + monthOffset);
+    d.setUTCDate(10); // ~mid-month to avoid first/last-day pricing weirdness
+    out.push(toYmd(shiftToWednesday(d)));
+  }
+  return out;
+}
+
+/** Pick trip-length candidates based on classified one-way flight duration (minutes). */
+function pickTripLengths(oneWayMinutes: number): number[] {
+  const hours = oneWayMinutes / 60;
+  const bucket = TRIP_LENGTH_BUCKETS.find((b) => hours < b.maxFlightHours)
+    ?? TRIP_LENGTH_BUCKETS[TRIP_LENGTH_BUCKETS.length - 1];
+  return bucket.nights.slice(0, TRIP_LENGTHS_PER_ROUTE);
+}
+
+/** Compute one-way flight time (minutes) from the outbound slice of an offer. */
+function outboundOneWayMinutes(slice: OfferSlice | undefined): number | null {
+  if (!slice) return null;
+  const fromIso = parseIsoDurationToMinutes(slice.duration);
+  if (fromIso != null) return fromIso;
+  const segs = slice.segments ?? [];
+  if (segs.length === 0) return null;
+  const firstDep = new Date(segs[0].departing_at);
+  const lastArr = new Date(segs[segs.length - 1].arriving_at);
+  if (isNaN(firstDep.getTime()) || isNaN(lastArr.getTime())) return null;
+  return Math.round((lastArr.getTime() - firstDep.getTime()) / 60000);
+}
+
+/** Sum of flight time (minutes) across both slices of a roundtrip offer. */
+function roundtripFlightMinutes(slices: OfferSlice[] | undefined): number | null {
+  if (!slices || slices.length === 0) return null;
+  let total = 0;
+  for (const s of slices) {
+    const m = outboundOneWayMinutes(s);
+    if (m == null) return null;
+    total += m;
+  }
+  return total;
+}
+
+/** Max layover across any slice of the offer. */
+function maxLayoverMinutesAcrossOffer(slices: OfferSlice[] | undefined): number {
+  if (!slices) return 0;
+  let worst = 0;
+  for (const s of slices) {
+    const segs: OfferSliceSegment[] = s.segments ?? [];
+    for (let i = 1; i < segs.length; i++) {
+      const prevArr = new Date(segs[i - 1].arriving_at);
+      const nextDep = new Date(segs[i].departing_at);
+      const layover = Math.round((nextDep.getTime() - prevArr.getTime()) / 60000);
+      if (layover > worst) worst = layover;
+    }
+  }
+  return worst;
+}
+
+// Per-invocation cache: route -> one-way minutes from probe (reused across calls within a batch).
+const routeProbeCache = new Map<string, number>();
 
 // compactOfferJson is now imported from shared duffelMapper
 
@@ -183,21 +265,22 @@ interface BatchResult {
   sources: Record<string, number>;
 }
 
-async function refreshOneDest(
+/** Pull the cheapest offer from a single (origin, dest, dep, ret) search, with filters applied. */
+async function searchCheapestOffer(
   origin: string,
   dest: string,
   departureDate: string,
   returnDate: string,
-  currentPriceMap: Map<string, { price: number; docId: string }>,
-): Promise<{ source: 'duffel' | null }> {
-  let price: number | null = null;
-  let airline = '';
-  let depDate = departureDate;
-  let retDate = returnDate;
-  let offerJson = '';
-  let offerExpiresAt = '';
-
-  // Duffel search
+  label: string,
+): Promise<
+  | {
+      offer: ReturnType<typeof sortOffersByPrice>[number];
+      price: number;
+      roundtripFlightMin: number;
+      maxLayoverMin: number;
+    }
+  | null
+> {
   try {
     const result = await withRetry(
       () =>
@@ -209,41 +292,138 @@ async function refreshOneDest(
           passengers: [{ type: 'adult' }],
           cabinClass: 'economy',
         }),
-      { maxRetries: 2, baseDelayMs: 1000, label: `duffel:${origin}->${dest}` },
+      { maxRetries: 2, baseDelayMs: 1000, label },
     );
-
     const offers = getOffersFromResult(result as OfferRequest);
-    if (offers.length > 0) {
-      const sorted = sortOffersByPrice(offers);
-      const cheapest = sorted[0];
+    if (offers.length === 0) return null;
+    const sorted = sortOffersByPrice(offers);
 
-      price = Math.round(parseFloat(cheapest.total_amount));
-      offerExpiresAt = cheapest.expires_at || '';
+    // Walk cheapest → most expensive until one passes sanity filters.
+    for (const offer of sorted) {
+      const roundtripFlightMin = roundtripFlightMinutes(offer.slices);
+      if (roundtripFlightMin == null || roundtripFlightMin <= 0) continue;
 
-      const firstSlice = cheapest.slices?.[0];
-      const firstSeg = firstSlice?.segments?.[0];
-      if (firstSeg?.operating_carrier) {
-        airline = firstSeg.operating_carrier.name || firstSeg.operating_carrier.iata_code || '';
-      }
-      if (firstSeg?.departing_at) {
-        depDate = firstSeg.departing_at.split('T')[0];
-      }
-      const lastSlice = cheapest.slices?.[cheapest.slices.length - 1];
-      const lastSeg = lastSlice?.segments?.[0];
-      if (lastSeg?.departing_at) {
-        retDate = lastSeg.departing_at.split('T')[0];
-      }
+      const maxLayoverMin = maxLayoverMinutesAcrossOffer(offer.slices);
+      if (maxLayoverMin > MAX_LAYOVER_HOURS * 60) continue;
 
-      offerJson = sharedCompactOfferJson(cheapest);
-      if (offerJson.length > 10000) {
-        offerJson = offerJson.slice(0, 10000);
-      }
+      // time_at_destination = (return_departure - outbound_arrival). Use segment timestamps.
+      const outbound = offer.slices?.[0];
+      const inbound = offer.slices?.[1];
+      if (!outbound || !inbound) continue;
+      const outSegs = outbound.segments ?? [];
+      const inSegs = inbound.segments ?? [];
+      if (outSegs.length === 0 || inSegs.length === 0) continue;
+      const destArrival = new Date(outSegs[outSegs.length - 1].arriving_at);
+      const destDeparture = new Date(inSegs[0].departing_at);
+      const destMin = Math.round((destDeparture.getTime() - destArrival.getTime()) / 60000);
+      if (destMin < MIN_DEST_TIME_RATIO * roundtripFlightMin) continue;
+
+      const price = Math.round(parseFloat(offer.total_amount));
+      return { offer, price, roundtripFlightMin, maxLayoverMin };
     }
+    return null;
   } catch (err) {
-    console.warn(`[refresh] Duffel search failed for ${origin}->${dest}:`, err);
+    console.warn(`[refresh] Duffel search failed (${label}):`, err);
+    return null;
+  }
+}
+
+async function refreshOneDest(
+  origin: string,
+  dest: string,
+  currentPriceMap: Map<string, { price: number; docId: string }>,
+): Promise<{ source: 'duffel' | null }> {
+  // ── Step 1: Probe search to classify route (one-way flight duration) ──────
+  const probeDeparture = shiftToWednesday(new Date(Date.now() + 28 * 86400000));
+  const probeReturn = new Date(probeDeparture.getTime() + 7 * 86400000);
+  const probeDepYmd = toYmd(probeDeparture);
+  const probeRetYmd = toYmd(probeReturn);
+
+  let oneWayMin = routeProbeCache.get(`${origin}-${dest}`);
+  if (oneWayMin == null) {
+    try {
+      const result = await withRetry(
+        () =>
+          searchFlights({
+            origin,
+            destination: dest,
+            departureDate: probeDepYmd,
+            returnDate: probeRetYmd,
+            passengers: [{ type: 'adult' }],
+            cabinClass: 'economy',
+          }),
+        { maxRetries: 2, baseDelayMs: 1000, label: `duffel-probe:${origin}->${dest}` },
+      );
+      const offers = getOffersFromResult(result as OfferRequest);
+      if (offers.length > 0) {
+        const sorted = sortOffersByPrice(offers);
+        const m = outboundOneWayMinutes(sorted[0].slices?.[0]);
+        if (m && m > 0) {
+          oneWayMin = m;
+          routeProbeCache.set(`${origin}-${dest}`, m);
+        }
+      }
+    } catch (err) {
+      console.warn(`[refresh] Probe search failed for ${origin}->${dest}:`, err);
+    }
   }
 
-  if (price === null) return { source: null };
+  if (oneWayMin == null) {
+    // Probe failed entirely — no offers on this route at all.
+    return { source: null };
+  }
+
+  // ── Step 2: Narrow search — N departure months × K trip lengths ───────────
+  const tripLengths = pickTripLengths(oneWayMin);
+  const departureDates = buildDepartureDates();
+
+  type Winner = Awaited<ReturnType<typeof searchCheapestOffer>>;
+  let best: Winner = null;
+
+  for (const dep of departureDates) {
+    for (const nights of tripLengths) {
+      const depDate = new Date(`${dep}T00:00:00Z`);
+      const retDate = new Date(depDate.getTime() + nights * 86400000);
+      const candidate = await searchCheapestOffer(
+        origin,
+        dest,
+        dep,
+        toYmd(retDate),
+        `duffel:${origin}->${dest}:${dep}+${nights}n`,
+      );
+      if (candidate && (!best || candidate.price < best.price)) {
+        best = candidate;
+      }
+    }
+  }
+
+  if (!best) return { source: null };
+
+  const cheapest = best.offer;
+  const price = best.price;
+  const offerExpiresAt = cheapest.expires_at || '';
+  let airline = '';
+  let depDate = '';
+  let retDate = '';
+
+  const firstSlice = cheapest.slices?.[0];
+  const firstSeg = firstSlice?.segments?.[0];
+  if (firstSeg?.operating_carrier) {
+    airline = firstSeg.operating_carrier.name || firstSeg.operating_carrier.iata_code || '';
+  }
+  if (firstSeg?.departing_at) {
+    depDate = firstSeg.departing_at.split('T')[0];
+  }
+  const lastSlice = cheapest.slices?.[cheapest.slices.length - 1];
+  const lastSeg = lastSlice?.segments?.[0];
+  if (lastSeg?.departing_at) {
+    retDate = lastSeg.departing_at.split('T')[0];
+  }
+
+  let offerJson = sharedCompactOfferJson(cheapest);
+  if (offerJson.length > 10000) {
+    offerJson = offerJson.slice(0, 10000);
+  }
 
   // Price history tracking
   const existing = currentPriceMap.get(dest);
@@ -276,8 +456,8 @@ async function refreshOneDest(
     originIata: origin,
     destinationIata: dest,
     price,
-    departureDate: depDate || departureDate,
-    returnDate: retDate || returnDate,
+    departureDate: depDate,
+    returnDate: retDate,
     isDomestic,
     destinationCountry: meta?.country,
     airline: segData?.airlineCode || airline,
@@ -356,14 +536,13 @@ async function refreshBatch(
   currentPriceMap: Map<string, { price: number; docId: string }>,
 ): Promise<BatchResult> {
   const sourceCounts: Record<string, number> = { duffel: 0 };
-  const { departureDate, returnDate } = getSearchDates();
   let fetched = 0;
 
   // Duffel searches for the stalest destinations
   for (let i = 0; i < batch.length; i += CONCURRENCY) {
     const chunk = batch.slice(i, i + CONCURRENCY);
     const results = await Promise.all(
-      chunk.map((dest) => refreshOneDest(origin, dest, departureDate, returnDate, currentPriceMap)),
+      chunk.map((dest) => refreshOneDest(origin, dest, currentPriceMap)),
     );
     for (const r of results) {
       if (r.source) {
