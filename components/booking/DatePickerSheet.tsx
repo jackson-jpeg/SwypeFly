@@ -220,7 +220,7 @@ export default function DatePickerSheet({
       const autoReturn = addDays(departureDate, 5);
       setReturnDate(autoReturn);
     }
-  }, [departureDate]); // eslint-disable-line
+  }, [departureDate]);
 
   // ─── Month navigation ──────────────────────────────────────────
 

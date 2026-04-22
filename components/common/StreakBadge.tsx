@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Text, StyleSheet, Animated } from 'react-native';
 import { useStreakStore } from '../../stores/streakStore';
 import { colors, fonts } from '../../theme/tokens';
 

@@ -69,7 +69,7 @@ function collectRoutes(dir: string, base = ''): Array<{ file: string; route: str
  * Wrap a Vercel-style handler as Express middleware.
  * Vercel's req/res API is a superset-compatible subset of Express.
  */
-function wrapHandler(handler: any) {
+function wrapHandler(handler: (req: Request, res: Response) => Promise<void> | void) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Vercel merges dynamic params into req.query; Express keeps them separate.

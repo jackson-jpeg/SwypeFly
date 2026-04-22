@@ -8,7 +8,7 @@ import Animated, {
 import * as Network from 'expo-network';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSavedStore } from '../../stores/savedStore';
-import { colors, fonts, spacing } from '../../theme/tokens';
+import { colors, fonts } from '../../theme/tokens';
 
 type SyncState = 'idle' | 'syncing' | 'synced' | 'offline';
 
